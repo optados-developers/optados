@@ -18,8 +18,9 @@ F90=gfortran
 FFLAGS= $(FFLAGS_OPT) -fconvert=big-endian -frecord-marker=4
 
 # Where would you like the executables?
-EXTENSION=$(NAME_OPT).x86_64
 BIN_DIR=${HOME}/bin
+EXTENSION=$(NAME_OPT).x86_64
+
 
 # Put object names here
 OBJS=algorithms.o cell.o constants.o dos.o

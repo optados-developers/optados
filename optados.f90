@@ -17,4 +17,5 @@ program optados
 
  write(*,*) " OPTADOS"
  write(*,*) dp
+ write(*,*) "GOOD ISN'T IT?"
 endprogram
