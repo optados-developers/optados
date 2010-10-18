@@ -18,12 +18,13 @@ F90=gfortran
 FFLAGS= $(FFLAGS_OPT) -fconvert=big-endian -frecord-marker=4
 
 # Where would you like the executables?
-BIN_DIR=${HOME}/bin
+BIN_DIR=./
+#${HOME}/bin
 EXTENSION=$(NAME_OPT).x86_64
 
 
 # Put object names here
-OBJS=algorithms.o cell.o constants.o dos.o
+OBJS=algorithms.o comms.o cell.o constants.o dos.o
 
 all : optados
 
@@ -41,6 +42,10 @@ constants.o :
 
 dos.o : constants.o
 	$(F90) -c $(FFLAGS) dos.f90
+
+comms.o : comms.F90 constants.o
+	$(F90) -c $(FFLAGS) comms.F90
+
 
 # Utility targets
 .PHONY: clean veryclean
