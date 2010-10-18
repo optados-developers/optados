@@ -17,6 +17,10 @@ module algorithms
 
  private
 
+ public :: gaussian
+ public :: heap_sort
+ public :: utility_lowercase
+
  contains
 
   function gaussian(m,w,x)
@@ -117,6 +121,43 @@ module algorithms
    end do
 
  end subroutine heap_sort
+
+
+  !=================================!
+  function utility_lowercase(string)!
+  !=================================!
+  !                                 !
+  ! Takes a string and converts to  !
+  !      lowercase characters       !
+  !                                 !
+  !=================================!
+
+    use od_io, only : maxlen
+
+    implicit none
+
+    character(len=*), intent(in) :: string
+    character(len=maxlen) :: utility_lowercase
+
+    integer :: iA,iZ,idiff,ipos,ilett
+
+    iA = ichar('A')
+    iZ = ichar('Z')
+    idiff = iZ-ichar('z')
+
+    utility_lowercase = string
+
+    do ipos=1,len(string)
+       ilett = ichar(string(ipos:ipos))
+       if ((ilett.ge.iA).and.(ilett.le.iZ)) &
+            utility_lowercase(ipos:ipos)=char(ilett-idiff)
+    enddo
+
+    utility_lowercase = trim(adjustl(utility_lowercase))
+
+    return
+
+  end function utility_lowercase
 
 
 endmodule algorithms

@@ -24,14 +24,14 @@ EXTENSION=$(NAME_OPT).x86_64
 
 
 # Put object names here
-OBJS=algorithms.o comms.o cell.o constants.o dos.o
+OBJS=algorithms.o comms.o parameters.o io.o cell.o constants.o dos.o
 
 all : optados
 
 optados : $(OBJS)
 	$(F90) $(FFLAGS) optados.f90 $(OBJS) -o $(BIN_DIR)/optdos$(EXTENSION) 
 
-algorithms.o : constants.o
+algorithms.o : io.o constants.o
 	$(F90) -c $(FFLAGS) algorithms.f90
 
 cell.o : constants.o
@@ -45,6 +45,12 @@ dos.o : constants.o
 
 comms.o : comms.F90 constants.o
 	$(F90) -c $(FFLAGS) comms.F90
+
+io.o : io.F90 constants.o
+	$(F90) -c $(FFLAGS) io.F90
+
+parameters.o : parameters.f90 algorithms.o constants.o io.o
+	$(F90) -c $(FFLAGS) parameters.f90
 
 
 # Utility targets
