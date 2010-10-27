@@ -31,16 +31,16 @@ all : optados
 optados : $(OBJS)
 	$(F90) $(FFLAGS) optados.f90 $(OBJS) -o $(BIN_DIR)/optdos$(EXTENSION) 
 
-algorithms.o : io.o constants.o
+algorithms.o : algorithms.f90 io.o constants.o
 	$(F90) -c $(FFLAGS) algorithms.f90
 
-cell.o : constants.o
+cell.o : cell.f90 constants.o
 	$(F90) -c $(FFLAGS) cell.f90
 
-constants.o : 
+constants.o : constants.f90
 	$(F90) -c $(FFLAGS) constants.f90
 
-dos.o : constants.o
+dos.o : dos.f90 constants.o
 	$(F90) -c $(FFLAGS) dos.f90
 
 comms.o : comms.F90 constants.o
