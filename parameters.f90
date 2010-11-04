@@ -23,24 +23,38 @@ module od_parameters
 
   private
 
-  !Input
+  !Task parameters
+  logical, public, save :: dos
+  logical, public, save :: pdos
+  logical, public, save :: jdos
+  logical, public, save :: optics
+  logical, public, save :: core
+
+  !Broadending parameters
+  logical, public, save :: fixed
+  logical, public, save :: adaptive
+  logical, public, save :: linear
+  logical, public, save :: quad
+
+
   integer,           public, save :: iprint
   character(len=20), public, save :: energy_unit
-  character(len=20), public, save :: length_unit
-  integer,           public, save :: mp_grid(3)
-  real(kind=dp),     public, save :: dis_win_min
-  real(kind=dp),     public, save :: dis_win_max
-  real(kind=dp),     public, save :: dis_froz_min
+  character(len=20), public, save :: length_unit ! not exposed - but useful for BZ plots?
 
-  integer,           public, save :: dos_num_points
-  real(kind=dp),     public, save :: dos_energy_step
-  real(kind=dp),     public, save :: dos_gaussian_width
-  character(len=20), public, save :: dos_plot_format
+  real(kind=dp),     public, save :: adaptive_smearing
+  real(kind=dp),     public, save :: smearing_width
+  real(kind=dp),     public, save :: scissor_op
 
+  real(kind=dp),     public, save :: fermi_energy
+  logical,           public, save :: compute_efermi
+
+  character(len=20), public, save :: output_format
+
+  character(len=100), public, save :: devel_flag
 
 
   real(kind=dp), allocatable,    public, save :: kpt_latt(:,:) !kpoints in lattice vecs
-  real(kind=dp),     public, save :: real_lattice(3,3)
+  real(kind=dp),                 public, save :: real_lattice(3,3)
 
   ! Atom sites
   real(kind=dp), allocatable,     public, save :: atoms_pos_frac(:,:,:)
@@ -94,6 +108,7 @@ contains
     logical :: found,found2,eig_found,lunits,chk_found
     character(len=6) :: spin_str
     real(kind=dp) :: cosa(3),rv_temp(3)
+    character(len=10), allocatable :: task_string(:)
 
     call param_in_file
 
@@ -103,6 +118,55 @@ contains
     energy_unit     =  'ev'          !
     call param_get_keyword('energy_unit',found,c_value=energy_unit)
 
+    dos=.false.; pdos=.false.; jdos=.false.; optics=.false.; core=.false.
+    call param_get_vector_length('task',found,i_temp)
+    if(found .and. i_temp>0) then
+       allocate(task_string(i_temp))
+       call param_get_keyword_vector('task',found,i_temp,c_value=task_string)
+       do loop=1,i_temp
+          if(index(task_string(loop),'optics')>0) then
+             optics=.true.
+          elseif(index(task_string(loop),'core')>0) then
+             core=.true.
+          elseif(index(task_string(loop),'jdos')>0) then
+             jdos=.true.
+          elseif(index(task_string(loop),'pdos')>0) then
+             pdos=.true.
+          elseif(index(task_string(loop),'dos')>0) then
+             dos=.true.
+          elseif(index(task_string(loop),'all')>0) then
+             dos=.true.; pdos=.false.; jdos=.false.; optics=.false.; core=.false.
+          else
+              call io_error('Error: value of task unrecognised in param_read')
+           endif
+        end do
+        deallocate(task_string)
+    end if
+
+    i_temp=0
+    fixed=.false.; adaptive=.true.; linear=.false.; quad=.false.
+    call param_get_vector_length('broadening',found,i_temp)
+    if(found .and. i_temp>0) then
+       allocate(task_string(i_temp))
+       call param_get_keyword_vector('broadening',found,i_temp,c_value=task_string)
+       do loop=1,i_temp
+          if(index(task_string(loop),'fixed')>0) then
+             fixed=.true.
+          elseif(index(task_string(loop),'adaptive')>0) then
+             adaptive=.true.
+          elseif(index(task_string(loop),'linear')>0) then
+             linear=.true.
+          elseif(index(task_string(loop),'quad')>0) then
+             quad=.true.
+          else
+              call io_error('Error: value of broadening unrecognised in param_read')
+           endif
+        end do
+        deallocate(task_string)
+    end if
+
+
+
     length_unit     =  'ang'         !
     lenconfac=1.0_dp
     call param_get_keyword('length_unit',found,c_value=length_unit)
@@ -110,18 +174,23 @@ contains
          call io_error('Error: value of length_unit not recognised in param_read')
     if (length_unit.eq.'bohr') lenconfac=1.0_dp/bohr
 
-    dos_num_points            = 50
-    call param_get_keyword('dos_num_points',found,i_value=dos_num_points)
-    if (dos_num_points<0) call io_error('Error: dos_num_points must be positive')       
+    adaptive_smearing           = 0.4_dp
+    call param_get_keyword('adaptive_smearing',found,r_value=adaptive_smearing)
 
-    dos_energy_step           = 0.01_dp
-    call param_get_keyword('dos_energy_step',found,r_value=dos_energy_step)
+    smearing_width        = 0.1_dp
+    call param_get_keyword('smearing_width',found,r_value=smearing_width)
 
-    dos_gaussian_width        = 0.1_dp
-    call param_get_keyword('dos_gaussian_width',found,r_value=dos_gaussian_width)
+    fermi_energy        = -990.0_dp
+    call param_get_keyword('fermi_energy',found,r_value=fermi_energy)
 
-    dos_plot_format           = 'gnuplot'
-    call param_get_keyword('dos_plot_format',found,c_value=dos_plot_format)
+    compute_efermi        = .false.
+    call param_get_keyword('compute_efermi',found,l_value=compute_efermi)
+ 
+    devel_flag=' '
+    call param_get_keyword('devel_flag',found,c_value=devel_flag)
+
+    output_format           = 'gnuplot'
+    call param_get_keyword('output_format',found,c_value=output_format)
 
     call param_uppercase()
 
@@ -204,32 +273,32 @@ contains
     write(stdout,'(36x,a6)') 'SYSTEM' 
     write(stdout,'(36x,a6)') '------' 
     write(stdout,*)
-    if (lenconfac.eq.1.0_dp) then
-       write(stdout,'(30x,a21)') 'Lattice Vectors (Ang)' 
-    else
-       write(stdout,'(28x,a22)') 'Lattice Vectors (Bohr)' 
-    endif
-    write(stdout,101) 'a_1',(real_lattice(1,I)*lenconfac, i=1,3)
-    write(stdout,101) 'a_2',(real_lattice(2,I)*lenconfac, i=1,3)
-    write(stdout,101) 'a_3',(real_lattice(3,I)*lenconfac, i=1,3)
-    write(stdout,*)   
-    write(stdout,'(19x,a17,3x,f11.5)',advance='no') &
-         'Unit Cell Volume:',cell_volume*lenconfac**3
-    if (lenconfac.eq.1.0_dp) then
-       write(stdout,'(2x,a7)') '(Ang^3)'
-    else
-       write(stdout,'(2x,a8)') '(Bohr^3)'
-    endif
-    write(stdout,*)   
-    if (lenconfac.eq.1.0_dp) then
-       write(stdout,'(24x,a33)') 'Reciprocal-Space Vectors (Ang^-1)'
-    else
-       write(stdout,'(22x,a34)') 'Reciprocal-Space Vectors (Bohr^-1)'
-    endif
-    write(stdout,101) 'b_1',(recip_lattice(1,I)/lenconfac, i=1,3)
-    write(stdout,101) 'b_2',(recip_lattice(2,I)/lenconfac, i=1,3)
-    write(stdout,101) 'b_3',(recip_lattice(3,I)/lenconfac, i=1,3)
-    write(stdout,*)   ' '
+!!$    if (lenconfac.eq.1.0_dp) then
+!!$       write(stdout,'(30x,a21)') 'Lattice Vectors (Ang)' 
+!!$    else
+!!$       write(stdout,'(28x,a22)') 'Lattice Vectors (Bohr)' 
+!!$    endif
+!!$    write(stdout,101) 'a_1',(real_lattice(1,I)*lenconfac, i=1,3)
+!!$    write(stdout,101) 'a_2',(real_lattice(2,I)*lenconfac, i=1,3)
+!!$    write(stdout,101) 'a_3',(real_lattice(3,I)*lenconfac, i=1,3)
+!!$    write(stdout,*)   
+!!$    write(stdout,'(19x,a17,3x,f11.5)',advance='no') &
+!!$         'Unit Cell Volume:',cell_volume*lenconfac**3
+!!$    if (lenconfac.eq.1.0_dp) then
+!!$       write(stdout,'(2x,a7)') '(Ang^3)'
+!!$    else
+!!$       write(stdout,'(2x,a8)') '(Bohr^3)'
+!!$    endif
+!!$    write(stdout,*)   
+!!$    if (lenconfac.eq.1.0_dp) then
+!!$       write(stdout,'(24x,a33)') 'Reciprocal-Space Vectors (Ang^-1)'
+!!$    else
+!!$       write(stdout,'(22x,a34)') 'Reciprocal-Space Vectors (Bohr^-1)'
+!!$    endif
+!!$    write(stdout,101) 'b_1',(recip_lattice(1,I)/lenconfac, i=1,3)
+!!$    write(stdout,101) 'b_2',(recip_lattice(2,I)/lenconfac, i=1,3)
+!!$    write(stdout,101) 'b_3',(recip_lattice(3,I)/lenconfac, i=1,3)
+!!$    write(stdout,*)   ' '
     ! Atoms
     if(num_atoms>0) then
        write(stdout,'(1x,a)') '*----------------------------------------------------------------------------*'
@@ -256,8 +325,8 @@ contains
     write(stdout,'(32x,a)') 'K-POINT GRID'
     write(stdout,'(32x,a)') '------------'
     write(stdout,*) ' '
-    write(stdout,'(13x,a,i3,1x,a1,i3,1x,a1,i3,6x,a,i5)') 'Grid size =',mp_grid(1),'x',mp_grid(2),'x',mp_grid(3),&
-         'Total points =',num_kpts
+!    write(stdout,'(13x,a,i3,1x,a1,i3,1x,a1,i3,6x,a,i5)') 'Grid size =',mp_grid(1),'x',mp_grid(2),'x',mp_grid(3),&
+!         'Total points =',num_kpts
     write(stdout,*) ' '
     if(iprint>1) then
        write(stdout,'(1x,a)') '*----------------------------------------------------------------------------*'
@@ -267,10 +336,10 @@ contains
           write(stdout,'(1x,a)') '| k-point      Fractional Coordinate        Cartesian Coordinate (Bohr^-1)   |'
        endif
        write(stdout,'(1x,a)') '+----------------------------------------------------------------------------+'
-       do nkp=1,num_kpts
-          write(stdout,'(1x,a1,i6,1x,3F10.5,3x,a1,1x,3F10.5,4x,a1)') '|',nkp,kpt_latt(:,nkp),'|',kpt_cart(:,nkp)/lenconfac,'|'
-       end do
-       write(stdout,'(1x,a)') '*----------------------------------------------------------------------------*'
+!!$       do nkp=1,num_kpts
+!!$          write(stdout,'(1x,a1,i6,1x,3F10.5,3x,a1,1x,3F10.5,4x,a1)') '|',nkp,kpt_latt(:,nkp),'|',kpt_cart(:,nkp)/lenconfac,'|'
+!!$       end do
+!!$       write(stdout,'(1x,a)') '*----------------------------------------------------------------------------*'
        write(stdout,*) ' '
     end if
     ! Main
@@ -280,9 +349,47 @@ contains
     write(stdout,'(1x,a78)') '*----------------------------------------------------------------------------*'
 
     !
-    write(stdout,'(1x,a78)') '*-------------------------------- PLOTTING ----------------------------------*'
+    write(stdout,'(1x,a78)')    '*---------------------------------- TASK ------------------------------------*'
     !
-
+    if(dos) then
+       write(stdout,'(1x,a78)') '|  Output Density of States                  :  True                         |'
+    else
+       write(stdout,'(1x,a78)') '|  Output Density of States                  :  False                        |'
+    endif
+    if(pdos) then
+       write(stdout,'(1x,a78)') '|  Output Partial Density of States          :  True                         |'
+    else
+       write(stdout,'(1x,a78)') '|  Output Partial Density of States          :  False                        |'
+    endif
+    if(jdos) then
+       write(stdout,'(1x,a78)') '|  Output Joint Density of States            :  True                         |'
+    else
+       write(stdout,'(1x,a78)') '|  Output Joint Density of States            :  False                        |'
+    endif
+    if(optics) then
+       write(stdout,'(1x,a78)') '|  Output Optical Response                   :  True                         |'
+    else
+       write(stdout,'(1x,a78)') '|  Output Optical Response                   :  False                        |'
+    endif
+    if(core) then
+       write(stdout,'(1x,a78)') '|  Output Core-level Spectra                 :  True                         |'
+    else
+       write(stdout,'(1x,a78)') '|  Output Core-level Spectra                 :  False                        |'
+    endif
+    write(stdout,'(1x,a78)')    '*----------------------------- Broadening -----------------------------------*'
+    if(fixed) then
+       write(stdout,'(1x,a78)') '|  Fixed Width Smearing                      :  True                         |'
+       write(stdout,'(1x,a46,1x,1F10.5,20x,a1)') '|  Smearing Width                            :', smearing_width,'|'
+    endif
+    if(adaptive) then
+       write(stdout,'(1x,a78)') '|  Adaptive Width Smearing                   :  True                         |'
+       write(stdout,'(1x,a46,1x,1F10.5,20x,a1)') '|  Adaptive Smearing ratio                   :', adaptive_smearing,'|'
+    endif
+    if(linear) &
+         write(stdout,'(1x,a78)') '|  Linear Extrapolation                      :  True                         |'
+    if(quad) &
+         write(stdout,'(1x,a78)') '|  Quadratic Extrapolation                   :  True                         |'
+      write(stdout,'(1x,a78)')    '*----------------------------- Parameters ------------------------------------*'
 
 101 format(20x,a3,2x,3F11.6)
 
@@ -329,7 +436,7 @@ contains
     character(len=maxlen) :: dummy
 
     in_unit=io_file_unit( )
-    open (in_unit, file=trim(seedname)//'.win',form='formatted',status='old',err=101)
+    open (in_unit, file=trim(seedname)//'.odi',form='formatted',status='old',err=101)
 
     num_lines=0;tot_num_lines=0
     do
@@ -342,8 +449,8 @@ contains
 
     end do
 
-101 call io_error('Error: Problem opening input file '//trim(seedname)//'.win')
-200 call io_error('Error: Problem reading input file '//trim(seedname)//'.win')
+101 call io_error('Error: Problem opening input file '//trim(seedname)//'.odi')
+200 call io_error('Error: Problem reading input file '//trim(seedname)//'.odi')
 210 continue
     rewind(in_unit)
 
