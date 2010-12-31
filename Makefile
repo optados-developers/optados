@@ -61,7 +61,7 @@ electronic.o : electronic.F90 comms.o constants.o
 io.o : io.F90 constants.o
 	$(F90) -c $(FFLAGS) io.F90
 	
-jdos.o : jdos.F90 algorithms.o cell.o constants.o comms.o electronic.o io.o parameters.o
+jdos.o : jdos.f90 algorithms.o cell.o constants.o comms.o electronic.o io.o parameters.o
 	$(F90) -c $(FFLAGS) jdos.f90
 
 parameters.o : parameters.f90  cell.o constants.o io.o
