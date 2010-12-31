@@ -16,12 +16,19 @@
 
 module od_parameters
 
-  use constants, only : dp
+  use od_constants, only : dp
   use od_io,        only : stdout,maxlen
+  use od_cell, only : real_lattice, recip_lattice, cell_volume, kpoint_grid_dim, nkpoints, &
+        & kpoint_r, kpoint_r_cart
 
   implicit none
 
-  private
+  !Generic Parameters
+  character(len=20), public, save :: output_format
+  character(len=100), public, save :: devel_flag
+  integer,           public, save :: iprint
+  character(len=20), public, save :: energy_unit
+  character(len=20), public, save :: length_unit ! not exposed - but useful for BZ plots?
 
   !Task parameters
   logical, public, save :: dos
@@ -36,27 +43,27 @@ module od_parameters
   logical, public, save :: linear
   logical, public, save :: quad
 
+  integer, public, save :: nbins
 
-  integer,           public, save :: iprint
-  character(len=20), public, save :: energy_unit
-  character(len=20), public, save :: length_unit ! not exposed - but useful for BZ plots?
-
+  ! Belonging to the dos module
+  logical, public, save :: compute_band_energy
   real(kind=dp),     public, save :: adaptive_smearing
-  real(kind=dp),     public, save :: smearing_width
-  real(kind=dp),     public, save :: scissor_op
-
+  real(kind=dp),     public, save :: fixed_smearing
+  logical,           public, save :: dos_per_volume
   real(kind=dp),     public, save :: fermi_energy
   logical,           public, save :: compute_efermi
+  logical,           public, save :: finite_bin_correction
+  logical,           public, save :: numerical_intdos 
+   
+  ! Belonging to the jdos module
+  real(kind=dp),     public, save :: jdos_cutoff_energy 
 
-  character(len=20), public, save :: output_format
 
-  character(len=100), public, save :: devel_flag
+!  ??
+  real(kind=dp),     public, save :: scissor_op
 
 
-  real(kind=dp), allocatable,    public, save :: kpt_latt(:,:) !kpoints in lattice vecs
-  real(kind=dp),                 public, save :: real_lattice(3,3)
-
-  ! Atom sites
+  ! Atom sites  -- I think these should end up in an ION modules
   real(kind=dp), allocatable,     public, save :: atoms_pos_frac(:,:,:)
   real(kind=dp), allocatable,     public, save :: atoms_pos_cart(:,:,:)
   integer, allocatable,           public, save :: atoms_species_num(:)  
@@ -65,30 +72,27 @@ module od_parameters
   integer,                        public, save :: num_atoms
   integer,                        public, save :: num_species
 
-  !parameters dervied from input
-  integer,           public, save :: num_kpts
-  real(kind=dp),     public, save :: recip_lattice(3,3)
-  real(kind=dp),     public, save :: cell_volume
-  real(kind=dp),     public, save :: real_metric(3,3)
-  real(kind=dp),     public, save :: recip_metric(3,3)
+  !parameters dervied from input -- I think these should end up in the
+  ! electroinic module
   integer,           public, save :: bands_num_spec_points  
   character(len=1), allocatable,    public, save ::bands_label(:)
   real(kind=dp), allocatable,    public, save ::bands_spec_points(:,:)
-  real(kind=dp), allocatable,    public, save ::kpt_cart(:,:) !kpoints in cartesians
   real(kind=dp),     public, save :: lenconfac
 
-  integer :: num_lines
+
+  private
+
+ integer :: num_lines
   character(len=maxlen), allocatable :: in_data(:)
 
 
   public :: param_read
   public :: param_write
+  public :: param_write_header
   public :: param_dealloc
 
 
 contains
-
-
 
   !==================================================================!
   subroutine param_read ( )
@@ -97,7 +101,7 @@ contains
   ! Read parameters and calculate derived values                     !
   !                                                                  !
   !===================================================================  
-    use constants, only : bohr
+    use od_constants, only : bohr
 !    use w90_utility,   only : utility_recip_lattice,utility_compute_metric
     use od_io,        only : io_error,io_file_unit,seedname
     implicit none
@@ -134,6 +138,8 @@ contains
              pdos=.true.
           elseif(index(task_string(loop),'dos')>0) then
              dos=.true.
+          elseif(index(task_string(loop),'none')>0) then
+             dos=.false.; pdos=.false.; jdos=.false.; optics=.false.; core=.false.
           elseif(index(task_string(loop),'all')>0) then
              dos=.true.; pdos=.false.; jdos=.false.; optics=.false.; core=.false.
           else
@@ -144,7 +150,7 @@ contains
     end if
 
     i_temp=0
-    fixed=.false.; adaptive=.true.; linear=.false.; quad=.false.
+    fixed=.false.; adaptive=.false.; linear=.false.; quad=.false. 
     call param_get_vector_length('broadening',found,i_temp)
     if(found .and. i_temp>0) then
        allocate(task_string(i_temp))
@@ -158,6 +164,8 @@ contains
              linear=.true.
           elseif(index(task_string(loop),'quad')>0) then
              quad=.true.
+          elseif(index(task_string(loop),'all')>0) then
+             fixed=.true.;adaptive=.true.;linear=.true. 
           else
               call io_error('Error: value of broadening unrecognised in param_read')
            endif
@@ -165,7 +173,9 @@ contains
         deallocate(task_string)
     end if
 
-
+   if(.not.(fixed.or.adaptive.or.linear.or.quad)) then ! Piak a default
+    adaptive=.true.
+   endif 
 
     length_unit     =  'ang'         !
     lenconfac=1.0_dp
@@ -174,14 +184,38 @@ contains
          call io_error('Error: value of length_unit not recognised in param_read')
     if (length_unit.eq.'bohr') lenconfac=1.0_dp/bohr
 
-    adaptive_smearing           = 0.4_dp
+    nbins                       = 10001 ! LinDOS default
+    call param_get_keyword('nbins',found,i_value=nbins)
+
+    adaptive_smearing           = 0.4_dp ! LinDOS default
     call param_get_keyword('adaptive_smearing',found,r_value=adaptive_smearing)
 
-    smearing_width        = 0.1_dp
-    call param_get_keyword('smearing_width',found,r_value=smearing_width)
+    fixed_smearing             = 0.3_dp ! LinDOS default
+    call param_get_keyword('fixed_smearing',found,r_value=fixed_smearing)
 
     fermi_energy        = -990.0_dp
     call param_get_keyword('fermi_energy',found,r_value=fermi_energy)
+    
+    ! Force all Gaussians to be greater than the width of a bin. When using numerical_indos
+    ! this is critical for counting all of the Gaussian DOS peaks. 
+    ! When using semi-analytic integration it is desirable to show up very sharp peaks in the 
+    ! DOS. However, the intDOS will not be affected.
+    finite_bin_correction = .false.
+    call param_get_keyword('finite_bin_correction',found,l_value=finite_bin_correction)
+    
+    ! Perform fixed and adaptive smearing summing the contribution of each Gaussian
+    ! instead of the new and better way of taking the erf. Left in for comparison to LinDOS
+    numerical_intdos= .false.
+    call param_get_keyword('numerical_intdos',found,l_value=numerical_intdos)
+
+    compute_band_energy    = .true.
+    call param_get_keyword('compute_band_energy',found,l_value=compute_band_energy)
+
+    dos_per_volume = .false.
+    call param_get_keyword('dos_per_volume',found,l_value=dos_per_volume)
+
+    jdos_cutoff_energy        = 50.0_dp
+    call param_get_keyword('jdos_cutoff_energy',found,r_value=jdos_cutoff_energy)
 
     compute_efermi        = .false.
     call param_get_keyword('compute_efermi',found,l_value=compute_efermi)
@@ -256,6 +290,47 @@ contains
 
 
   !===================================================================
+  subroutine param_write_header
+  use od_constants, only :  optados_version
+  implicit none
+  write(stdout,*)
+  write(stdout,'(a78)') " +===========================================================================+"
+  write(stdout,'(a78)') " |                                                                           | "
+  write(stdout,'(a78)') " |                OOO   PPPP  TTTTT  AA   DDD    OOO    SSS                  | "
+  write(stdout,'(a78)') " |               O   O  P   P   T   A  A  D  D  O   O  S                     | "
+  write(stdout,'(a78)') " |               O   O  PPPP    T   AAAA  D  D  O   O   SS                   | "
+  write(stdout,'(a78)') " |               O   O  P       T   A  A  D  D  O   O     S                  | "
+  write(stdout,'(a78)') " |                OOO   P       T   A  A  DDD    OOO   SSS                   | "
+  write(stdout,'(a78)') " |                                                                           | "
+  write(stdout,'(a78)') " +---------------------------------------------------------------------------+ "
+  write(stdout,'(a78)') " |                                                                           | "
+  write(stdout,'(a46,a5,a28)') " |                 Welcome to OptaDOS version ", optados_version,"   &
+&                     | "
+  write(stdout,'(a78)') " |                                                                           | "
+  write(stdout,'(a78)') " |         Andrew J. Morris, Rebecca Nicholls, Chris J. Pickard              | "
+  write(stdout,'(a78)') " |                       and Jonathan Yates                                  | "
+  write(stdout,'(a78)') " |                                                                           | "
+  write(stdout,'(a78)') " |                       Copyright (c) 2010                                  | "
+  write(stdout,'(a78)') " |                                                                           | "
+  write(stdout,'(a78)') " |  Please cite:                                                             | "
+  write(stdout,'(a78)') " |  Andrew J. Morris, Rebecca Nicholls, Chris J. Pickard and Jonathan Yates  | "
+  write(stdout,'(a78)') " |    OptaDOS User Manual, Univ. of Oxford and Univ. College London, (2010)  | "
+  write(stdout,'(a78)') " |                                                                           | "
+  write(stdout,'(a78)') " |  Additionally when using the linear broadening:                           | "
+  write(stdout,'(a78)') " | C.J. Pickard and M.C. Payne, Phys. Rev. B, 59, 7, 4685 (1999)             | "
+  write(stdout,'(a78)') " | C.J. Pickard and M.C. Payne, Phys. Rev. B, 62, 7, 4383 (2000)             | "
+  write(stdout,'(a78)') " |                                                                           | "
+  write(stdout,'(a78)') " |  Additionally when using the adaptive broadening:                         | "
+  write(stdout,'(a78)') " | J.Yates, X.Wang, D.Vanderbilt and I.Souza, Phys. Rev. B, 75, 195121 (2007)| "
+  write(stdout,'(a78)') " |                                                                           | "
+  write(stdout,'(a78)') " |      in all your publications arising from your use of OptaDOS            | "
+  write(stdout,'(a78)') " |                                                                           | "
+  write(stdout,'(a78)') " +===========================================================================+ "
+  write(stdout,*)
+  end subroutine param_write_header
+
+
+  !===================================================================
   subroutine param_write
     !==================================================================!
     !                                                                  !
@@ -268,37 +343,7 @@ contains
     integer :: i,nkp,loop,nat,nsp
 
     ! System
-    write(stdout,*)
-    write(stdout,'(36x,a6)') '------' 
-    write(stdout,'(36x,a6)') 'SYSTEM' 
-    write(stdout,'(36x,a6)') '------' 
-    write(stdout,*)
-!!$    if (lenconfac.eq.1.0_dp) then
-!!$       write(stdout,'(30x,a21)') 'Lattice Vectors (Ang)' 
-!!$    else
-!!$       write(stdout,'(28x,a22)') 'Lattice Vectors (Bohr)' 
-!!$    endif
-!!$    write(stdout,101) 'a_1',(real_lattice(1,I)*lenconfac, i=1,3)
-!!$    write(stdout,101) 'a_2',(real_lattice(2,I)*lenconfac, i=1,3)
-!!$    write(stdout,101) 'a_3',(real_lattice(3,I)*lenconfac, i=1,3)
-!!$    write(stdout,*)   
-!!$    write(stdout,'(19x,a17,3x,f11.5)',advance='no') &
-!!$         'Unit Cell Volume:',cell_volume*lenconfac**3
-!!$    if (lenconfac.eq.1.0_dp) then
-!!$       write(stdout,'(2x,a7)') '(Ang^3)'
-!!$    else
-!!$       write(stdout,'(2x,a8)') '(Bohr^3)'
-!!$    endif
-!!$    write(stdout,*)   
-!!$    if (lenconfac.eq.1.0_dp) then
-!!$       write(stdout,'(24x,a33)') 'Reciprocal-Space Vectors (Ang^-1)'
-!!$    else
-!!$       write(stdout,'(22x,a34)') 'Reciprocal-Space Vectors (Bohr^-1)'
-!!$    endif
-!!$    write(stdout,101) 'b_1',(recip_lattice(1,I)/lenconfac, i=1,3)
-!!$    write(stdout,101) 'b_2',(recip_lattice(2,I)/lenconfac, i=1,3)
-!!$    write(stdout,101) 'b_3',(recip_lattice(3,I)/lenconfac, i=1,3)
-!!$    write(stdout,*)   ' '
+
     ! Atoms
     if(num_atoms>0) then
        write(stdout,'(1x,a)') '*----------------------------------------------------------------------------*'
@@ -320,13 +365,6 @@ contains
     end if
     write(stdout,*) ' '
 
-    ! K-points
-    write(stdout,'(32x,a)') '------------'
-    write(stdout,'(32x,a)') 'K-POINT GRID'
-    write(stdout,'(32x,a)') '------------'
-    write(stdout,*) ' '
-!    write(stdout,'(13x,a,i3,1x,a1,i3,1x,a1,i3,6x,a,i5)') 'Grid size =',mp_grid(1),'x',mp_grid(2),'x',mp_grid(3),&
-!         'Total points =',num_kpts
     write(stdout,*) ' '
     if(iprint>1) then
        write(stdout,'(1x,a)') '*----------------------------------------------------------------------------*'
@@ -336,17 +374,14 @@ contains
           write(stdout,'(1x,a)') '| k-point      Fractional Coordinate        Cartesian Coordinate (Bohr^-1)   |'
        endif
        write(stdout,'(1x,a)') '+----------------------------------------------------------------------------+'
-!!$       do nkp=1,num_kpts
-!!$          write(stdout,'(1x,a1,i6,1x,3F10.5,3x,a1,1x,3F10.5,4x,a1)') '|',nkp,kpt_latt(:,nkp),'|',kpt_cart(:,nkp)/lenconfac,'|'
-!!$       end do
-!!$       write(stdout,'(1x,a)') '*----------------------------------------------------------------------------*'
+!       do nkp=1,nkpoints
+!          write(stdout,'(1x,a1,i6,1x,3F10.5,3x,a1,1x,3F10.5,4x,a1)') '|',nkp,kpoint_r(:,nkp),'|',kpoint_r_cart(:,nkp)/lenconfac,'|'
+!       end do
+       write(stdout,'(1x,a)') '*----------------------------------------------------------------------------*'
        write(stdout,*) ' '
     end if
     ! Main
-    write(stdout,*) ' '
-    write(stdout,'(1x,a78)') '*---------------------------------- MAIN ------------------------------------*'
-    write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Length Unit                               :',trim(length_unit),'|'  
-    write(stdout,'(1x,a78)') '*----------------------------------------------------------------------------*'
+ 
 
     !
     write(stdout,'(1x,a78)')    '*---------------------------------- TASK ------------------------------------*'
@@ -376,10 +411,22 @@ contains
     else
        write(stdout,'(1x,a78)') '|  Output Core-level Spectra                 :  False                        |'
     endif
+    write(stdout,'(1x,a78)') '*---------------------------------- UNITS -----------------------------------*'
+    write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Length Unit                               :',trim(length_unit),'|'  
+    
+    if(dos.or.pdos) then
+      if(dos_per_volume) then 
+           write(stdout,'(1x,a78)') '|  J/P/DOS units                             :  electrons eV^-1 Ang^-3       |' 
+      else
+           write(stdout,'(1x,a78)') '|  J/P/DOS units                             :  electrons eV^-1              |' 
+      endif 
+    endif
+     
+    
     write(stdout,'(1x,a78)')    '*----------------------------- Broadening -----------------------------------*'
     if(fixed) then
        write(stdout,'(1x,a78)') '|  Fixed Width Smearing                      :  True                         |'
-       write(stdout,'(1x,a46,1x,1F10.5,20x,a1)') '|  Smearing Width                            :', smearing_width,'|'
+       write(stdout,'(1x,a46,1x,1F10.5,20x,a1)') '|  Smearing Width                            :', fixed_smearing,'|'
     endif
     if(adaptive) then
        write(stdout,'(1x,a78)') '|  Adaptive Width Smearing                   :  True                         |'
@@ -389,7 +436,13 @@ contains
          write(stdout,'(1x,a78)') '|  Linear Extrapolation                      :  True                         |'
     if(quad) &
          write(stdout,'(1x,a78)') '|  Quadratic Extrapolation                   :  True                         |'
-      write(stdout,'(1x,a78)')    '*----------------------------- Parameters ------------------------------------*'
+    if(finite_bin_correction) &
+         write(stdout,'(1x,a78)') '|  Finite Bin Correction                     :  True                         |'
+    if(numerical_intdos) &
+         write(stdout,'(1x,a78)') '|  Numerical Integration of P/DOS            :  True                         |'        
+     
+        
+      write(stdout,'(1x,a78)')    '*----------------------------- Parameters -----------------------------------*'
 
 101 format(20x,a3,2x,3F11.6)
 
@@ -409,7 +462,7 @@ contains
     integer :: ierr
 
 !    if ( allocated ( ndimwin ) ) then
-!       deallocate (  ndimwin, stat=ierr  )
+!       ieallocate (  ndimwin, stat=ierr  )
 !       if (ierr/=0) call io_error('Error in deallocating ndimwin in param_dealloc')
 !    end if
     return
@@ -428,7 +481,7 @@ contains
     !=======================================!
 
     use od_io,        only : io_file_unit,io_error,seedname
-    use algorithms,   only : utility_lowercase
+    use od_algorithms,only : utility_lowercase
 
     implicit none
 
@@ -688,7 +741,7 @@ contains
     !                                                                                              !
     !==============================================================================================!
 
-    use constants, only : bohr
+    use od_constants, only : bohr
     use od_io,        only : io_error
 
     implicit none

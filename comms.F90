@@ -8,8 +8,8 @@
 
 module od_comms
 
-  use constants, only : dp
-
+  use od_constants, only : dp
+  use od_io,        only : io_error
   implicit none
 
 
@@ -19,8 +19,8 @@ module od_comms
   include 'mpif.h'
 #endif
 
-  logical, public :: on_root
-  integer, public :: num_nodes,my_node_id
+  logical, public, save :: on_root
+  integer, public, save :: num_nodes,my_node_id
   integer, public, parameter :: root_id=0
 
   integer, parameter :: mpi_send_tag=77 !abitrary
@@ -31,6 +31,8 @@ module od_comms
   public :: comms_send       ! send data from one node to another
   public :: comms_recv       ! accept data from one node to another
   public :: comms_reduce     ! reduce data onto root node (n.b. not allreduce) 
+
+  public :: comms_slice
 
   interface comms_bcast
      module procedure comms_bcast_int
@@ -643,5 +645,33 @@ contains
 
   end subroutine comms_reduce_cmplx
 
+! Extra function AJM gets the blame
+!======================================================
+subroutine comms_slice(num_elements,elements_per_node)
+! Takes the number of elements in an array, num_elements
+! Returns an array 0,num_nodes-1 which contains the number of 
+! elements that should be on each node.
+! AJM based on an idea from JRY
+!======================================================
+ implicit none
+ integer, intent(in)                :: num_elements
+ integer, allocatable, intent(out)  :: elements_per_node(:)
+ 
+ integer :: loop,ierr
+ 
+  allocate(elements_per_node(0:num_nodes-1),stat=ierr)
+  if (ierr/=0)  call io_error('Error: Problem allocating elements_per_node in comms_slice')  
+
+  elements_per_node(:)=num_elements/num_nodes
+
+  ! Distribute the remainder
+  
+  if(elements_per_node(0)*num_nodes.ne.num_elements) then
+    do loop=0,num_elements-elements_per_node(0)*num_nodes-1
+      elements_per_node(loop)=elements_per_node(loop)+1
+    end do
+   endif
+
+end subroutine comms_slice
 
 end module od_comms

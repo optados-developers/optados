@@ -11,26 +11,28 @@
 !-------------------------------------------------------------------------!
 ! Written by Andrew Morris and Chris Picakrd (so far)          11/10/2010 !
 !=========================================================================!
-module algorithms
- use constants, only : dp, inv_sqrt_two_pi
- implicit none
+module od_algorithms
+  use od_constants, only : dp, inv_sqrt_two_pi
+  implicit none
+ 
+  private
 
- private
-
- public :: gaussian
- public :: heap_sort
- public :: utility_lowercase
+  public :: gaussian
+  public :: heap_sort
+  public :: utility_lowercase
 
  contains
 
+!=========================================================================!
   function gaussian(m,w,x)
-
-    ! ** Return value of Gaussian(mean=m,width=w) at position x
-
+!=========================================================================!
+! ** Return value of Gaussian(mean=m,width=w) at position x
+! I don't know who's this function originally was, CJP? MIJP?
+!=========================================================================!
     implicit none
 
-    real (kind=dp), intent(in) :: m,w,x
-    real (kind=dp) :: gaussian
+    real(kind=dp), intent(in) :: m,w,x
+    real(kind=dp)             :: gaussian
 
     if(0.5_dp*((x-m)/w)**2.gt.30.0_dp) then
 
@@ -42,41 +44,40 @@ module algorithms
     return
   end function gaussian
 
- 
- subroutine heap_sort(num_items,weight)
 
-   !=========================================================================!
-   ! This subroutine sorts the list of weights into descending order.        !
-   ! On exit, if present, the array of indexes contains the original index   !
-   ! of each item.                                                           !
-   !                                                                         !
-   ! This is a heap sort                                                     !
-   !-------------------------------------------------------------------------!
-   ! Arguments:                                                              !
-   !   num_items (input) :: The number of items to sort                      !
-   !   weight (in/out) :: The weights of each item. On exit these are        !
-   !                      sorted into descending order.                      !
-   !-------------------------------------------------------------------------!
-   ! Parent module variables used:                                           !
-   !   None                                                                  !
-   !-------------------------------------------------------------------------!
-   ! Modules used:                                                           !
-   !   None                                                                  !
-   !-------------------------------------------------------------------------!
-   ! Key Internal Variables:                                                 !
-   !   None                                                                  !
-   !-------------------------------------------------------------------------!
-   ! Necessary conditions:                                                   !
-   !   None                                                                  !
-   !-------------------------------------------------------------------------!
-   ! Written by Chris Pickard 22nd May 2009                                  !
-   !=========================================================================!
-
+!=========================================================================! 
+  subroutine heap_sort(num_items,weight)
+ !=========================================================================!
+ ! This subroutine sorts the list of weights into descending order.        !
+ ! On exit, if present, the array of indexes contains the original index   !
+ ! of each item.                                                           !
+ !                                                                         !
+ ! This is a heap sort                                                     !
+ !-------------------------------------------------------------------------!
+ ! Arguments:                                                              !
+ !   num_items (input) :: The number of items to sort                      !
+ !   weight (in/out) :: The weights of each item. On exit these are        !
+ !                      sorted into descending order.                      !
+ !-------------------------------------------------------------------------!
+ ! Parent module variables used:                                           !
+ !   None                                                                  !
+ !-------------------------------------------------------------------------!
+ ! Modules used:                                                           !
+ !   None                                                                  !
+ !-------------------------------------------------------------------------!
+ ! Key Internal Variables:                                                 !
+ !   None                                                                  !
+ !-------------------------------------------------------------------------!
+ ! Necessary conditions:                                                   !
+ !   None                                                                  !
+ !-------------------------------------------------------------------------!
+ ! Written by Chris Pickard 22nd May 2009                                  !
+ !=========================================================================!
    implicit none
 
    ! Arguments
 
- integer, intent(in) :: num_items
+   integer, intent(in) :: num_items
    real(kind=dp), dimension(num_items), intent(inout) :: weight
 
    ! Local variables
@@ -122,22 +123,17 @@ module algorithms
 
  end subroutine heap_sort
 
-
-  !=================================!
-  function utility_lowercase(string)!
-  !=================================!
-  !                                 !
-  ! Takes a string and converts to  !
-  !      lowercase characters       !
-  !                                 !
-  !=================================!
-
+!=========================================================================!
+ function utility_lowercase(string)
+!=========================================================================!
+! Takes a string and converts to lowercase characters       
+!=========================================================================!
+     
     use od_io, only : maxlen
-
     implicit none
-
+  
     character(len=*), intent(in) :: string
-    character(len=maxlen) :: utility_lowercase
+    character(len=maxlen)        :: utility_lowercase
 
     integer :: iA,iZ,idiff,ipos,ilett
 
@@ -159,5 +155,4 @@ module algorithms
 
   end function utility_lowercase
 
-
-endmodule algorithms
+endmodule od_algorithms

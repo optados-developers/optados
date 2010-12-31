@@ -16,15 +16,17 @@
 
 module od_io
 
-  use constants, only : dp
+  use od_constants, only : dp
 
   implicit none
 
   private
 
   integer, public, save           :: stdout
+  integer, public, save           :: stderr
   character(len=50), public, save :: seedname
   integer, parameter, public :: maxlen = 120  ! Max column width of input file
+  integer, parameter, public :: filename_len=80
 
   public :: io_get_seedname
   public :: io_time
@@ -35,7 +37,7 @@ module od_io
 contains
 
 
-       subroutine io_get_seedname (  )
+subroutine io_get_seedname (  )
     !==================================================================!
     !                                                                  !
     ! Get the seedname from the commandline                            !
@@ -82,16 +84,17 @@ contains
          implicit none
          character(len=*), intent(in) :: error_msg
 
-         write(stdout,*)  'Exiting.......' 
-         write(stdout, '(1x,a)') trim(error_msg)
+         write(stderr,*)  'Exiting.......' 
+         write(stderr, '(1x,a)') trim(error_msg)
          
-         close(stdout)
+         close(stderr)
          
          stop "Optados error: examine the output/error file for details" 
          
        end subroutine io_error
-
-
+       
+       
+  
     !==================================================================!
       subroutine io_date(cdate, ctime)
     !==================================================================!
@@ -101,7 +104,7 @@ contains
     !                                                                  !
     !===================================================================  
     implicit none
-    character (len=9), intent(out) :: cdate
+    character (len=11), intent(out) :: cdate
     character (len=9), intent(out) :: ctime
 
     character(len=3), dimension(12) :: months
@@ -111,7 +114,7 @@ contains
     !
     call date_and_time(values=date_time)
     !
-    write (cdate,'(i2,a3,i4)') date_time(3), months(date_time(2)), date_time(1)
+    write (cdate,'(i2,1x,a3,1x,i4)') date_time(3), months(date_time(2)), date_time(1)
     write (ctime,'(i2.2,":",i2.2,":",i2.2)') date_time(5), date_time(6), date_time(7)
 
   end subroutine io_date
@@ -125,7 +128,7 @@ contains
     ! uses standard f90 call                                           !
     !                                                                  !
     !===================================================================  
-    use constants, only : dp
+    use od_constants, only : dp
     implicit none
 
     real(kind=dp) :: io_time
@@ -169,7 +172,6 @@ contains
   end do
 
   io_file_unit = unit
-
 
   return
 end function io_file_unit
