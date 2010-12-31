@@ -655,7 +655,8 @@ subroutine dos_merge(dos, weighted_dos)
  use od_comms,      only : on_root, comms_reduce
  use od_electronic, only : nspins
  use od_parameters, only : nbins
- 
+ use od_io,         only : io_error 
+
  implicit none
  integer :: idos,ierr
  real(kind=dp),intent(inout), allocatable, optional :: weighted_dos(:,:,:) ! bins.spins, orbitals
