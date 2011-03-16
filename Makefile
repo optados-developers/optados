@@ -1,33 +1,33 @@
-DEBUG ?= 0
-G95 ?= 0
+DEBUG ?= 1
+G95 ?= 1
 IFORT ?= 0
 
 
 ifeq ($(DEBUG), 1)
- FFLAGS_OPT=-O0 -fbounds-check -pg -g -ff2c #-fno-underscoring
+ FFLAGS_OPT=-O0 -C -pg -g  #-fno-underscoring
  NAME_OPT=.debug
 else
- FFLAGS_OPT=-O3 -funroll-loops
+ FFLAGS_OPT=-O3 -DMPI -convert big_endian 
  NAME_OPT=
 endif
 
-F90=gfortran
+F90=mpif90
 
 #FFLAGS_OPT=-O3 -funroll-loops 
 #FFLAGS_OPT=-O0 -fbounds-check -pg -g
 #FFLAGS_OPT=-O0 -fbounds-check -pg -g -ff2c #-fno-underscoring
 #FFLAGS_OPT=-O0  -fprofile-arcs -ftest-coverage
 
-FFLAGS= $(FFLAGS_OPT) -fconvert=big-endian -frecord-marker=4
+FFLAGS= $(FFLAGS_OPT) 
 
 ifeq ($(G95), 1)
  F90=g95
- FFLAGS= -ftrace=full -g -pg -O0 -fendian=big  
+ FFLAGS= 
  NAME_OPT=.g95
 endif
 
 # Where would you like the executables?
-BIN_DIR=${HOME}/bin
+BIN_DIR=./
 #${HOME}/bin
 EXTENSION=$(NAME_OPT).x86_64
 
@@ -38,12 +38,12 @@ OBJS=algorithms.o cell.o comms.o constants.o dos.o electronic.o io.o jdos.o para
 all : optados
 
 optados : optados.f90 $(OBJS)
-	$(F90) $(FFLAGS) optados.f90 $(OBJS) -o $(BIN_DIR)/optdos$(EXTENSION) 
+	$(F90) $(FFLAGS)  -Wl,--start-group -lmkl_intel_lp64 -lmkl_sequential -lmkl_core  -Wl,--end-group optados.f90 $(OBJS) -o $(BIN_DIR)/optdos$(EXTENSION) 
 
 algorithms.o : algorithms.f90 io.o constants.o
 	$(F90) -c $(FFLAGS) algorithms.f90
 
-cell.o : cell.f90 constants.o io.o
+cell.o : cell.f90 comms.o constants.o io.o algorithms.o
 	$(F90) -c $(FFLAGS) cell.f90
 
 constants.o : constants.f90

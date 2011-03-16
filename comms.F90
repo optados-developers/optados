@@ -582,6 +582,11 @@ contains
        call MPI_reduce(array,array_red,size,MPI_double_precision,MPI_sum,0,mpi_comm_world,error)
     case ('PRD')
        call MPI_reduce(array,array_red,size,MPI_double_precision,MPI_prod,0,mpi_comm_world,error)
+    case ('MIN')
+       call MPI_reduce(array,array_red,size,MPI_double_precision,MPI_MIN,0,mpi_comm_world,error)
+    case ('MAX')
+       call MPI_reduce(array,array_red,size,MPI_double_precision,MPI_max,0,mpi_comm_world,error)
+
     case default
        print*,'Unknown operation in comms_reduce_real'
        call comms_error
@@ -634,6 +639,7 @@ contains
     end select
 
     call zcopy(size,array_red,1,array,1)
+!    array(1:size)=array_red(1:size)
 
     if(error.ne.MPI_success) then
        print*,'Error in comms_reduce_cmplx'

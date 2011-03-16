@@ -19,7 +19,8 @@ module od_parameters
   use od_constants, only : dp
   use od_io,        only : stdout,maxlen
   use od_cell, only : real_lattice, recip_lattice, cell_volume, kpoint_grid_dim, nkpoints, &
-        & kpoint_r, kpoint_r_cart
+        & kpoint_r, kpoint_r_cart, atoms_label, num_atoms, num_species, atoms_symbol, &
+        & atoms_species_num, atoms_pos_frac, atoms_pos_cart
 
   implicit none
 
@@ -63,17 +64,8 @@ module od_parameters
   real(kind=dp),     public, save :: scissor_op
 
 
-  ! Atom sites  -- I think these should end up in an ION modules
-  real(kind=dp), allocatable,     public, save :: atoms_pos_frac(:,:,:)
-  real(kind=dp), allocatable,     public, save :: atoms_pos_cart(:,:,:)
-  integer, allocatable,           public, save :: atoms_species_num(:)  
-  character(len=maxlen), allocatable,  public, save :: atoms_label(:)
-  character(len=2), allocatable,  public, save :: atoms_symbol(:)
-  integer,                        public, save :: num_atoms
-  integer,                        public, save :: num_species
-
   !parameters dervied from input -- I think these should end up in the
-  ! electroinic module
+  ! electronic module
   integer,           public, save :: bands_num_spec_points  
   character(len=1), allocatable,    public, save ::bands_label(:)
   real(kind=dp), allocatable,    public, save ::bands_spec_points(:,:)
@@ -82,14 +74,14 @@ module od_parameters
 
   private
 
- integer :: num_lines
+  integer :: num_lines
   character(len=maxlen), allocatable :: in_data(:)
-
 
   public :: param_read
   public :: param_write
   public :: param_write_header
   public :: param_dealloc
+  public :: param_dist
 
 
 contains
@@ -101,9 +93,11 @@ contains
   ! Read parameters and calculate derived values                     !
   !                                                                  !
   !===================================================================  
+
     use od_constants, only : bohr
-!    use w90_utility,   only : utility_recip_lattice,utility_compute_metric
     use od_io,        only : io_error,io_file_unit,seedname
+    use od_cell,      only : cell_get_atoms
+    use od_electronic,only : elec_pdos_read_orbitals
     implicit none
 
     !local variables
@@ -147,6 +141,18 @@ contains
            endif
         end do
         deallocate(task_string)
+    end if
+
+    if(pdos.or.core) then
+       ! try to read in the atoms from the cell file.
+       ! We don't need them otherwise, so let's not bother
+       call cell_get_atoms
+    end if
+    if(pdos) then
+       !parse the start of the pdos file to get info on orbitals
+       call elec_pdos_read_orbitals
+       !now figure out what to plot
+       call param_get_pdos
     end if
 
     i_temp=0
@@ -529,6 +535,15 @@ contains
     close(in_unit)
 
   end subroutine param_in_file
+
+  subroutine param_get_pdos
+
+!    call param_get_block_length('projection',found,rows)
+
+
+
+
+  end subroutine param_get_pdos
 
 
   !===========================================================================!
@@ -1151,5 +1166,38 @@ contains
   end subroutine param_get_keyword_kpath
 
 
+  subroutine param_dist
+    
+    use od_comms, only : comms_bcast
 
-end module od_parameters
+    implicit none
+
+    call comms_bcast(output_format,1)
+    call comms_bcast(devel_flag   ,1)
+    call comms_bcast(iprint        ,1)
+    call comms_bcast(energy_unit   ,1)
+    call comms_bcast(length_unit ,1)
+    call comms_bcast(dos    ,1)
+    call comms_bcast(pdos   ,1)
+    call comms_bcast(jdos   ,1)
+    call comms_bcast(optics ,1)
+    call comms_bcast(core   ,1)
+    call comms_bcast(fixed,1)
+    call comms_bcast(adaptive,1)
+    call comms_bcast(linear,1)
+    call comms_bcast(quad,1)
+    call comms_bcast(nbins,1)
+    call comms_bcast(compute_band_energy,1)
+    call comms_bcast(adaptive_smearing,1)
+    call comms_bcast(fixed_smearing,1)
+    call comms_bcast(dos_per_volume,1)
+    call comms_bcast(fermi_energy,1)
+    call comms_bcast(compute_efermi,1)
+    call comms_bcast(finite_bin_correction,1)
+    call comms_bcast(numerical_intdos ,1)
+    call comms_bcast(jdos_cutoff_energy ,1)
+    call comms_bcast(scissor_op,1)
+
+  end subroutine param_dist
+
+  end module od_parameters
