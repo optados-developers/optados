@@ -557,7 +557,7 @@ contains
 
 
   subroutine comms_reduce_real(array,size,op)
-
+    use od_algorithms, only : algorithms_dcopy
     implicit none
 
     real(kind=dp), intent(inout) :: array
@@ -593,7 +593,7 @@ contains
 
     end select
 
-    call dcopy(size,array_red,1,array,1)
+    call algorithms_dcopy(size,array_red,1,array,1)
 
     if(error.ne.MPI_success) then
        print*,'Error in comms_reduce_real'
@@ -607,7 +607,7 @@ contains
 
 
   subroutine comms_reduce_cmplx(array,size,op)
-
+    use od_algorithms, only : algorithms_zcopy
     implicit none
 
     complex(kind=dp), intent(inout) :: array
@@ -638,7 +638,7 @@ contains
 
     end select
 
-    call zcopy(size,array_red,1,array,1)
+    call algorithms_zcopy(size,array_red,1,array,1)
 !    array(1:size)=array_red(1:size)
 
     if(error.ne.MPI_success) then

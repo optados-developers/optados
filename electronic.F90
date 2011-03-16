@@ -68,6 +68,9 @@ module od_electronic
   public :: elec_read_elnes_mat
   public :: elec_pdos_read
   public :: elec_pdos_read_orbitals
+  public :: elec_dealloc_elnes
+  public :: elec_dealloc_pdos
+  public :: elec_dealloc_band_gradient
 
   !-------------------------------------------------------------------------! 
 
@@ -671,6 +674,56 @@ contains
 
     !-------------------------------------------------------------------------!
   end subroutine elec_pdos_read_orbitals
+
+
+  subroutine elec_dealloc_pdos
+    use od_io, only : io_error
+    implicit none
+    integer :: ierr
+
+    if(allocated(pdos_weights)) then
+       deallocate(pdos_weights,stat=ierr)
+       if (ierr/=0) call io_error('Error in deallocating pdos_weights in elec_dealloc_pdos')
+    end if
+
+    if(allocated(pdos_orbital)) then
+       deallocate(pdos_orbital,stat=ierr)
+       if (ierr/=0) call io_error('Error in deallocating pdos_orbital in elec_dealloc_pdos')
+    end if
+
+
+
+  end subroutine elec_dealloc_pdos
+
+  subroutine elec_dealloc_elnes
+    use od_io, only : io_error
+    implicit none
+    integer :: ierr
+
+    if(allocated(elnes_mat)) then
+       deallocate(elnes_mat,stat=ierr)
+       if (ierr/=0) call io_error('Error in deallocating elnes_mat in elec_dealloc_elnes')
+    end if
+
+    if(allocated(elnes_orbital)) then
+       deallocate(elnes_orbital,stat=ierr)
+       if (ierr/=0) call io_error('Error in deallocating elnes_orbital in elec_dealloc_elnes')
+    end if
+
+
+  end subroutine elec_dealloc_elnes
+
+  subroutine elec_dealloc_band_gradient
+    use od_io, only : io_error
+    implicit none
+    integer :: ierr
+
+    if(allocated(band_gradient)) then
+       deallocate(band_gradient,stat=ierr)
+       if (ierr/=0) call io_error('Error in deallocating band_gradient in elec_dealloc_band_gradient')
+    end if
+
+  end subroutine elec_dealloc_band_gradient
 
 
 
