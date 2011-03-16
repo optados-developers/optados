@@ -33,7 +33,7 @@ EXTENSION=$(NAME_OPT).x86_64
 
 
 # Put object names here
-OBJS=algorithms.o cell.o comms.o constants.o dos.o electronic.o io.o jdos.o parameters.o pdos.o
+OBJS=algorithms.o cell.o comms.o constants.o core.o dos.o dos_utils.o electronic.o io.o jdos.o jdos_utils.o optics.o parameters.o pdos.o
 
 all : optados
 
@@ -49,20 +49,32 @@ cell.o : cell.f90 comms.o constants.o io.o algorithms.o
 constants.o : constants.f90
 	$(F90) -c $(FFLAGS) constants.f90
 
+core.o : core.f90 constants.o io.o
+	$(F90) -c $(FFLAGS) core.f90
+
 comms.o : comms.F90 constants.o io.o
 	$(F90) -c $(FFLAGS) comms.F90
 
-dos.o : dos.f90 algorithms.o cell.o constants.o comms.o electronic.o io.o parameters.o
+dos.o : dos.f90 dos_utils.o
 	$(F90) -c $(FFLAGS) dos.f90
+
+dos_utils.o : dos_utils.f90 algorithms.o cell.o constants.o comms.o electronic.o io.o parameters.o
+	$(F90) -c $(FFLAGS) dos_utils.f90
 
 electronic.o : electronic.F90 comms.o constants.o 
 	$(F90) -c $(FFLAGS) electronic.F90
 
 io.o : io.F90 constants.o
 	$(F90) -c $(FFLAGS) io.F90
-	
-jdos.o : jdos.f90 algorithms.o cell.o constants.o comms.o electronic.o io.o parameters.o
+
+jdos.o : jdos.f90 jdos_utils.o
 	$(F90) -c $(FFLAGS) jdos.f90
+	
+jdos_utils.o : jdos_utils.f90 algorithms.o cell.o constants.o comms.o electronic.o io.o parameters.o
+	$(F90) -c $(FFLAGS) jdos_utils.f90
+
+optics.o : optics.f90 constants.o io.o
+	$(F90) -c $(FFLAGS) optics.f90
 
 parameters.o : parameters.f90  cell.o constants.o io.o
 	$(F90) -c $(FFLAGS) parameters.f90
