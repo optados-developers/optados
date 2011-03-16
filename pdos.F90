@@ -59,7 +59,7 @@ contains
     ! Write out the pdos that was requested. Make a pretty header so that the user
     ! knows what each column means
     !===============================================================================
-    use od_dos,       only : E
+    use od_dos_utils,       only : E
     use od_parameters,only : nbins
     use od_electronic, only         : pdos_mwab
 

@@ -10,7 +10,7 @@
 !-------------------------------------------------------------------------------
 ! Written by: A J Morris Nov - Dec 2010 Modified from LinDOS (CJP+AJM)
 !=============================================================================== 
-module od_dos
+module od_dos_utils
   use od_constants, only : dp
   use od_electronic, only: matrix_weights_array_boundaries
   implicit none
@@ -42,8 +42,9 @@ module od_dos
 
   !-------------------------------------------------------------------------------
   ! P U B L I C   F U N C T I O N S 
-  public :: dos_calculate
-  public :: dos_merge                ! Used by od_jdos
+  public :: dos_utils_calculate
+  public :: dos_utils_deallocate
+  public :: dos_utils_merge          ! Used by od_jdos
   public :: doslin_sub_cell_corners  ! Used by od_jdos
   public :: doslin                   ! Used by od_jdos
   !-------------------------------------------------------------------------------
@@ -62,7 +63,7 @@ module od_dos
 contains
 
   !=============================================================================== 
-  subroutine dos_calculate(matrix_weights, weighted_dos)
+  subroutine dos_utils_calculate(matrix_weights, weighted_dos)
     !===============================================================================  
     ! Main routine in dos module, drives the calculation of density of states for
     ! both task : dos and also if it is required elsewhere.
@@ -108,8 +109,18 @@ contains
 
     if(.not.(linear.or.adaptive.or.fixed.or.quad)) call io_error (" DOS: No Broadening Set")
 
+  
+
     calc_weighted_dos=.false.
     if(present(matrix_weights)) calc_weighted_dos=.true.
+    
+    
+    if(calc_weighted_dos.eqv..false.) then ! We are called just to provide dos.
+      if(allocated(E)) then
+         if(on_root) write(stdout,*) " Already calculated dos, so returning..."
+         return  ! The dos has already been calculated previously so just return.       
+      endif
+    endif
 
     if(calc_weighted_dos)then
        mw%norbitals=size(matrix_weights,1)
@@ -130,23 +141,11 @@ contains
        write(stdout,*)
     endif
 
-
-    !-------------------------------------------------------------------------------
-    ! R E A D   B A N D S   F I L E
-    ! The .band file contains a lot of other important information then just the bands.
-    ! We cannot write this out prior to the .bands file being read.
-
-    call elec_read_band_energy
-
     if(calc_weighted_dos) then 
        if(mw%nspins.ne.nspins)     call io_error ("ERROR : DOS :  mw%nspins not equal to nspins.")
        if(mw%nkpoints.ne.nkpoints) call io_error ("ERROR : DOS : mw%nkpoints not equal to nkpoints.")
     endif
 
-    if(on_root) call cell_calc_lattice
-    if(on_root) call cell_report_parameters
-    if(on_root) call elec_report_parameters
-    call cell_dist
     !-------------------------------------------------------------------------------
     ! R E A D   B A N D   G R A D I E N T S 
     ! If we're using one of the more accurate roadening schemes we also need to read in the 
@@ -164,32 +163,32 @@ contains
     if(fixed)then
        if(calc_weighted_dos)then 
           call calculate_dos(dos_fixed,intdos_fixed, matrix_weights=matrix_weights, weighted_dos=weighted_dos) 
-          call dos_merge(dos_fixed,weighted_dos=weighted_dos)    
+          call dos_utils_merge(dos_fixed,weighted_dos=weighted_dos)    
        else
           call calculate_dos(dos_fixed,intdos_fixed)
-          call dos_merge(dos_fixed) 
+          call dos_utils_merge(dos_fixed) 
        endif
-       call dos_merge(intdos_fixed)
+       call dos_utils_merge(intdos_fixed)
     endif
     if(adaptive)then
        if(calc_weighted_dos)then 
           call calculate_dos(dos_adaptive,intdos_adaptive, matrix_weights=matrix_weights, weighted_dos=weighted_dos)
-          call dos_merge(dos_adaptive,weighted_dos=weighted_dos) 
+          call dos_utils_merge(dos_adaptive,weighted_dos=weighted_dos) 
        else
           call calculate_dos(dos_adaptive,intdos_adaptive)
-          call dos_merge(dos_adaptive)
+          call dos_utils_merge(dos_adaptive)
        endif
-       call dos_merge(intdos_adaptive)
+       call dos_utils_merge(intdos_adaptive)
     endif
     if(linear)then
        if(calc_weighted_dos)then 
           call calculate_dos(dos_linear, intdos_linear, matrix_weights=matrix_weights, weighted_dos=weighted_dos)
-          call dos_merge(dos_linear,weighted_dos=weighted_dos)
+          call dos_utils_merge(dos_linear,weighted_dos=weighted_dos)
        else      
           call calculate_dos(dos_linear,intdos_linear)
-          call dos_merge(dos_linear)
+          call dos_utils_merge(dos_linear)
        endif
-       call dos_merge(intdos_linear)
+       call dos_utils_merge(intdos_linear)
     endif
 
     if(quad) then
@@ -316,24 +315,7 @@ contains
        endif
 
 
-    !-------------------------------------------------------------------------------
-    ! W R I T E   O U T   D O S  
-    if(dos) then ! We have to write stuff out
-       time0=io_time()
-       ! Otherwise we have written to wdos and dos, so they can be called 
-       ! by whatever.
-       if(on_root) then
-          if(fixed)    call write_dos(E, dos_fixed, intdos_fixed, "fixed")
-          if(adaptive) call write_dos(E, dos_adaptive, intdos_adaptive, "adaptive")
-          if(linear)   call write_dos(E, dos_linear,  intdos_linear, "linear")
-          !if(quad)    call write_dos(E, dos_quad, intdos_quad, "quad")
-       endif
-       time1=io_time()
-       if(on_root) write(stdout,'(1x,a40,f11.3,a)') 'Time to write dos to disk ',time1-time0,' (sec)'
-    else
-       if(on_root) write(stdout,'(1x,a40)') 'Skipping writing out DOS to file'
-    endif
-    !-------------------------------------------------------------------------------
+
 
     if(on_root) then
        write(stdout,'(1x,a78)')    '+============================================================================+'
@@ -347,7 +329,7 @@ contains
     end if
 
 
-  end subroutine dos_calculate
+  end subroutine dos_utils_calculate
 
 
   !===============================================================================
@@ -519,87 +501,7 @@ contains
   end subroutine compute_band_energies
 
 
-  !=============================================================================== 
-  subroutine write_dos(E,dos,intdos,dos_name)
-    !=============================================================================== 
-    ! This routine receives an energy scale, a density of states and a file name
-    ! and writes out the DOS to disk
-    !------------------------------------------------------------------------------- 
-    ! Arguments: E       (in) : The energy scale
-    !            dos     (in) : The density of states
-    !            intdos  (in) : The integrated DOS
-    !            dos_name(in) : Name of the output file
-    !-------------------------------------------------------------------------------
-    ! Parent Module Varables Used: None
-    !-------------------------------------------------------------------------------
-    ! Modules Used: See below
-    !-------------------------------------------------------------------------------
-    ! Key Internal Variables: None
-    !-------------------------------------------------------------------------------
-    ! Necessary Conditions: None
-    !-------------------------------------------------------------------------------
-    ! Known Worries: None
-    !-------------------------------------------------------------------------------
-    ! Written by : A J Morris December 2010 
-    !=============================================================================== 
-    use od_electronic, only : nspins
-    use od_parameters, only : nbins, dos_per_volume
-    use od_io,         only : seedname, io_file_unit,io_date,io_error
-
-    implicit none
-    real(dp), intent(in) :: E(nbins)
-    real(dp), intent(in) :: dos(nbins,nspins)
-    real(dp), intent(in) :: intdos(nbins,nspins)
-    character(len=*), intent(in) :: dos_name
-    integer :: i, dos_file, ierr
-    character(len=11) :: cdate
-    character(len=9) :: ctime
-    character(len=20) :: dos_units, intdos_units
-
-
-    dos_file=io_file_unit()
-    open(unit=dos_file,file=trim(seedname)//'.'//trim(dos_name)//'.dat',iostat=ierr)
-    if(ierr.ne.0) call io_error(" ERROR: Cannot open output file in dos: write_dos")
-
-    dos_units="(electrons per eV)" ; intdos_units="(electrons)"
-    if(dos_per_volume) then
-       dos_units="(electrons per eV/A^3)" 
-       intdos_units="(electrons per A^3)"
-    endif
-
-    write(dos_file, *) "##############################################################################"
-    write(dos_file,*) "#"
-    write(dos_file, *) "#                  O p t a D O S   o u t p u t   f i l e "  
-    write(dos_file, '(1x,a1)') "#"
-    write(dos_file,*) "#    Denisty of States using ", trim(dos_name), " broadening"
-    call io_date(cdate,ctime)
-    write(dos_file,*)  '#  Generated on ',cdate,' at ',ctime
-    write(dos_file,*) "# Column        Data"
-    write(dos_file,*) "#    1        Energy (eV)"
-    if(nspins>1) then
-       write(dos_file,*) "#    1        Up-spin DOS ", trim(dos_units)
-       write(dos_file,*) "#    2        Down-spin DOS ", trim(dos_units)
-       write(dos_file,*) "#    3        Up-spin Integrated DOS ", trim(intdos_units)
-       write(dos_file,*) "#    4        Down-spin Integrated DOS ", trim(intdos_units)
-    else
-       write(dos_file,*) "#    2        DOS ", trim(dos_units)
-       write(dos_file,*) "#    3        Integrated DOS ", trim(intdos_units)
-    endif
-    write(dos_file, '(1x,a1)') "#"
-    write(dos_file, '(1x,a78)') "##############################################################################"
-
-    if(nspins>1) then
-       do i=1,nbins
-          write(dos_file, *) E(i), dos(i,1), -dos(i,2),  intdos(i,1), -intdos(i,2)
-       enddo
-    else
-       do i=1,nbins
-          write(dos_file, *) E(i), dos(i,1), intdos(i,1)
-       enddo
-    endif
-    close(dos_file)
-  end subroutine write_dos
-
+ 
 
   !=============================================================================== 
   subroutine setup_energy_scale
@@ -650,7 +552,7 @@ contains
 
 
   !=============================================================================== 
-  subroutine dos_merge(dos, weighted_dos)
+  subroutine dos_utils_merge(dos, weighted_dos)
     !===============================================================================
     ! The DOS was calculated accross nodes. Now give them all back to root
     ! and free up the memeory on the slaves
@@ -692,7 +594,7 @@ contains
           if (ierr/=0) call io_error (" ERROR : dos : merge_dos : cannot deallocate weighted_dos")
        end if
     endif
-  end subroutine dos_merge
+  end subroutine dos_utils_merge
 
 
   !===============================================================================
@@ -744,6 +646,16 @@ contains
     endif
   end subroutine allocate_dos
 
+
+  subroutine dos_utils_deallocate
+    if(allocated(dos_adaptive)) deallocate(dos_adaptive)
+    if(allocated(dos_fixed)) deallocate(dos_fixed)
+    if(allocated(dos_linear)) deallocate(dos_linear)
+    if(allocated(intdos_adaptive)) deallocate(intdos_adaptive)
+    if(allocated(intdos_fixed)) deallocate(intdos_fixed)
+    if(allocated(intdos_linear)) deallocate(intdos_linear)
+    if(allocated(E)) deallocate(E)
+   end subroutine dos_utils_deallocate
 
   !===============================================================================
   subroutine calculate_dos(dos, intdos, matrix_weights, weighted_dos)
@@ -1068,4 +980,4 @@ contains
     return
   end function doslin
 
-endmodule od_dos
+endmodule od_dos_utils

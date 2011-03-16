@@ -20,7 +20,7 @@ module od_jdos
  use od_cell,       only : real_lattice, recip_lattice, cell_volume, cell_find_MP_grid, & 
          &kpoint_r, kpoint_weight, nkpoints, kpoint_grid_dim, cell_calc_lattice, &
          &cell_report_parameters
- use od_dos,        only : dos_merge, doslin_sub_cell_corners, doslin
+ use od_dos_utils,        only : dos_utils_merge, doslin_sub_cell_corners, doslin
  use od_parameters
 
  implicit none
@@ -106,19 +106,19 @@ if(on_root.and.(iprint>1)) write(stdout,*)
 if(fixed)then
      call calculate_jdos(jdos_fixed)
  
-    call dos_merge(jdos_fixed) 
+    call dos_utils_merge(jdos_fixed) 
   
  endif
 if(adaptive)then
     call calculate_jdos(jdos_adaptive)
 
-    call dos_merge(jdos_adaptive)
+    call dos_utils_merge(jdos_adaptive)
 
   endif
 if(linear)then
     call calculate_jdos(jdos_linear)
   
-    call dos_merge(jdos_linear)
+    call dos_utils_merge(jdos_linear)
 endif
 
 

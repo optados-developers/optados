@@ -17,6 +17,7 @@ program optados
    & stdout, stderr, seedname                                            ! Variables
   use od_parameters
   use od_cell
+  use od_electronic,only : elec_read_band_energy,elec_report_parameters
   use od_dos,  only : dos_calculate
   use od_jdos,  only: jdos_calculate
   use od_pdos, only : dos_partial, pdos_write
@@ -66,9 +67,35 @@ program optados
      write(stdout,'(1x,a40,f11.3,a)') 'Time to read parameters ',time1-time0,' (sec)'
 !-------------------------------------------------------------------------!
 
+     call elec_read_band_energy
+     call cell_calc_lattice
+     call cell_report_parameters
+     call elec_report_parameters
+    
   end if
   ! now send the data from the parameter file to each node
+ 
   call param_dist
+  call cell_dist
+ 
+!-------------------------------------------------------------------------!
+! C A L L   P D O S   R O U T I N E S
+  if(pdos) then
+    time0=io_time()
+!   call cell_pdos_read 
+!   call pdos_merge
+    time1=io_time()
+    write(stdout,'(1x,a40,f11.3,a)') 'Time to set up Partial DOS ',time1-time0,' (sec)'
+
+    time0=io_time()
+!    call dos_calculate(matrix_weights=pdos_weights, weighted_dos=dos_partial)
+    call pdos_write
+
+    time1=io_time()
+    if(on_root) write(stdout,'(1x,a40,f11.3,a)') 'Time to calculate Partical DOS ',time1-time0,' (sec)'
+  endif
+!-------------------------------------------------------------------------!
+
 
 !-------------------------------------------------------------------------!
 ! C A L L   C O R E   R O U T I N E S
@@ -80,24 +107,14 @@ program optados
   endif
 !-------------------------------------------------------------------------!
 
+
+!-------------------------------------------------------------------------!
 ! C A L L   D O S  R O U T I N E S
   if(dos) then
     time0=io_time()
     call dos_calculate
     time1=io_time()
     if(on_root) write(stdout,'(1x,a40,f11.3,a)') 'Time to calculate DOS (Total) ',time1-time0,' (sec)'
-  endif
-!-------------------------------------------------------------------------!
-
-
-
-!-------------------------------------------------------------------------!
-! C A L L   J D O S   R O U T I N E S
-  if(jdos) then
-    time0=io_time()
-    call jdos_calculate
-    time1=io_time()
-      if(on_root) write(stdout,'(1x,a40,f11.3,a)') 'Time to calculate Joint DOS (Total) ',time1-time0,' (sec)'
   endif
 !-------------------------------------------------------------------------!
 
@@ -114,20 +131,12 @@ program optados
 
 
 !-------------------------------------------------------------------------!
-! C A L L   P D O S   R O U T I N E S
-  if(pdos) then
+! C A L L   J D O S   R O U T I N E S
+  if(jdos) then
     time0=io_time()
-!    call cell_pdos_read 
-!   call pdos_merge
+    call jdos_calculate
     time1=io_time()
-    write(stdout,'(1x,a40,f11.3,a)') 'Time to set up Partial DOS ',time1-time0,' (sec)'
-
-    time0=io_time()
-!    call dos_calculate(matrix_weights=pdos_weights, weighted_dos=dos_partial)
-    call pdos_write
-
-    time1=io_time()
-    if(on_root) write(stdout,'(1x,a40,f11.3,a)') 'Time to calculate Partical DOS ',time1-time0,' (sec)'
+      if(on_root) write(stdout,'(1x,a40,f11.3,a)') 'Time to calculate Joint DOS (Total) ',time1-time0,' (sec)'
   endif
 !-------------------------------------------------------------------------!
 

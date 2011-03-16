@@ -188,8 +188,10 @@ contains
           call comms_send(band_gradient(1,1,1,1,1),nbands*nbands*3*nspins*num_kpoints_on_node(inodes),inodes)
        end do
 
+
+
        do ik=1,num_kpoints_on_node(0)
-          do is=1,nspins
+           do is=1,nspins
              do i=1,3
                 do jb=1,nbands
                    do ib=1,nbands
