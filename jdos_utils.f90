@@ -7,7 +7,7 @@
 ! optional argumnets without checking whether they are there or not. g95 will 
 ! allow this behaviour. gfotran will not.
 !=============================================================================== 
-module od_jdos
+module od_jdos_utils
  use od_algorithms, only : heap_sort,gaussian
  use od_constants,  only : bohr, dp, H2eV
  use od_comms,      only : on_root, num_nodes, my_node_id, root_id,comms_slice,comms_bcast,& 
@@ -38,7 +38,8 @@ module od_jdos
 
 !-------------------------------------------------------------------------------
 ! P U B L I C   F U N C T I O N S 
- public :: jdos_calculate
+ public :: jdos_utils_calculate
+ public :: write_jdos
 !-------------------------------------------------------------------------------
 
  real(kind=dp), save                   :: delta_bins ! Width of bins
@@ -48,7 +49,7 @@ module od_jdos
 contains
 
 !=============================================================================== 
-subroutine jdos_calculate
+subroutine jdos_utils_calculate
 !=============================================================================== 
 ! Main routine in dos module, drives the calculation of Density of states for
 ! both task : dos and also if it is required elsewhere.
@@ -65,17 +66,10 @@ if(on_root) then
   write(stdout,*)
 endif
 
-!-------------------------------------------------------------------------------
-! R E A D   B A N D S   F I L E
-! The .band file contains a lot of other important information then just the bands.
-! We cannot write this out prior to the .bands file being read.
-
-call elec_read_band_energy
-
-if(on_root) call cell_calc_lattice
-if(on_root) call cell_report_parameters
-if(on_root) call elec_report_parameters
-!-------------------------------------------------------------------------------
+ if(allocated(E)) then
+    if(on_root) write(stdout,*) " Already calculated jdos, so returning..."
+    return  ! The jdos has already been calculated previously so just return.       
+ endif
 
 
 !-------------------------------------------------------------------------------
@@ -233,36 +227,16 @@ if(dos_per_volume) then
 ! endif   
 endif
 
-!-------------------------------------------------------------------------------
-! W R I T E   O U T   D O S  
-if(jdos) then ! We have to write stuff out
-time0=io_time()
-! Otherwise we have written to wdos and dos, so they can be called 
-! by whatever.
-  if(on_root) then
-    if(fixed)    call write_dos(E, jdos_fixed,  "fixed")
-    if(adaptive) call write_dos(E, jdos_adaptive, "adaptive")
-    if(linear)   call write_dos(E, jdos_linear,  "linear")
-    !if(quad)    call write_dos(E, dos_quad, intdos_quad, "quad")
-   endif
-time1=io_time()
-write(stdout,'(1x,a40,f11.3,a)') 'Time to write dos to disk ',time1-time0,' (sec)'
-else
- write(stdout,'(1x,a40)') 'Skipping writing out DOS to file'
-endif
-!-------------------------------------------------------------------------------
-
-
 write(stdout,'(1x,a78)')    '+============================================================================+'
 write(stdout,'(1x,a78)')    '+============== Joint Density Of States Calculation End =====================+'
 write(stdout,'(1x,a78)')    '+============================================================================+'
 write(stdout,*)
 
-end subroutine jdos_calculate
+end subroutine jdos_utils_calculate
 
 
 !=============================================================================== 
-subroutine write_dos(E,dos,dos_name)
+subroutine write_jdos(E,dos,dos_name)
 !=============================================================================== 
 ! This routine receives an energy scale, a density of states and a file name
 ! and writes out the DOS to disk
@@ -319,7 +293,7 @@ subroutine write_dos(E,dos,dos_name)
     enddo
   endif 
   close(dos_file)
-end subroutine write_dos
+end subroutine write_jdos
 
 
 !=============================================================================== 
@@ -360,6 +334,18 @@ subroutine allocate_jdos(dos)
   dos=0.0_dp
 
  end subroutine allocate_jdos
+ 
+ 
+ !===============================================================================
+ subroutine jdos_deallocate
+ !===============================================================================
+ !===============================================================================
+  implicit none
+  if(allocated(jdos_adaptive)) deallocate(jdos_adaptive)
+  if(allocated(jdos_fixed))    deallocate(jdos_fixed)
+  if(allocated(jdos_linear))   deallocate(jdos_linear) 
+  if(allocated(E))             deallocate(E)
+ end subroutine jdos_deallocate
 
 
 !===============================================================================
@@ -394,7 +380,6 @@ subroutine calculate_jdos(jdos, matrix_weights, weighted_dos)
     do is=1,nspins
       do ib=1,vb_max(is)
         do jb=vb_max(is)+1,nbands
-           write(stdout,*) ib,jb
            if(linear.or.adaptive) grad(:) = real(band_gradient(jb,jb,:,ik,is)-band_gradient(ib,ib,:,ik,is),dp)*H2ev
            if(linear) call doslin_sub_cell_corners(grad,step,band_energy(jb,is,ik)-band_energy(ib,is,ik),EV)
            if(adaptive) width = sqrt(dot_product(grad,grad))*adaptive_smearing
@@ -422,4 +407,4 @@ subroutine calculate_jdos(jdos, matrix_weights, weighted_dos)
   end do
 end subroutine calculate_jdos
 
-end module od_jdos
+end module od_jdos_utils
