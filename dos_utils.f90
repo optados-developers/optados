@@ -44,6 +44,7 @@ module od_dos_utils
   ! P U B L I C   F U N C T I O N S 
   public :: dos_utils_calculate
   public :: dos_utils_deallocate
+  public :: dos_utils_calculate_at_e
   public :: dos_utils_merge          ! Used by od_jdos
   public :: doslin_sub_cell_corners  ! Used by od_jdos
   public :: doslin                   ! Used by od_jdos
@@ -91,7 +92,7 @@ contains
     !=============================================================================== 
     use od_io,        only : stdout,io_time,io_error
     use od_comms,     only : on_root,my_node_id
-    use od_electronic,only : band_energy, efermi, efermi_castep,nspins, &
+    use od_electronic,only : band_gradient,band_energy, efermi, efermi_castep,nspins, &
          & elec_read_band_gradient,elec_read_band_energy,elec_report_parameters
     use od_parameters,only : linear, adaptive, fixed, quad, compute_band_energy, &
          & compute_efermi,dos,dos_per_volume,fermi_energy,iprint
@@ -108,8 +109,7 @@ contains
     !-------------------------------------------------------------------------------
 
     if(.not.(linear.or.adaptive.or.fixed.or.quad)) call io_error (" DOS: No Broadening Set")
-
-  
+    
 
     calc_weighted_dos=.false.
     if(present(matrix_weights)) calc_weighted_dos=.true.
@@ -150,7 +150,9 @@ contains
     ! R E A D   B A N D   G R A D I E N T S 
     ! If we're using one of the more accurate roadening schemes we also need to read in the 
     ! band gradients too
-    if(quad.or.linear.or.adaptive) call elec_read_band_gradient
+    if(quad.or.linear.or.adaptive) then
+      if(.not.allocated(band_gradient)) call elec_read_band_gradient
+    endif
     !-------------------------------------------------------------------------------
     ! C A L C U L A T E   D O S 
     ! Now everything is set up, we can perform the dos accumulation in parellel
@@ -979,5 +981,245 @@ contains
 
     return
   end function doslin
+  
+   !=============================================================================== 
+  subroutine dos_utils_calculate_at_e(energy, matrix_weights, weighted_dos_at_e, dos_at_e)
+    !===============================================================================  
+    ! Main routine in dos module, drives the calculation of density of states for
+    ! both task : dos and also if it is required elsewhere.
+    !------------------------------------------------------------------------------- 
+    ! Arguments: matrix_weigths (in) (opt) : LCAO or other weightings for DOS
+    !            weighted_dos   (out)(opt) : Output DOS weigthed by matrix_weights
+    !-------------------------------------------------------------------------------
+    ! Parent Module Varables Used: mw, E, dos_adaptive, dos_fixed, dos_linear
+    ! intdos_adaptive, intdos_fixed, intdos_linear, efermi_fixed, efermi_adaptive
+    ! efermi_linear, delta_bins, calc_weighted_dos
+    !-------------------------------------------------------------------------------
+    ! Modules Used: see below
+    !-------------------------------------------------------------------------------
+    ! Key Internal Variables: None
+    !-------------------------------------------------------------------------------
+    ! Necessary Conditions: One of linear, adaptive or fixed must be .true.
+    !-------------------------------------------------------------------------------
+    ! Known Worries: (1) If more than one of linear, adaptive or fixed are set it 
+    ! uses the most complicated method.
+    ! (2) It should be possible to pass optioinal arguments to sub programs as
+    ! optional argumnets without checking whether they are there or not. g95 will 
+    ! allow this behaviour. gfotran will not.
+    !-------------------------------------------------------------------------------
+    ! Written by : A J Morris December 2010
+    !=============================================================================== 
+    use od_io,        only : stdout,io_time,io_error
+    use od_comms,     only : on_root,my_node_id
+    use od_electronic,only : band_gradient,band_energy, efermi, efermi_castep,nspins, &
+         & elec_read_band_gradient,elec_read_band_energy,elec_report_parameters
+    use od_parameters,only : linear, adaptive, fixed, quad, compute_band_energy, &
+         & compute_efermi,dos,dos_per_volume,fermi_energy,iprint
+    use od_cell,         only : cell_volume, nkpoints, cell_calc_lattice, &
+         & cell_report_parameters,cell_dist,kpoint_grid_dim
+    implicit none
+
+    !-------------------------------------------------------------------------------
+    ! I N T E R N A L   V A R I A B L E S
+    integer :: ierr, idos, i, ik, is, ib
+    real(kind=dp) :: time0, time1
+    real(kind=dp),intent(in), allocatable, optional  :: matrix_weights(:,:,:,:)
+    real(kind=dp),intent(out),allocatable, optional  :: weighted_dos_at_e(:,:) ! spins, orbitals
+    real(kind=dp),intent(in) :: energy
+    real(kind=dp),intent(out) :: dos_at_e(nspins) ! spins
+    !-------------------------------------------------------------------------------
+
+    if(.not.(linear.or.adaptive.or.fixed.or.quad)) call io_error (" DOS: No Broadening Set")
+    
+    
+    calc_weighted_dos=.false.
+    if(present(matrix_weights)) calc_weighted_dos=.true.
+    
+    if(calc_weighted_dos)then
+       mw%norbitals=size(matrix_weights,1)
+       mw%nbands   =size(matrix_weights,2)
+       mw%nkpoints =size(matrix_weights,3)
+       mw%nspins   =size(matrix_weights,4)
+    end if
+
+
+    if(calc_weighted_dos) then 
+       if(mw%nspins.ne.nspins)     call io_error ("ERROR : DOS :  mw%nspins not equal to nspins.")
+       if(mw%nkpoints.ne.nkpoints) call io_error ("ERROR : DOS : mw%nkpoints not equal to nkpoints.")
+    endif
+
+    !-------------------------------------------------------------------------------
+    ! R E A D   B A N D   G R A D I E N T S 
+    ! If we're using one of the more accurate roadening schemes we also need to read in the 
+    ! band gradients too
+    if(quad.or.linear.or.adaptive) then
+      if(.not.allocated(band_gradient)) call elec_read_band_gradient
+    endif
+    !-------------------------------------------------------------------------------
+    ! C A L C U L A T E   D O S 
+    ! Now everything is set up, we can perform the dos accumulation in parellel
+    
+    time0=io_time()
+
+    if(on_root.and.(iprint>1)) write(stdout,*)
+
+ 
+       if(calc_weighted_dos)then 
+          call calculate_dos_at_e(energy,dos_at_e, matrix_weights=matrix_weights, &
+&weighted_dos_at_e=weighted_dos_at_e) 
+          call dos_utils_merge_at_e(dos_at_e,weighted_dos_at_e=weighted_dos_at_e)    
+       else
+          call calculate_dos_at_e(energy,dos_at_e)
+          call dos_utils_merge_at_e(dos_at_e) 
+       endif
+    
+    time1=io_time()
+    if(on_root)  write(stdout,'(1x,a40,f11.3,a)') 'Time to calculate dos  ',time1-time0,' (sec)'
+    !-------------------------------------------------------------------------------
+
+  end subroutine dos_utils_calculate_at_e
+  
+  
+  !===============================================================================
+  subroutine calculate_dos_at_e(energy, dos_at_e, matrix_weights, weighted_dos_at_e)
+    !===============================================================================
+    ! Once everything is set up this is the main workhorse of the module.
+    ! It accumulates the DOS and WDOS be looping over spins, kpoints and bands.
+    !------------------------------------------------------------------------------- 
+    ! Arguments: dos           (out)       : The Density of States
+    !            intdos        (out)       : The Integrated DOS
+    !            matrix_weights(in)  (opt) : The weightings, such as LCAO for the 
+    !                                        weighted dos.      
+    !            weighted_dos  (out) (opt) : Weighted DOS 
+    !-------------------------------------------------------------------------------
+    ! Parent Module Varables Used: delta_bins
+    !-------------------------------------------------------------------------------
+    ! Modules Used: See below
+    !-------------------------------------------------------------------------------
+    ! Key Internal Variables: None
+    !-------------------------------------------------------------------------------
+    ! Necessary Conditions: None
+    !-------------------------------------------------------------------------------
+    ! Known Worries: If linear, fixed and adaptive are all set. It produces the 
+    ! linear result, no matter what was intended. This would need to be modified to
+    ! take an optinal argument, which would force only one of the above to be set
+    ! within the subroutine. Since linear, fixed and adaptive are only non-mutually
+    ! exculsive when debugging (such things as efermi) this isn't a priority
+    !-------------------------------------------------------------------------------
+    ! Written by : A J Morris December 2010 Heavliy modified from LinDOS
+    !===============================================================================
+    use od_constants,  only : H2eV,sqrt_two
+    use od_algorithms, only : gaussian
+    use od_cell,       only : kpoint_grid_dim,nkpoints,kpoint_weight,num_kpoints_on_node
+    use od_electronic, only : band_gradient, electrons_per_state, nbands,nspins,band_energy
+    use od_parameters, only : linear,fixed,adaptive,adaptive_smearing,fixed_smearing&
+         &,finite_bin_correction,iprint,nbins,numerical_intdos 
+    use od_io,         only : stdout,io_error
+    use od_comms!,         only : my_node_id
+
+    implicit none
+
+    integer :: i,ik,is,ib,idos,ierr,iorb,dunit
+    integer :: m,n,o,nn
+    real(kind=dp) :: dos_temp, cuml, intdos_accum, width
+    real(kind=dp) :: grad(1:3), step(1:3), EV(0:4)
+
+    real(kind=dp),intent(out),allocatable, optional :: weighted_dos_at_e(:,:)  
+    real(kind=dp),intent(in),              optional :: matrix_weights(:,:,:,:)
+    real(kind=dp),intent(in) :: energy 
+    real(kind=dp),intent(out) :: dos_at_e(nspins)
+
+    if(linear.or.adaptive) step(:) = 1.0_dp/real(kpoint_grid_dim(:),dp)/2.0_dp
+    if(adaptive) adaptive_smearing=adaptive_smearing*sum(step(:))/3
+    if(fixed) width=fixed_smearing
+
+    weighted_dos_at_e=0.0_dp
+
+    do ik=1,num_kpoints_on_node(my_node_id)
+       if(iprint>1.and.on_root) then
+          if (mod(real(ik,dp),10.0_dp) == 0.0_dp) write(stdout,'(a40,i4,a3,i4,a14,21x,a7)') &
+               &"Calculating k-point ", ik, " of", num_kpoints_on_node(my_node_id)," on this node.","<-- DOS"
+       endif
+       do is=1,nspins
+          do ib=1,nbands
+             if(linear.or.adaptive) grad(:) = real(band_gradient(ib,ib,:,ik,is),dp)*H2ev
+             if(linear) call doslin_sub_cell_corners(grad,step,band_energy(ib,is,ik),EV)
+             if(adaptive) width = sqrt(dot_product(grad,grad))*adaptive_smearing
+             ! Hybrid Adaptive -- This way we don't lose weight at very flat parts of the
+             ! band. It's a kind of fudge that we wouldn't need if we had infinitely small bins.
+             if(finite_bin_correction.and.(width<delta_bins)) width = delta_bins
+
+             intdos_accum=0.0_dp
+
+                ! The linear method has a special way to calculate the integrated dos
+                ! we have to take account for this here.
+                if(linear)then
+                   dos_temp=doslin(EV(0),EV(1),EV(2),EV(3),EV(4),energy,cuml)*electrons_per_state*kpoint_weight(ik)
+                   
+                else
+                   dos_temp=gaussian(band_energy(ib,is,ik),width,energy)*electrons_per_state*kpoint_weight(ik)
+                   
+                endif
+
+                dos_at_e(is)=dos_at_e(is)+dos_temp
+
+                if(calc_weighted_dos) then
+                   if(ik.le.mw%nkpoints) then
+                      if(ib.le.mw%nbands) then
+                         do iorb=1,mw%norbitals
+                            weighted_dos_at_e(is,iorb)=weighted_dos_at_e(is,iorb)+ &
+                                 & dos_temp*matrix_weights(iorb,ib,ik,is)
+                         enddo
+                      endif
+                   endif
+                endif
+             end do
+       end do
+    end do
+
+  end subroutine calculate_dos_at_e
+  
+    !=============================================================================== 
+  subroutine dos_utils_merge_at_e(dos, weighted_dos_at_e)
+    !===============================================================================
+    ! The DOS was calculated accross nodes. Now give them all back to root
+    ! and free up the memeory on the slaves
+    !------------------------------------------------------------------------------- 
+    ! Arguments: dos          (in - slaves) (inout -  root)       : The DOS
+    !            weighted_dos (in - slaves) (inout -  root) (opt) : Weighted DOS 
+    !-------------------------------------------------------------------------------
+    ! Parent Module Varables Used: mw
+    !-------------------------------------------------------------------------------
+    ! Modules Used: See below
+    !-------------------------------------------------------------------------------
+    ! Key Internal Variables: None
+    !-------------------------------------------------------------------------------
+    ! Necessary Conditions: None
+    !-------------------------------------------------------------------------------
+    ! Known Worries: None
+    !-------------------------------------------------------------------------------
+    ! Written by : A J Morris December 2010 
+    !===============================================================================  
+    use od_comms!,      only : on_root, comms_reduce
+    use od_electronic, only : nspins
+    use od_parameters, only : nbins
+    use od_io,         only : io_error 
+
+    implicit none
+    integer :: idos,ierr
+    real(kind=dp),intent(inout), allocatable, optional :: weighted_dos_at_e(:,:) ! bins.spins, orbitals
+    real(kind=dp),intent(inout) :: dos(nspins)
+
+    call comms_reduce(dos(1),nspins,"SUM")
+
+    if(present(weighted_dos_at_e))  call comms_reduce(weighted_dos_at_e(1,1),mw%nspins*mw%norbitals,"SUM")
+
+    if(.not.on_root) then 
+       if(present(weighted_dos_at_e))  then
+          if(allocated(weighted_dos_at_e)) deallocate(weighted_dos_at_e,stat=ierr)
+          if (ierr/=0) call io_error (" ERROR : dos : merge_dos : cannot deallocate weighted_dos")
+       end if
+    endif
+  end subroutine dos_utils_merge_at_e
 
 endmodule od_dos_utils
