@@ -374,8 +374,8 @@ subroutine calculate_jdos(jdos, matrix_weights, weighted_dos)
  
  do ik=1,nkpoints
     if(iprint>1) then
-       if (mod(real(ik,dp),10.0_dp) == 0.0_dp) write(stdout,'(a40,i4,a3,i4,21x,a7)') &
-&"Calculating k-point ", ik, " of", nkpoints,"<-- DOS"
+       if (mod(real(ik,dp),10.0_dp) == 0.0_dp) write(stdout,'(a40,i4,a3,i4,20x,a8)') &
+&"Calculating k-point ", ik, " of", nkpoints,"<-- JDOS"
     endif
     do is=1,nspins
       do ib=1,vb_max(is)

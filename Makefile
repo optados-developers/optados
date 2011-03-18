@@ -1,35 +1,86 @@
-DEBUG ?= 1
-G95 ?= 1
-IFORT ?= 0
+#-------------------------------------------
+# V A R I A B L E S   YO U   S H O U L D   
+# S E T
 
+# one of gfortran, g95, ifort, pfg90
+SYSTEM := g95
 
-ifeq ($(DEBUG), 1)
- FFLAGS_OPT=-O0 -C -pg -g  #-fno-underscoring
- NAME_OPT=.debug
-else
- FFLAGS_OPT=-O3 -DMPI -convert big_endian 
- NAME_OPT=
-endif
+# fast / debug
+BUILD := debug
 
-F90=mpif90
-
-#FFLAGS_OPT=-O3 -funroll-loops 
-#FFLAGS_OPT=-O0 -fbounds-check -pg -g
-#FFLAGS_OPT=-O0 -fbounds-check -pg -g -ff2c #-fno-underscoring
-#FFLAGS_OPT=-O0  -fprofile-arcs -ftest-coverage
-
-FFLAGS= $(FFLAGS_OPT) 
-
-ifeq ($(G95), 1)
- F90=g95
- FFLAGS= 
- NAME_OPT=.g95
-endif
+# serial / mpi
+COMMS_ARCH := serial
 
 # Where would you like the executables?
-BIN_DIR=./
-#${HOME}/bin
-EXTENSION=$(NAME_OPT).x86_64
+BIN_DIR=${HOME}/bin
+
+#-------------------------------------------
+# T H I N G S   Y O U   M I G H T  W A N T  
+# T O   F I D D L E   W I T H
+ifeq ($(SYSTEM), gfortran)
+   F90_SERIAL= gfortran
+   F90_PARALLEL= openmpif90 
+   FFLAGS= -fconvert=big-endian
+   FFLAGS_PARALLEL=
+   FFLAGS_FAST= -O3
+   FFLAGS_DEBUG= -O0 -pg -g 
+   EXTENSION=.gfortran
+endif
+
+ifeq ($(SYSTEM), g95)
+   F90_SERIAL= g95
+   F90_PARALLEL= openmpif90
+   FFLAGS= -fendian=big
+   FFLAGS_PARALLEL=
+   FFLAGS_FAST= -O3
+   FFLAGS_DEBUG= -O0 -C -pg -g 
+   EXTENSION=.g95
+endif
+
+ifeq ($(SYSTEM), ifort)
+   F90_SERIAL= ifort
+   F90_PARALLEL= mpif90
+   FFLAGS= -convert big_endian
+   FFLAGS_PARALLEL= -MPI
+   FFLAGS_FAST= -O3
+   FFLAGS_DEBUG= -O0 -C -pg -g
+   EXTENSION=.ifort
+endif
+
+ifeq ($(SYSTEM), pgf90)
+   F90_SERIAL= pgf90
+   F90_PARALLEL= mpif90
+   FFLAGS= -byteswapio
+   FFLAGS_PARALLEL= 
+   FFLAGS_FAST= -O3
+   FFLAGS_DEBUG= -O0 -C -pg -g
+   EXTENSION=.pgf90
+endif
+
+
+#-------------------------------------------
+# T H I N G S   Y O U   S H O U L D
+# P R O B A B L Y   L E A V E   T O   T H E 
+# D E V E L O P E R S
+
+ifeq ($(BUILD), debug)
+  FFLAGS+=$(FFLAGS_DEBUG)
+  EXTENSION:=$(EXTENSION).debug
+else
+  FFLAGS+=$(FFLAGS_FAST)
+endif
+
+
+ifeq ($(COMMS_ARCH), mpi)
+   FFLAGS+=$(FFLAGS_PARALLEL)
+   F90=$(F90_PARALLEL)
+   EXTENSION:=$(EXTENSION).mpi
+else
+   F90=$(F90_SERIAL)
+endif
+
+
+EXTENSION:=$(EXTENSION).x86_64
 
 
 # Put object names here
@@ -38,7 +89,7 @@ OBJS=algorithms.o cell.o comms.o constants.o core.o dos.o dos_utils.o electronic
 all : optados
 
 optados : optados.f90 $(OBJS)
-	$(F90) $(FFLAGS)  -Wl,--start-group -lmkl_intel_lp64 -lmkl_sequential -lmkl_core  -Wl,--end-group optados.f90 $(OBJS) -o $(BIN_DIR)/optdos$(EXTENSION) 
+	$(F90) $(FFLAGS)  optados.f90 $(OBJS) -o $(BIN_DIR)/optados$(EXTENSION) 
 
 algorithms.o : algorithms.f90 io.o constants.o
 	$(F90) -c $(FFLAGS) algorithms.f90

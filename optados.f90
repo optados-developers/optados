@@ -65,7 +65,7 @@ program optados
      time1=io_time()
      write(stdout,*)
      write(stdout,'(1x,a40,f11.3,a)') 'Time to read parameters ',time1-time0,' (sec)'
-!-------------------------------------------------------------------------!
+     !-------------------------------------------------------------------------!
 
      call elec_read_band_energy
      call cell_calc_lattice
