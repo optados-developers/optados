@@ -84,7 +84,7 @@ EXTENSION:=$(EXTENSION).x86_64
 
 
 # Put object names here
-OBJS=algorithms.o cell.o comms.o constants.o core.o dos.o dos_utils.o electronic.o io.o jdos.o jdos_utils.o optics.o parameters.o pdos.o
+OBJS=algorithms.o cell.o comms.o constants.o core.o dos.o dos_utils.o electronic.o io.o jdos.o jdos_utils.o optics.o parameters.o pdos.o xmgrace_utils.o
 
 all : optados
 
@@ -133,6 +133,8 @@ parameters.o : parameters.f90  cell.o constants.o io.o
 pdos.o : pdos.F90  cell.o comms.o constants.o io.o dos.o electronic.o
 	$(F90) -c $(FFLAGS) pdos.F90
 
+xmgrace_utils.o : xmgrace_utils.f90
+	$(F90) -c $(FFLAGS) xmgrace_utils.f90
 
 # Utility targets
 .PHONY: clean veryclean
