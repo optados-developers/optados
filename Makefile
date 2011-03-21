@@ -106,7 +106,7 @@ core.o : core.f90 constants.o io.o
 comms.o : comms.F90 constants.o io.o
 	$(F90) -c $(FFLAGS) comms.F90
 
-dos.o : dos.f90 dos_utils.o
+dos.o : dos.f90 dos_utils.o xmgrace_utils.o
 	$(F90) -c $(FFLAGS) dos.f90
 
 dos_utils.o : dos_utils.f90 algorithms.o cell.o constants.o comms.o electronic.o io.o parameters.o

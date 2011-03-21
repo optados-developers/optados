@@ -229,7 +229,7 @@ contains
     devel_flag=' '
     call param_get_keyword('devel_flag',found,c_value=devel_flag)
 
-    output_format           = 'gnuplot'
+    output_format           = 'xmgrace'
     call param_get_keyword('output_format',found,c_value=output_format)
 
     call param_uppercase()
