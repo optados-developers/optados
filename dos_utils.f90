@@ -707,6 +707,8 @@ contains
     real(kind=dp),intent(in),              optional :: matrix_weights(:,:,:,:)
 
     real(kind=dp),intent(out),allocatable :: dos(:,:), intdos(:,:)
+
+    real, external :: erf
     if(linear.or.adaptive) step(:) = 1.0_dp/real(kpoint_grid_dim(:),dp)/2.0_dp
     if(adaptive) adaptive_smearing=adaptive_smearing*sum(step(:))/3
     if(fixed) width=fixed_smearing
