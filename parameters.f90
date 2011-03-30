@@ -38,7 +38,7 @@ module od_parameters
   logical, public, save :: optics
   logical, public, save :: core
 
-  !Broadending parameters
+  !Broadening parameters
   logical, public, save :: fixed
   logical, public, save :: adaptive
   logical, public, save :: linear
@@ -59,9 +59,13 @@ module od_parameters
   ! Belonging to the jdos module
   real(kind=dp),     public, save :: jdos_cutoff_energy 
 
-
 !  ??
   real(kind=dp),     public, save :: scissor_op
+
+  ! Optics parameters
+  character(len=20), public, save :: optics_geom
+  real(kind=dp),     public, save :: optics_qdir(3)
+
 
 
   !parameters dervied from input -- I think these should end up in the
@@ -231,6 +235,20 @@ contains
 
     output_format           = 'xmgrace'
     call param_get_keyword('output_format',found,c_value=output_format)
+
+    optics_geom = 'polycrys'
+    call param_get_keyword('optics_geom',found,c_value=optics_geom)
+    print*,optics_geom
+    if(index(optics_geom,'polar')==0 .and. index(optics_geom,'polycrys')==0 .and. index(optics_geom,'tensor')==0 ) &
+         call io_error('Error: value of optics_geom not recognised in param_read')
+
+    optics_qdir = 0.0_dp
+    call  param_get_keyword_vector('optics_qdir',found,3,r_value=optics_qdir)
+    if(index(optics_geom,'polar')>0 .and. .not. found) &
+         call io_error('Error: polarised or unpolarised optics geometry requested but optics_qdir is not set')
+    if( (index(optics_geom,'polycrys')>0 .or. index(optics_geom,'tensor')>0) .and. found) &
+         call io_error('Error: polycrystalline optics geometry or full dielectric tensor requested but optics_qdir is set')
+
 
     call param_uppercase()
 
@@ -449,6 +467,25 @@ contains
      
         
       write(stdout,'(1x,a78)')    '*----------------------------- Parameters -----------------------------------*'
+      write(stdout,'(1x,a78)')    '|                                                                            |'
+      if(optics) then
+         write(stdout,'(1x,a78)')    '*------------------------------- Optics -------------------------------------*'
+         if(index(optics_geom,'polycrys')>0) then
+            write(stdout,'(1x,a78)') '|  Geometry for Optics Calculation           :  Polycrytalline               |'        
+         elseif (index(optics_geom,'unpolar')>0) then
+            write(stdout,'(1x,a78)') '|  Geometry for Optics Calculation           :  Unpolarised                  |'        
+            write(stdout,'(1x,a47,2x,f6.2,2x,f6.2,2x,f6.2,3x,a4)') '|  Direction of q-vector (un-normalised)     : ' &
+                 ,optics_qdir(1:3),'   |'        
+         elseif (index(optics_geom,'polar')>0) then
+            write(stdout,'(1x,a78)') '|  Geometry for Optics Calculation           :  Polarised                    |'        
+            write(stdout,'(1x,a47,2x,f6.2,2x,f6.2,2x,f6.2,3x,a4)') '|  Direction of q-vector (un-normalised)     : ' &
+                 ,optics_qdir(1:3),'   |'        
+         elseif (index(optics_geom,'tensor')>0) then
+            write(stdout,'(1x,a78)') '|  Geometry for Optics Calculation           :  Full dielectric tensor       |'        
+         end if
+      end if
+      write(stdout,'(1x,a78)')    '------------------------------------------------------------------------------'
+
 
 101 format(20x,a3,2x,3F11.6)
 
