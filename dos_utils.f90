@@ -688,7 +688,7 @@ contains
     ! Written by : A J Morris December 2010 Heavliy modified from LinDOS
     !===============================================================================
     use od_constants,  only : H2eV,sqrt_two
-    use od_algorithms, only : gaussian
+    use od_algorithms, only : gaussian, algorithms_erf
     use od_cell,       only : kpoint_grid_dim,nkpoints,kpoint_weight,num_kpoints_on_node
     use od_electronic, only : band_gradient, electrons_per_state, nbands,nspins,band_energy
     use od_parameters, only : linear,fixed,adaptive,adaptive_smearing,fixed_smearing&
@@ -708,7 +708,7 @@ contains
 
     real(kind=dp),intent(out),allocatable :: dos(:,:), intdos(:,:)
 
-    real, external :: erf
+  
     if(linear.or.adaptive) step(:) = 1.0_dp/real(kpoint_grid_dim(:),dp)/2.0_dp
     if(adaptive) adaptive_smearing=adaptive_smearing*sum(step(:))/3
     if(fixed) width=fixed_smearing
@@ -747,8 +747,8 @@ contains
                       intdos_accum=intdos_accum+dos_temp
                       intdos(idos,is)=intdos(idos,is)+intdos_accum
                    else ! Do it (semi)-analytically          
-                      intdos(idos,is)=intdos(idos,is)+0.5_dp*(1.0_dp+erf((E(idos)-band_energy(ib,is,ik))/(sqrt_two*width)))&
-                           &*electrons_per_state*kpoint_weight(ik)
+                      intdos(idos,is)=intdos(idos,is)+0.5_dp*(1.0_dp+algorithms_erf((E(idos)- &
+                           & band_energy(ib,is,ik))/(sqrt_two*width)))*electrons_per_state*kpoint_weight(ik)
                    endif
                 endif
 

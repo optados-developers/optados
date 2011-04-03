@@ -22,6 +22,7 @@ module od_algorithms
   public :: utility_lowercase
   public :: utility_cart_to_frac
   public :: utility_frac_to_cart
+  public :: algorithms_erf
   public :: algorithms_dcopy
   public :: algorithms_zcopy
 
@@ -211,8 +212,65 @@ module od_algorithms
 
   end subroutine utility_cart_to_frac
 
+  
+  function algorithms_erf (x)
+! Calculate the error function     
+! From the NSWC Mathematics Subroutine Library
+   implicit none
+   real(kind=dp), intent(in) :: x
+   real(kind=dp)             :: algorithms_erf
+   real(kind=dp)             :: C=0.564189583547756_dp
 
-  SUBROUTINE algorithms_DCOPY(N,DX,INCX,DY,INCY)
+   real(kind=dp), dimension(1:5) :: A=(/0.771058495001320E-04_dp,-0.133733772997339E-02_dp, &
+        & 0.323076579225834E-01_dp, 0.479137145607681E-01_dp, 0.128379167095513E+00_dp/)
+   real(kind=dp), dimension(1:3) :: B=(/0.301048631703895E-02_dp, 0.538971687740286E-01_dp, &
+        & 0.375795757275549E+00_dp/)
+   real(kind=dp), dimension(1:8) :: P=(/-1.36864857382717E-07_dp, 5.64195517478974E-01_dp, &
+        & 7.21175825088309E+00_dp, 4.31622272220567E+01_dp, 1.52989285046940E+02_dp, &
+        & 3.39320816734344E+02_dp, 4.51918953711873E+02_dp, 3.00459261020162E+02_dp/)
+   real(kind=dp), dimension(1:8) :: Q=(/1.00000000000000E+00_dp, 1.27827273196294E+01_dp, &
+        & 7.70001529352295E+01_dp, 2.77585444743988E+02_dp, 6.38980264465631E+02_dp, &
+        & 9.31354094850610E+02_dp, 7.90950925327898E+02_dp, 3.00459260956983E+02_dp/)
+   real(kind=dp), dimension(1:5) :: R=(/2.10144126479064E+00_dp, 2.62370141675169E+01_dp, &
+        & 2.13688200555087E+01_dp, 4.65807828718470E+00_dp, 2.82094791773523E-01_dp/)
+   real(kind=dp), dimension(1:4) :: S=(/9.41537750555460E+01_dp, 1.87114811799590E+02_dp, &
+        & 9.90191814623914E+01_dp, 1.80124575948747E+01_dp/)
+
+   real(kind=dp) :: ax,t,top,bot,x2
+
+   AX = abs(X)
+   if (AX <= 0.5_dp) then
+      T = X*X
+      top = ((((A(1)*T + A(2))*T + A(3))*T + A(4))*T + A(5)) + 1.0_dp
+      bot = ((B(1)*T + B(2))*T + B(3))*T + 1.0_dp
+      algorithms_erf = X*(top/bot)
+      return
+   elseif (AX <= 4.0_dp) then
+      top = ((((((P(1)*AX + P(2))*AX + P(3))*AX + P(4))*AX + P(5))*AX &
+           &  + P(6))*AX + P(7))*AX + P(8)
+      bot = ((((((Q(1)*AX + Q(2))*AX + Q(3))*AX + Q(4))*AX + Q(5))*AX &
+           &  + Q(6))*AX + Q(7))*AX + Q(8)
+      algorithms_erf = 0.5_dp + (0.5_dp - exp(-X*X)*top/bot)
+      if (X < 0.0_dp) algorithms_erf = -algorithms_erf
+      return
+   elseif (AX <= 5.8_dp) then
+      X2 = X*X
+      T = 1.0_dp/X2
+      top = (((R(1)*T + R(2))*T + R(3))*T + R(4))*T + R(5)
+      bot = (((S(1)*T + S(2))*T + S(3))*T + S(4))*T + 1.0
+      algorithms_erf = (C - top/(X2*bot)) / AX
+      algorithms_erf = 0.5_dp + (0.5_dp - exp(-X2)*algorithms_erf)
+      if (X < 0.0_dp) algorithms_erf = -algorithms_erf
+      return
+   else
+      algorithms_erf = 1.0_dp
+      if(X < 0.0_dp) algorithms_erf = -algorithms_erf
+   endif
+      
+ end function algorithms_erf
+
+
+  subroutine algorithms_DCOPY(N,DX,INCX,DY,INCY)
 !     .. Scalar Arguments ..
       INTEGER INCX,INCY,N
 !     ..
