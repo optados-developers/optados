@@ -82,17 +82,20 @@ module od_cell
 !-------------------------------------------------------------------------!
 ! Written by Andrew Morris from the lindos program             11/10/2010 !
 !=========================================================================!
-  implicit none
+   implicit none
+   integer, intent(out) :: kpoint_grid_dim(1:3)
+   integer, intent(in)  :: num_kpts
+   real(kind=dp),intent(in) :: kpoints(1:3,1:num_kpts)
+   real(kind=dp) :: kpoints_TR(1:3,1:num_kpts*2)
 
-  integer, intent(out) :: kpoint_grid_dim(1:3)
-  integer, intent(in)  :: num_kpts
-  real(kind=dp),intent(in) :: kpoints(1:3,1:num_kpts)
-
-   call kpoint_density(kpoints(1,:), num_kpts, kpoint_grid_dim(1))
-   call kpoint_density(kpoints(2,:), num_kpts, kpoint_grid_dim(2))
-   call kpoint_density(kpoints(3,:), num_kpts, kpoint_grid_dim(3))
-
-end subroutine cell_find_MP_grid
+   ! We have to take into account time reversal symmetry. 
+   kpoints_TR(1:3,1:num_kpts)           = kpoints(1:3,1:num_kpts)
+   kpoints_TR(1:3,num_kpts+1:num_kpts*2)=-kpoints(1:3,1:num_kpts)
+   
+   call kpoint_density(kpoints_TR(1,:), num_kpts*2,  kpoint_grid_dim(1))
+   call kpoint_density(kpoints_TR(2,:), num_kpts*2,  kpoint_grid_dim(2))
+   call kpoint_density(kpoints_TR(3,:), num_kpts*2,  kpoint_grid_dim(3))
+ end subroutine cell_find_MP_grid
 !=========================================================================!
 
 
