@@ -9,7 +9,7 @@
 !=============================================================================== 
 module od_jdos_utils
  use od_algorithms, only : heap_sort,gaussian
- use od_constants,  only : bohr, dp, H2eV
+ use od_constants,  only : bohr2ang, dp, H2eV
  use od_comms,      only : on_root, num_nodes, my_node_id, root_id,comms_slice,comms_bcast,& 
          &comms_send, comms_recv,comms_reduce
  use od_electronic, only : band_energy,band_gradient,efermi,efermi_castep,num_electrons, &

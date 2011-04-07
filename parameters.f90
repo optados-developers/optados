@@ -98,7 +98,7 @@ contains
   !                                                                  !
   !===================================================================  
 
-    use od_constants, only : bohr
+    use od_constants, only : bohr2ang
     use od_io,        only : io_error,io_file_unit,seedname
     use od_cell,      only : cell_get_atoms
     use od_electronic,only : elec_pdos_read_orbitals
@@ -192,7 +192,7 @@ contains
     call param_get_keyword('length_unit',found,c_value=length_unit)
     if (length_unit.ne.'ang' .and. length_unit.ne.'bohr') &
          call io_error('Error: value of length_unit not recognised in param_read')
-    if (length_unit.eq.'bohr') lenconfac=1.0_dp/bohr
+    if (length_unit.eq.'bohr') lenconfac=1.0_dp/bohr2ang
 
     nbins                       = 10001 ! LinDOS default
     call param_get_keyword('nbins',found,i_value=nbins)
@@ -793,7 +793,7 @@ contains
     !                                                                                              !
     !==============================================================================================!
 
-    use od_constants, only : bohr
+    use od_constants, only : bohr2ang
     use od_io,        only : io_error
 
     implicit none
@@ -906,7 +906,7 @@ contains
 
     if (lconvert) then
        if (present(r_value)) then
-          r_value=r_value*bohr
+          r_value=r_value*bohr2ang
        endif
     endif
 

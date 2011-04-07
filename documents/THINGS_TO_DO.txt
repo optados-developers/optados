@@ -3,7 +3,6 @@ Things To Do
 
 AJM
 * OptaDOS units bug
-* Makefile makes documentation
 * Ability to set Fermi energy to 0, or not! SET_EFERMI_ZERO ! Defualt is true.
 * Write out Fermi energy shift from original band energies
 * Convert all inputs_to eV and Ang

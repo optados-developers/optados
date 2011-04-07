@@ -179,6 +179,7 @@ contains
                 do i=1,3
                    do jb=1,nbands
                       do ib=1,nbands
+                         ! Read in units of Ha Bohr^2 / Ang
                          read (gradient_unit) band_gradient(ib,jb,i,ik,is)
                       end do
                    end do
@@ -195,6 +196,7 @@ contains
              do i=1,3
                 do jb=1,nbands
                    do ib=1,nbands
+                      ! Read in units of Ha Bohr^2 / Ang
                       read (gradient_unit) band_gradient(ib,jb,i,ik,is)
                    end do
                 end do
@@ -211,6 +213,9 @@ contains
     end if
 
     if(on_root) close (unit=gradient_unit)
+
+    ! Convert all band gradients to eV/Ang
+   !band_gradient(ib,jb,i,ik,is)=band_gradient(ib,jb,i,ik,is)
 
     time1=io_time()
     if(on_root) write(stdout,'(1x,a40,f11.3,a)') 'Time to read band gradients ',time1-time0,' (sec)'

@@ -800,7 +800,7 @@ contains
     ! Written by : A J Morris December 2010 Heavliy modified from LinDOS
     !===============================================================================
     use od_algorithms,only : heap_sort
-    use od_constants, only : bohr
+    use od_constants, only : bohr2ang
     use od_cell,      only : recip_lattice
 
     implicit none
@@ -819,7 +819,7 @@ contains
              stepp(2) = step(2)*n
              stepp(3) = step(3)*o
 
-             stepp = matmul(recip_lattice,stepp)*bohr
+             stepp = matmul(recip_lattice,stepp)*bohr2ang
 
              DE(nn)=dot_product(grad,stepp)
 

@@ -175,7 +175,7 @@ end subroutine kpoint_density
 
 subroutine cell_get_atoms
  use od_comms,     only : on_root
- use od_constants, only : bohr
+ use od_constants, only : bohr2ang
  use od_io,        only : io_file_unit, io_error, seedname, stdout, maxlen
  use od_algorithms,only : utility_cart_to_frac, utility_frac_to_cart, utility_lowercase
 
@@ -314,7 +314,7 @@ subroutine cell_get_atoms
     end do
 
     if (lconvert) then
-       atoms_pos_cart_tmp = atoms_pos_cart_tmp*bohr
+       atoms_pos_cart_tmp = atoms_pos_cart_tmp*bohr2ang
     end if
 
 
@@ -419,11 +419,11 @@ subroutine cell_calc_lattice
 !-------------------------------------------------------------------------
 ! Written by Andrew Morris from the LinDOS program             11/10/2010 
 !=========================================================================
-use od_constants, only : pi,bohr
+use od_constants, only : pi,bohr2ang
 implicit none
 
   ! THESE ARE IN BOHR, DON'T GET TRIPPED UP AGAIN!
-  real_lattice=real_lattice*bohr
+  real_lattice=real_lattice*bohr2ang
 
   recip_lattice(1,1)=real_lattice(2,2)*real_lattice(3,3)- &
        real_lattice(3,2)*real_lattice(2,3)
