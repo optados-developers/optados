@@ -726,7 +726,7 @@ contains
        endif
        do is=1,nspins
           do ib=1,nbands
-             if(linear.or.adaptive) grad(:) = real(band_gradient(ib,ib,:,ik,is),dp)*H2ev
+             if(linear.or.adaptive) grad(:) = real(band_gradient(ib,ib,:,ik,is),dp)
              if(linear) call doslin_sub_cell_corners(grad,step,band_energy(ib,is,ik),EV)
              if(adaptive) width = sqrt(dot_product(grad,grad))*adaptive_smearing
              ! Hybrid Adaptive -- This way we don't lose weight at very flat parts of the
@@ -819,8 +819,10 @@ contains
              stepp(2) = step(2)*n
              stepp(3) = step(3)*o
 
-             stepp = matmul(recip_lattice,stepp)*bohr2ang
+             ! Reciprocal lattice in inverse Ang
+             stepp = matmul(recip_lattice,stepp)
 
+             ! DE in eV
              DE(nn)=dot_product(grad,stepp)
 
           end do
@@ -1144,7 +1146,7 @@ contains
        endif
        do is=1,nspins
           do ib=1,nbands
-             if(linear.or.adaptive) grad(:) = real(band_gradient(ib,ib,:,ik,is),dp)*H2ev
+             if(linear.or.adaptive) grad(:) = real(band_gradient(ib,ib,:,ik,is),dp)
              if(linear) call doslin_sub_cell_corners(grad,step,band_energy(ib,is,ik),EV)
              if(adaptive) width = sqrt(dot_product(grad,grad))*adaptive_smearing
              ! Hybrid Adaptive -- This way we don't lose weight at very flat parts of the

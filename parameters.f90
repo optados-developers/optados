@@ -197,7 +197,7 @@ contains
     nbins                       = 10001 ! LinDOS default
     call param_get_keyword('nbins',found,i_value=nbins)
 
-    adaptive_smearing           = 0.4_dp ! LinDOS default
+    adaptive_smearing           = 1.4_dp ! LinDOS default
     call param_get_keyword('adaptive_smearing',found,r_value=adaptive_smearing)
 
     fixed_smearing             = 0.3_dp ! LinDOS default

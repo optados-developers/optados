@@ -380,7 +380,7 @@ subroutine calculate_jdos(jdos, matrix_weights, weighted_dos)
     do is=1,nspins
       do ib=1,vb_max(is)
         do jb=vb_max(is)+1,nbands
-           if(linear.or.adaptive) grad(:) = real(band_gradient(jb,jb,:,ik,is)-band_gradient(ib,ib,:,ik,is),dp)*H2ev
+           if(linear.or.adaptive) grad(:) = real(band_gradient(jb,jb,:,ik,is)-band_gradient(ib,ib,:,ik,is),dp)
            if(linear) call doslin_sub_cell_corners(grad,step,band_energy(jb,is,ik)-band_energy(ib,is,ik),EV)
            if(adaptive) width = sqrt(dot_product(grad,grad))*adaptive_smearing
            
