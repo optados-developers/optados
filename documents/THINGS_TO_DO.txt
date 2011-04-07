@@ -1,0 +1,39 @@
+Things To Do
+============
+
+AJM
+* OptaDOS units bug
+* Makefile makes documentation
+* Ability to set Fermi energy to 0, or not! SET_EFERMI_ZERO ! Defualt is true.
+* Write out Fermi energy shift from original band energies
+* Convert all inputs_to eV and Ang
+* Energy Scales,  dos_min_energy, dos_max_energy, dos_spacing. Make sure we get the top point, don't cut off early.
+        nbins ==> dos_nbins but keep for campatibility with LinDOS
+        keep E in dos_utils
+
+RJN
+* Finish Optics
+
+JRY
+* Update manual
+  - Task: needs updating for linear combinations of keywords
+  - Bradening:  needs updating for linear combinations of keywords
+  - Smearing width ==> Fixed smearing, and in that section "spectral_scheme" ==> Broadening
+  - grace default output
+* Domain Name www.optados.org
+* Read symmetries
+* Core loss
+* PDOS parsing
+* Jdos jocos_nbins, jdos_spacing, jdos_max_energy
+* Beautify jdos -- add weightings
+
+CJP
+* Quados
+
+Developer Notes
+===============
+
+1 Normal
+2 "Progress Report"
+3 Full Debug for developers
+
