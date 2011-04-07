@@ -136,10 +136,14 @@ pdos.o : pdos.F90  cell.o comms.o constants.o io.o dos.o electronic.o
 xmgrace_utils.o : xmgrace_utils.f90
 	$(F90) -c $(FFLAGS) xmgrace_utils.f90
 
+
 # Utility targets
 .PHONY: clean veryclean
 
+docs:
+	make -C ./documents all
+
 clean:
 	rm -f *.o *.mod *.MOD
-
+	make -C ./documents clean
 
