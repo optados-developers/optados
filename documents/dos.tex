@@ -1,0 +1,200 @@
+\documentclass[a4paper,11pt,twoside]{book}
+%\documentclass[11pt,twoside,letterpaper]{book}
+\usepackage{a4wide}
+\usepackage{multirow}
+\usepackage{footnote}
+\usepackage{amsbsy}
+\usepackage[dvips]{graphicx}
+%\usepackage{fancyheadings}
+\usepackage{fancyhdr}
+%\setlength{\parindent}{0in}
+%\setlength{\parskip}{0.05in}
+\setlength{\parskip}{0.1in}
+
+%\usepackage{a4wide}
+\usepackage{color}
+\def\red{\textcolor{red}}
+
+%\parskip=2mm
+
+% Ensure that blank pages don't have numbers or heading on them 
+\makeatletter
+\def\cleardoublepage{\clearpage\if@twoside \ifodd\c@page\else
+ \hbox{}
+ \vspace*{\fill}
+ \thispagestyle{empty}
+ \newpage\fi\fi}
+\makeatother
+
+% set fancy headings
+\pagestyle{fancy}
+\lhead[{\it \thepage}]{{\bf\it {\tt OptaDOS}: User Guide}}
+\chead{}
+\rhead[{\bf\it {\tt OptaDOS}: User Guide}]{{\it \thepage}}
+\renewcommand{\headrulewidth}{0.2pt}
+\lfoot{}
+\cfoot{}
+\rfoot{}
+\renewcommand{\footrulewidth}{0pt}
+\setlength{\footskip}{0.25in}
+\setlength{\parindent}{0in}
+
+\title{{\tt OptaDOS}: User Guide}
+
+\author{Version 0.9}
+
+\date{27th October 2010}
+
+\begin{document}
+\newcommand{\optados}{\texttt{OptaDOS}}
+
+\maketitle
+
+
+
+\chapter{Parameters}\label{chap:parameters}
+
+\section{Usage}
+{\tt
+\begin{quote}
+optados.x  [seedname]
+\end{quote} }
+\begin{itemize}
+\item{ {\tt seedname}: If a seedname string is given the code will read its input
+from a file {\tt seedname.odi}. The default value is {\tt castep}.}
+\end{itemize}
+
+\section{{\tt seedname.odi} File}
+The \optados\ input file {\tt seedname.odi} has a flexible free-form
+structure. 
+
+The ordering of the keywords is not significant. Case is ignored (so
+\verb#smearing_width# is the same as \verb#Smearing_Width#). Characters after !, or \#
+are treated as comments. Most keywords have a default value that is
+used unless the keyword is given in {\tt seedname.odi}. Keywords can be set
+in any of the following ways
+{\tt
+\begin{quote}
+smearing\_width = 0.4
+
+smearing\_width : 0.4
+
+smearing\_width   0.4
+\end{quote} }
+A logical keyword can be set to {\tt .true.} using any of the following
+strings: {\tt T}, {\tt true}, {\tt .true.}.
+
+
+\clearpage
+
+
+\section{Parameters}
+\subsection[task]{\tt character(len=50) :: task}
+
+Tells the code what to compute. 
+
+The valid options for this parameter are:
+\begin{itemize}
+\item[{\bf --}]  \verb#dos# (default)
+\item[{\bf --}]  \verb#jdos#
+\item[{\bf --}]  \verb#pdos#
+\item[{\bf --}]  \verb#optics#
+\item[{\bf --}]  \verb#core#
+\item[{\bf --}]  \verb#all#
+\end{itemize}
+
+\subsection[spectral\_scheme]{\tt character(len=50) :: spectral\_scheme}
+
+Which method to use compute dos etc
+
+The valid options for this parameter are:
+\begin{itemize}
+\item[{\bf --}]  \verb#adaptive# (default)
+\item[{\bf --}]  \verb#fixed#
+\item[{\bf --}]  \verb#linear#
+\item[{\bf --}]  \verb#quad#
+\end{itemize}
+
+\subsection[iprint]{\tt integer :: iprint}
+
+This indicates the level of verbosity of the output from 0,
+the bare minimum, to 3, which corresponds to full debugging output.
+
+The default value is 1.
+
+
+\subsection[length\_unit]{\tt character(len=20) :: energy\_unit}
+The energy unit to be used for writing quantities in the output files.
+
+The valid options for this parameter are:
+\begin{itemize}
+\item[{\bf --}]  \verb#eV# (default)
+\item[{\bf --}]  \verb#Ry#
+\item[{\bf --}]  \verb#Ha#
+\end{itemize}
+
+\subsection[adaptive\_smearing]{\tt real(kind=dp) :: adaptive\_smearing}
+Set the relative smearing in the adaptive scheme
+
+Default value is 0.4
+
+\subsection[smearing\_width]{\tt real(kind=dp) :: smearing\_width}
+Smearing width for broadening
+
+If $\verb#spectral_scheme# = \verb#fixed#$ default value is 0.5eV, else
+default value is 0.0eV
+
+\subsection[scissor\_op]{\tt real(kind=dp) :: scissor\_op}
+Value of the scissor operator. 
+
+Default value is 0eV
+
+\subsection[compute\_efermi]{{\tt logical :: compute\_efermi}}
+
+If {\tt compute\_efermi=TRUE}, then \optados\ will use the value of the fermi
+level computed from the integration of the DOS. If {\tt
+  compute\_efermi=FALSE}, then the value set by {\tt fermi\_energy} will be
+used, if {\tt fermi\_energy} is not set the value from the bands file will be used.
+
+The default value is {\tt FALSE}.
+
+\subsection[fermi\_energy]{\tt real(kind=dp) :: fermi\_energy}
+Value of the fermi energy
+
+No default value
+
+\subsection[output\_format]{\tt character(len=20) :: output\_format}
+Format in which to output data
+
+The valid options for this parameter are:
+\begin{itemize}
+\item[{\bf --}]  \verb#gnuplot# (default)
+\item[{\bf --}]  \verb#grace#
+\end{itemize}
+
+
+\subsection[pdos]{\tt integer :: pdos}
+Defines which components to include in the pdos analysis:
+
+\begin{itemize}
+\item[{\bf --}]  \verb#angular# (decompose as s,p,d etc)
+\item[{\bf --}]  \verb#atom#    (decompose onto atomic sites)
+\item[{\bf --}]  \verb#C:H#     (decompose onto Carbon and Hydrogen sites)
+\item[{\bf --}]  \verb#C1:C3:C4-C8#  (decompose onto atoms C1, C2 and C4,C5,C6,C7,C8)
+\item[{\bf --}]  \verb#Si1[s;d]#     (decompose onto 's' and 'd' channels for
+  atom Si1)
+
+\end{itemize}
+
+
+\subsection[devel\_flag]{\tt character(len=50) :: devel\_flag}
+
+Not a regular keyword. Its purpose is to allow a developer to pass a
+string into the code to be used inside a new routine as it is developed.
+
+No default.
+
+
+
+
+\end{document}
