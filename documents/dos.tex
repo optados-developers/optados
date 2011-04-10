@@ -1,7 +1,7 @@
 \documentclass[a4paper,11pt,twoside]{book}
 %\documentclass[11pt,twoside,letterpaper]{book}
 \usepackage{a4wide}
-\usepackage{multirow}
+%\usepackage{multirow}
 \usepackage{footnote}
 \usepackage{amsbsy}
 \usepackage[dvips]{graphicx}
@@ -102,10 +102,13 @@ The valid options for this parameter are:
 \item[{\bf --}]  \verb#core#
 \item[{\bf --}]  \verb#all#
 \end{itemize}
+Several taks can be specified eg to compute dos and jdos use
+\verb#task : dos jdos#.
 
-\subsection[spectral\_scheme]{\tt character(len=50) :: spectral\_scheme}
+\subsection[broadening]{\tt character(len=50) :: broadening}
 
-Which method to use compute dos etc
+Specified the scheme used to broaden a discrete sampling of the
+Brillouin Zone to a continuous spectral function.
 
 The valid options for this parameter are:
 \begin{itemize}
@@ -114,10 +117,12 @@ The valid options for this parameter are:
 \item[{\bf --}]  \verb#linear#
 \item[{\bf --}]  \verb#quad#
 \end{itemize}
+Several schemes can be specified eg 
+\verb#broadening : adaptive fixed#.
 
 \subsection[iprint]{\tt integer :: iprint}
 
-This indicates the level of verbosity of the output from 0,
+This indicates the level of verbosity of the output from 1,
 the bare minimum, to 3, which corresponds to full debugging output.
 
 The default value is 1.
@@ -138,16 +143,15 @@ Set the relative smearing in the adaptive scheme
 
 Default value is 0.4
 
-\subsection[smearing\_width]{\tt real(kind=dp) :: smearing\_width}
-Smearing width for broadening
+\subsection[fixed\_smearing]{\tt real(kind=dp) :: fixed\_smearing}
+Smearing width for fixed broadening
 
-If $\verb#spectral_scheme# = \verb#fixed#$ default value is 0.5eV, else
-default value is 0.0eV
+If $\verb#spectral_scheme# = \verb#fixed#$ default value is 0.3eV.
 
 \subsection[scissor\_op]{\tt real(kind=dp) :: scissor\_op}
 Value of the scissor operator. 
 
-Default value is 0eV
+Default value is 0eV (ie not used)
 
 \subsection[compute\_efermi]{{\tt logical :: compute\_efermi}}
 
@@ -168,9 +172,54 @@ Format in which to output data
 
 The valid options for this parameter are:
 \begin{itemize}
-\item[{\bf --}]  \verb#gnuplot# (default)
-\item[{\bf --}]  \verb#grace#
+\item[{\bf --}]  \verb#gnuplot#
+\item[{\bf --}]  \verb#grace# (default)
 \end{itemize}
+
+\subsection[finite\_bin\_correction]{\tt logical :: finite\_bin\_correction}
+
+
+\subsection[set\_efermi\_zero]{\tt logical :: set\_efermi\_zero}
+
+
+\subsection[dos\_min\_energy]{\tt real(kind=dp) :: dos\_min\_energy}
+Lower energy range for DOS and related properties.
+
+Default value is 5eV below the lowest eigenvalue in the bands file.
+
+\subsection[dos\_max\_energy]{\tt real(kind=dp) :: dos\_max\_energy}
+Upper energy range for DOS and related properties.
+
+Default value is 5eV above the highest eigenvalue in the bands file.
+
+\subsection[dos\_spacing]{\tt real(kind=dp) :: dos\_spacing}
+Resolution at which to compute the DOS and related properties.
+Default value is 0.1eV (AJM??)
+
+\subsection[jdos\_max\_energy]{\tt real(kind=dp) :: jdos\_max\_energy}
+Upper energy range for JDOS and related properties.
+
+Default value is the difference between the valence band maximum (or
+fermi level) and the highest eigenvalue in the bands file.
+
+\subsection[jdos\_spacing]{\tt real(kind=dp) :: jdos\_spacing} 
+Resolution at which to compute the DOS and related properties.
+Default value is 0.1eV (AJM??)
+
+\subsection[optics\_geom]{\tt character(len=20) :: optics\_geom}
+
+\begin{itemize}
+\item[{\bf --}]  \verb#polycrystalline# (Isotropic average)
+\item[{\bf --}]  \verb#polarized#  
+\item[{\bf --}]  \verb#unpolarized# 
+\item[{\bf --}]  \verb#tensor# (Full dielectric tensor)
+\end{itemize}
+
+
+\subsection[optics\_qdir]{\tt real(kind=dp) :: optics\_qdir(3)}
+Direction of polarisation. Must be specified if \verb#optics_geom :polarized#  
+or \verb#optics_geom : unpolarized# .
+No default
 
 
 \subsection[pdos]{\tt integer :: pdos}
@@ -185,6 +234,9 @@ Defines which components to include in the pdos analysis:
   atom Si1)
 
 \end{itemize}
+
+
+
 
 
 \subsection[devel\_flag]{\tt character(len=50) :: devel\_flag}
