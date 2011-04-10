@@ -55,11 +55,18 @@ module od_parameters
   logical,           public, save :: compute_efermi
   logical,           public, save :: finite_bin_correction
   logical,           public, save :: numerical_intdos 
+
+  logical,           public, save :: set_efermi_zero  ! Set fermi level to zero in dos plot default true
+  real(kind=dp),     public, save :: dos_min_energy
+  real(kind=dp),     public, save :: dos_max_energy
+  real(kind=dp),     public, save :: dos_spacing
+  integer,           public, save :: dos_nbins
+
    
   ! Belonging to the jdos module
-  real(kind=dp),     public, save :: jdos_cutoff_energy 
+  real(kind=dp),     public, save :: jdos_max_energy 
+  real(kind=dp),     public, save :: jdos_spacing
 
-!  ??
   real(kind=dp),     public, save :: scissor_op
 
   ! Optics parameters
@@ -224,8 +231,11 @@ contains
     dos_per_volume = .false.
     call param_get_keyword('dos_per_volume',found,l_value=dos_per_volume)
 
-    jdos_cutoff_energy        = 50.0_dp
-    call param_get_keyword('jdos_cutoff_energy',found,r_value=jdos_cutoff_energy)
+    jdos_max_energy        = 50.0_dp !! change
+    call param_get_keyword('jdos_max_energy',found,r_value=jdos_max_energy)
+
+    jdos_spacing          = 0.1_dp !! change
+    call param_get_keyword('jdos_spacing',found,r_value=jdos_spacing)
 
     compute_efermi        = .false.
     call param_get_keyword('compute_efermi',found,l_value=compute_efermi)
@@ -238,7 +248,7 @@ contains
 
     optics_geom = 'polycrys'
     call param_get_keyword('optics_geom',found,c_value=optics_geom)
-    print*,optics_geom
+
     if(index(optics_geom,'polar')==0 .and. index(optics_geom,'polycrys')==0 .and. index(optics_geom,'tensor')==0 ) &
          call io_error('Error: value of optics_geom not recognised in param_read')
 
@@ -1209,11 +1219,11 @@ contains
 
     implicit none
 
-    call comms_bcast(output_format,1)
-    call comms_bcast(devel_flag   ,1)
+    call comms_bcast(output_format,20)!len(output_format))
+    call comms_bcast(devel_flag   ,100)!len(devel_flag))
     call comms_bcast(iprint        ,1)
-    call comms_bcast(energy_unit   ,1)
-    call comms_bcast(length_unit ,1)
+    call comms_bcast(energy_unit   ,20)!len(energy_unit))
+    call comms_bcast(length_unit ,20)!len(length_unit))
     call comms_bcast(dos    ,1)
     call comms_bcast(pdos   ,1)
     call comms_bcast(jdos   ,1)
@@ -1232,8 +1242,11 @@ contains
     call comms_bcast(compute_efermi,1)
     call comms_bcast(finite_bin_correction,1)
     call comms_bcast(numerical_intdos ,1)
-    call comms_bcast(jdos_cutoff_energy ,1)
+    call comms_bcast(jdos_max_energy ,1)
+    call comms_bcast(jdos_spacing ,1)
     call comms_bcast(scissor_op,1)
+    call comms_bcast(optics_geom,len(optics_geom))
+    call comms_bcast(optics_qdir(1),3)
 
   end subroutine param_dist
 

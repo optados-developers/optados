@@ -15,7 +15,7 @@ module od_electronic
   !-------------------------------------------------------------------------!
   ! G L O B A L   V A R I A B L E S 
   real(kind=dp), allocatable, public, save  :: band_energy(:,:,:)
-  real(kind=dp), allocatable, public, save  :: band_gradient(:,:,:,:,:)
+  complex(kind=dp), allocatable, public, save  :: band_gradient(:,:,:,:,:)  !I've changed this from real to complex
   real(kind=dp), allocatable, public, save  :: elnes_mat(:,:,:,:,:)
 
   real(kind=dp), public, save :: efermi ! The fermi energy we finally decide on
@@ -161,15 +161,14 @@ contains
     if(allocated(band_gradient)) return 
 
     time0=io_time()
-    gradient_unit=io_file_unit()
-    gradient_filename=trim(seedname)//".cst_ome"
     if(on_root) then
+       gradient_unit=io_file_unit()
+       gradient_filename=trim(seedname)//".cst_ome"
        open(unit=gradient_unit,file=gradient_filename,status="old",form='unformatted',err=101)
     endif
 
     ! Figure out how many kpoint should be on each node
     call comms_slice(nkpoints,num_kpoints_on_node)
-
     allocate(band_gradient(1:nbands,1:nbands,1:3,1:num_kpoints_on_node(my_node_id),1:nspins),stat=ierr)
     if (ierr/=0) call io_error('Error: Problem allocating band_gradient in read_band_energy')
 

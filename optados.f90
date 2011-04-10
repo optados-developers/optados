@@ -21,6 +21,7 @@ program optados
   use od_dos,  only : dos_calculate
   use od_jdos,  only: jdos_calculate
   use od_pdos, only : dos_partial, pdos_write
+  use od_optics, only : optics_calculate
 !  use od_pdos, only : pdos_write, pdos_weights, dos_partial
   implicit none
 
@@ -49,6 +50,7 @@ program optados
      ! O R G A N I S E   T H E   O U T P U T   F I L E  A N D 
      ! R E A D   A N D   W R I T E   U S E R   P A R A M E T E R S   
      call param_read()
+ 
      inquire(file=trim(seedname)//'.odo',exist=odo_found)
      if (odo_found) then
         stat='old'
@@ -66,12 +68,14 @@ program optados
      write(stdout,*)
      write(stdout,'(1x,a40,f11.3,a)') 'Time to read parameters ',time1-time0,' (sec)'
      !-------------------------------------------------------------------------!
+  end if
 
-     call elec_read_band_energy
+  call elec_read_band_energy
+
+  if(on_root) then
      call cell_calc_lattice
      call cell_report_parameters
      call elec_report_parameters
-    
   end if
   ! now send the data from the parameter file to each node
  
@@ -123,7 +127,7 @@ program optados
 ! C A L L   O P T I C S   R O U T I N E S
   if(optics) then
     time0=io_time()
-    !call optics_calculate
+    call optics_calculate
     time1=io_time()
       if(on_root) write(stdout,'(1x,a40,f11.3,a)') 'Time to calculate Optical spec. DOS (Total) ',time1-time0,' (sec)'
   endif

@@ -513,7 +513,6 @@ use od_io, only : stdout
    use od_comms, only : comms_bcast
    implicit none
 
-
 call comms_bcast(real_lattice(1,1),9)
 call comms_bcast(recip_lattice(1,1),9)
 call comms_bcast(cell_volume,1)
@@ -525,6 +524,7 @@ call comms_bcast(cell_volume,1)
 
 call comms_bcast(nkpoints,1) 
 call comms_bcast(kpoint_grid_dim(1),3)
+
 
 !-------------------------------------------------------------------------!
 

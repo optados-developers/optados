@@ -708,7 +708,6 @@ contains
 
     real(kind=dp),intent(out),allocatable :: dos(:,:), intdos(:,:)
 
-  
     if(linear.or.adaptive) step(:) = 1.0_dp/real(kpoint_grid_dim(:),dp)/2.0_dp
     if(adaptive) adaptive_smearing=adaptive_smearing*sum(step(:))/3
     if(fixed) width=fixed_smearing

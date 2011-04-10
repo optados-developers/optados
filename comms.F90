@@ -593,7 +593,9 @@ contains
 
     end select
 
-    call algorithms_dcopy(size,array_red,1,array,1)
+!    call algorithms_dcopy(size,array_red(1),1,array(1),1)
+    call dcopy(size,array_red,1,array,1)
+
 
     if(error.ne.MPI_success) then
        print*,'Error in comms_reduce_real'
@@ -638,7 +640,8 @@ contains
 
     end select
 
-    call algorithms_zcopy(size,array_red,1,array,1)
+!    call algorithms_zcopy(size,array_red(1),1,array(1),1)
+    call zcopy(size,array_red,1,array,1)
 !    array(1:size)=array_red(1:size)
 
     if(error.ne.MPI_success) then
