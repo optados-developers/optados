@@ -17,6 +17,16 @@ BIN_DIR=${HOME}/bin
 #-------------------------------------------
 # T H I N G S   Y O U   M I G H T  W A N T  
 # T O   F I D D L E   W I T H
+ifeq ($(SYSTEM), g95)
+   F90_SERIAL= g95
+   F90_PARALLEL= openmpif90
+   FFLAGS= -fendian=big
+   FFLAGS_PARALLEL=
+   FFLAGS_FAST= -O3
+   FFLAGS_DEBUG= -O0 -C -pg -g
+   EXTENSION=.g95
+endif
+
 ifeq ($(SYSTEM), gfortran)
    F90_SERIAL= gfortran
    F90_PARALLEL= openmpif90 
@@ -27,14 +37,14 @@ ifeq ($(SYSTEM), gfortran)
    EXTENSION=.gfortran
 endif
 
-ifeq ($(SYSTEM), g95)
-   F90_SERIAL= g95
-   F90_PARALLEL= openmpif90
-   FFLAGS= -fendian=big
+ifeq ($(SYSTEM), nag)
+   F90_SERIAL= nagfor
+   F90_PARALLEL= mpif90
+   FFLAGS= 
    FFLAGS_PARALLEL=
-   FFLAGS_FAST= -O3
-   FFLAGS_DEBUG= -O0 -C -pg -g 
-   EXTENSION=.g95
+   FFLAGS_FAST= -O3 -Oassumed -w=all
+   FFLAGS_DEBUG= -Ddebug -g -O0 -C=all -gline -w=all 
+   EXTENSION=.nag
 endif
 
 ifeq ($(SYSTEM), ifort)
@@ -45,6 +55,16 @@ ifeq ($(SYSTEM), ifort)
    FFLAGS_FAST= -O3
    FFLAGS_DEBUG= -O0 -C -pg -g
    EXTENSION=.ifort
+endif
+
+ifeq ($(SYSTEM), pathscale)
+   F90_SERIAL= pathf95
+   F90_PARALLEL= mpif90
+   FFLAGS= -byteswapio
+   FFLAGS_PARALLEL=
+   FFLAGS_FAST= -O3 -OPT:Ofast -ffast-math -OPT:recip=ON -OPT:malloc_algorithm=1
+   FFLAGS_DEBUG=  -Ddebug -O0 -g -ffortran-bounds-check
+   EXTENSION=.path
 endif
 
 ifeq ($(SYSTEM), pgf90)
