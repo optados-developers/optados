@@ -164,30 +164,30 @@ contains
 
     if(fixed)then
        if(calc_weighted_dos)then 
-          call calculate_dos(dos_fixed,intdos_fixed, matrix_weights=matrix_weights, weighted_dos=weighted_dos) 
+          call calculate_dos("f",dos_fixed,intdos_fixed, matrix_weights=matrix_weights, weighted_dos=weighted_dos) 
           call dos_utils_merge(dos_fixed,weighted_dos=weighted_dos)    
        else
-          call calculate_dos(dos_fixed,intdos_fixed)
+          call calculate_dos("f",dos_fixed,intdos_fixed)
           call dos_utils_merge(dos_fixed) 
        endif
        call dos_utils_merge(intdos_fixed)
     endif
     if(adaptive)then
        if(calc_weighted_dos)then 
-          call calculate_dos(dos_adaptive,intdos_adaptive, matrix_weights=matrix_weights, weighted_dos=weighted_dos)
+          call calculate_dos("a",dos_adaptive,intdos_adaptive, matrix_weights=matrix_weights, weighted_dos=weighted_dos)
           call dos_utils_merge(dos_adaptive,weighted_dos=weighted_dos) 
        else
-          call calculate_dos(dos_adaptive,intdos_adaptive)
+          call calculate_dos("a",dos_adaptive,intdos_adaptive)
           call dos_utils_merge(dos_adaptive)
        endif
        call dos_utils_merge(intdos_adaptive)
     endif
     if(linear)then
        if(calc_weighted_dos)then 
-          call calculate_dos(dos_linear, intdos_linear, matrix_weights=matrix_weights, weighted_dos=weighted_dos)
+          call calculate_dos("l",dos_linear, intdos_linear, matrix_weights=matrix_weights, weighted_dos=weighted_dos)
           call dos_utils_merge(dos_linear,weighted_dos=weighted_dos)
        else      
-          call calculate_dos(dos_linear,intdos_linear)
+          call calculate_dos("l",dos_linear,intdos_linear)
           call dos_utils_merge(dos_linear)
        endif
        call dos_utils_merge(intdos_linear)
@@ -660,12 +660,13 @@ contains
    end subroutine dos_utils_deallocate
 
   !===============================================================================
-  subroutine calculate_dos(dos, intdos, matrix_weights, weighted_dos)
+  subroutine calculate_dos(dos_type, dos, intdos, matrix_weights, weighted_dos)
     !===============================================================================
     ! Once everything is set up this is the main workhorse of the module.
     ! It accumulates the DOS and WDOS be looping over spins, kpoints and bands.
     !------------------------------------------------------------------------------- 
     ! Arguments: dos           (out)       : The Density of States
+    !                          (in)        : one of "a", "f", "l", "q" 
     !            intdos        (out)       : The Integrated DOS
     !            matrix_weights(in)  (opt) : The weightings, such as LCAO for the 
     !                                        weighted dos.      
@@ -679,11 +680,8 @@ contains
     !-------------------------------------------------------------------------------
     ! Necessary Conditions: None
     !-------------------------------------------------------------------------------
-    ! Known Worries: If linear, fixed and adaptive are all set. It produces the 
-    ! linear result, no matter what was intended. This would need to be modified to
-    ! take an optinal argument, which would force only one of the above to be set
-    ! within the subroutine. Since linear, fixed and adaptive are only non-mutually
-    ! exculsive when debugging (such things as efermi) this isn't a priority
+    ! Known Worries: We use local adaptive, fixed and linear variable so that if multiple 
+    ! are set, it won't always appear to do the linear scheme.
     !-------------------------------------------------------------------------------
     ! Written by : A J Morris December 2010 Heavliy modified from LinDOS
     !===============================================================================
@@ -691,9 +689,9 @@ contains
     use od_algorithms, only : gaussian, algorithms_erf
     use od_cell,       only : kpoint_grid_dim,nkpoints,kpoint_weight,num_kpoints_on_node
     use od_electronic, only : band_gradient, electrons_per_state, nbands,nspins,band_energy
-    use od_parameters, only : linear,fixed,adaptive,adaptive_smearing,fixed_smearing&
+    use od_parameters, only : adaptive_smearing,fixed_smearing&
          &,finite_bin_correction,iprint,nbins,numerical_intdos 
-    use od_io,         only : stdout
+    use od_io,         only : stdout,io_error
     use od_comms!,         only : my_node_id
 
     implicit none
@@ -703,10 +701,29 @@ contains
     real(kind=dp) :: dos_temp, cuml, intdos_accum, width
     real(kind=dp) :: grad(1:3), step(1:3), EV(0:4)
 
+    character(len=1), intent(in)                    :: dos_type
     real(kind=dp),intent(out),allocatable, optional :: weighted_dos(:,:,:)  
     real(kind=dp),intent(in),              optional :: matrix_weights(:,:,:,:)
 
     real(kind=dp),intent(out),allocatable :: dos(:,:), intdos(:,:)
+
+    logical :: linear,fixed,adaptive
+
+    linear=.false.
+    fixed=.false.
+    adaptive=.false.
+
+    select case (dos_type)
+       case ("l")
+          linear=.true.
+       case("a")
+          adaptive=.true.
+       case("f")
+          fixed=.true.
+       case default
+          if (ierr/=0) call io_error (" ERROR : unknown dos_type in calculate_dos ")
+    end select
+    
 
     if(linear.or.adaptive) step(:) = 1.0_dp/real(kpoint_grid_dim(:),dp)/2.0_dp
     if(adaptive) adaptive_smearing=adaptive_smearing*sum(step(:))/3
