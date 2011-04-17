@@ -2,13 +2,8 @@ Things To Do
 ============
 
 AJM
-* OptaDOS units bug
 * Ability to set Fermi energy to 0, or not! SET_EFERMI_ZERO ! Defualt is true.
 * Write out Fermi energy shift from original band energies
-* Convert all inputs_to eV and Ang
-* Energy Scales,  dos_min_energy, dos_max_energy, dos_spacing. Make sure we get the top point, don't cut off early.
-        nbins ==> dos_nbins but keep for campatibility with LinDOS
-        keep E in dos_utils
 
 RJN
 * Finish Optics

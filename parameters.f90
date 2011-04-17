@@ -238,10 +238,10 @@ contains
     dos_nbins               = -1 ! 10001 LinDOS default
     call param_get_keyword('dos_nbins',found,i_value=dos_nbins)
 
-    jdos_max_energy        = 50.0_dp !! change
+    jdos_max_energy        = -1.0_dp !! change
     call param_get_keyword('jdos_max_energy',found,r_value=jdos_max_energy)
 
-    jdos_spacing          = 0.1_dp !! change
+    jdos_spacing          = 0.01_dp !! change
     call param_get_keyword('jdos_spacing',found,r_value=jdos_spacing)
 
     compute_efermi        = .false.
