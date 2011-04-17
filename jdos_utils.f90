@@ -9,7 +9,7 @@
 !=============================================================================== 
 module od_jdos_utils
   use od_algorithms, only : heap_sort,gaussian
-  use od_constants,  only : bohr2ang, dp, H2eV
+  use od_constants,  only : bohr2ang, dp
   use od_comms,      only : on_root, num_nodes, my_node_id, root_id,comms_slice,comms_bcast,& 
        &comms_send, comms_recv,comms_reduce
   use od_electronic, only : band_energy,band_gradient,efermi,efermi_castep,num_electrons, &
@@ -21,7 +21,7 @@ module od_jdos_utils
        &kpoint_r, kpoint_weight, nkpoints, kpoint_grid_dim, cell_calc_lattice, &
        &cell_report_parameters
   use od_dos_utils,        only : dos_utils_merge, doslin_sub_cell_corners, doslin
-  use od_parameters
+  use od_parameters, only :
 
   implicit none
 
@@ -58,6 +58,7 @@ contains
     ! Main routine in dos module, drives the calculation of Density of states for
     ! both task : dos and also if it is required elsewhere.
     !=============================================================================== 
+    use od_parameters, only : linear, fixed, adaptive, quad, iprint, dos_per_volume
     implicit none
     integer :: ierr, idos, i, ik, is, ib
     real(kind=dp) :: time0, time1
@@ -76,7 +77,7 @@ contains
        write(stdout,*)
     endif
 
-    if(calc_weighted_jdos.eqv..false.) then ! We are called just to provide dos.
+    if(calc_weighted_jdos.eqv..false.) then ! We are called just to provide jdos.
        if(allocated(E)) then
           if(on_root) write(stdout,*) " Already calculated jdos, so returning..."
           return  ! The jdos has already been calculated previously so just return.       
@@ -87,7 +88,9 @@ contains
     ! R E A D   B A N D   G R A D I E N T S 
     ! If we're using one of the more accurate roadening schemes we also need to read in the 
     ! band gradients too
-    if(quad.or.linear.or.adaptive) call elec_read_band_gradient
+    if(quad.or.linear.or.adaptive) then
+       if(.not.allocated(band_gradient)) call elec_read_band_gradient
+    endif
     !-------------------------------------------------------------------------------
 
 
@@ -100,7 +103,7 @@ contains
 
 
     !-------------------------------------------------------------------------------
-    ! C A L C U L A T E   D O S 
+    ! C A L C U L A T E   J D O S 
     ! Now everything is set up, we can perform the dos accumulation in parellel
     time0=io_time()
 
@@ -110,10 +113,10 @@ contains
 
     if(fixed)then
        if(calc_weighted_jdos)then 
-          call calculate_jdos(jdos_fixed, matrix_weights, weighted_jdos)
+          call calculate_jdos('f',jdos_fixed, matrix_weights, weighted_jdos)
           call jdos_utils_merge(jdos_fixed,weighted_jdos)
        else
-          call calculate_jdos(jdos_fixed)
+          call calculate_jdos('f',jdos_fixed)
           call jdos_utils_merge(jdos_fixed)
        endif
 
@@ -121,19 +124,19 @@ contains
     endif
     if(adaptive)then
        if(calc_weighted_jdos)then 
-          call calculate_jdos(jdos_adaptive, matrix_weights, weighted_jdos)
+          call calculate_jdos('a',jdos_adaptive, matrix_weights, weighted_jdos)
           call dos_utils_merge(jdos_adaptive, weighted_jdos)
        else
-          call calculate_jdos(jdos_adaptive)
+          call calculate_jdos('a',jdos_adaptive)
           call dos_utils_merge(jdos_adaptive)
        endif
     endif
     if(linear)then
        if(calc_weighted_jdos)then 
-          call calculate_jdos(jdos_linear, matrix_weights, weighted_jdos)
+          call calculate_jdos('l',jdos_linear, matrix_weights, weighted_jdos)
           call dos_utils_merge(jdos_linear, weighted_jdos)
        else
-          call calculate_jdos(jdos_linear)
+          call calculate_jdos('l',jdos_linear)
           call dos_utils_merge(jdos_linear)
        endif
     endif
@@ -262,6 +265,7 @@ contains
 
   !=============================================================================== 
   subroutine write_jdos(E,dos,dos_name)
+    use od_parameters, only : dos_per_volume
     !=============================================================================== 
     ! This routine receives an energy scale, a density of states and a file name
     ! and writes out the DOS to disk
@@ -328,7 +332,7 @@ contains
     ! Calls the relevant dos calculator.
     !=============================================================================== 
     use od_dos_utils, only : dos_utils_calculate
-    use od_parameters, only : compute_efermi
+    use od_parameters, only : compute_efermi,jdos_max_energy, jdos_spacing, iprint
     use od_electronic, only : efermi_castep
 
     implicit none
@@ -408,12 +412,14 @@ contains
 
 
   !===============================================================================
-  subroutine calculate_jdos(jdos, matrix_weights, weighted_jdos)  ! I've changed this
+  subroutine calculate_jdos(jdos_type,jdos, matrix_weights, weighted_jdos)  ! I've changed this
     !===============================================================================
 
     !===============================================================================
     use od_comms, only : my_node_id, on_root
+    use od_constants, only : H2eV
     use od_cell, only : num_kpoints_on_node
+    use od_parameters, only : adaptive_smearing, fixed_smearing, iprint, finite_bin_correction
     implicit none
 
     integer :: i,ik,is,ib,idos,ierr,iorb,jb
@@ -421,10 +427,28 @@ contains
     real(kind=dp) :: dos_temp, cuml, intdos_accum, width
     real(kind=dp) :: grad(1:3), step(1:3), EV(0:4)
 
-    real(kind=dp),intent(inout),allocatable, optional    :: weighted_jdos(:,:,:)
-    real(kind=dp),intent(in), optional  :: matrix_weights(:,:,:,:)
+    character(len=1), intent(in)                      :: jdos_type
+    real(kind=dp),intent(inout),allocatable, optional :: weighted_jdos(:,:,:)
+    real(kind=dp),intent(in), optional                :: matrix_weights(:,:,:,:)
 
     real(kind=dp),intent(out),allocatable :: jdos(:,:)
+
+    logical :: linear,fixed,adaptive
+
+    linear=.false.
+    fixed=.false.
+    adaptive=.false.
+
+    select case (jdos_type)
+       case ("l")
+          linear=.true.
+       case("a")
+          adaptive=.true.
+       case("f")
+          fixed=.true.
+       case default
+          if (ierr/=0) call io_error (" ERROR : unknown jdos_type in jcalculate_dos ")
+    end select
 
 
     if(linear.or.adaptive) step(:) = 1.0_dp/real(kpoint_grid_dim(:),dp)/2.0_dp
