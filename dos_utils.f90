@@ -356,17 +356,17 @@ contains
     ! Written by : A J Morris December 2010
     !=============================================================================== 
     use od_electronic, only : nspins
-    use od_parameters, only : nbins
+    use od_parameters, only : dos_nbins
     use od_electronic, only : efermi
     implicit none
 
-    real(kind=dp),intent(in) :: dos(1:nbins,1:nspins)
+    real(kind=dp),intent(in) :: dos(1:dos_nbins,1:nspins)
     real(kind=dp) :: gband, calc_band_energies
     integer :: is, idos
 
     gband=0.0_dp
     do is=1,nspins
-       do idos=1,nbins
+       do idos=1,dos_nbins
           if(E(idos).le.efermi) then
              gband = gband + dos(idos,is)*E(idos)*delta_bins
           else
@@ -400,11 +400,11 @@ contains
     ! Written by : A J Morris December 2010 Modified from LinDOS
     !=============================================================================== 
     use od_electronic, only : num_electrons, nspins
-    use od_parameters, only : nbins
+    use od_parameters, only : dos_nbins
     use od_io,         only : stdout
 
     implicit none
-    real(kind=dp), intent(in) :: INTDOS(1:nbins,1:nspins)
+    real(kind=dp), intent(in) :: INTDOS(1:dos_nbins,1:nspins)
     real(kind=dp) :: calc_efermi_from_intdos
     real(kind=dp) :: efermi
     real(kind=dp) :: tolerance=0.0001_dp ! Has the effect of forcing the efermi to 
@@ -412,7 +412,7 @@ contains
     ! the leading edge.
     integer  :: idos, i,j
 
-    do idos=1,nbins
+    do idos=1,dos_nbins
        if(sum(INTDOS(idos,:)).gt.(sum(num_electrons(:))+(tolerance/2.0_dp))) exit
     end do
 
@@ -525,9 +525,9 @@ contains
     !-------------------------------------------------------------------------------
     ! Written by : A J Morris December 2010 
     !=============================================================================== 
-    use od_parameters, only : nbins
+    use od_parameters, only : dos_nbins,dos_min_energy,dos_max_energy,dos_spacing,iprint
     use od_electronic, only : band_energy
-    use od_io,         only : io_error
+    use od_io,         only : io_error,stdout
     use od_comms!,      only : comms_reduce
 
     implicit none
@@ -535,21 +535,54 @@ contains
     real(kind=dp) :: min_band_energy, max_band_energy 
     integer       :: idos,i,ierr
 
-    allocate(E(1:nbins),stat=ierr)
-    if (ierr/=0) call io_error ("cannot allocate E")
 
-    min_band_energy  = minval(band_energy)-5.0_dp
+    ! If we do have dos_min_energy and dos_max_energy set, then we'd better
+    ! use them. If not, let's set some sensible values.
+    if(dos_min_energy==-huge(dos_min_energy)) then !Do it automatically
+       min_band_energy  = minval(band_energy)-5.0_dp
+    else
+       min_band_energy=dos_min_energy
+    endif
     call comms_reduce(min_band_energy,1,'MIN')
     call comms_bcast(min_band_energy,1)
-    max_band_energy  = maxval(band_energy)+5.0_dp
+    
+    if(dos_max_energy==huge(dos_max_energy)) then !Do it automatically
+       max_band_energy  = maxval(band_energy)+5.0_dp
+    else
+       max_band_energy=dos_max_energy
+    endif
     call comms_reduce(max_band_energy,1,'MAX')
     call comms_bcast(max_band_energy,1)
 
-    delta_bins=(max_band_energy-min_band_energy)/real(nbins-1,dp)
-    do idos=1,nbins
+    ! If dos_nbins is set, then we'd better use that
+    if(dos_nbins<0) then ! we'll have to work it out
+       dos_nbins=abs(ceiling((max_band_energy-min_band_energy)/dos_spacing))
+       ! Now modify the max_band_energy
+       if(on_root.and.(iprint>2)) then
+          write(stdout,*)
+          write(stdout,'(1x,a40,f11.3,a13)') 'max_band_energy (before correction) : ', max_band_energy, " <-- DOS Grid"
+       endif
+       max_band_energy=min_band_energy+dos_nbins*dos_spacing
+    endif
+
+    allocate(E(1:dos_nbins),stat=ierr)
+    if (ierr/=0) call io_error ("cannot allocate E")
+
+    delta_bins=(max_band_energy-min_band_energy)/real(dos_nbins-1,dp)
+    do idos=1,dos_nbins
        E(idos) = min_band_energy+real(idos-1,dp)*delta_bins
     end do
-
+    
+    if(on_root.and.(iprint>2))then
+       write(stdout,'(1x,a40,e11.5,a13)') 'dos_min_energy : ', dos_min_energy, " <-- DOS Grid" 
+       write(stdout,'(1x,a40,e11.5,a13)') 'dos_max_energy : ', dos_max_energy, " <-- DOS Grid"
+       write(stdout,'(1x,a40,f11.3,a13)') 'min_band_energy : ', min_band_energy, " <-- DOS Grid"
+       write(stdout,'(1x,a40,f11.3,a13)') 'max_band_energy : ', max_band_energy, " <-- DOS Grid"
+       write(stdout,'(1x,a40,i11,a13)')' dos_nbins : ', dos_nbins, " <-- DOS Grid"
+       write(stdout,'(1x,a40,f11.3,a13)')' dos_spacing : ', dos_spacing, " <-- DOS Grid"
+       write(stdout,'(1x,a40,f11.3,a13)')' delta_bins : ', delta_bins, " <-- DOS Grid"
+    endif
+    
   end subroutine setup_energy_scale
 
 
@@ -576,7 +609,7 @@ contains
     !===============================================================================  
     use od_comms!,      only : on_root, comms_reduce
     use od_electronic, only : nspins
-    use od_parameters, only : nbins
+    use od_parameters, only : dos_nbins
     use od_io,         only : io_error 
 
     implicit none
@@ -584,9 +617,9 @@ contains
     real(kind=dp),intent(inout), allocatable, optional :: weighted_dos(:,:,:) ! bins.spins, orbitals
     real(kind=dp),allocatable,intent(inout) :: dos(:,:)
 
-    call comms_reduce(dos(1,1),nspins*nbins,"SUM")
+    call comms_reduce(dos(1,1),nspins*dos_nbins,"SUM")
 
-    if(present(weighted_dos))  call comms_reduce(weighted_dos(1,1,1),mw%nspins*nbins*mw%norbitals,"SUM")
+    if(present(weighted_dos))  call comms_reduce(weighted_dos(1,1,1),mw%nspins*dos_nbins*mw%norbitals,"SUM")
 
     if(.not.on_root) then 
        if(allocated(dos)) deallocate(dos,stat=ierr)
@@ -621,7 +654,7 @@ contains
     ! Written by : A J Morris December 2010 
     !===============================================================================  
     use od_electronic, only : nspins
-    use od_parameters, only : nbins
+    use od_parameters, only : dos_nbins
     use od_io,         only : io_error
 
     implicit none
@@ -633,16 +666,16 @@ contains
 
     integer :: ierr 
 
-    allocate(dos(nbins,nspins), stat=ierr)
+    allocate(dos(dos_nbins,nspins), stat=ierr)
     if(ierr/=0) call io_error("error in allocating dos")
     dos=0.0_dp
 
-    allocate(intdos(nbins,nspins), stat=ierr)
+    allocate(intdos(dos_nbins,nspins), stat=ierr)
     if(ierr/=0) call io_error("error in allocating intdos")
     intdos=0.0_dp
 
     if(present(w_dos)) then
-       allocate(w_dos(nbins,mw%nspins,mw%norbitals), stat=ierr)
+       allocate(w_dos(dos_nbins,mw%nspins,mw%norbitals), stat=ierr)
        if(ierr/=0) call io_error("error in allocating weighted_dos")
        w_dos=0.0_dp
     endif
@@ -690,7 +723,7 @@ contains
     use od_cell,       only : kpoint_grid_dim,nkpoints,kpoint_weight,num_kpoints_on_node
     use od_electronic, only : band_gradient, electrons_per_state, nbands,nspins,band_energy
     use od_parameters, only : adaptive_smearing,fixed_smearing&
-         &,finite_bin_correction,iprint,nbins,numerical_intdos 
+         &,finite_bin_correction,iprint,dos_nbins,numerical_intdos 
     use od_io,         only : stdout,io_error
     use od_comms!,         only : my_node_id
 
@@ -751,7 +784,7 @@ contains
 
              intdos_accum=0.0_dp
 
-             do idos=1,nbins
+             do idos=1,dos_nbins
                 ! The linear method has a special way to calculate the integrated dos
                 ! we have to take account for this here.
                 if(linear)then
@@ -1133,7 +1166,7 @@ contains
     use od_cell,       only : kpoint_grid_dim,nkpoints,kpoint_weight,num_kpoints_on_node
     use od_electronic, only : band_gradient, electrons_per_state, nbands,nspins,band_energy
     use od_parameters, only : linear,fixed,adaptive,adaptive_smearing,fixed_smearing&
-         &,finite_bin_correction,iprint,nbins,numerical_intdos 
+         &,finite_bin_correction,iprint,dos_nbins,numerical_intdos 
     use od_io,         only : stdout,io_error
     use od_comms!,         only : my_node_id
 
@@ -1222,7 +1255,7 @@ contains
     !===============================================================================  
     use od_comms!,      only : on_root, comms_reduce
     use od_electronic, only : nspins
-    use od_parameters, only : nbins
+    use od_parameters, only : dos_nbins
     use od_io,         only : io_error 
 
     implicit none

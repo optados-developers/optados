@@ -140,7 +140,7 @@ contains
     ! This subroutine calculates epsilon_2
 
     use od_constants, only : dp, pi
-    use od_parameters, only : nbins
+    use od_parameters, only : dos_nbins
     use od_cell, only : nkpoints, cell_volume 
     use od_electronic, only : nspins, electrons_per_state
     use od_jdos_utils, only : E
@@ -156,14 +156,14 @@ contains
     dE = E(2)-E(1)
     epsilon2_const = (e_charge*pi*1E-20)/(cell_volume*1E-30*epsilon_0)
 
-    allocate(epsilon(nbins,3))
+    allocate(epsilon(dos_nbins,3))
     epsilon=0.0_dp
 
     epsilon(1,3) = 0.0_dp ! set epsilon_2=0 at 0eV
 
 !    DO N=1,nkpoints                               ! Loop over kpoints
        DO N_spin=1,nspins                        ! Loop over spins
-          DO N_energy=2,nbins
+          DO N_energy=2,dos_nbins
              epsilon(N_energy,3)=epsilon(N_energy,3) + epsilon2_const*(1.0_dp/(E(N_energy)**2))*weighted_jdos(N_energy,N_spin,1)
              !           epsilon(N_energy,3)=epsilon(N_energy,3) + weighted_jdos(N_energy,N_spin,N) !output the jDOS 
           END DO
@@ -172,7 +172,7 @@ contains
 
     ! Sum rule 
     x = 0.0_dp
-    DO N=1,nbins
+    DO N=1,dos_nbins
        x = x+((N*(dE**2)*epsilon(N,3))/(hbar**2))
     END DO
     N_eff = (x*e_mass*cell_volume*1E-30*epsilon_0*2)/(pi) 
@@ -185,7 +185,7 @@ contains
     ! This subroutine uses kramers kronig to calculate epsilon_1 
 
     use od_constants, only : dp, pi
-    use od_parameters, only : nbins
+    use od_parameters, only : dos_nbins
     use od_jdos_utils, only : E
 
     integer :: N_energy
@@ -197,9 +197,9 @@ contains
 
     dE=E(2)-E(1)
 
-    DO N_energy=1,nbins
+    DO N_energy=1,dos_nbins
        q=0.0_dp
-       DO N_energy2=1,nbins                  ! NOTE This starts at 2 at the moment
+       DO N_energy2=1,dos_nbins                  ! NOTE This starts at 2 at the moment
           IF (N_energy2.ne.N_energy) then
              energy1 = E(N_energy)  
              energy2 = E(N_energy2)
@@ -217,7 +217,7 @@ contains
     ! This subroutine calculates the loss function and the sum rules
 
     use od_constants, only : dp, cmplx_i, pi
-    use od_parameters, only : nbins
+    use od_parameters, only : dos_nbins
     use od_jdos_utils, only : E
     use od_cell, only : cell_volume
 
@@ -226,32 +226,32 @@ contains
     real(kind=dp) :: x
     real(kind=dp) :: dE
 
-    allocate(loss_fn(1:nbins,2)) 
+    allocate(loss_fn(1:dos_nbins,2)) 
     loss_fn=0.0_dp
 
     dE=E(2)-E(1)
 
-    DO N_energy=1,nbins
+    DO N_energy=1,dos_nbins
        loss_fn(N_energy,1)=E(N_energy)
     END DO
 
     g = (0.0_dp,0.0_dp)
 
-    DO N_energy=1,nbins
+    DO N_energy=1,dos_nbins
        g = epsilon(N_energy,2)+(cmplx_i*epsilon(N_energy,3))
        loss_fn(N_energy,2)=-1*AIMAG(1.0_dp/g)
     END DO
 
     ! Sum rule 1
     x = 0.0_dp
-    DO N_energy=1,nbins
+    DO N_energy=1,dos_nbins
        x = x+(N_energy*(dE**2)*loss_fn(N_energy,2))
     END DO
     N_eff2 = x*(e_mass*cell_volume*1E-30*epsilon_0*2)/(pi*(hbar**2))
 
     ! Sum rule 2
     x = 0
-    DO N_energy=1,nbins
+    DO N_energy=1,dos_nbins
        x = x+(loss_fn(N_energy,2)/N_energy)
     END DO 
     N_eff3 = x
@@ -263,23 +263,23 @@ contains
     !***************************************************************
     ! This subroutine calculates the conductivity
 
-    use od_parameters, only : nbins
+    use od_parameters, only : dos_nbins
     use od_jdos_utils, only : E
 
     integer :: N_energy
 
-    allocate(conduct(1:nbins,3)) 
+    allocate(conduct(1:dos_nbins,3)) 
     conduct=0.0_dp
 
-    DO N_energy=1,nbins
+    DO N_energy=1,dos_nbins
        conduct(N_energy,1)=E(N_energy)
     END DO
 
-    DO N_energy=1,nbins
+    DO N_energy=1,dos_nbins
        conduct(N_energy,2)=(conduct(N_energy,1)*e_charge/hbar)*epsilon_0*epsilon(N_energy,3)
     END DO
 
-    DO N_energy=1,nbins
+    DO N_energy=1,dos_nbins
        conduct(N_energy,3)=(conduct(N_energy,1)*e_charge/hbar)*epsilon_0*(1.0_dp-epsilon(N_energy,2))
     END DO
 
@@ -290,24 +290,24 @@ contains
     !***************************************************************
     ! This subroutine calculates the refractive index
 
-    use od_parameters, only : nbins
+    use od_parameters, only : dos_nbins
     use od_jdos_utils, only : E
 
     integer :: N_energy
 
-    allocate(refract(nbins,3)) 
+    allocate(refract(dos_nbins,3)) 
     refract=0.0_dp
 
-    DO N_energy=1,nbins
+    DO N_energy=1,dos_nbins
        refract(N_energy,1)=E(N_energy)
     END DO
 
-    DO N_energy=1,nbins
+    DO N_energy=1,dos_nbins
        refract(N_energy,2)=(0.5_dp*((((epsilon(N_energy,2)**2.0_dp)+&
             &(epsilon(N_energy,3)**2.0_dp))**0.5_dp)+epsilon(N_energy,2)))**(0.5_dp)
     END DO
 
-    DO N_energy=1,nbins
+    DO N_energy=1,dos_nbins
        refract(N_energy,3)=(0.5_dp*((((epsilon(N_energy,2)**2.0_dp)+&
             &(epsilon(N_energy,3)**2.0_dp))**0.5_dp)-epsilon(N_energy,2)))**(0.5_dp)
     END DO
@@ -319,19 +319,19 @@ contains
     !***************************************************************
     ! This subroutine calculates the absorption coefficient
 
-    use od_parameters, only : nbins
+    use od_parameters, only : dos_nbins
     use od_jdos_utils, only : E
 
     integer :: N_energy
 
-    allocate(absorp(nbins,2)) 
+    allocate(absorp(dos_nbins,2)) 
     absorp=0.0_dp
 
-    DO N_energy=1,nbins
+    DO N_energy=1,dos_nbins
        absorp(N_energy,1)=E(N_energy)
     END DO
 
-    DO N_energy=1,nbins
+    DO N_energy=1,dos_nbins
        absorp(N_energy,2)=2*refract(N_energy,3)*absorp(N_energy,1)*e_charge/(hbar*c_speed)
     END DO
 
@@ -342,19 +342,19 @@ contains
     !***************************************************************
     ! This subroutine calculates the reflection coefficient
 
-    use od_parameters, only : nbins
+    use od_parameters, only : dos_nbins
     use od_jdos_utils, only : E
 
     integer :: N_energy
 
-    allocate(reflect(nbins,2)) 
+    allocate(reflect(dos_nbins,2)) 
     reflect=0.0_dp
 
-    DO N_energy=1,nbins
+    DO N_energy=1,dos_nbins
        reflect(N_energy,1)=E(N_energy)
     END DO
 
-    DO N_energy=1,nbins
+    DO N_energy=1,dos_nbins
        reflect(N_energy,2)=(((refract(N_energy,2)-1)**2)+(refract(N_energy,3)**2))/&
             &(((refract(N_energy,2)+1)**2)+(refract(N_energy,3)**2))
     END DO
@@ -367,7 +367,7 @@ contains
     ! This subroutine writes out the dielectric function
 
     use od_cell, only : nkpoints, cell_volume
-    use od_parameters, only : optics_geom, optics_qdir,jdos_max_energy, nbins
+    use od_parameters, only : optics_geom, optics_qdir,jdos_max_energy, dos_nbins
     use od_electronic, only: nbands, num_electrons, nspins
     use od_jdos_utils, only: E
     use od_io, only : seedname, io_file_unit
@@ -403,7 +403,7 @@ contains
     write(epsilon_unit,*)'#'
     write(epsilon_unit,*)'# Result of sum rule: Neff(E) =  ',N_eff
     write(epsilon_unit,*)'#'    
-    DO N=1,nbins
+    DO N=1,dos_nbins
        write(epsilon_unit,*)E(N),epsilon(N,2),epsilon(N,3)
     END DO
 
@@ -418,7 +418,7 @@ contains
     ! This subroutine writes out the loss function
 
     use od_cell, only : nkpoints, cell_volume
-    use od_parameters, only : optics_geom, optics_qdir,jdos_max_energy, nbins
+    use od_parameters, only : optics_geom, optics_qdir,jdos_max_energy, dos_nbins
     use od_electronic, only: nbands, num_electrons, nspins
     use od_io, only: seedname, io_file_unit
 
@@ -449,7 +449,7 @@ contains
     write(loss_fn_unit,*)'# Result of first sum rule: Neff(E) = ',N_eff2
     write(loss_fn_unit,*)'# Result of second sum rule (pi/2 = 1.570796327):',N_eff3
     write(loss_fn_unit,*)'#'    
-    DO N=1,nbins
+    DO N=1,dos_nbins
        write(loss_fn_unit,*)loss_fn(N,1),loss_fn(N,2)
     END DO
 
@@ -464,7 +464,7 @@ contains
     ! This subroutine writes out the conductivity
 
     use od_cell, only : nkpoints, cell_volume
-    use od_parameters, only : optics_geom, optics_qdir,jdos_max_energy, nbins
+    use od_parameters, only : optics_geom, optics_qdir,jdos_max_energy, dos_nbins
     use od_electronic, only: nbands, num_electrons, nspins
     use od_io, only : seedname, io_file_unit
 
@@ -492,7 +492,7 @@ contains
     write(conduct_unit,'(1x,a,f10.3,f10.3,f10.3)')'# q-vector', optics_qdir(1),optics_qdir(2),optics_qdir(3)
     write(conduct_unit,*)'# q_weight',q_weight
     write(conduct_unit,*)'#'
-    DO N=1,nbins
+    DO N=1,dos_nbins
        write(conduct_unit,*)conduct(N,1),conduct(N,2),conduct(N,3)
     END DO
 
@@ -507,7 +507,7 @@ contains
     ! This subroutine writes out the refractive index
 
     use od_cell, only : nkpoints, cell_volume
-    use od_parameters, only : optics_geom, optics_qdir,jdos_max_energy, nbins
+    use od_parameters, only : optics_geom, optics_qdir,jdos_max_energy, dos_nbins
     use od_electronic, only: nbands, num_electrons, nspins
     use od_io, only : seedname, io_file_unit
 
@@ -537,7 +537,7 @@ contains
     write(refract_unit,'(1x,a,f10.3,f10.3,f10.3)')'# q-vector', optics_qdir(1),optics_qdir(2),optics_qdir(3)
     write(refract_unit,*)'# q_weight',q_weight
     write(refract_unit,*)'#'    
-    DO N=1,nbins
+    DO N=1,dos_nbins
        write(refract_unit,*)refract(N,1),refract(N,2),refract(N,3)
     END DO
 
@@ -552,7 +552,7 @@ contains
     ! This subroutine writes out the absorption coefficient
 
     use od_cell, only : nkpoints, cell_volume
-    use od_parameters, only : optics_geom, optics_qdir,jdos_max_energy, nbins
+    use od_parameters, only : optics_geom, optics_qdir,jdos_max_energy, dos_nbins
     use od_electronic, only: nbands, num_electrons, nspins
     use od_io, only : seedname, io_file_unit
 
@@ -581,7 +581,7 @@ contains
     write(absorp_unit,'(1x,a,f10.3,f10.3,f10.3)')'# q-vector', optics_qdir(1),optics_qdir(2),optics_qdir(3)
     write(absorp_unit,*)'# q_weight',q_weight
     write(absorp_unit,*)'#'    
-    DO N=1,nbins
+    DO N=1,dos_nbins
        write(absorp_unit,*)absorp(N,1),absorp(N,2)
     END DO
 
@@ -596,7 +596,7 @@ contains
     ! This subroutine writes out the reflection coefficient
 
     use od_cell, only : nkpoints, cell_volume
-    use od_parameters, only : optics_geom, optics_qdir,jdos_max_energy, nbins
+    use od_parameters, only : optics_geom, optics_qdir,jdos_max_energy, dos_nbins
     use od_electronic, only: nbands, num_electrons, nspins
     use od_io, only : seedname, io_file_unit
 
@@ -626,7 +626,7 @@ contains
     write(reflect_unit,'(1x,a,f10.3,f10.3,f10.3)')'# q-vector', optics_qdir(1),optics_qdir(2),optics_qdir(3)
     write(reflect_unit,*)'# q_weight',q_weight
     write(reflect_unit,*)'#'    
-    DO N=1,nbins
+    DO N=1,dos_nbins
        write(reflect_unit,*)reflect(N,1),reflect(N,2)
     END DO
 

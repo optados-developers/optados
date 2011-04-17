@@ -265,8 +265,8 @@ contains
     ! and writes out the DOS to disk
     !=============================================================================== 
     implicit none
-    real(dp), intent(in) :: E(nbins)
-    real(dp), intent(in) :: dos(nbins,nspins)
+    real(dp), intent(in) :: E(dos_nbins)
+    real(dp), intent(in) :: dos(dos_nbins,nspins)
     character(len=*), intent(in) :: dos_name
     integer :: i, dos_file, ierr
     character(len=11) :: cdate
@@ -307,11 +307,11 @@ contains
 
 
     if(nspins>1) then
-       do i=1,nbins
+       do i=1,dos_nbins
           write(dos_file, *) E(i), dos(i,1), -dos(i,2)
        enddo
     else
-       do i=1,nbins
+       do i=1,dos_nbins
           write(dos_file, *) E(i), dos(i,1)
        enddo
     endif
@@ -329,11 +329,11 @@ contains
 
     integer       :: idos,i,ierr
 
-    allocate(E(1:nbins),stat=ierr)
+    allocate(E(1:dos_nbins),stat=ierr)
     if (ierr/=0) call io_error ("cannot allocate E")
 
-    delta_bins=jdos_max_energy/real(nbins-1,dp)
-    do idos=1,nbins
+    delta_bins=jdos_max_energy/real(dos_nbins-1,dp)
+    do idos=1,dos_nbins
        E(idos) = real(idos-1,dp)*delta_bins
     end do
 
@@ -352,7 +352,7 @@ contains
 
     integer :: ierr 
 
-    allocate(dos(nbins,nspins), stat=ierr)
+    allocate(dos(dos_nbins,nspins), stat=ierr)
     if(ierr/=0) call io_error("error in allocating dos")
     dos=0.0_dp
 
@@ -397,7 +397,7 @@ contains
 
     call allocate_jdos(jdos)
     if(calc_weighted_jdos) then
-       allocate(weighted_jdos(nbins, nspins, 1))
+       allocate(weighted_jdos(dos_nbins, nspins, 1))
        weighted_jdos=0.0_dp
     endif
 
@@ -417,7 +417,7 @@ contains
                 ! band. It's a kind of fudge that we wouldn't need if we had infinitely small bins.
                 if(finite_bin_correction.and.(width<delta_bins)) width = delta_bins
 
-                do idos=1,nbins
+                do idos=1,dos_nbins
                    ! The linear method has a special way to calculate the integrated dos
                    ! we have to take account for this here.
                    if(linear)then
@@ -467,7 +467,7 @@ contains
     !===============================================================================  
     use od_comms!,      only : on_root, comms_reduce
     use od_electronic, only : nspins
-    use od_parameters, only : nbins
+    use od_parameters, only : dos_nbins
     use od_io,         only : io_error 
 
     implicit none
@@ -475,9 +475,9 @@ contains
     real(kind=dp),intent(inout), allocatable, optional :: weighted_jdos(:,:,:) ! bins.spins, orbitals
     real(kind=dp),allocatable,intent(inout) :: jdos(:,:)
 
-    call comms_reduce(jdos(1,1),nspins*nbins,"SUM")
+    call comms_reduce(jdos(1,1),nspins*dos_nbins,"SUM")
 
-    if(present(weighted_jdos))  call comms_reduce(weighted_jdos(1,1,1),nspins*nbins*1,"SUM")
+    if(present(weighted_jdos))  call comms_reduce(weighted_jdos(1,1,1),nspins*dos_nbins*1,"SUM")
 
     if(.not.on_root) then 
        if(allocated(jdos)) deallocate(jdos,stat=ierr)

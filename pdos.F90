@@ -60,7 +60,7 @@ contains
     ! knows what each column means
     !===============================================================================
     use od_dos_utils,       only : E
-    use od_parameters,only : nbins
+    use od_parameters,only : dos_nbins
     use od_electronic, only         : pdos_mwab
 
     implicit none
@@ -71,12 +71,12 @@ contains
 
     if(pdos_mwab%nspins>1) then
        dos_partial(:,2,:)=-dos_partial(:,2,:)
-       do idos = 1,nbins
+       do idos = 1,dos_nbins
           write(58,'(es14.7,'//trim(string)//trim(string)//')') E(idos),(dos_partial(idos,1,i),i=1,pdos_mwab%norbitals) &
                & ,(dos_partial(idos,2,i),i=1,pdos_mwab%norbitals)
        end do
     else
-       do idos = 1,nbins
+       do idos = 1,dos_nbins
           write(58,'(es14.7,'//trim(string)//')') E(idos),(dos_partial(idos,1,i),i=1,pdos_mwab%norbitals)
        end do
     endif

@@ -43,9 +43,7 @@ module od_parameters
   logical, public, save :: adaptive
   logical, public, save :: linear
   logical, public, save :: quad
-
-  integer, public, save :: nbins
-
+  
   ! Belonging to the dos module
   logical, public, save :: compute_band_energy
   real(kind=dp),     public, save :: adaptive_smearing
@@ -201,9 +199,6 @@ contains
          call io_error('Error: value of length_unit not recognised in param_read')
     if (length_unit.eq.'bohr') lenconfac=1.0_dp/bohr2ang
 
-    nbins                       = 10001 ! LinDOS default
-    call param_get_keyword('nbins',found,i_value=nbins)
-
     adaptive_smearing           = 1.4_dp ! LinDOS default
     call param_get_keyword('adaptive_smearing',found,r_value=adaptive_smearing)
 
@@ -230,6 +225,18 @@ contains
 
     dos_per_volume = .false.
     call param_get_keyword('dos_per_volume',found,l_value=dos_per_volume)
+
+    dos_min_energy         = -huge(dos_min_energy)
+    call param_get_keyword('dos_min_energy',found,r_value=dos_min_energy)
+
+    dos_max_energy         = huge(dos_max_energy)
+    call param_get_keyword('dos_max_energy',found,r_value=dos_max_energy)
+  
+    dos_spacing            = -1.0_dp
+    call param_get_keyword('dos_spacing',found,r_value=dos_spacing)
+    
+    dos_nbins               = -1 ! 10001 LinDOS default
+    call param_get_keyword('dos_nbins',found,i_value=dos_nbins)
 
     jdos_max_energy        = 50.0_dp !! change
     call param_get_keyword('jdos_max_energy',found,r_value=jdos_max_energy)
@@ -271,6 +278,19 @@ contains
     ! Some checks and initialisations !
     ! =============================== !
 
+
+    if(dos_min_energy.ge.dos_max_energy) then
+       call io_error('Error: must have dos_min_energy < dos_max_energy')
+    endif
+
+    if((dos_nbins>0).and.(dos_spacing>0.0_dp)) then
+      call io_error('Error: only one of dos_nbins and dos_spacing may be set')
+    endif
+ 
+    if((dos_nbins<0).and.(dos_spacing<0.0_dp)) then
+     dos_spacing= 0.005 ! Roughly similar to LinDOS 
+   endif
+    
 
     return
 
@@ -1233,7 +1253,7 @@ contains
     call comms_bcast(adaptive,1)
     call comms_bcast(linear,1)
     call comms_bcast(quad,1)
-    call comms_bcast(nbins,1)
+    call comms_bcast(dos_nbins,1)
     call comms_bcast(compute_band_energy,1)
     call comms_bcast(adaptive_smearing,1)
     call comms_bcast(fixed_smearing,1)

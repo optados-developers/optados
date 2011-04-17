@@ -89,13 +89,13 @@ module od_dos
     ! Written by : A J Morris December 2010 
     !=============================================================================== 
     use od_electronic, only : nspins
-    use od_parameters, only : nbins, dos_per_volume, output_format
+    use od_parameters, only : dos_nbins, dos_per_volume, output_format
     use od_io,         only : seedname, io_file_unit,io_date,io_error, stdout
 
     implicit none
-    real(dp), intent(in) :: E(nbins)
-    real(dp), intent(in) :: dos(nbins,nspins)
-    real(dp), intent(in) :: intdos(nbins,nspins)
+    real(dp), intent(in) :: E(dos_nbins)
+    real(dp), intent(in) :: dos(dos_nbins,nspins)
+    real(dp), intent(in) :: intdos(dos_nbins,nspins)
     character(len=*), intent(in) :: dos_name
     integer :: i, dos_file, ierr
     character(len=11) :: cdate
@@ -135,11 +135,11 @@ module od_dos
     write(dos_file, '(1x,a78)') "##############################################################################"
 
     if(nspins>1) then
-       do i=1,nbins
+       do i=1,dos_nbins
           write(dos_file, *) E(i), dos(i,1), -dos(i,2),  intdos(i,1), -intdos(i,2)
        enddo
     else
-       do i=1,nbins
+       do i=1,dos_nbins
           write(dos_file, *) E(i), dos(i,1), intdos(i,1)
        enddo
     endif
@@ -163,13 +163,13 @@ module od_dos
   subroutine write_dos_xmgrace(dos_name,E,dos)
     !=============================================================================== 
    use xmgrace_utils
-   use od_parameters, only : nbins
+   use od_parameters, only : dos_nbins
    use od_electronic, only : nspins
    use od_io,         only : io_file_unit,io_error,seedname 
    implicit none 
 
-   real(dp), intent(in) :: E(nbins)
-    real(dp), intent(in) :: dos(nbins,nspins)
+   real(dp), intent(in) :: E(dos_nbins)
+    real(dp), intent(in) :: dos(dos_nbins,nspins)
   
    real(dp) :: min_x, max_x, min_y, max_y
   
