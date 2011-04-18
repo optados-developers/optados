@@ -120,7 +120,7 @@ cell.o : cell.f90 comms.o constants.o io.o algorithms.o
 constants.o : constants.f90
 	$(F90) -c $(FFLAGS) constants.f90
 
-core.o : core.f90 constants.o io.o
+core.o : core.f90 parameters.o electronic.o dos_utils.o constants.o io.o
 	$(F90) -c $(FFLAGS) core.f90
 
 comms.o : comms.F90 constants.o io.o
@@ -140,7 +140,7 @@ io.o : io.F90 constants.o
 
 jdos.o : jdos.f90 jdos_utils.o
 	$(F90) -c $(FFLAGS) jdos.f90
-	
+
 jdos_utils.o : jdos_utils.f90 algorithms.o cell.o constants.o comms.o electronic.o io.o parameters.o
 	$(F90) -c $(FFLAGS) jdos_utils.f90
 
