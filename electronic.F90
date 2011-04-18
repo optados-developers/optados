@@ -519,7 +519,8 @@ contains
                    end do
                 end do
              end do
-             call comms_send(elnes_mat(1,1,1,1,1),elnes_mwab%norbitals*elnes_mwab%nbands*3*nspins*num_kpoints_on_node(inodes),inodes)
+             call comms_send(elnes_mat(1,1,1,1,1),elnes_mwab%norbitals*elnes_mwab%nbands*3*&
+                  nspins*num_kpoints_on_node(inodes),inodes)
           end do
           
           do ik=1,num_kpoints_on_node(0)
@@ -536,15 +537,18 @@ contains
           do inodes=1,num_nodes-1
              do ik=1,num_kpoints_on_node(inodes)
                 do ns=1,elnes_mwab%nspins
-                   read(elnes_unit) (((elnes_mat(orb,nb,indx,ik,ns),orb=1,elnes_mwab%norbitals),nb=1,elnes_mwab%nbands),indx=1,3)
+                   read(elnes_unit) (((elnes_mat(orb,nb,indx,ik,ns),orb=1,elnes_mwab%norbitals),&
+                        nb=1,elnes_mwab%nbands),indx=1,3)
                 end do
              end do
-             call comms_send(elnes_mat(1,1,1,1,1),elnes_mwab%norbitals*elnes_mwab%nbands*3*nspins*num_kpoints_on_node(inodes),inodes)
+             call comms_send(elnes_mat(1,1,1,1,1),elnes_mwab%norbitals*elnes_mwab%nbands*3*nspins*&
+                  num_kpoints_on_node(inodes),inodes)
           end do
           
           do ik=1,num_kpoints_on_node(0)
              do ns=1,elnes_mwab%nspins
-                read(elnes_unit) (((elnes_mat(orb,nb,indx,ik,ns),orb=1,elnes_mwab%norbitals),nb=1,elnes_mwab%nbands),indx=1,3)
+                read(elnes_unit) (((elnes_mat(orb,nb,indx,ik,ns),orb=1,elnes_mwab%norbitals),&
+                     nb=1,elnes_mwab%nbands),indx=1,3)
              end do
           end do
        end if

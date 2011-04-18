@@ -124,7 +124,7 @@ contains
     ! JRY, April 2011                                                         !
     !=========================================================================!
     use od_comms, only : on_root, comms_bcast
-    use od_io, only : filename_len,on_root,io_file_unit,seedname,io_error
+    use od_io, only : filename_len,io_file_unit,seedname,io_error
     implicit none
     integer :: ierr,sym_file
     character(filename_len)     :: sym_filename
