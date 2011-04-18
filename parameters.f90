@@ -19,8 +19,8 @@ module od_parameters
   use od_constants, only : dp
   use od_io,        only : stdout,maxlen
   use od_cell, only : real_lattice, recip_lattice, cell_volume, kpoint_grid_dim, nkpoints, &
-        & kpoint_r, kpoint_r_cart, atoms_label, num_atoms, num_species, atoms_symbol, &
-        & atoms_species_num, atoms_pos_frac, atoms_pos_cart
+       & kpoint_r, kpoint_r_cart, atoms_label, num_atoms, num_species, atoms_symbol, &
+       & atoms_species_num, atoms_pos_frac, atoms_pos_cart
 
   implicit none
 
@@ -43,7 +43,7 @@ module od_parameters
   logical, public, save :: adaptive
   logical, public, save :: linear
   logical, public, save :: quad
-  
+
   ! Belonging to the dos module
   logical, public, save :: compute_band_energy
   real(kind=dp),     public, save :: adaptive_smearing
@@ -60,7 +60,7 @@ module od_parameters
   real(kind=dp),     public, save :: dos_spacing
   integer,           public, save :: dos_nbins
 
-   
+
   ! Belonging to the jdos module
   real(kind=dp),     public, save :: jdos_max_energy 
   real(kind=dp),     public, save :: jdos_spacing
@@ -97,11 +97,11 @@ contains
 
   !==================================================================!
   subroutine param_read ( )
-  !==================================================================!
-  !                                                                  !
-  ! Read parameters and calculate derived values                     !
-  !                                                                  !
-  !===================================================================  
+    !==================================================================!
+    !                                                                  !
+    ! Read parameters and calculate derived values                     !
+    !                                                                  !
+    !===================================================================  
 
     use od_constants, only : bohr2ang
     use od_io,        only : io_error,io_file_unit,seedname
@@ -146,16 +146,18 @@ contains
           elseif(index(task_string(loop),'all')>0) then
              dos=.true.; pdos=.false.; jdos=.false.; optics=.false.; core=.false.
           else
-              call io_error('Error: value of task unrecognised in param_read')
-           endif
-        end do
-        deallocate(task_string)
+             call io_error('Error: value of task unrecognised in param_read')
+          endif
+       end do
+       deallocate(task_string)
     end if
 
+    num_atoms=0
+    num_species=0
     if(pdos.or.core) then
        ! try to read in the atoms from the cell file.
        ! We don't need them otherwise, so let's not bother
-       call cell_get_atoms
+ !      call cell_get_atoms
     end if
     if(pdos) then
        !parse the start of the pdos file to get info on orbitals
@@ -182,15 +184,15 @@ contains
           elseif(index(task_string(loop),'all')>0) then
              fixed=.true.;adaptive=.true.;linear=.true. 
           else
-              call io_error('Error: value of broadening unrecognised in param_read')
-           endif
-        end do
-        deallocate(task_string)
+             call io_error('Error: value of broadening unrecognised in param_read')
+          endif
+       end do
+       deallocate(task_string)
     end if
 
-   if(.not.(fixed.or.adaptive.or.linear.or.quad)) then ! Piak a default
-    adaptive=.true.
-   endif 
+    if(.not.(fixed.or.adaptive.or.linear.or.quad)) then ! Piak a default
+       adaptive=.true.
+    endif
 
     length_unit     =  'ang'         !
     lenconfac=1.0_dp
@@ -207,14 +209,14 @@ contains
 
     fermi_energy        = -990.0_dp
     call param_get_keyword('fermi_energy',found,r_value=fermi_energy)
-    
+
     ! Force all Gaussians to be greater than the width of a bin. When using numerical_indos
     ! this is critical for counting all of the Gaussian DOS peaks. 
     ! When using semi-analytic integration it is desirable to show up very sharp peaks in the 
     ! DOS. However, the intDOS will not be affected.
     finite_bin_correction = .false.
     call param_get_keyword('finite_bin_correction',found,l_value=finite_bin_correction)
-    
+
     ! Perform fixed and adaptive smearing summing the contribution of each Gaussian
     ! instead of the new and better way of taking the erf. Left in for comparison to LinDOS
     numerical_intdos= .false.
@@ -231,10 +233,10 @@ contains
 
     dos_max_energy         = huge(dos_max_energy)
     call param_get_keyword('dos_max_energy',found,r_value=dos_max_energy)
-  
+
     dos_spacing            = -1.0_dp
     call param_get_keyword('dos_spacing',found,r_value=dos_spacing)
-    
+
     dos_nbins               = -1 ! 10001 LinDOS default
     call param_get_keyword('dos_nbins',found,i_value=dos_nbins)
 
@@ -246,7 +248,7 @@ contains
 
     compute_efermi        = .false.
     call param_get_keyword('compute_efermi',found,l_value=compute_efermi)
- 
+
     devel_flag=' '
     call param_get_keyword('devel_flag',found,c_value=devel_flag)
 
@@ -269,7 +271,7 @@ contains
 
     call param_uppercase()
 
-303  continue
+303 continue
 
     deallocate(in_data,stat=ierr)
     if (ierr/=0) call io_error('Error deallocating in_data in param_read')
@@ -284,13 +286,13 @@ contains
     endif
 
     if((dos_nbins>0).and.(dos_spacing>0.0_dp)) then
-      call io_error('Error: only one of dos_nbins and dos_spacing may be set')
+       call io_error('Error: only one of dos_nbins and dos_spacing may be set')
     endif
- 
+
     if((dos_nbins<0).and.(dos_spacing<0.0_dp)) then
-     dos_spacing= 0.005 ! Roughly similar to LinDOS 
-   endif
-    
+       dos_spacing= 0.005 ! Roughly similar to LinDOS 
+    endif
+
 
     return
 
@@ -345,42 +347,42 @@ contains
 
   !===================================================================
   subroutine param_write_header
-  use od_constants, only :  optados_version
-  implicit none
-  write(stdout,*)
-  write(stdout,'(a78)') " +===========================================================================+"
-  write(stdout,'(a78)') " |                                                                           | "
-  write(stdout,'(a78)') " |                OOO   PPPP  TTTTT  AA   DDD    OOO    SSS                  | "
-  write(stdout,'(a78)') " |               O   O  P   P   T   A  A  D  D  O   O  S                     | "
-  write(stdout,'(a78)') " |               O   O  PPPP    T   AAAA  D  D  O   O   SS                   | "
-  write(stdout,'(a78)') " |               O   O  P       T   A  A  D  D  O   O     S                  | "
-  write(stdout,'(a78)') " |                OOO   P       T   A  A  DDD    OOO   SSS                   | "
-  write(stdout,'(a78)') " |                                                                           | "
-  write(stdout,'(a78)') " +---------------------------------------------------------------------------+ "
-  write(stdout,'(a78)') " |                                                                           | "
-  write(stdout,'(a46,a5,a28)') " |                 Welcome to OptaDOS version ", optados_version,"   &
-&                     | "
-  write(stdout,'(a78)') " |                                                                           | "
-  write(stdout,'(a78)') " |         Andrew J. Morris, Rebecca Nicholls, Chris J. Pickard              | "
-  write(stdout,'(a78)') " |                       and Jonathan Yates                                  | "
-  write(stdout,'(a78)') " |                                                                           | "
-  write(stdout,'(a78)') " |                       Copyright (c) 2010                                  | "
-  write(stdout,'(a78)') " |                                                                           | "
-  write(stdout,'(a78)') " |  Please cite:                                                             | "
-  write(stdout,'(a78)') " |  Andrew J. Morris, Rebecca Nicholls, Chris J. Pickard and Jonathan Yates  | "
-  write(stdout,'(a78)') " |    OptaDOS User Manual, Univ. of Oxford and Univ. College London, (2010)  | "
-  write(stdout,'(a78)') " |                                                                           | "
-  write(stdout,'(a78)') " |  Additionally when using the linear broadening:                           | "
-  write(stdout,'(a78)') " | C.J. Pickard and M.C. Payne, Phys. Rev. B, 59, 7, 4685 (1999)             | "
-  write(stdout,'(a78)') " | C.J. Pickard and M.C. Payne, Phys. Rev. B, 62, 7, 4383 (2000)             | "
-  write(stdout,'(a78)') " |                                                                           | "
-  write(stdout,'(a78)') " |  Additionally when using the adaptive broadening:                         | "
-  write(stdout,'(a78)') " | J.Yates, X.Wang, D.Vanderbilt and I.Souza, Phys. Rev. B, 75, 195121 (2007)| "
-  write(stdout,'(a78)') " |                                                                           | "
-  write(stdout,'(a78)') " |      in all your publications arising from your use of OptaDOS            | "
-  write(stdout,'(a78)') " |                                                                           | "
-  write(stdout,'(a78)') " +===========================================================================+ "
-  write(stdout,*)
+    use od_constants, only :  optados_version
+    implicit none
+    write(stdout,*)
+    write(stdout,'(a78)') " +===========================================================================+"
+    write(stdout,'(a78)') " |                                                                           | "
+    write(stdout,'(a78)') " |                OOO   PPPP  TTTTT  AA   DDD    OOO    SSS                  | "
+    write(stdout,'(a78)') " |               O   O  P   P   T   A  A  D  D  O   O  S                     | "
+    write(stdout,'(a78)') " |               O   O  PPPP    T   AAAA  D  D  O   O   SS                   | "
+    write(stdout,'(a78)') " |               O   O  P       T   A  A  D  D  O   O     S                  | "
+    write(stdout,'(a78)') " |                OOO   P       T   A  A  DDD    OOO   SSS                   | "
+    write(stdout,'(a78)') " |                                                                           | "
+    write(stdout,'(a78)') " +---------------------------------------------------------------------------+ "
+    write(stdout,'(a78)') " |                                                                           | "
+    write(stdout,'(a46,a5,a28)') " |                 Welcome to OptaDOS version ", optados_version,"   &
+         &                     | "
+    write(stdout,'(a78)') " |                                                                           | "
+    write(stdout,'(a78)') " |         Andrew J. Morris, Rebecca Nicholls, Chris J. Pickard              | "
+    write(stdout,'(a78)') " |                       and Jonathan Yates                                  | "
+    write(stdout,'(a78)') " |                                                                           | "
+    write(stdout,'(a78)') " |                       Copyright (c) 2010                                  | "
+    write(stdout,'(a78)') " |                                                                           | "
+    write(stdout,'(a78)') " |  Please cite:                                                             | "
+    write(stdout,'(a78)') " |  Andrew J. Morris, Rebecca Nicholls, Chris J. Pickard and Jonathan Yates  | "
+    write(stdout,'(a78)') " |    OptaDOS User Manual, Univ. of Oxford and Univ. College London, (2010)  | "
+    write(stdout,'(a78)') " |                                                                           | "
+    write(stdout,'(a78)') " |  Additionally when using the linear broadening:                           | "
+    write(stdout,'(a78)') " | C.J. Pickard and M.C. Payne, Phys. Rev. B, 59, 7, 4685 (1999)             | "
+    write(stdout,'(a78)') " | C.J. Pickard and M.C. Payne, Phys. Rev. B, 62, 7, 4383 (2000)             | "
+    write(stdout,'(a78)') " |                                                                           | "
+    write(stdout,'(a78)') " |  Additionally when using the adaptive broadening:                         | "
+    write(stdout,'(a78)') " | J.Yates, X.Wang, D.Vanderbilt and I.Souza, Phys. Rev. B, 75, 195121 (2007)| "
+    write(stdout,'(a78)') " |                                                                           | "
+    write(stdout,'(a78)') " |      in all your publications arising from your use of OptaDOS            | "
+    write(stdout,'(a78)') " |                                                                           | "
+    write(stdout,'(a78)') " +===========================================================================+ "
+    write(stdout,*)
   end subroutine param_write_header
 
 
@@ -428,14 +430,14 @@ contains
           write(stdout,'(1x,a)') '| k-point      Fractional Coordinate        Cartesian Coordinate (Bohr^-1)   |'
        endif
        write(stdout,'(1x,a)') '+----------------------------------------------------------------------------+'
-!       do nkp=1,nkpoints
-!          write(stdout,'(1x,a1,i6,1x,3F10.5,3x,a1,1x,3F10.5,4x,a1)') '|',nkp,kpoint_r(:,nkp),'|',kpoint_r_cart(:,nkp)/lenconfac,'|'
-!       end do
+       !       do nkp=1,nkpoints
+       !          write(stdout,'(1x,a1,i6,1x,3F10.5,3x,a1,1x,3F10.5,4x,a1)') '|',nkp,kpoint_r(:,nkp),'|',kpoint_r_cart(:,nkp)/lenconfac,'|'
+       !       end do
        write(stdout,'(1x,a)') '*----------------------------------------------------------------------------*'
        write(stdout,*) ' '
     end if
     ! Main
- 
+
 
     !
     write(stdout,'(1x,a78)')    '*---------------------------------- TASK ------------------------------------*'
@@ -467,16 +469,16 @@ contains
     endif
     write(stdout,'(1x,a78)') '*---------------------------------- UNITS -----------------------------------*'
     write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Length Unit                               :',trim(length_unit),'|'  
-    
+
     if(dos.or.pdos) then
-      if(dos_per_volume) then 
-           write(stdout,'(1x,a78)') '|  J/P/DOS units                             :  electrons eV^-1 Ang^-3       |' 
-      else
-           write(stdout,'(1x,a78)') '|  J/P/DOS units                             :  electrons eV^-1              |' 
-      endif 
+       if(dos_per_volume) then 
+          write(stdout,'(1x,a78)') '|  J/P/DOS units                             :  electrons eV^-1 Ang^-3       |' 
+       else
+          write(stdout,'(1x,a78)') '|  J/P/DOS units                             :  electrons eV^-1              |' 
+       endif
     endif
-     
-    
+
+
     write(stdout,'(1x,a78)')    '*----------------------------- Broadening -----------------------------------*'
     if(fixed) then
        write(stdout,'(1x,a78)') '|  Fixed Width Smearing                      :  True                         |'
@@ -494,27 +496,27 @@ contains
          write(stdout,'(1x,a78)') '|  Finite Bin Correction                     :  True                         |'
     if(numerical_intdos) &
          write(stdout,'(1x,a78)') '|  Numerical Integration of P/DOS            :  True                         |'        
-     
-        
-      write(stdout,'(1x,a78)')    '*----------------------------- Parameters -----------------------------------*'
-      write(stdout,'(1x,a78)')    '|                                                                            |'
-      if(optics) then
-         write(stdout,'(1x,a78)')    '*------------------------------- Optics -------------------------------------*'
-         if(index(optics_geom,'polycrys')>0) then
-            write(stdout,'(1x,a78)') '|  Geometry for Optics Calculation           :  Polycrytalline               |'        
-         elseif (index(optics_geom,'unpolar')>0) then
-            write(stdout,'(1x,a78)') '|  Geometry for Optics Calculation           :  Unpolarised                  |'        
-            write(stdout,'(1x,a47,2x,f6.2,2x,f6.2,2x,f6.2,3x,a4)') '|  Direction of q-vector (un-normalised)     : ' &
-                 ,optics_qdir(1:3),'   |'        
-         elseif (index(optics_geom,'polar')>0) then
-            write(stdout,'(1x,a78)') '|  Geometry for Optics Calculation           :  Polarised                    |'        
-            write(stdout,'(1x,a47,2x,f6.2,2x,f6.2,2x,f6.2,3x,a4)') '|  Direction of q-vector (un-normalised)     : ' &
-                 ,optics_qdir(1:3),'   |'        
-         elseif (index(optics_geom,'tensor')>0) then
-            write(stdout,'(1x,a78)') '|  Geometry for Optics Calculation           :  Full dielectric tensor       |'        
-         end if
-      end if
-      write(stdout,'(1x,a78)')    '------------------------------------------------------------------------------'
+
+
+    write(stdout,'(1x,a78)')    '*----------------------------- Parameters -----------------------------------*'
+    write(stdout,'(1x,a78)')    '|                                                                            |'
+    if(optics) then
+       write(stdout,'(1x,a78)')    '*------------------------------- Optics -------------------------------------*'
+       if(index(optics_geom,'polycrys')>0) then
+          write(stdout,'(1x,a78)') '|  Geometry for Optics Calculation           :  Polycrytalline               |'        
+       elseif (index(optics_geom,'unpolar')>0) then
+          write(stdout,'(1x,a78)') '|  Geometry for Optics Calculation           :  Unpolarised                  |'        
+          write(stdout,'(1x,a47,2x,f6.2,2x,f6.2,2x,f6.2,3x,a4)') '|  Direction of q-vector (un-normalised)     : ' &
+               ,optics_qdir(1:3),'   |'        
+       elseif (index(optics_geom,'polar')>0) then
+          write(stdout,'(1x,a78)') '|  Geometry for Optics Calculation           :  Polarised                    |'        
+          write(stdout,'(1x,a47,2x,f6.2,2x,f6.2,2x,f6.2,3x,a4)') '|  Direction of q-vector (un-normalised)     : ' &
+               ,optics_qdir(1:3),'   |'        
+       elseif (index(optics_geom,'tensor')>0) then
+          write(stdout,'(1x,a78)') '|  Geometry for Optics Calculation           :  Full dielectric tensor       |'        
+       end if
+    end if
+    write(stdout,'(1x,a78)')    '------------------------------------------------------------------------------'
 
 
 101 format(20x,a3,2x,3F11.6)
@@ -534,10 +536,10 @@ contains
     implicit none
     integer :: ierr
 
-!    if ( allocated ( ndimwin ) ) then
-!       ieallocate (  ndimwin, stat=ierr  )
-!       if (ierr/=0) call io_error('Error in deallocating ndimwin in param_dealloc')
-!    end if
+    !    if ( allocated ( ndimwin ) ) then
+    !       ieallocate (  ndimwin, stat=ierr  )
+    !       if (ierr/=0) call io_error('Error in deallocating ndimwin in param_dealloc')
+    !    end if
     return
 
   end subroutine param_dealloc
@@ -605,7 +607,7 @@ contains
 
   subroutine param_get_pdos
 
-!    call param_get_block_length('projection',found,rows)
+    !    call param_get_block_length('projection',found,rows)
 
 
 
@@ -920,7 +922,7 @@ contains
        line_s=line_s+1
     endif
 
-!    r_value=1.0_dp
+    !    r_value=1.0_dp
     counter=0
     do loop=line_s+1,line_e-1
        dummy=in_data(loop)
@@ -1054,8 +1056,8 @@ contains
 
 
 
-    !====================================================================!
-    subroutine param_get_range_vector(keyword,found,length,lcount,i_value)
+  !====================================================================!
+  subroutine param_get_range_vector(keyword,found,length,lcount,i_value)
     !====================================================================!
     !   Read a range vector eg. 1,2,3,4-10  or 1 3 400:100               !
     !   if(lcount) we return the number of states in length              !
@@ -1079,7 +1081,7 @@ contains
     character(len=5) , parameter :: c_punc=" ,;-:"
     character(len=5)  :: c_num1,c_num2
 
-    
+
     if(lcount .and. present(i_value) ) call io_error('param_get_range_vector: incorrect call')
 
     kl=len_trim(keyword)
@@ -1141,9 +1143,9 @@ contains
        do loop=1,counter-1
           do loop_r=loop+1,counter 
              if(i_value(loop)==i_value(loop_r)) &
-                call io_error('Error parsing keyword '//trim(keyword)//' duplicate values')
+                  call io_error('Error parsing keyword '//trim(keyword)//' duplicate values')
           end do
-        end do
+       end do
     end if
 
     return
@@ -1151,7 +1153,7 @@ contains
 101 call io_error('Error parsing keyword '//trim(keyword))
 
 
-   end  subroutine param_get_range_vector
+  end  subroutine param_get_range_vector
 
 
   !===================================!
@@ -1234,7 +1236,7 @@ contains
 
 
   subroutine param_dist
-    
+
     use od_comms, only : comms_bcast
 
     implicit none
@@ -1267,7 +1269,11 @@ contains
     call comms_bcast(scissor_op,1)
     call comms_bcast(optics_geom,len(optics_geom))
     call comms_bcast(optics_qdir(1),3)
+    call comms_bcast(dos_per_volume,1)
+    call comms_bcast(dos_min_energy,1)
+    call comms_bcast(dos_max_energy,1)
+    call comms_bcast(dos_spacing,1)
 
   end subroutine param_dist
 
-  end module od_parameters
+end module od_parameters

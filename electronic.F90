@@ -16,7 +16,7 @@ module od_electronic
   ! G L O B A L   V A R I A B L E S 
   real(kind=dp), allocatable, public, save  :: band_energy(:,:,:)
   complex(kind=dp), allocatable, public, save  :: band_gradient(:,:,:,:,:)  !I've changed this from real to complex
-  real(kind=dp), allocatable, public, save  :: elnes_mat(:,:,:,:,:)
+  complex(kind=dp), allocatable, public, save  :: elnes_mat(:,:,:,:,:)
 
   real(kind=dp), public, save :: efermi ! The fermi energy we finally decide on
   real(kind=dp), public, save :: efermi_castep ! Fermi energy as reported by CASTEP
@@ -270,7 +270,7 @@ contains
     ! Check that we haven't already read in the energies
     if(allocated(band_energy)) return
 
-    !Open the band sfile
+    !Open the bands file
     band_unit=io_file_unit()
     band_filename=trim(seedname)//".bands"
 
@@ -374,7 +374,7 @@ contains
     end if
 
 
-    close (unit=band_unit)
+    if(on_root) close (unit=band_unit)
 
     band_energy=band_energy*H2eV
     efermi_castep=efermi_castep*H2eV
@@ -437,7 +437,7 @@ contains
     time0=io_time()
 
     ! Check that we haven't already read in the energies
-    if(allocated(band_energy)) return
+    if(allocated(elnes_mat)) return
 
     !Open the band sfile
     elnes_unit=io_file_unit()
@@ -454,7 +454,7 @@ contains
 
        ! check these agree with band data?
 
-       allocate(elnes_orbital(pdos_mwab%norbitals),stat=ierr)
+       allocate(elnes_orbital(elnes_mwab%norbitals),stat=ierr)
        if(ierr/=0) call io_error(' Error : cannot allocate elnes_orbital')
 
        read(elnes_unit) elnes_orbital(1:elnes_mwab%norbitals)%species_no      
@@ -468,7 +468,7 @@ contains
     call comms_bcast(elnes_mwab%nkpoints,1)
     call comms_bcast(elnes_mwab%nspins,1)
     if(.not. on_root) then
-       allocate(elnes_orbital(pdos_mwab%norbitals),stat=ierr)
+       allocate(elnes_orbital(elnes_mwab%norbitals),stat=ierr)
        if(ierr/=0) call io_error(" Error : cannot allocate elnes_orbital")
     end if
     call comms_bcast(elnes_orbital(1)%species_no      ,elnes_mwab%norbitals)
@@ -488,7 +488,7 @@ contains
              do ns=1,elnes_mwab%nspins
                 do orb=1,elnes_mwab%norbitals
                    do nb=1,elnes_mwab%nbands
-                      read(1) (elnes_mat(orb,nb,indx,nk,ns),indx=1,3)
+                      read(elnes_unit) (elnes_mat(orb,nb,indx,ik,ns),indx=1,3)
                    end do
                 end do
              end do
@@ -500,7 +500,7 @@ contains
           do ns=1,elnes_mwab%nspins
              do orb=1,elnes_mwab%norbitals
                 do nb=1,elnes_mwab%nbands
-                   read(1) (elnes_mat(orb,nb,indx,nk,ns),indx=1,3)
+                   read(elnes_unit) (elnes_mat(orb,nb,indx,ik,ns),indx=1,3)
                 end do
              end do
           end do
@@ -512,6 +512,10 @@ contains
        call comms_recv(elnes_mat(1,1,1,1,1),elnes_mwab%norbitals*elnes_mwab%nbands*3*nspins*&
             num_kpoints_on_node(my_node_id),root_id)
     end if
+
+    if(on_root) close(elnes_unit)
+
+    return
 
 100 call io_error('Error: Problem opening elnes file in elec_read_elnes_mat') 
 

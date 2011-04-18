@@ -12,29 +12,29 @@
 ! Written by Andrew Morris (So far)                            11/10/2010 !
 !=========================================================================!
 module od_cell
- use od_constants,only : dp
- use od_io,        only : stdout,maxlen 
- implicit none
+  use od_constants,only : dp
+  use od_io,        only : stdout,maxlen 
+  implicit none
 
- private
-!-------------------------------------------------------------------------!
-! R E A L   S P A C E   V A R I A B L E S
- real(kind=dp), public, save :: real_lattice(1:3,1:3)
- real(kind=dp), public, save :: recip_lattice(1:3,1:3)
- real(kind=dp), public, save :: cell_volume
-!-------------------------------------------------------------------------!
+  private
+  !-------------------------------------------------------------------------!
+  ! R E A L   S P A C E   V A R I A B L E S
+  real(kind=dp), public, save :: real_lattice(1:3,1:3)
+  real(kind=dp), public, save :: recip_lattice(1:3,1:3)
+  real(kind=dp), public, save :: cell_volume
+  !-------------------------------------------------------------------------!
 
 
-!-------------------------------------------------------------------------!
-! R E C I P R O C A L   S P A C E   V A R I A B L E S
- real(kind=dp), allocatable, public, save :: kpoint_r(:,:)
- real(kind=dp), allocatable, public, save :: kpoint_r_cart(:,:)
- real(kind=dp), allocatable, public, save :: kpoint_weight(:)
- integer, allocatable,public, save       :: num_kpoints_on_node(:)
+  !-------------------------------------------------------------------------!
+  ! R E C I P R O C A L   S P A C E   V A R I A B L E S
+  real(kind=dp), allocatable, public, save :: kpoint_r(:,:)
+  real(kind=dp), allocatable, public, save :: kpoint_r_cart(:,:)
+  real(kind=dp), allocatable, public, save :: kpoint_weight(:)
+  integer, allocatable,public, save       :: num_kpoints_on_node(:)
 
- integer, public, save :: nkpoints 
- integer, public, save :: kpoint_grid_dim(3)
-!-------------------------------------------------------------------------!
+  integer, public, save :: nkpoints 
+  integer, public, save :: kpoint_grid_dim(3)
+  !-------------------------------------------------------------------------!
 
   ! Atom sites 
   real(kind=dp), allocatable,     public, save :: atoms_pos_frac(:,:,:)
@@ -48,157 +48,157 @@ module od_cell
 
 
 
-!-------------------------------------------------------------------------!
-! G L O B A L L Y   A V A I L A B L E   F U N C T I O N S
- public :: cell_find_MP_grid
- public :: cell_calc_lattice
- public :: cell_report_parameters
- public :: cell_get_atoms
- public :: cell_dist
-!-------------------------------------------------------------------------!
+  !-------------------------------------------------------------------------!
+  ! G L O B A L L Y   A V A I L A B L E   F U N C T I O N S
+  public :: cell_find_MP_grid
+  public :: cell_calc_lattice
+  public :: cell_report_parameters
+  public :: cell_get_atoms
+  public :: cell_dist
+  !-------------------------------------------------------------------------!
 
- contains
+contains
 
-!=========================================================================!
- subroutine cell_find_MP_grid(kpoints,num_kpts,kpoint_grid_dim)
-!=========================================================================!
-! Find the MP grid from a set of kpoints                                  !
-!-------------------------------------------------------------------------!
-! Arguments: kpoints - an array of kpoints                                !
-!            num_kpts - size of the kpoint array                          !
-!-------------------------------------------------------------------------!
-! Returns: kpint_grid_dim - the number of kpoints in each dimension       !
-!-------------------------------------------------------------------------!
-! Parent module variables used: None                                      !
-!-------------------------------------------------------------------------!
-! Modules used:  None                                                     !
-!-------------------------------------------------------------------------!
-! Key Internal Variables:                                                 !
-! Described below                                                         !
-!-------------------------------------------------------------------------!
-! Necessary conditions: None                                              
-!--------------------------------------------------------------------------
-! Known Worries: None
-!-------------------------------------------------------------------------!
-! Written by Andrew Morris from the lindos program             11/10/2010 !
-!=========================================================================!
-   implicit none
-   integer, intent(out) :: kpoint_grid_dim(1:3)
-   integer, intent(in)  :: num_kpts
-   real(kind=dp),intent(in) :: kpoints(1:3,1:num_kpts)
-   real(kind=dp) :: kpoints_TR(1:3,1:num_kpts*2)
+  !=========================================================================!
+  subroutine cell_find_MP_grid(kpoints,num_kpts,kpoint_grid_dim)
+    !=========================================================================!
+    ! Find the MP grid from a set of kpoints                                  !
+    !-------------------------------------------------------------------------!
+    ! Arguments: kpoints - an array of kpoints                                !
+    !            num_kpts - size of the kpoint array                          !
+    !-------------------------------------------------------------------------!
+    ! Returns: kpint_grid_dim - the number of kpoints in each dimension       !
+    !-------------------------------------------------------------------------!
+    ! Parent module variables used: None                                      !
+    !-------------------------------------------------------------------------!
+    ! Modules used:  None                                                     !
+    !-------------------------------------------------------------------------!
+    ! Key Internal Variables:                                                 !
+    ! Described below                                                         !
+    !-------------------------------------------------------------------------!
+    ! Necessary conditions: None                                              
+    !--------------------------------------------------------------------------
+    ! Known Worries: None
+    !-------------------------------------------------------------------------!
+    ! Written by Andrew Morris from the lindos program             11/10/2010 !
+    !=========================================================================!
+    implicit none
+    integer, intent(out) :: kpoint_grid_dim(1:3)
+    integer, intent(in)  :: num_kpts
+    real(kind=dp),intent(in) :: kpoints(1:3,1:num_kpts)
+    real(kind=dp) :: kpoints_TR(1:3,1:num_kpts*2)
 
-   ! We have to take into account time reversal symmetry. 
-   kpoints_TR(1:3,1:num_kpts)           = kpoints(1:3,1:num_kpts)
-   kpoints_TR(1:3,num_kpts+1:num_kpts*2)=-kpoints(1:3,1:num_kpts)
-   
-   call kpoint_density(kpoints_TR(1,:), num_kpts*2,  kpoint_grid_dim(1))
-   call kpoint_density(kpoints_TR(2,:), num_kpts*2,  kpoint_grid_dim(2))
-   call kpoint_density(kpoints_TR(3,:), num_kpts*2,  kpoint_grid_dim(3))
- end subroutine cell_find_MP_grid
-!=========================================================================!
+    ! We have to take into account time reversal symmetry. 
+    kpoints_TR(1:3,1:num_kpts)           = kpoints(1:3,1:num_kpts)
+    kpoints_TR(1:3,num_kpts+1:num_kpts*2)=-kpoints(1:3,1:num_kpts)
 
-
-!=========================================================================
- subroutine kpoint_density(vector,length,points)
-!=========================================================================
-! Work out the number of kpoints in a given dimension
-! Receives a vector of length, runs though the vector looking for the
-! closest distance between points. Then invert this distance to find the
-! number of k-points in the given dimension. 
-!-------------------------------------------------------------------------
-! Arguments: vector (in) : vector of kpoints in a particular dimension                              
-!            length (in) : length of vector                  
-!            points (out): number of kpoints in the directon of vector
-!-------------------------------------------------------------------------
-! Parent module variables used: None                                      
-!-------------------------------------------------------------------------
-! Modules used:  None                                                     
-!-------------------------------------------------------------------------
-! Key Internal Variables: Described below                                                         
-!-------------------------------------------------------------------------
-! Necessary conditions: None            
-!-------------------------------------------------------------------------
-! Known Worries: None                                      !
-!-------------------------------------------------------------------------
-! Written by Andrew Morris from the LinDOS program             11/10/2010 
-!=========================================================================
-  implicit none
-  integer,       intent(in)  :: length
-  real(kind=dp), intent(in)  :: vector(1:length)
-  integer,       intent(out) :: points
-
-  real(kind=dp) :: real_points
-  real(kind=dp) :: vect(1:length)
-  real(kind=dp) :: distance
-
-  logical :: small_found
-  integer :: i,j
-! THIS IS THE BOMB-PROOF 2nd VERSION
-! from LinDOS
-
-! Check that there isn't only one-kpoint
-  if(length==1) then
-   points=1
-   return
-  endif
-
-! Check that all of the k-points don't have the same value
-  i=1
-  do
-   if(.not.vector(i)==vector(i+1)) exit
-   if((i+1)==length) then ! We haven't exited yet
-   ! therefore all must be the same
-    points=1
-    return
-   endif
-   i=i+1
- enddo
-
-! Now we have more than one k-point and they're not unique
-distance=huge(distance)
-do i=1,length
- do j=i+1,length
-  if(vector(i)>vector(j)) then
-   if((vector(i)-vector(j))<distance) distance=(vector(i)-vector(j))
-  elseif(vector(j)>vector(i)) then
-    if((vector(j)-vector(i))<distance) distance=(vector(j)-vector(i))
-  endif
- enddo
-enddo
+    call kpoint_density(kpoints_TR(1,:), num_kpts*2,  kpoint_grid_dim(1))
+    call kpoint_density(kpoints_TR(2,:), num_kpts*2,  kpoint_grid_dim(2))
+    call kpoint_density(kpoints_TR(3,:), num_kpts*2,  kpoint_grid_dim(3))
+  end subroutine cell_find_MP_grid
+  !=========================================================================!
 
 
-  real_points=1.0_dp/(distance)
-  points=int(real_points+0.5_dp)
+  !=========================================================================
+  subroutine kpoint_density(vector,length,points)
+    !=========================================================================
+    ! Work out the number of kpoints in a given dimension
+    ! Receives a vector of length, runs though the vector looking for the
+    ! closest distance between points. Then invert this distance to find the
+    ! number of k-points in the given dimension. 
+    !-------------------------------------------------------------------------
+    ! Arguments: vector (in) : vector of kpoints in a particular dimension                              
+    !            length (in) : length of vector                  
+    !            points (out): number of kpoints in the directon of vector
+    !-------------------------------------------------------------------------
+    ! Parent module variables used: None                                      
+    !-------------------------------------------------------------------------
+    ! Modules used:  None                                                     
+    !-------------------------------------------------------------------------
+    ! Key Internal Variables: Described below                                                         
+    !-------------------------------------------------------------------------
+    ! Necessary conditions: None            
+    !-------------------------------------------------------------------------
+    ! Known Worries: None                                      !
+    !-------------------------------------------------------------------------
+    ! Written by Andrew Morris from the LinDOS program             11/10/2010 
+    !=========================================================================
+    implicit none
+    integer,       intent(in)  :: length
+    real(kind=dp), intent(in)  :: vector(1:length)
+    integer,       intent(out) :: points
 
-end subroutine kpoint_density
+    real(kind=dp) :: real_points
+    real(kind=dp) :: vect(1:length)
+    real(kind=dp) :: distance
 
-subroutine cell_get_atoms
- use od_comms,     only : on_root
- use od_constants, only : bohr2ang
- use od_io,        only : io_file_unit, io_error, seedname, stdout, maxlen
- use od_algorithms,only : utility_cart_to_frac, utility_frac_to_cart, utility_lowercase
+    logical :: small_found
+    integer :: i,j
+    ! THIS IS THE BOMB-PROOF 2nd VERSION
+    ! from LinDOS
 
-  implicit none
+    ! Check that there isn't only one-kpoint
+    if(length==1) then
+       points=1
+       return
+    endif
 
-  logical           :: lunits
-  real(kind=dp)     :: atoms_pos_frac_tmp(3,num_atoms)
-  real(kind=dp)     :: atoms_pos_cart_tmp(3,num_atoms)
-  character(len=20) :: keyword
-  integer           :: in,in1,in2,ins,ine,loop,i,line_e,line_s,counter,tot_num_lines
-  integer           :: i_temp,loop2,max_sites,ierr,ic,num_lines,line_counter,in_unit
-  logical           :: found_e,found_s,found,frac
-  character(len=maxlen) :: dummy,end_st,start_st
-  character(len=maxlen) :: ctemp(num_atoms)
-  character(len=maxlen) :: atoms_label_tmp(num_atoms)
-  logical           :: lconvert
+    ! Check that all of the k-points don't have the same value
+    i=1
+    do
+       if(.not.vector(i)==vector(i+1)) exit
+       if((i+1)==length) then ! We haven't exited yet
+          ! therefore all must be the same
+          points=1
+          return
+       endif
+       i=i+1
+    enddo
 
-  character(len=maxlen), allocatable :: in_data(:)
+    ! Now we have more than one k-point and they're not unique
+    distance=huge(distance)
+    do i=1,length
+       do j=i+1,length
+          if(vector(i)>vector(j)) then
+             if((vector(i)-vector(j))<distance) distance=(vector(i)-vector(j))
+          elseif(vector(j)>vector(i)) then
+             if((vector(j)-vector(i))<distance) distance=(vector(j)-vector(i))
+          endif
+       enddo
+    enddo
 
 
-  ! read in the cell file
+    real_points=1.0_dp/(distance)
+    points=int(real_points+0.5_dp)
 
-  ! count the lines
+  end subroutine kpoint_density
+
+  subroutine cell_get_atoms
+    use od_comms,     only : on_root
+    use od_constants, only : bohr2ang
+    use od_io,        only : io_file_unit, io_error, seedname, stdout, maxlen
+    use od_algorithms,only : utility_cart_to_frac, utility_frac_to_cart, utility_lowercase
+
+    implicit none
+
+    logical           :: lunits
+    real(kind=dp),allocatable     :: atoms_pos_frac_tmp(:,:)
+    real(kind=dp),allocatable    :: atoms_pos_cart_tmp(:,:)
+    character(len=20) :: keyword
+    integer           :: in,in1,in2,ins,ine,loop,i,line_e,line_s,counter,tot_num_lines
+    integer           :: i_temp,loop2,max_sites,ierr,ic,num_lines,line_counter,in_unit
+    logical           :: found_e,found_s,found,frac
+    character(len=maxlen) :: dummy,end_st,start_st
+    character(len=maxlen),allocatable :: ctemp(:)
+    character(len=maxlen),allocatable :: atoms_label_tmp(:)
+    logical           :: lconvert
+
+    character(len=maxlen), allocatable :: in_data(:)
+
+
+    ! read in the cell file
+
+    ! count the lines
     in_unit=io_file_unit( )
     open (in_unit, file=trim(seedname)//'.cell',form='formatted',status='old',err=101)
 
@@ -217,7 +217,7 @@ subroutine cell_get_atoms
 200 call io_error('Error: Problem reading input file '//trim(seedname)//'.cell')
 210 continue
     rewind(in_unit)
-    
+
     ! now read in for real - ignoring comments
     allocate(in_data(num_lines),stat=ierr)
     if (ierr/=0) call io_error('Error allocating in_data in param_in_file')
@@ -242,7 +242,9 @@ subroutine cell_get_atoms
 
     ! let's look for the atoms block (remember everything is lower case)
     keyword='positions'
-    
+
+
+    found_s=.false.
     do loop=1,num_lines
        ins=index(in_data(loop),trim(keyword))
        if (ins==0 ) cycle
@@ -268,6 +270,7 @@ subroutine cell_get_atoms
        keyword='positions_abs'
     end if
 
+    found_e=.false.
     do loop=1,num_lines
        ine=index(in_data(loop),trim(keyword))
        if (ine==0 ) cycle
@@ -299,8 +302,18 @@ subroutine cell_get_atoms
        lconvert=.true.
        line_s=line_s+1
     endif
-    
- 
+
+    num_atoms=line_e-1-(line_s+1)+1
+    allocate(atoms_pos_frac_tmp(3,num_atoms),stat=ierr)
+    if (ierr/=0) call io_error('Error allocating atoms_pos_frac_tmp in cell_get_atoms')
+    allocate(atoms_pos_cart_tmp(3,num_atoms),stat=ierr)
+    if (ierr/=0) call io_error('Error allocating atoms_pos_cart_tmp in cell_get_atoms')
+    allocate(ctemp(num_atoms),stat=ierr)
+    if (ierr/=0) call io_error('Error allocating ctemp in cell_get_atoms')
+    allocate(atoms_label_tmp(num_atoms),stat=ierr)
+    if (ierr/=0) call io_error('Error allocating atoms_label_tmp in cell_get_atoms')
+
+
 
     counter=0
     do loop=line_s+1,line_e-1
@@ -343,11 +356,11 @@ subroutine cell_get_atoms
     end do
 
     allocate(atoms_species_num(num_species),stat=ierr)
-       if (ierr/=0) call io_error('Error allocating atoms_species_num in param_get_atoms')
+    if (ierr/=0) call io_error('Error allocating atoms_species_num in cell_get_atoms')
     allocate(atoms_label(num_species),stat=ierr)
-       if (ierr/=0) call io_error('Error allocating atoms_label in param_get_atoms')
+    if (ierr/=0) call io_error('Error allocating atoms_label in cell_get_atoms')
     allocate(atoms_symbol(num_species),stat=ierr)
-       if (ierr/=0) call io_error('Error allocating atoms_symbol in param_get_atoms')
+    if (ierr/=0) call io_error('Error allocating atoms_symbol in cell_get_atoms')
     atoms_species_num(:)=0
 
     do loop=1,num_species
@@ -361,9 +374,9 @@ subroutine cell_get_atoms
 
     max_sites=maxval(atoms_species_num)
     allocate(atoms_pos_frac(3,max_sites,num_species),stat=ierr)
-       if (ierr/=0) call io_error('Error allocating atoms_pos_frac in param_get_atoms')
+    if (ierr/=0) call io_error('Error allocating atoms_pos_frac in cell_get_atoms')
     allocate(atoms_pos_cart(3,max_sites,num_species),stat=ierr)
-       if (ierr/=0) call io_error('Error allocating atoms_pos_cart in param_get_atoms')
+    if (ierr/=0) call io_error('Error allocating atoms_pos_cart in cell_get_atoms')
 
     do loop=1,num_species
        counter=0
@@ -381,7 +394,7 @@ subroutine cell_get_atoms
        atoms_symbol(loop)(1:2)=atoms_label(loop)(1:2)
        ic=ichar(atoms_symbol(loop)(2:2))
        if ((ic.lt.ichar('a')).or.(ic.gt.ichar('z'))) &
-         atoms_symbol(loop)(2:2)=' '
+            atoms_symbol(loop)(2:2)=' '
     end do
 
     return
@@ -391,154 +404,175 @@ subroutine cell_get_atoms
 
 
 
-end subroutine cell_get_atoms
+  end subroutine cell_get_atoms
 
 
 
 
 
- 
-
-!=========================================================================!
-subroutine cell_calc_lattice
-!=========================================================================!
-! Begin with a real lattice. Convert from bohr. Calculate a reciprocal
-! lattice and the volume of the cell
-!-------------------------------------------------------------------------
-! Arguments: None
-!-------------------------------------------------------------------------
-! Parent module variables used: real_lattice, recip_lattice, cell_volume                                      
-!-------------------------------------------------------------------------
-! Modules used:  See below                                                     
-!-------------------------------------------------------------------------
-! Key Internal Variables: None                                                      
-!-------------------------------------------------------------------------
-! Necessary conditions: None     
-!-------------------------------------------------------------------------
-! Known Worries: None                                              
-!-------------------------------------------------------------------------
-! Written by Andrew Morris from the LinDOS program             11/10/2010 
-!=========================================================================
-use od_constants, only : pi,bohr2ang
-implicit none
-
-  ! THESE ARE IN BOHR, DON'T GET TRIPPED UP AGAIN!
-  real_lattice=real_lattice*bohr2ang
-
-  recip_lattice(1,1)=real_lattice(2,2)*real_lattice(3,3)- &
-       real_lattice(3,2)*real_lattice(2,3)
-  recip_lattice(2,1)=real_lattice(2,3)*real_lattice(3,1)- &
-       real_lattice(3,3)*real_lattice(2,1)
-  recip_lattice(3,1)=real_lattice(2,1)*real_lattice(3,2)- &
-       real_lattice(3,1)*real_lattice(2,2)
-  recip_lattice(1,2)=real_lattice(3,2)*real_lattice(1,3)- &
-       real_lattice(1,2)*real_lattice(3,3)
-  recip_lattice(2,2)=real_lattice(3,3)*real_lattice(1,1)- &
-       real_lattice(1,3)*real_lattice(3,1)
-  recip_lattice(3,2)=real_lattice(3,1)*real_lattice(1,2)- &
-       real_lattice(1,1)*real_lattice(3,2)
-  recip_lattice(1,3)=real_lattice(1,2)*real_lattice(2,3)- &
-       real_lattice(2,2)*real_lattice(1,3)
-  recip_lattice(2,3)=real_lattice(1,3)*real_lattice(2,1)- &
-       real_lattice(2,3)*real_lattice(1,1)
-  recip_lattice(3,3)=real_lattice(1,1)*real_lattice(2,2)- &
-       real_lattice(2,1)*real_lattice(1,2)
-
-  ! * Calculate cell volume
-  cell_volume=real_lattice(1,1)*recip_lattice(1,1) + &
-       real_lattice(2,1)*recip_lattice(1,2) + &
-       real_lattice(3,1)*recip_lattice(1,3)
 
 
-  if(cell_volume<0.0_dp) then ! Left handed set
-    cell_volume=-cell_volume
-  endif
+  !=========================================================================!
+  subroutine cell_calc_lattice
+    !=========================================================================!
+    ! Begin with a real lattice. Convert from bohr. Calculate a reciprocal
+    ! lattice and the volume of the cell
+    !-------------------------------------------------------------------------
+    ! Arguments: None
+    !-------------------------------------------------------------------------
+    ! Parent module variables used: real_lattice, recip_lattice, cell_volume                                      
+    !-------------------------------------------------------------------------
+    ! Modules used:  See below                                                     
+    !-------------------------------------------------------------------------
+    ! Key Internal Variables: None                                                      
+    !-------------------------------------------------------------------------
+    ! Necessary conditions: None     
+    !-------------------------------------------------------------------------
+    ! Known Worries: None                                              
+    !-------------------------------------------------------------------------
+    ! Written by Andrew Morris from the LinDOS program             11/10/2010 
+    !=========================================================================
+    use od_constants, only : pi,bohr2ang
+    implicit none
 
-  ! Scale reciprocal lattice by 2*pi/volume
-  recip_lattice(:,:)=recip_lattice(:,:)*pi*2.0_dp/cell_volume
+    ! THESE ARE IN BOHR, DON'T GET TRIPPED UP AGAIN!
+    real_lattice=real_lattice*bohr2ang
 
-end subroutine cell_calc_lattice
- 
-!=========================================================================!
-subroutine cell_report_parameters
-!=========================================================================
-! Begin with a real lattice. Convert from bohr. Calculate a reciprocal
-! lattice and the volume of the cell
-!-------------------------------------------------------------------------
-! Arguments: None
-!-------------------------------------------------------------------------
-! Parent module variables used: real_lattice, recip_lattice, cell_volume                                      
-!-------------------------------------------------------------------------
-! Modules used:  See below                                                 
-!-------------------------------------------------------------------------
-! Key Internal Variables: None                                                      
-!-------------------------------------------------------------------------
-! Necessary conditions: None     
-!-------------------------------------------------------------------------
-! Known Worries: None                                              
-!-------------------------------------------------------------------------
-! Written by J R Yates, modified A J Morris                     Dec 2010
-!=========================================================================
-use od_io, only : stdout
+    recip_lattice(1,1)=real_lattice(2,2)*real_lattice(3,3)- &
+         real_lattice(3,2)*real_lattice(2,3)
+    recip_lattice(2,1)=real_lattice(2,3)*real_lattice(3,1)- &
+         real_lattice(3,3)*real_lattice(2,1)
+    recip_lattice(3,1)=real_lattice(2,1)*real_lattice(3,2)- &
+         real_lattice(3,1)*real_lattice(2,2)
+    recip_lattice(1,2)=real_lattice(3,2)*real_lattice(1,3)- &
+         real_lattice(1,2)*real_lattice(3,3)
+    recip_lattice(2,2)=real_lattice(3,3)*real_lattice(1,1)- &
+         real_lattice(1,3)*real_lattice(3,1)
+    recip_lattice(3,2)=real_lattice(3,1)*real_lattice(1,2)- &
+         real_lattice(1,1)*real_lattice(3,2)
+    recip_lattice(1,3)=real_lattice(1,2)*real_lattice(2,3)- &
+         real_lattice(2,2)*real_lattice(1,3)
+    recip_lattice(2,3)=real_lattice(1,3)*real_lattice(2,1)- &
+         real_lattice(2,3)*real_lattice(1,1)
+    recip_lattice(3,3)=real_lattice(1,1)*real_lattice(2,2)- &
+         real_lattice(2,1)*real_lattice(1,2)
 
-  implicit none
+    ! * Calculate cell volume
+    cell_volume=real_lattice(1,1)*recip_lattice(1,1) + &
+         real_lattice(2,1)*recip_lattice(1,2) + &
+         real_lattice(3,1)*recip_lattice(1,3)
 
-  integer :: i
 
-  write(stdout,'(30x,a21)') 'Lattice Vectors (Ang)' 
-  write(stdout,101) 'a_1',(real_lattice(1,I), i=1,3)
-  write(stdout,101) 'a_2',(real_lattice(2,I), i=1,3)
-  write(stdout,101) 'a_3',(real_lattice(3,I), i=1,3)
+    if(cell_volume<0.0_dp) then ! Left handed set
+       cell_volume=-cell_volume
+    endif
 
-  write(stdout,*)   
-   
-  write(stdout,'(24x,a33)') 'Reciprocal-Space Vectors (Ang^-1)'
-  write(stdout,101) 'b_1',(recip_lattice(1,I), i=1,3)
-  write(stdout,101) 'b_2',(recip_lattice(2,I), i=1,3)
-  write(stdout,101) 'b_3',(recip_lattice(3,I), i=1,3)
+    ! Scale reciprocal lattice by 2*pi/volume
+    recip_lattice(:,:)=recip_lattice(:,:)*pi*2.0_dp/cell_volume
 
-  write(stdout,*) 
-  write(stdout,'(19x,a17,3x,f11.5)',advance='no') &
+  end subroutine cell_calc_lattice
+
+  !=========================================================================!
+  subroutine cell_report_parameters
+    !=========================================================================
+    ! Begin with a real lattice. Convert from bohr. Calculate a reciprocal
+    ! lattice and the volume of the cell
+    !-------------------------------------------------------------------------
+    ! Arguments: None
+    !-------------------------------------------------------------------------
+    ! Parent module variables used: real_lattice, recip_lattice, cell_volume                                      
+    !-------------------------------------------------------------------------
+    ! Modules used:  See below                                                 
+    !-------------------------------------------------------------------------
+    ! Key Internal Variables: None                                                      
+    !-------------------------------------------------------------------------
+    ! Necessary conditions: None     
+    !-------------------------------------------------------------------------
+    ! Known Worries: None                                              
+    !-------------------------------------------------------------------------
+    ! Written by J R Yates, modified A J Morris                     Dec 2010
+    !=========================================================================
+    use od_io, only : stdout
+
+    implicit none
+
+    integer :: i
+
+    write(stdout,'(30x,a21)') 'Lattice Vectors (Ang)' 
+    write(stdout,101) 'a_1',(real_lattice(1,I), i=1,3)
+    write(stdout,101) 'a_2',(real_lattice(2,I), i=1,3)
+    write(stdout,101) 'a_3',(real_lattice(3,I), i=1,3)
+
+    write(stdout,*)   
+
+    write(stdout,'(24x,a33)') 'Reciprocal-Space Vectors (Ang^-1)'
+    write(stdout,101) 'b_1',(recip_lattice(1,I), i=1,3)
+    write(stdout,101) 'b_2',(recip_lattice(2,I), i=1,3)
+    write(stdout,101) 'b_3',(recip_lattice(3,I), i=1,3)
+
+    write(stdout,*) 
+    write(stdout,'(19x,a17,3x,f11.5)',advance='no') &
          'Unit Cell Volume:',cell_volume
- 
-  write(stdout,'(2x,a7)') '(Ang^3)'
-  write(stdout,*) 
-  
-  return
+
+    write(stdout,'(2x,a7)') '(Ang^3)'
+    write(stdout,*) 
+
+    return
 101 format(20x,a3,2x,3F11.6)
-  
- end subroutine cell_report_parameters
 
- subroutine cell_dist
-   use od_comms, only : comms_bcast
-   implicit none
+  end subroutine cell_report_parameters
 
-call comms_bcast(real_lattice(1,1),9)
-call comms_bcast(recip_lattice(1,1),9)
-call comms_bcast(cell_volume,1)
+  subroutine cell_dist
+    use od_comms, only : comms_bcast,on_root
+    use od_io, only    : io_error
+    implicit none
+    
+    integer :: max_sites,ierr
 
-!call comms_bcast(kpoint_r(:,:)
-!call comms_bcast(kpoint_r_cart(:,:)
-!call comms_bcast(kpoint_weight(:)
+    call comms_bcast(real_lattice(1,1),9)
+    call comms_bcast(recip_lattice(1,1),9)
+    call comms_bcast(cell_volume,1)
 
-
-call comms_bcast(nkpoints,1) 
-call comms_bcast(kpoint_grid_dim(1),3)
-
-
-!-------------------------------------------------------------------------!
-
-!!$  ! Atom sites 
-!!$  real(kind=dp), allocatable,     public, save :: atoms_pos_frac(:,:,:)
-!!$  real(kind=dp), allocatable,     public, save :: atoms_pos_cart(:,:,:)
-!!$  integer, allocatable,           public, save :: atoms_species_num(:)  
-!!$  character(len=maxlen), allocatable,  public, save :: atoms_label(:)
-!!$  character(len=2), allocatable,  public, save :: atoms_symbol(:)
-!!$  integer,                        public, save :: num_atoms
-!!$  integer,                        public, save :: num_species
+    !call comms_bcast(kpoint_r(:,:)
+    !call comms_bcast(kpoint_r_cart(:,:)
+    !call comms_bcast(kpoint_weight(:)
 
 
+    call comms_bcast(nkpoints,1) 
+    call comms_bcast(kpoint_grid_dim(1),3)
 
- end subroutine cell_dist
+
+    !-------------------------------------------------------------------------!
+
+    call comms_bcast(num_atoms,1)
+    call comms_bcast(num_species,1)
+    if (num_atoms>0) then
+       if(.not. on_root) then
+          allocate(atoms_species_num(num_species),stat=ierr)
+          if (ierr/=0) call io_error('Error allocating atoms_species_num in cell_dist')
+       end if
+       call comms_bcast(atoms_species_num(1),num_species)
+       max_sites=maxval(atoms_species_num)
+       if(.not. on_root) then
+          allocate(atoms_pos_frac(3,max_sites,num_species),stat=ierr)
+          if (ierr/=0) call io_error('Error allocating atoms_pos_frac in cell_dist')
+          allocate(atoms_pos_cart(3,max_sites,num_species),stat=ierr)
+          if (ierr/=0) call io_error('Error allocating atoms_pos_cart in cell_dist')
+          allocate(atoms_label(num_species),stat=ierr)
+          if (ierr/=0) call io_error('Error allocating atoms_label in cell_dist')
+          allocate(atoms_symbol(num_species),stat=ierr)
+          if (ierr/=0) call io_error('Error allocating atoms_symbol in cell_dist')
+       end if
+       call comms_bcast(atoms_pos_frac(1,1,1),3*num_species*max_sites)
+       call comms_bcast(atoms_pos_cart(1,1,1),3*num_species*max_sites)
+       call comms_bcast(atoms_label(1),len(atoms_label(1))*num_species)
+       call comms_bcast(atoms_symbol(1),len(atoms_symbol(1))*num_species)
+    endif
+
+ 
+
+
+
+  end subroutine cell_dist
 
 endmodule od_cell

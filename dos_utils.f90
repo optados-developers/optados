@@ -97,7 +97,8 @@ contains
     use od_parameters,only : linear, adaptive, fixed, quad, compute_band_energy, &
          & compute_efermi,dos,dos_per_volume,fermi_energy,iprint
     use od_cell,         only : cell_volume, nkpoints, cell_calc_lattice, &
-         & cell_report_parameters,cell_dist,kpoint_grid_dim
+         & cell_report_parameters,cell_dist,kpoint_grid_dim,num_kpoints_on_node
+
     implicit none
 
     !-------------------------------------------------------------------------------
@@ -109,17 +110,17 @@ contains
     !-------------------------------------------------------------------------------
 
     if(.not.(linear.or.adaptive.or.fixed.or.quad)) call io_error (" DOS: No Broadening Set")
-    
+
 
     calc_weighted_dos=.false.
     if(present(matrix_weights)) calc_weighted_dos=.true.
-    
-    
+
+
     if(calc_weighted_dos.eqv..false.) then ! We are called just to provide dos.
-      if(allocated(E)) then
-         if(on_root) write(stdout,*) " Already calculated dos, so returning..."
-         return  ! The dos has already been calculated previously so just return.       
-      endif
+       if(allocated(E)) then
+          if(on_root) write(stdout,*) " Already calculated dos, so returning..."
+          return  ! The dos has already been calculated previously so just return.       
+       endif
     endif
 
     if(calc_weighted_dos)then
@@ -142,8 +143,10 @@ contains
     endif
 
     if(calc_weighted_dos) then 
+!       print*,'mw%nkpoints.ne.num_nkpoints_on_node(my_node_id))',mw%nkpoints,nunum_nkpoints_on_node(my_node_id)
        if(mw%nspins.ne.nspins)     call io_error ("ERROR : DOS :  mw%nspins not equal to nspins.")
-       if(mw%nkpoints.ne.nkpoints) call io_error ("ERROR : DOS : mw%nkpoints not equal to nkpoints.")
+       if(mw%nkpoints.ne.num_kpoints_on_node(my_node_id)) &
+            call io_error ("ERROR : DOS : mw%nkpoints not equal to nkpoints.")
     endif
 
     !-------------------------------------------------------------------------------
@@ -151,7 +154,7 @@ contains
     ! If we're using one of the more accurate roadening schemes we also need to read in the 
     ! band gradients too
     if(quad.or.linear.or.adaptive) then
-      if(.not.allocated(band_gradient)) call elec_read_band_gradient
+       if(.not.allocated(band_gradient)) call elec_read_band_gradient
     endif
     !-------------------------------------------------------------------------------
     ! C A L C U L A T E   D O S 
@@ -216,105 +219,105 @@ contains
     if(on_root)   write(stdout,'(1x,a78)')  '+------------------------ Fermi Energy Analysis -----------------------------+'
     if(on_root)   write(stdout,'(1x,a1,a45,f8.4,a3,20x,a1)') "|","Fermi energy from CASTEP :",efermi_castep," eV","|"
     if(on_root)   write(stdout,'(1x,a78)')    '+----------------------------------------------------------------------------+'
-       
-       if(compute_efermi) then
-          if(fixed) then 
-             if(on_root)write(stdout,'(1x,a78)') "| From Fixed broadening                                                      | "
-             efermi_fixed= calc_efermi_from_intdos(intdos_fixed)
-             if(on_root)write(stdout,'(1x,a1,a46,f8.4,a3,19x,a1)')"|", " Fermi energy (Fixed braodening) : ", efermi_fixed,"eV","|"
-             if(on_root)write(stdout,'(1x,a78)')    '+----------------------------------------------------------------------------+'
-             
+
+    if(compute_efermi) then
+       if(fixed) then 
+          if(on_root)write(stdout,'(1x,a78)') "| From Fixed broadening                                                      | "
+          efermi_fixed= calc_efermi_from_intdos(intdos_fixed)
+          if(on_root)write(stdout,'(1x,a1,a46,f8.4,a3,19x,a1)')"|", " Fermi energy (Fixed braodening) : ", efermi_fixed,"eV","|"
+          if(on_root)write(stdout,'(1x,a78)')    '+----------------------------------------------------------------------------+'
+
+       endif
+       if(adaptive) then
+          if(on_root)write(stdout,'(1x,a78)') "| From Adaptive broadening                                                   | "  
+          efermi_adaptive=calc_efermi_from_intdos(intdos_adaptive)
+          if(on_root)write(stdout,'(1x,a1,a46,f8.4,a3,19x,a1)')"|", " Fermi energy (Adaptive braodening) : " &
+               , efermi_adaptive,"eV","|"
+          if(on_root)write(stdout,'(1x,a78)') &
+               '+----------------------------------------------------------------------------+'
+
+       endif
+       if(linear) then
+          if(on_root)write(stdout,'(1x,a78)') &
+               "| From Linear broadening                                                     | " 
+          efermi_linear=calc_efermi_from_intdos(intdos_linear) 
+          if(on_root)write(stdout,'(1x,a1,a46,f8.4,a3,19x,a1)')"|", " Fermi energy (Linear braodening) : ",&
+               efermi_linear," eV","|"
+          if(on_root)write(stdout,'(1x,a78)')  &
+               '+----------------------------------------------------------------------------+'
+
+       endif
+    else
+       if(on_root) write(stdout,'(1x,a78)')   "| No Fermi energies calculated                                               | "
+       ! Use the derived Fermi energy shifts if calculated. It not use the fermi_energy supplied
+       ! if not, use the CASTEP Fermi energy
+       if(fermi_energy.ne.-990.0_dp)then
+          efermi_fixed=fermi_energy
+          efermi_adaptive=fermi_energy
+          efermi_linear=fermi_energy
+       else
+          efermi_fixed=efermi_castep
+          efermi_adaptive=efermi_castep
+          efermi_linear=efermi_castep
+       endif
+    endif
+
+    ! NB If you have asked for more than one type of broadening
+    ! If one of your options is linear then all will have the linear efermi
+    ! If you have asked for adaptive, but nor linear, you will have the adaptive efermi
+    if(fixed) then
+       efermi=efermi_fixed  
+    endif
+
+    if(adaptive) then
+       efermi=efermi_adaptive
+    endif
+
+    if(linear)then
+       efermi=efermi_linear
+    endif
+
+    if(on_root) then
+       write(stdout,'(1x,a1,a46,f8.4,a3,19x,a1)')"|", " Fermi energy used : ", efermi,"eV","|"
+       E(:)=E(:)-efermi
+       band_energy(:,:,:) = band_energy(:,:,:) - efermi
+
+       write(stdout,'(1x,a78)')    '+----------------------------------------------------------------------------+'
+       time1=io_time()
+       write(stdout,'(1x,a40,f11.3,a)') 'Time to calculate Fermi energies ',time1-time0,' (sec)'
+       !-------------------------------------------------------------------------------
+    end if
+
+    !-------------------------------------------------------------------------------
+    ! B A N D   E N E R G Y   A N A L Y S I S
+    ! Now for a bit of crosschecking  band energies
+    ! These should all converge to the same number as the number of bins is increased
+    if(compute_band_energy) call compute_band_energies
+    !-------------------------------------------------------------------------------
+
+    if(on_root) then
+       if(dos_per_volume) then
+          if(fixed) then
+             dos_fixed=dos_fixed/cell_volume   
+             intdos_fixed=intdos_fixed/cell_volume
           endif
           if(adaptive) then
-             if(on_root)write(stdout,'(1x,a78)') "| From Adaptive broadening                                                   | "  
-             efermi_adaptive=calc_efermi_from_intdos(intdos_adaptive)
-             if(on_root)write(stdout,'(1x,a1,a46,f8.4,a3,19x,a1)')"|", " Fermi energy (Adaptive braodening) : " &
-                  , efermi_adaptive,"eV","|"
-             if(on_root)write(stdout,'(1x,a78)') &
-                  '+----------------------------------------------------------------------------+'
-             
+             dos_adaptive=dos_adaptive/cell_volume 
+             intdos_adaptive=intdos_adaptive/cell_volume
           endif
           if(linear) then
-             if(on_root)write(stdout,'(1x,a78)') &
-                  "| From Linear broadening                                                     | " 
-             efermi_linear=calc_efermi_from_intdos(intdos_linear) 
-             if(on_root)write(stdout,'(1x,a1,a46,f8.4,a3,19x,a1)')"|", " Fermi energy (Linear braodening) : ",&
-                  efermi_linear," eV","|"
-             if(on_root)write(stdout,'(1x,a78)')  &
-                  '+----------------------------------------------------------------------------+'
-             
+             dos_linear=dos_linear/cell_volume     
+             intdos_linear=intdos_linear/cell_volume
           endif
-       else
-          if(on_root) write(stdout,'(1x,a78)')   "| No Fermi energies calculated                                               | "
-          ! Use the derived Fermi energy shifts if calculated. It not use the fermi_energy supplied
-          ! if not, use the CASTEP Fermi energy
-          if(fermi_energy.ne.-990.0_dp)then
-             efermi_fixed=fermi_energy
-             efermi_adaptive=fermi_energy
-             efermi_linear=fermi_energy
-          else
-             efermi_fixed=efermi_castep
-             efermi_adaptive=efermi_castep
-             efermi_linear=efermi_castep
+          if(calc_weighted_dos) then
+             weighted_dos=weighted_dos/cell_volume
           endif
+          ! if(quad) then
+          !    dos_quad=dos_quad/cell_volume         
+          !    intdos_quad=intdos_quad/cell_volume
+          ! endif   
        endif
-       
-       ! NB If you have asked for more than one type of broadening
-       ! If one of your options is linear then all will have the linear efermi
-       ! If you have asked for adaptive, but nor linear, you will have the adaptive efermi
-       if(fixed) then
-          efermi=efermi_fixed  
-       endif
-       
-       if(adaptive) then
-          efermi=efermi_adaptive
-       endif
-       
-       if(linear)then
-          efermi=efermi_linear
-       endif
-       
-       if(on_root) then
-          write(stdout,'(1x,a1,a46,f8.4,a3,19x,a1)')"|", " Fermi energy used : ", efermi,"eV","|"
-          E(:)=E(:)-efermi
-          band_energy(:,:,:) = band_energy(:,:,:) - efermi
-          
-          write(stdout,'(1x,a78)')    '+----------------------------------------------------------------------------+'
-          time1=io_time()
-          write(stdout,'(1x,a40,f11.3,a)') 'Time to calculate Fermi energies ',time1-time0,' (sec)'
-          !-------------------------------------------------------------------------------
-       end if
-       
-       !-------------------------------------------------------------------------------
-       ! B A N D   E N E R G Y   A N A L Y S I S
-       ! Now for a bit of crosschecking  band energies
-       ! These should all converge to the same number as the number of bins is increased
-       if(compute_band_energy) call compute_band_energies
-       !-------------------------------------------------------------------------------
-       
-       if(on_root) then
-          if(dos_per_volume) then
-             if(fixed) then
-                dos_fixed=dos_fixed/cell_volume   
-                intdos_fixed=intdos_fixed/cell_volume
-             endif
-             if(adaptive) then
-                dos_adaptive=dos_adaptive/cell_volume 
-                intdos_adaptive=intdos_adaptive/cell_volume
-             endif
-             if(linear) then
-                dos_linear=dos_linear/cell_volume     
-                intdos_linear=intdos_linear/cell_volume
-             endif
-             if(calc_weighted_dos) then
-                weighted_dos=weighted_dos/cell_volume
-             endif
-             ! if(quad) then
-             !    dos_quad=dos_quad/cell_volume         
-             !    intdos_quad=intdos_quad/cell_volume
-             ! endif   
-          endif
-       endif
+    endif
 
 
 
@@ -469,7 +472,7 @@ contains
     if(on_root) then
        write(stdout,*)
        write(stdout,'(1x,a78)')    '+--------------------------- Band Energy Analysis ---------------------------+'
-       
+
        if(fixed)then
           write(stdout,'(1x,a1,a46,f12.4,a3,15x,a1)')"|",&
                " Band energy (Fixed broadening)  : ",calc_band_energies(dos_fixed),"eV","|"
@@ -483,7 +486,7 @@ contains
                " Band energy (Linear broadening) : ",calc_band_energies(dos_linear),"eV","|"
        endif
     endif
-    
+
     eband = 0.0_dp
     do ik=1,num_kpoints_on_node(my_node_id)
        do is=1,nspins
@@ -503,7 +506,7 @@ contains
   end subroutine compute_band_energies
 
 
- 
+
 
   !=============================================================================== 
   subroutine setup_energy_scale
@@ -545,7 +548,7 @@ contains
     endif
     call comms_reduce(min_band_energy,1,'MIN')
     call comms_bcast(min_band_energy,1)
-    
+
     if(dos_max_energy==huge(dos_max_energy)) then !Do it automatically
        max_band_energy  = maxval(band_energy)+5.0_dp
     else
@@ -572,7 +575,7 @@ contains
     do idos=1,dos_nbins
        E(idos) = min_band_energy+real(idos-1,dp)*delta_bins
     end do
-    
+
     if(on_root.and.(iprint>2))then
        write(stdout,'(1x,a40,e11.5,a13)') 'dos_min_energy : ', dos_min_energy, " <-- DOS Grid" 
        write(stdout,'(1x,a40,e11.5,a13)') 'dos_max_energy : ', dos_max_energy, " <-- DOS Grid"
@@ -582,7 +585,7 @@ contains
        write(stdout,'(1x,a40,f11.3,a13)')' dos_spacing : ', dos_spacing, " <-- DOS Grid"
        write(stdout,'(1x,a40,f11.3,a13)')' delta_bins : ', delta_bins, " <-- DOS Grid"
     endif
-    
+
   end subroutine setup_energy_scale
 
 
@@ -690,7 +693,7 @@ contains
     if(allocated(intdos_fixed)) deallocate(intdos_fixed)
     if(allocated(intdos_linear)) deallocate(intdos_linear)
     if(allocated(E)) deallocate(E)
-   end subroutine dos_utils_deallocate
+  end subroutine dos_utils_deallocate
 
   !===============================================================================
   subroutine calculate_dos(dos_type, dos, intdos, matrix_weights, weighted_dos)
@@ -747,16 +750,16 @@ contains
     adaptive=.false.
 
     select case (dos_type)
-       case ("l")
-          linear=.true.
-       case("a")
-          adaptive=.true.
-       case("f")
-          fixed=.true.
-       case default
-          if (ierr/=0) call io_error (" ERROR : unknown dos_type in calculate_dos ")
+    case ("l")
+       linear=.true.
+    case("a")
+       adaptive=.true.
+    case("f")
+       fixed=.true.
+    case default
+       if (ierr/=0) call io_error (" ERROR : unknown dos_type in calculate_dos ")
     end select
-    
+
 
     if(linear.or.adaptive) step(:) = 1.0_dp/real(kpoint_grid_dim(:),dp)/2.0_dp
     if(adaptive) adaptive_smearing=adaptive_smearing*sum(step(:))/3
@@ -817,6 +820,7 @@ contains
           end do
        end do
     end do
+
 
     if(.not.linear.and.numerical_intdos) intdos=intdos*delta_bins
 
@@ -1034,8 +1038,8 @@ contains
 
     return
   end function doslin
-  
-   !=============================================================================== 
+
+  !=============================================================================== 
   subroutine dos_utils_calculate_at_e(energy, matrix_weights, weighted_dos_at_e, dos_at_e)
     !===============================================================================  
     ! Main routine in dos module, drives the calculation of density of states for
@@ -1083,11 +1087,11 @@ contains
     !-------------------------------------------------------------------------------
 
     if(.not.(linear.or.adaptive.or.fixed.or.quad)) call io_error (" DOS: No Broadening Set")
-    
-    
+
+
     calc_weighted_dos=.false.
     if(present(matrix_weights)) calc_weighted_dos=.true.
-    
+
     if(calc_weighted_dos)then
        mw%norbitals=size(matrix_weights,1)
        mw%nbands   =size(matrix_weights,2)
@@ -1106,33 +1110,33 @@ contains
     ! If we're using one of the more accurate roadening schemes we also need to read in the 
     ! band gradients too
     if(quad.or.linear.or.adaptive) then
-      if(.not.allocated(band_gradient)) call elec_read_band_gradient
+       if(.not.allocated(band_gradient)) call elec_read_band_gradient
     endif
     !-------------------------------------------------------------------------------
     ! C A L C U L A T E   D O S 
     ! Now everything is set up, we can perform the dos accumulation in parellel
-    
+
     time0=io_time()
 
     if(on_root.and.(iprint>1)) write(stdout,*)
 
- 
-       if(calc_weighted_dos)then 
-          call calculate_dos_at_e(energy,dos_at_e, matrix_weights=matrix_weights, &
-&weighted_dos_at_e=weighted_dos_at_e) 
-          call dos_utils_merge_at_e(dos_at_e,weighted_dos_at_e=weighted_dos_at_e)    
-       else
-          call calculate_dos_at_e(energy,dos_at_e)
-          call dos_utils_merge_at_e(dos_at_e) 
-       endif
-    
+
+    if(calc_weighted_dos)then 
+       call calculate_dos_at_e(energy,dos_at_e, matrix_weights=matrix_weights, &
+            &weighted_dos_at_e=weighted_dos_at_e) 
+       call dos_utils_merge_at_e(dos_at_e,weighted_dos_at_e=weighted_dos_at_e)    
+    else
+       call calculate_dos_at_e(energy,dos_at_e)
+       call dos_utils_merge_at_e(dos_at_e) 
+    endif
+
     time1=io_time()
     if(on_root)  write(stdout,'(1x,a40,f11.3,a)') 'Time to calculate dos  ',time1-time0,' (sec)'
     !-------------------------------------------------------------------------------
 
   end subroutine dos_utils_calculate_at_e
-  
-  
+
+
   !===============================================================================
   subroutine calculate_dos_at_e(energy, dos_at_e, matrix_weights, weighted_dos_at_e)
     !===============================================================================
@@ -1204,35 +1208,35 @@ contains
 
              intdos_accum=0.0_dp
 
-                ! The linear method has a special way to calculate the integrated dos
-                ! we have to take account for this here.
-                if(linear)then
-                   dos_temp=doslin(EV(0),EV(1),EV(2),EV(3),EV(4),energy,cuml)*electrons_per_state*kpoint_weight(ik)
-                   
-                else
-                   dos_temp=gaussian(band_energy(ib,is,ik),width,energy)*electrons_per_state*kpoint_weight(ik)
-                   
-                endif
+             ! The linear method has a special way to calculate the integrated dos
+             ! we have to take account for this here.
+             if(linear)then
+                dos_temp=doslin(EV(0),EV(1),EV(2),EV(3),EV(4),energy,cuml)*electrons_per_state*kpoint_weight(ik)
 
-                dos_at_e(is)=dos_at_e(is)+dos_temp
+             else
+                dos_temp=gaussian(band_energy(ib,is,ik),width,energy)*electrons_per_state*kpoint_weight(ik)
 
-                if(calc_weighted_dos) then
-                   if(ik.le.mw%nkpoints) then
-                      if(ib.le.mw%nbands) then
-                         do iorb=1,mw%norbitals
-                            weighted_dos_at_e(is,iorb)=weighted_dos_at_e(is,iorb)+ &
-                                 & dos_temp*matrix_weights(iorb,ib,ik,is)
-                         enddo
-                      endif
+             endif
+
+             dos_at_e(is)=dos_at_e(is)+dos_temp
+
+             if(calc_weighted_dos) then
+                if(ik.le.mw%nkpoints) then
+                   if(ib.le.mw%nbands) then
+                      do iorb=1,mw%norbitals
+                         weighted_dos_at_e(is,iorb)=weighted_dos_at_e(is,iorb)+ &
+                              & dos_temp*matrix_weights(iorb,ib,ik,is)
+                      enddo
                    endif
                 endif
-             end do
+             endif
+          end do
        end do
     end do
 
   end subroutine calculate_dos_at_e
-  
-    !=============================================================================== 
+
+  !=============================================================================== 
   subroutine dos_utils_merge_at_e(dos, weighted_dos_at_e)
     !===============================================================================
     ! The DOS was calculated accross nodes. Now give them all back to root
