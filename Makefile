@@ -40,7 +40,7 @@ endif
 ifeq ($(SYSTEM), nag)
    F90_SERIAL= nagfor
    F90_PARALLEL= mpif90
-   FFLAGS= 
+   FFLAGS= -DNAG 
    FFLAGS_PARALLEL=
    FFLAGS_FAST= -O3 -Oassumed -w=all
    FFLAGS_DEBUG= -Ddebug -g -O0 -C=all -gline -w=all 

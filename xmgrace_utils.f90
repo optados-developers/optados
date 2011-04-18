@@ -360,7 +360,7 @@ contains
     character(*), intent(in)  :: legend
 
    write (char_field, '(I4)') field
-   write (char_colour, '(I4)') ,colour
+   write (char_colour, '(I4)') colour
 
    char_field=trim("s"//adjustl(char_field))
    
