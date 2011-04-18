@@ -30,6 +30,8 @@ module od_parameters
   integer,           public, save :: iprint
   character(len=20), public, save :: energy_unit
   character(len=20), public, save :: length_unit ! not exposed - but useful for BZ plots?
+  logical,           public, save :: legacy_file_format
+
 
   !Task parameters
   logical, public, save :: dos
@@ -106,7 +108,7 @@ contains
     use od_constants, only : bohr2ang
     use od_io,        only : io_error,io_file_unit,seedname
     use od_cell,      only : cell_get_atoms
-    use od_electronic,only : elec_pdos_read_orbitals
+!    use od_electronic,only : elec_pdos_read_orbitals
     implicit none
 
     !local variables
@@ -117,10 +119,15 @@ contains
     real(kind=dp) :: cosa(3),rv_temp(3)
     character(len=10), allocatable :: task_string(:)
 
+    
+
     call param_in_file
 
     iprint          =  1             ! Verbosity
     call param_get_keyword('iprint',found,i_value=iprint)
+
+    legacy_file_format=.true. 
+    call param_get_keyword('legacy_file_format',found,l_value=legacy_file_format)
 
     energy_unit     =  'ev'          !
     call param_get_keyword('energy_unit',found,c_value=energy_unit)
@@ -161,9 +168,9 @@ contains
     end if
     if(pdos) then
        !parse the start of the pdos file to get info on orbitals
-       call elec_pdos_read_orbitals
-       !now figure out what to plot
-       call param_get_pdos
+!       call elec_pdos_read_orbitals
+      !now figure out what to plot
+!       call param_get_pdos
     end if
 
     i_temp=0
@@ -1273,6 +1280,7 @@ contains
     call comms_bcast(dos_min_energy,1)
     call comms_bcast(dos_max_energy,1)
     call comms_bcast(dos_spacing,1)
+    call comms_bcast(legacy_file_format,1)
 
   end subroutine param_dist
 

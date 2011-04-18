@@ -35,7 +35,11 @@ module od_cell
   integer, public, save :: nkpoints 
   integer, public, save :: kpoint_grid_dim(3)
   !-------------------------------------------------------------------------!
-
+  ! Symmetry Operations
+  integer, public, save :: num_crystal_symmetry_operations
+  real(kind=dp), allocatable, public, save :: crystal_symmetry_disps(:,:)
+  real(kind=dp), allocatable, public, save :: crystal_symmetry_operations(:,:,:)
+  
   ! Atom sites 
   real(kind=dp), allocatable,     public, save :: atoms_pos_frac(:,:,:)
   real(kind=dp), allocatable,     public, save :: atoms_pos_cart(:,:,:)
@@ -45,15 +49,13 @@ module od_cell
   integer,                        public, save :: num_atoms
   integer,                        public, save :: num_species
 
-
-
-
   !-------------------------------------------------------------------------!
   ! G L O B A L L Y   A V A I L A B L E   F U N C T I O N S
   public :: cell_find_MP_grid
   public :: cell_calc_lattice
   public :: cell_report_parameters
   public :: cell_get_atoms
+  public :: cell_get_symmetry
   public :: cell_dist
   !-------------------------------------------------------------------------!
 
@@ -98,6 +100,69 @@ contains
   end subroutine cell_find_MP_grid
   !=========================================================================!
 
+  !=========================================================================!
+  subroutine cell_get_symmetry
+    !=========================================================================!
+    ! Read in the cell symmetries                                             !
+    !-------------------------------------------------------------------------!
+    ! Arguments: kpoints - an array of kpoints                                !
+    !            num_kpts - size of the kpoint array                          !
+    !-------------------------------------------------------------------------!
+    ! Returns: kpint_grid_dim - the number of kpoints in each dimension       !
+    !-------------------------------------------------------------------------!
+    ! Parent module variables used: None                                      !
+    !-------------------------------------------------------------------------!
+    ! Modules used:  None                                                     !
+    !-------------------------------------------------------------------------!
+    ! Key Internal Variables:                                                 !
+    ! Described below                                                         !
+    !-------------------------------------------------------------------------!
+    ! Necessary conditions: None                                              
+    !--------------------------------------------------------------------------
+    ! Known Worries: None
+    !-------------------------------------------------------------------------!
+    ! JRY, April 2011                                                         !
+    !=========================================================================!
+    use od_comms, only : on_root, comms_bcast
+    use od_io, only : filename_len,on_root,io_file_unit,seedname,io_error
+    implicit none
+    integer :: ierr,sym_file
+    character(filename_len)     :: sym_filename
+
+    if(on_root) then
+       sym_file=io_file_unit()
+       sym_filename=trim(seedname)//".sym"
+       open(unit=sym_file,file=sym_filename,form='unformatted',err=100,status='old')
+
+       read(sym_file)num_crystal_symmetry_operations
+       if(num_crystal_symmetry_operations > 0)then
+          allocate(crystal_symmetry_operations(3,3,num_crystal_symmetry_operations),stat=ierr)
+          if(ierr/=0) call io_error(" Error : cannot allocate crystal_symmetry_operations in cell_get_symmetry")
+          allocate(crystal_symmetry_disps(3,num_crystal_symmetry_operations),stat=ierr)
+          if(ierr/=0) call io_error(" Error : cannot allocate crystal_symmetry_disps in cell_get_symmetry")
+          read(sym_file)crystal_symmetry_operations
+          read(sym_file)crystal_symmetry_disps
+       end if
+    endif
+
+    call comms_bcast(num_crystal_symmetry_operations,1)
+    if(num_crystal_symmetry_operations>0) then
+       if(.not. on_root) then
+          allocate(crystal_symmetry_operations(3,3,num_crystal_symmetry_operations),stat=ierr)
+          if(ierr/=0) call io_error(" Error : cannot allocate crystal_symmetry_operations in cell_get_symmetry")
+          allocate(crystal_symmetry_disps(3,num_crystal_symmetry_operations),stat=ierr)
+          if(ierr/=0) call io_error(" Error : cannot allocate crystal_symmetry_disps in cell_get_symmetry")
+       endif
+       call comms_bcast(crystal_symmetry_operations(1,1,1),9*num_crystal_symmetry_operations)
+       call comms_bcast(crystal_symmetry_disps(1,1),3*num_crystal_symmetry_operations)
+    end if
+
+       return
+
+100 call io_error('Error: Problem opening sym file in cell_get_symmetry') 
+
+
+  end subroutine cell_get_symmetry
 
   !=========================================================================
   subroutine kpoint_density(vector,length,points)

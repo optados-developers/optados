@@ -149,6 +149,7 @@ contains
          & io_error  
     use od_cell,  only : num_kpoints_on_node,nkpoints
     use od_constants,only : bohr2ang, H2eV
+    use od_parameters, only : legacy_file_format
     implicit none
 
     integer :: gradient_unit,i,ib,jb,is,ik,inodes,ierr 
@@ -172,9 +173,26 @@ contains
     allocate(band_gradient(1:nbands,1:nbands,1:3,1:num_kpoints_on_node(my_node_id),1:nspins),stat=ierr)
     if (ierr/=0) call io_error('Error: Problem allocating band_gradient in read_band_energy')
 
-    if(on_root) then
-       do inodes=1,num_nodes-1
-          do ik=1,num_kpoints_on_node(inodes)
+    if(legacy_file_format) then
+
+       if(on_root) then
+          do inodes=1,num_nodes-1
+             do ik=1,num_kpoints_on_node(inodes)
+                do is=1,nspins
+                   do i=1,3
+                      do jb=1,nbands
+                         do ib=1,nbands
+                            ! Read in units of Ha Bohr^2 / Ang
+                            read (gradient_unit) band_gradient(ib,jb,i,ik,is)
+                         end do
+                      end do
+                   end do
+                end do
+             end do
+             call comms_send(band_gradient(1,1,1,1,1),nbands*nbands*3*nspins*num_kpoints_on_node(inodes),inodes)
+          end do
+
+          do ik=1,num_kpoints_on_node(0)
              do is=1,nspins
                 do i=1,3
                    do jb=1,nbands
@@ -186,36 +204,42 @@ contains
                 end do
              end do
           end do
-          call comms_send(band_gradient(1,1,1,1,1),nbands*nbands*3*nspins*num_kpoints_on_node(inodes),inodes)
-       end do
+       endif
 
+    else ! sane file format
 
-
-       do ik=1,num_kpoints_on_node(0)
-           do is=1,nspins
-             do i=1,3
-                do jb=1,nbands
-                   do ib=1,nbands
-                      ! Read in units of Ha Bohr^2 / Ang
-                      read (gradient_unit) band_gradient(ib,jb,i,ik,is)
-                   end do
+       if(on_root) then
+          do inodes=1,num_nodes-1
+             do ik=1,num_kpoints_on_node(inodes)
+                do is=1,nspins
+                   read(gradient_unit) (((band_gradient(ib,jb,i,ik,is),ib=1,nbands)&
+                        ,jb=1,nbands),i=1,3)
                 end do
              end do
+             call comms_send(band_gradient(1,1,1,1,1),nbands*nbands*3*nspins*num_kpoints_on_node(inodes),inodes)
           end do
-       end do
-    endif
+          do ik=1,num_kpoints_on_node(0)
+             do is=1,nspins
+                read(gradient_unit) (((band_gradient(ib,jb,i,ik,is),ib=1,nbands)&
+                     ,jb=1,nbands),i=1,3)
+             end do
+          end do
+       end if
+    end if
 
-    !  read(gradient_unit) (((((band_gradient(ib,jb,i,ik,is),ib=1,nbands)&
-    !               ,jb=1,nbands),i=1,3),ik=1,num_kpoints_on_node(0)),is=1, nspins)
-    !  endif
     if(.not. on_root) then
        call comms_recv(band_gradient(1,1,1,1,1),nbands*nbands*3*nspins*num_kpoints_on_node(my_node_id),root_id)
     end if
 
     if(on_root) close (unit=gradient_unit)
 
+
     ! Convert all band gradients to eV Ang
-    band_gradient=band_gradient*bohr2ang*bohr2ang*H2eV
+    if(legacy_file_format) then
+       band_gradient=band_gradient*bohr2ang*bohr2ang*H2eV
+    else
+       band_gradient=band_gradient*bohr2ang*H2eV
+    end if
 
     time1=io_time()
     if(on_root) write(stdout,'(1x,a40,f11.3,a)') 'Time to read band gradients ',time1-time0,' (sec)'
@@ -397,7 +421,7 @@ contains
 
 
   !=========================================================================
-  subroutine elec_read_elnes_mat !(band_energy,kpoint_r,kpoint_weight)
+  subroutine elec_read_elnes_mat 
     !=========================================================================
     ! Read the .bands file in the kpoint list, kpoint weights and band energies
     ! also obtain, nkpoints, nspins, num_electrons(:),nbands, efermi_castep
@@ -424,6 +448,7 @@ contains
          & on_root,root_id,comms_slice
     use od_io,        only : io_file_unit, seedname, filename_len,stdout, io_time,&
          & io_error
+    use od_parameters, only : legacy_file_format
 
     implicit none
 
@@ -483,8 +508,21 @@ contains
     if (ierr/=0) call io_error('Error: Problem allocating elnes_mat in read_band_energy')
 
     if(on_root) then
-       do inodes=1,num_nodes-1
-          do ik=1,num_kpoints_on_node(inodes)
+       if(legacy_file_format) then
+          do inodes=1,num_nodes-1
+             do ik=1,num_kpoints_on_node(inodes)
+                do ns=1,elnes_mwab%nspins
+                   do orb=1,elnes_mwab%norbitals
+                      do nb=1,elnes_mwab%nbands
+                         read(elnes_unit) (elnes_mat(orb,nb,indx,ik,ns),indx=1,3)
+                      end do
+                   end do
+                end do
+             end do
+             call comms_send(elnes_mat(1,1,1,1,1),elnes_mwab%norbitals*elnes_mwab%nbands*3*nspins*num_kpoints_on_node(inodes),inodes)
+          end do
+          
+          do ik=1,num_kpoints_on_node(0)
              do ns=1,elnes_mwab%nspins
                 do orb=1,elnes_mwab%norbitals
                    do nb=1,elnes_mwab%nbands
@@ -493,28 +531,32 @@ contains
                 end do
              end do
           end do
-          call comms_send(elnes_mat(1,1,1,1,1),elnes_mwab%norbitals*elnes_mwab%nbands*3*nspins*num_kpoints_on_node(inodes),inodes)
-       end do
 
-       do ik=1,num_kpoints_on_node(0)
-          do ns=1,elnes_mwab%nspins
-             do orb=1,elnes_mwab%norbitals
-                do nb=1,elnes_mwab%nbands
-                   read(elnes_unit) (elnes_mat(orb,nb,indx,ik,ns),indx=1,3)
+       else ! sane format
+          do inodes=1,num_nodes-1
+             do ik=1,num_kpoints_on_node(inodes)
+                do ns=1,elnes_mwab%nspins
+                   read(elnes_unit) (((elnes_mat(orb,nb,indx,ik,ns),orb=1,elnes_mwab%norbitals),nb=1,elnes_mwab%nbands),indx=1,3)
                 end do
              end do
+             call comms_send(elnes_mat(1,1,1,1,1),elnes_mwab%norbitals*elnes_mwab%nbands*3*nspins*num_kpoints_on_node(inodes),inodes)
           end do
-       end do
-
+          
+          do ik=1,num_kpoints_on_node(0)
+             do ns=1,elnes_mwab%nspins
+                read(elnes_unit) (((elnes_mat(orb,nb,indx,ik,ns),orb=1,elnes_mwab%norbitals),nb=1,elnes_mwab%nbands),indx=1,3)
+             end do
+          end do
+       end if
     endif
 
     if(.not. on_root) then
        call comms_recv(elnes_mat(1,1,1,1,1),elnes_mwab%norbitals*elnes_mwab%nbands*3*nspins*&
             num_kpoints_on_node(my_node_id),root_id)
     end if
-
+    
     if(on_root) close(elnes_unit)
-
+    
     return
 
 100 call io_error('Error: Problem opening elnes file in elec_read_elnes_mat') 

@@ -89,7 +89,7 @@ contains
     !***************************************************************
     use od_constants, only : dp
     use od_electronic, only : nbands, nspins, band_gradient, num_electrons, electrons_per_state
-    use od_cell, only : nkpoints, cell_volume, num_kpoints_on_node
+    use od_cell, only : nkpoints, cell_volume, num_kpoints_on_node, cell_get_symmetry
     use od_parameters, only : optics_geom, optics_qdir
     use od_io, only : io_error
     use od_comms, only : my_node_id
@@ -101,6 +101,8 @@ contains
     integer :: n_eigen2
     real(kind=dp), dimension(2) :: num_occ
     complex(kind=dp) :: g
+
+    call cell_get_symmetry
 
     num_occ = 0.0_dp
     do N_spin=1,nspins
