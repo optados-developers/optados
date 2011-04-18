@@ -38,7 +38,7 @@ module od_electronic
      integer :: nspins
   end type matrix_weights_array_boundaries
 
-  type orbitals
+  type, public :: orbitals
      integer          :: ion_no          ! Unique ion number
      integer          :: species_no      ! Unique species number
      integer          :: rank_in_species ! Unique ion number within species
