@@ -124,14 +124,29 @@ contains
     ! JRY, April 2011                                                         !
     !=========================================================================!
     use od_comms, only : on_root, comms_bcast
-    use od_io, only : filename_len,io_file_unit,seedname,io_error
+    use od_io, only : filename_len,io_file_unit,seedname,io_error,stdout
     implicit none
     integer :: ierr,sym_file
+    logical :: exists
     character(filename_len)     :: sym_filename
 
+    sym_file=io_file_unit()
+    sym_filename=trim(seedname)//".sym"
+    if(on_root) inquire(file=sym_filename,exist=exists)
+    call comms_bcast(exists,1)
+
+    if(.not. exists) then
+       write(stdout,*)
+       write(stdout,'(80a)') '!--------------------------------- WARNING ------------------------------------!'
+       write(stdout,'(80a)') '!                Symmetry Operations file (.sym) not found                     !'
+       write(stdout,'(80a)') '!                       Proceeding without symmetry                            !'
+       write(stdout,'(80a)') '!------------------------------------------------------------------------------!'
+       write(stdout,*)
+       num_crystal_symmetry_operations=0
+       return
+    end if
+
     if(on_root) then
-       sym_file=io_file_unit()
-       sym_filename=trim(seedname)//".sym"
        open(unit=sym_file,file=sym_filename,form='unformatted',err=100,status='old')
 
        read(sym_file)num_crystal_symmetry_operations
