@@ -419,7 +419,7 @@ contains
     use od_comms, only : my_node_id, on_root
     use od_constants, only : H2eV
     use od_cell, only : num_kpoints_on_node
-    use od_parameters, only : adaptive_smearing, fixed_smearing, iprint, finite_bin_correction, scissors_op
+    use od_parameters, only : adaptive_smearing, fixed_smearing, iprint, finite_bin_correction, scissor_op
     implicit none
 
     integer :: i,ik,is,ib,idos,ierr,iorb,jb
@@ -455,10 +455,9 @@ contains
     if(adaptive) adaptive_smearing=adaptive_smearing*sum(step(:))/3
     if(fixed) width=fixed_smearing
 
-    N_geom=size(matrix_weights,5)
-
     call allocate_jdos(jdos)
     if(calc_weighted_jdos) then
+       N_geom=size(matrix_weights,5)
        allocate(weighted_jdos(jdos_nbins, nspins, N_geom))
        weighted_jdos=0.0_dp
     endif
@@ -472,7 +471,7 @@ contains
           do ib=1,vb_max(is)
              do jb=vb_max(is)+1,nbands
                 if(linear.or.adaptive) grad(:) = real(band_gradient(jb,jb,:,ik,is)-band_gradient(ib,ib,:,ik,is),dp)
-                if(linear) call doslin_sub_cell_corners(grad,step,band_energy(jb,is,ik)-band_energy(ib,is,ik)+scissors_op,EV)
+                if(linear) call doslin_sub_cell_corners(grad,step,band_energy(jb,is,ik)-band_energy(ib,is,ik)+scissor_op,EV)
                 if(adaptive) width = sqrt(dot_product(grad,grad))*adaptive_smearing
 
                 ! Hybrid Adaptive -- This way we don't lose weight at very flat parts of the
@@ -485,17 +484,17 @@ contains
                    if(linear)then
                       dos_temp=doslin(EV(0),EV(1),EV(2),EV(3),EV(4),E(idos),cuml)
                    else
-                      dos_temp=gaussian(band_energy(jb,is,ik)-band_energy(ib,is,ik)+scissor_op,width,E(idos))&
-                           &*electrons_per_state*kpoint_weight(ik)
+                      dos_temp=gaussian(band_energy(jb,is,ik)-band_energy(ib,is,ik)+scissor_op,width,E(idos))!&
+                      !             &*electrons_per_state*kpoint_weight(ik)
                    endif
 
-                   jdos(idos,is)=jdos(idos,is) + dos_temp  
+                   jdos(idos,is)=jdos(idos,is) + dos_temp*electrons_per_state*kpoint_weight(ik)  
 
                    ! this will become a loop over final index (polarisation)
                    ! Also need to remove kpoints weights.
                    if(calc_weighted_jdos) then
                       do N2=1,N_geom
-                         weighted_jdos(idos,is,N2)=weighted_jdos(idos,is,N2) + dos_temp*matrix_weights(ib,jb,ik,is,N2)
+                         weighted_jdos(idos,is,N2)=weighted_jdos(idos,is,N2) + dos_temp*matrix_weights(ib,jb,ik,is,N2)*electrons_per_state*kpoint_weight(ik) 
                       end do
                    end if
 
