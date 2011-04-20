@@ -64,7 +64,7 @@ contains
     real(kind=dp) :: time0, time1
 
     real(kind=dp),intent(out), allocatable, optional    :: weighted_jdos(:,:,:)  !I've added this
-    real(kind=dp),intent(in), optional  :: matrix_weights(:,:,:,:)               !I've added this
+    real(kind=dp),intent(in), optional  :: matrix_weights(:,:,:,:,:)               !I've added this
 
     calc_weighted_jdos=.false.
     if(present(matrix_weights)) calc_weighted_jdos=.true.
@@ -419,17 +419,17 @@ contains
     use od_comms, only : my_node_id, on_root
     use od_constants, only : H2eV
     use od_cell, only : num_kpoints_on_node
-    use od_parameters, only : adaptive_smearing, fixed_smearing, iprint, finite_bin_correction
+    use od_parameters, only : adaptive_smearing, fixed_smearing, iprint, finite_bin_correction, scissors_op
     implicit none
 
     integer :: i,ik,is,ib,idos,ierr,iorb,jb
-    integer :: m,n,o,nn
+    integer :: m,n,o,nn,N2,N_geom
     real(kind=dp) :: dos_temp, cuml, intdos_accum, width
     real(kind=dp) :: grad(1:3), step(1:3), EV(0:4)
 
     character(len=1), intent(in)                      :: jdos_type
     real(kind=dp),intent(inout),allocatable, optional :: weighted_jdos(:,:,:)
-    real(kind=dp),intent(in), optional                :: matrix_weights(:,:,:,:)
+    real(kind=dp),intent(in), optional                :: matrix_weights(:,:,:,:,:)
 
     real(kind=dp),intent(out),allocatable :: jdos(:,:)
 
@@ -440,14 +440,14 @@ contains
     adaptive=.false.
 
     select case (jdos_type)
-       case ("l")
-          linear=.true.
-       case("a")
-          adaptive=.true.
-       case("f")
-          fixed=.true.
-       case default
-          if (ierr/=0) call io_error (" ERROR : unknown jdos_type in jcalculate_dos ")
+    case ("l")
+       linear=.true.
+    case("a")
+       adaptive=.true.
+    case("f")
+       fixed=.true.
+    case default
+       if (ierr/=0) call io_error (" ERROR : unknown jdos_type in jcalculate_dos ")
     end select
 
 
@@ -455,9 +455,11 @@ contains
     if(adaptive) adaptive_smearing=adaptive_smearing*sum(step(:))/3
     if(fixed) width=fixed_smearing
 
+    N_geom=size(matrix_weights,5)
+
     call allocate_jdos(jdos)
     if(calc_weighted_jdos) then
-       allocate(weighted_jdos(jdos_nbins, nspins, 1))
+       allocate(weighted_jdos(jdos_nbins, nspins, N_geom))
        weighted_jdos=0.0_dp
     endif
 
@@ -470,7 +472,7 @@ contains
           do ib=1,vb_max(is)
              do jb=vb_max(is)+1,nbands
                 if(linear.or.adaptive) grad(:) = real(band_gradient(jb,jb,:,ik,is)-band_gradient(ib,ib,:,ik,is),dp)
-                if(linear) call doslin_sub_cell_corners(grad,step,band_energy(jb,is,ik)-band_energy(ib,is,ik),EV)
+                if(linear) call doslin_sub_cell_corners(grad,step,band_energy(jb,is,ik)-band_energy(ib,is,ik)+scissors_op,EV)
                 if(adaptive) width = sqrt(dot_product(grad,grad))*adaptive_smearing
 
                 ! Hybrid Adaptive -- This way we don't lose weight at very flat parts of the
@@ -483,7 +485,7 @@ contains
                    if(linear)then
                       dos_temp=doslin(EV(0),EV(1),EV(2),EV(3),EV(4),E(idos),cuml)
                    else
-                      dos_temp=gaussian(band_energy(jb,is,ik)-band_energy(ib,is,ik),width,E(idos))&
+                      dos_temp=gaussian(band_energy(jb,is,ik)-band_energy(ib,is,ik)+scissor_op,width,E(idos))&
                            &*electrons_per_state*kpoint_weight(ik)
                    endif
 
@@ -492,9 +494,11 @@ contains
                    ! this will become a loop over final index (polarisation)
                    ! Also need to remove kpoints weights.
                    if(calc_weighted_jdos) then
-                      weighted_jdos(idos,is,1)=weighted_jdos(idos,is,1) + dos_temp*matrix_weights(ib,jb,ik,is)
+                      do N2=1,N_geom
+                         weighted_jdos(idos,is,N2)=weighted_jdos(idos,is,N2) + dos_temp*matrix_weights(ib,jb,ik,is,N2)
+                      end do
                    end if
-                      
+
 
                 end do
              end do
