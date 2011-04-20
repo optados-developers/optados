@@ -43,7 +43,7 @@ contains
     use od_electronic, only  : elnes_mat,  elnes_mwab, nbands, nspins,num_electrons, electrons_per_state
     use od_comms, only : on_root, my_node_id
     use od_cell, only : nkpoints, cell_volume, num_kpoints_on_node
-    use od_parameters, only : optics_geom, optics_qdir
+    use od_parameters, only : optics_geom, optics_qdir ! needs changing to elnes
     use od_io, only : io_error
 
     real(kind=dp), dimension(3) :: qdir 
@@ -64,25 +64,31 @@ contains
     allocate(matrix_weights(elnes_mwab%norbitals,elnes_mwab%nbands,num_kpoints_on_node(my_node_id),nspins))
     matrix_weights=0.0_dp
 
-    qdir=optics_qdir
-    q_weight=((qdir(1)**2.0_dp)+(qdir(2)**2.0_dp)+(qdir(3)**2.0_dp))**0.5_dp
-    if(q_weight<0.001_dp)&
-         call io_error("Error:  please check optics_qdir, norm close to zero")
+    if (index(optics_geom,'polar')>0) then 
+       qdir=optics_qdir            
+       q_weight=((qdir(1)**2.0_dp)+(qdir(2)**2.0_dp)+(qdir(3)**2.0_dp))**0.5_dp
+       if(q_weight<0.001_dp)&
+            call io_error("Error:  please check optics_qdir, norm close to zero")
+    end if
 
 
     do N=1,num_kpoints_on_node(my_node_id)                      ! Loop over kpoints
        do N_spin=1,nspins                                    ! Loop over spins
-             do n_eigen=(nint(num_occ(N_spin))+1),nbands    ! Loop over unoccupied states
-                do orb=1,elnes_mwab%norbitals
-!                g = (((qdir(1)*elnes_mat(orb,n_eigen,1,N,N_spin))+ &
-!                     (qdir(2)*elnes_mat(orb,n_eigen,2,N,N_spin))+ &
-!                     (qdir(3)*elnes_mat(orb,n_eigen,3,N,N_spin)))/q_weight)
+          do n_eigen=(nint(num_occ(N_spin))+1),nbands    ! Loop over unoccupied states
+             do orb=1,elnes_mwab%norbitals
+                if(index(optics_geom,'polar')>0) then 
+                   g = (((qdir(1)*elnes_mat(orb,n_eigen,1,N,N_spin))+ &
+                        (qdir(2)*elnes_mat(orb,n_eigen,2,N,N_spin))+ &
+                        (qdir(3)*elnes_mat(orb,n_eigen,3,N,N_spin)))/q_weight)
+                   matrix_weights(orb,n_eigen,N,N_spin) = real(g*conjg(g),dp)
+                else
                    matrix_weights(orb,n_eigen,N,N_spin) = ( &
                         elnes_mat(orb,n_eigen,1,N,N_spin)*conjg(elnes_mat(orb,n_eigen,1,N,N_spin)) + &
                         elnes_mat(orb,n_eigen,2,N,N_spin)*conjg(elnes_mat(orb,n_eigen,2,N,N_spin)) + &
                         elnes_mat(orb,n_eigen,3,N,N_spin)*conjg(elnes_mat(orb,n_eigen,3,N,N_spin)) ) /3.0_dp
-!                matrix_weights(orb,n_eigen,N,N_spin) = real(g*conjg(g),dp)
-                !           matrix_weights(n_eigen,n_eigen2,N,N_spin) = 1.0_dp  ! 
+                   !                matrix_weights(orb,n_eigen,N,N_spin) = real(g*conjg(g),dp)
+                   !           matrix_weights(n_eigen,n_eigen2,N,N_spin) = 1.0_dp  ! 
+                end if
              end do
           end do
        end do
