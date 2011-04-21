@@ -93,24 +93,38 @@ contains
   subroutine make_weights
     !***************************************************************
     use od_constants, only : dp
-    use od_electronic, only : nbands, nspins, band_gradient, num_electrons, electrons_per_state
-    use od_cell, only : nkpoints, cell_volume, num_kpoints_on_node!, cell_get_symmetry
-    use od_parameters, only : optics_geom, optics_qdir
+    use od_electronic, only : nbands, nspins, band_gradient, num_electrons, electrons_per_state, band_energy
+    use od_cell, only : nkpoints, cell_volume, num_kpoints_on_node, cell_get_symmetry, &
+         num_crystal_symmetry_operations, crystal_symmetry_operations
+    use od_parameters, only : optics_geom, optics_qdir, legacy_file_format
     use od_io, only : io_error
     use od_comms, only : my_node_id
 
     real(kind=dp), dimension(3) :: qdir 
     real(kind=dp), dimension(3) :: qdir2 
     real(kind=dp) :: q_weight2 
-    integer :: N
+    integer :: N, i, j
+    integer :: N_in
     integer :: N_spin
-    integer :: N2
+    integer :: N2, N3
     integer :: n_eigen
     integer :: n_eigen2
+    integer :: num_symm
     real(kind=dp), dimension(2) :: num_occ
-    complex(kind=dp), dimension(3) :: g
+    complex(kind=dp), allocatable, dimension(:,:) :: g
 
-    !    call cell_get_symmetry
+    num_symm=0
+    if (legacy_file_format==.false.)then 
+       call cell_get_symmetry
+       num_symm = num_crystal_symmetry_operations
+
+       !      Do N=1,num_symm
+       !         Do N2=1,3
+       !            print *, crystal_symmetry_operations(1,N2,N), crystal_symmetry_operations(2,N2,N), crystal_symmetry_operations(3,N2,N)
+       !         end do
+       !         print *,'# '
+       !      end do
+    end if
 
     num_occ = 0.0_dp
     do N_spin=1,nspins
@@ -127,14 +141,12 @@ contains
        N_geom=6
     endif
 
-    g=0.0_dp
-
     allocate(matrix_weights(nbands,nbands,num_kpoints_on_node(my_node_id),nspins,N_geom))
     matrix_weights=0.0_dp
 
     if (index(optics_geom,'polar')>0) then 
        qdir=optics_qdir
-       q_weight=((qdir(1)**2.0_dp)+(qdir(2)**2.0_dp)+(qdir(3)**2.0_dp))**0.5_dp
+       q_weight=((qdir(1)**2)+(qdir(2)**2)+(qdir(3)**2))**0.5_dp
        if(q_weight<0.001_dp)&
             call io_error("Error:  please check optics_qdir, norm close to zero")
     endif
@@ -152,45 +164,79 @@ contains
        qdir2(1)=(optics_qdir(2)*qdir(3))-(optics_qdir(3)*qdir(2))            
        qdir2(2)=(optics_qdir(3)*qdir(1))-(optics_qdir(1)*qdir(3))            
        qdir2(3)=(optics_qdir(1)*qdir(2))-(optics_qdir(2)*qdir(1))  
-       q_weight=((qdir(1)**2.0_dp)+(qdir(2)**2.0_dp)+(qdir(3)**2.0_dp))**0.5_dp
-       q_weight2=((qdir2(1)**2.0_dp)+(qdir2(2)**2.0_dp)+(qdir2(3)**2.0_dp))**0.5_dp
+       q_weight=((qdir(1)**2)+(qdir(2)**2)+(qdir(3)**2))**0.5_dp
+       q_weight2=((qdir2(1)**2)+(qdir2(2)**2)+(qdir2(3)**2))**0.5_dp
     endif
 
+    N_in = 0  ! set to using inversion symmetry for now...  
+    allocate(g((num_symm+3),(N_in+1)))
 
-    do N=1,num_kpoints_on_node(my_node_id)                      ! Loop over kpoints
+    do N=1,num_kpoints_on_node(my_node_id)                   ! Loop over kpoints
        do N_spin=1,nspins                                    ! Loop over spins
           do n_eigen=1,nint(num_occ(N_spin))                 ! Loop over occupied states 
              do n_eigen2=(nint(num_occ(N_spin))+1),nbands    ! Loop over unoccupied states
                 if(index(optics_geom,'unpolar')>0)then
-                   g(1) = (((qdir(1)*band_gradient(n_eigen,n_eigen2,1,N,N_spin))+ &
+                   g(1,1) = (((qdir(1)*band_gradient(n_eigen,n_eigen2,1,N,N_spin))+ &
                         (qdir(2)*band_gradient(n_eigen,n_eigen2,2,N,N_spin))+ &
                         (qdir(3)*band_gradient(n_eigen,n_eigen2,3,N,N_spin)))/q_weight)
-                   g(2) = (((qdir2(1)*band_gradient(n_eigen,n_eigen2,1,N,N_spin))+ &
+                   g(2,1) = (((qdir2(1)*band_gradient(n_eigen,n_eigen2,1,N,N_spin))+ &
                         (qdir2(2)*band_gradient(n_eigen,n_eigen2,2,N,N_spin))+ &
                         (qdir2(3)*band_gradient(n_eigen,n_eigen2,3,N,N_spin)))/q_weight2)
-                   matrix_weights(n_eigen,n_eigen2,N,N_spin,N_geom) = 0.5_dp*(real(g(1)*conjg(g(1)),dp)+real(g(2)*conjg(g(2)),dp))
+                   matrix_weights(n_eigen,n_eigen2,N,N_spin,N_geom) = &
+                        0.5_dp*(real(g(1,1)*conjg(g(1,1)),dp)+real(g(2,1)*conjg(g(2,1)),dp))/&
+                        ((band_energy(n_eigen2,N_spin,N)-band_energy(n_eigen,N_spin,N))**2)
                 elseif(index(optics_geom,'polar')>0)then
-                   g(1) = (((qdir(1)*band_gradient(n_eigen,n_eigen2,1,N,N_spin))+ &
-                        (qdir(2)*band_gradient(n_eigen,n_eigen2,2,N,N_spin))+ &
-                        (qdir(3)*band_gradient(n_eigen,n_eigen2,3,N,N_spin)))/q_weight)
-                   matrix_weights(n_eigen,n_eigen2,N,N_spin,N_geom) = real(g(1)*conjg(g(1)),dp)
-                   !           matrix_weights(n_eigen,n_eigen2,N,N_spin) = 1.0_dp  ! for JDOS 
+                   if (num_symm==0) then 
+                      g(1,1) = (((qdir(1)*band_gradient(n_eigen,n_eigen2,1,N,N_spin))+ &
+                           (qdir(2)*band_gradient(n_eigen,n_eigen2,2,N,N_spin))+ &
+                           (qdir(3)*band_gradient(n_eigen,n_eigen2,3,N,N_spin)))/q_weight)
+                      matrix_weights(n_eigen,n_eigen2,N,N_spin,N_geom) = real(g(1,1)*conjg(g(1,1)),dp)/&
+                           ((band_energy(n_eigen2,N_spin,N)-band_energy(n_eigen,N_spin,N))**2)
+                      !           matrix_weights(n_eigen,n_eigen2,N,N_spin) = 1.0_dp  ! for JDOS 
+                   else
+                      do N2=1,num_symm
+                         do N3=1,1+N_in
+                            do i=1,3
+                               qdir(i)=0.0_dp
+                               do j=1,3
+                                  qdir(i) = qdir(i) + ((-1.0_dp)**(N3+1))*&
+                                       (crystal_symmetry_operations(j,i,N2)*optics_qdir(j))
+                               end do
+                            end do
+                            g(N2,N3)=(((qdir(1)*band_gradient(n_eigen,n_eigen2,1,N,N_spin))+ &
+                                 (qdir(2)*band_gradient(n_eigen,n_eigen2,2,N,N_spin))+ &
+                                 (qdir(3)*band_gradient(n_eigen,n_eigen2,3,N,N_spin)))/q_weight)
+                            matrix_weights(n_eigen,n_eigen2,N,N_spin,N_geom) =  &
+                                 matrix_weights(n_eigen,n_eigen2,N,N_spin,N_geom) + &
+                                 (1.0_dp/Real((num_symm*(N_in+1)),dp))*real(g(N2,N3)*conjg(g(N2,N3)),dp)/&
+                                 ((band_energy(n_eigen2,N_spin,N)-band_energy(n_eigen,N_spin,N))**2) 
+                         end do
+                      end do
+                   end if
                 elseif(index(optics_geom,'poly')>0)then
                    do N2=1,3  
-                      g(N2) = band_gradient(n_eigen,n_eigen2,N2,N,N_spin)/(3.0_dp**0.5)
+                      g(N2,1) = band_gradient(n_eigen,n_eigen2,N2,N,N_spin)/(3.0_dp**0.5)
                    end do
-                   matrix_weights(n_eigen,n_eigen2,N,N_spin,N_geom) = real(g(1)*conjg(g(1)),dp)+&
-                        real(g(2)*conjg(g(2)),dp) + real(g(3)*conjg(g(3)),dp)
+                   matrix_weights(n_eigen,n_eigen2,N,N_spin,N_geom) = (real(g(1,1)*conjg(g(1,1)),dp)+&
+                        real(g(2,1)*conjg(g(2,1)),dp) + real(g(3,1)*conjg(g(3,1)),dp))/&
+                        ((band_energy(n_eigen2,N_spin,N)-band_energy(n_eigen,N_spin,N))**2)
                 elseif(index(optics_geom,'tensor')>0)then
+                   allocate(g(3,1))
                    do N2=1,3  
-                      g(N2) = band_gradient(n_eigen,n_eigen2,N2,N,N_spin)
+                      g(N2,1) = band_gradient(n_eigen,n_eigen2,N2,N,N_spin)
                    end do
-                   matrix_weights(n_eigen,n_eigen2,N,N_spin,1) = real(g(1)*conjg(g(1)),dp)
-                   matrix_weights(n_eigen,n_eigen2,N,N_spin,2) = real(g(2)*conjg(g(2)),dp)
-                   matrix_weights(n_eigen,n_eigen2,N,N_spin,3) = real(g(3)*conjg(g(3)),dp)
-                   matrix_weights(n_eigen,n_eigen2,N,N_spin,4) = real(g(1)*conjg(g(2)),dp)
-                   matrix_weights(n_eigen,n_eigen2,N,N_spin,5) = real(g(1)*conjg(g(3)),dp)
-                   matrix_weights(n_eigen,n_eigen2,N,N_spin,6) = real(g(2)*conjg(g(3)),dp)
+                   matrix_weights(n_eigen,n_eigen2,N,N_spin,1) = real(g(1,1)*conjg(g(1,1)),dp)/&
+                        ((band_energy(n_eigen2,N_spin,N)-band_energy(n_eigen,N_spin,N))**2)
+                   matrix_weights(n_eigen,n_eigen2,N,N_spin,2) = real(g(2,1)*conjg(g(2,1)),dp)/&
+                        ((band_energy(n_eigen2,N_spin,N)-band_energy(n_eigen,N_spin,N))**2)
+                   matrix_weights(n_eigen,n_eigen2,N,N_spin,3) = real(g(3,1)*conjg(g(3,1)),dp)/&
+                        ((band_energy(n_eigen2,N_spin,N)-band_energy(n_eigen,N_spin,N))**2)
+                   matrix_weights(n_eigen,n_eigen2,N,N_spin,4) = real(g(1,1)*conjg(g(2,1)),dp)/&
+                        ((band_energy(n_eigen2,N_spin,N)-band_energy(n_eigen,N_spin,N))**2)
+                   matrix_weights(n_eigen,n_eigen2,N,N_spin,5) = real(g(1,1)*conjg(g(3,1)),dp)/&
+                        ((band_energy(n_eigen2,N_spin,N)-band_energy(n_eigen,N_spin,N))**2)
+                   matrix_weights(n_eigen,n_eigen2,N,N_spin,6) = real(g(2,1)*conjg(g(3,1)),dp)/&
+                        ((band_energy(n_eigen2,N_spin,N)-band_energy(n_eigen,N_spin,N))**2)
                 endif
              end do
           end do
@@ -202,7 +248,7 @@ contains
   subroutine calc_epsilon_2
     !***************************************************************
     ! This subroutine calculates epsilon_2
-
+    
     use od_constants, only : dp, pi
     use od_cell, only : nkpoints, cell_volume 
     use od_electronic, only : nspins, electrons_per_state
@@ -231,9 +277,9 @@ contains
     do N2=1,N_geom
        do N_spin=1,nspins                        ! Loop over spins
           do N_energy=2,jdos_nbins
-             epsilon(N_energy,3,N2)=epsilon(N_energy,3,N2) + epsilon2_const*(1.0_dp/(E(N_energy)**2))*weighted_jdos(N_energy,N_spin,N2)
+             epsilon(N_energy,3,N2) = epsilon(N_energy,3,N2) + &
+                  epsilon2_const*weighted_jdos(N_energy,N_spin,N2)
              !           epsilon(N_energy,3,N2)=epsilon(N_energy,3,N2) + weighted_jdos(N_energy,N_spin,N_2) !output the jDOS
-
           end do
        end do
     end do
@@ -373,13 +419,13 @@ contains
     end do
 
     do N_energy=1,jdos_nbins
-       refract(N_energy,2)=(0.5_dp*((((epsilon(N_energy,2,1)**2.0_dp)+&
-            &(epsilon(N_energy,3,1)**2.0_dp))**0.5_dp)+epsilon(N_energy,2,1)))**(0.5_dp)
+       refract(N_energy,2)=(0.5_dp*((((epsilon(N_energy,2,1)**2)+&
+            &(epsilon(N_energy,3,1)**2))**0.5_dp)+epsilon(N_energy,2,1)))**(0.5_dp)
     end do
 
     do N_energy=1,jdos_nbins
-       refract(N_energy,3)=(0.5_dp*((((epsilon(N_energy,2,1)**2.0_dp)+&
-            &(epsilon(N_energy,3,1)**2.0_dp))**0.5_dp)-epsilon(N_energy,2,1)))**(0.5_dp)
+       refract(N_energy,3)=(0.5_dp*((((epsilon(N_energy,2,1)**2)+&
+            &(epsilon(N_energy,3,1)**2))**0.5_dp)-epsilon(N_energy,2,1)))**(0.5_dp)
     end do
 
   end subroutine calc_refract
@@ -478,7 +524,8 @@ contains
     end if
     if (index(optics_geom,'tensor')>0) then
        do N2=1,N_geom  
-          write(epsilon_unit,*)'#'
+          write(epsilon_unit,*)''
+         write(epsilon_unit,*)''
           do N=1,jdos_nbins
              write(epsilon_unit,*)E(N),epsilon(N,2,N2),epsilon(N,3,N2)
           end do
