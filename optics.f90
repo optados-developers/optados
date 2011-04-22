@@ -114,7 +114,7 @@ contains
     complex(kind=dp), allocatable, dimension(:,:) :: g
 
     num_symm=0
-    if (legacy_file_format==.false.)then 
+    if (.not.legacy_file_format)then 
        call cell_get_symmetry
        num_symm = num_crystal_symmetry_operations
 

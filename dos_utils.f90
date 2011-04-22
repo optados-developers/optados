@@ -95,7 +95,7 @@ contains
     use od_electronic,only : band_gradient,band_energy, efermi, efermi_castep,nspins, &
          & elec_read_band_gradient,elec_read_band_energy,elec_report_parameters
     use od_parameters,only : linear, adaptive, fixed, quad, compute_band_energy, &
-         & compute_efermi,dos,dos_per_volume,fermi_energy,iprint
+         & compute_efermi,dos,dos_per_volume,fermi_energy,iprint,set_efermi_zero
     use od_cell,         only : cell_volume, nkpoints, cell_calc_lattice, &
          & cell_report_parameters,cell_dist,kpoint_grid_dim,num_kpoints_on_node
 
@@ -247,19 +247,24 @@ contains
                '+----------------------------------------------------------------------------+'
 
        endif
-    else
-       if(on_root) write(stdout,'(1x,a78)')   "| No Fermi energies calculated                                               | "
+    elseif(.not.compute_efermi)then
        ! Use the derived Fermi energy shifts if calculated. It not use the fermi_energy supplied
        ! if not, use the CASTEP Fermi energy
        if(fermi_energy.ne.-990.0_dp)then
+          if(on_root) write(stdout,'(1x,a78)')   "| No Fermi energies calculated : Using user-defined value                    | "
           efermi_fixed=fermi_energy
           efermi_adaptive=fermi_energy
           efermi_linear=fermi_energy
-       else
+       else 
+          ! User has not set fermi_energy, nor wants it calculating
+          ! so we'll have to use the CASTEP value. 
+          if(on_root) write(stdout,'(1x,a78)')   "| No Fermi energies calculated : Using CASTEP value                          | "
           efermi_fixed=efermi_castep
           efermi_adaptive=efermi_castep
           efermi_linear=efermi_castep
        endif
+    else ! computer_efermi neither T nor F !
+        if (ierr/=0) call io_error (" ERROR: Bug in dos_utils_calculate: computer_efermi ambiguous")
     endif
 
     ! NB If you have asked for more than one type of broadening
@@ -277,11 +282,14 @@ contains
        efermi=efermi_linear
     endif
 
-    if(on_root) then
-       write(stdout,'(1x,a1,a46,f8.4,a3,19x,a1)')"|", " Fermi energy used : ", efermi,"eV","|"
+    if(set_efermi_zero) then
+       write(stdout,'(1x,a1,a46,a31)')"|", " Setting Fermi energy to 0 : ","|"
        E(:)=E(:)-efermi
        band_energy(:,:,:) = band_energy(:,:,:) - efermi
+    endif
 
+    if(on_root) then
+       write(stdout,'(1x,a1,a46,f8.4,a3,19x,a1)')"|", " Fermi energy used : ", efermi,"eV","|"
        write(stdout,'(1x,a78)')    '+----------------------------------------------------------------------------+'
        time1=io_time()
        write(stdout,'(1x,a40,f11.3,a)') 'Time to calculate Fermi energies ',time1-time0,' (sec)'
@@ -734,7 +742,7 @@ contains
 
     integer :: i,ik,is,ib,idos,ierr,iorb,dunit
     integer :: m,n,o,nn
-    real(kind=dp) :: dos_temp, cuml, intdos_accum, width
+    real(kind=dp) :: adaptive_smearing_temp,dos_temp, cuml, intdos_accum, width
     real(kind=dp) :: grad(1:3), step(1:3), EV(0:4)
 
     character(len=1), intent(in)                    :: dos_type
@@ -762,7 +770,7 @@ contains
 
 
     if(linear.or.adaptive) step(:) = 1.0_dp/real(kpoint_grid_dim(:),dp)/2.0_dp
-    if(adaptive) adaptive_smearing=adaptive_smearing*sum(step(:))/3
+    if(adaptive) adaptive_smearing_temp=adaptive_smearing*sum(step(:))/3
     if(fixed) width=fixed_smearing
 
     if(calc_weighted_dos)then
@@ -780,7 +788,7 @@ contains
           do ib=1,nbands
              if(linear.or.adaptive) grad(:) = real(band_gradient(ib,ib,:,ik,is),dp)
              if(linear) call doslin_sub_cell_corners(grad,step,band_energy(ib,is,ik),EV)
-             if(adaptive) width = sqrt(dot_product(grad,grad))*adaptive_smearing
+             if(adaptive) width = sqrt(dot_product(grad,grad))*adaptive_smearing_temp
              ! Hybrid Adaptive -- This way we don't lose weight at very flat parts of the
              ! band. It's a kind of fudge that we wouldn't need if we had infinitely small bins.
              if(finite_bin_correction.and.(width<delta_bins)) width = delta_bins

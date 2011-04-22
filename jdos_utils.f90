@@ -42,7 +42,6 @@ module od_jdos_utils
   !-------------------------------------------------------------------------------
   ! P U B L I C   F U N C T I O N S 
   public :: jdos_utils_calculate
-  public :: write_jdos
   !-------------------------------------------------------------------------------
 
   real(kind=dp), save                   :: delta_bins ! Width of bins 
@@ -263,66 +262,7 @@ contains
   end subroutine jdos_utils_calculate
 
 
-  !=============================================================================== 
-  subroutine write_jdos(E,dos,dos_name)
-    use od_parameters, only : dos_per_volume
-    !=============================================================================== 
-    ! This routine receives an energy scale, a density of states and a file name
-    ! and writes out the DOS to disk
-    !=============================================================================== 
-    implicit none
-    real(dp), intent(in) :: E(jdos_nbins)
-    real(dp), intent(in) :: dos(jdos_nbins,nspins)
-    character(len=*), intent(in) :: dos_name
-    integer :: i, dos_file, ierr
-    character(len=11) :: cdate
-    character(len=9) :: ctime
-    character(len=20) :: dos_units, intdos_units
 
-
-    dos_file=io_file_unit()
-    open(unit=dos_file,file=trim(seedname)//'.j'//trim(dos_name)//'.dat',iostat=ierr)
-    if(ierr.ne.0) call io_error(" ERROR: Cannot open output file in dos: write_dos")
-
-    dos_units="(electrons per eV)" ; intdos_units="(electrons)"
-    if(dos_per_volume) then
-       dos_units="(electrons per eV/A^3)" 
-       intdos_units="(electrons per A^3)"
-    endif
-
-    write(dos_file, *) "##############################################################################"
-    write(dos_file,*) "#"
-    write(dos_file, *) "#                  O p t a D O S   o u t p u t   f i l e "  
-    write(dos_file, '(1x,a1)') "#"
-    write(dos_file,*) "#    Denisty of States using ", trim(dos_name), " broadening"
-    call io_date(cdate,ctime)
-    write(dos_file,*)  '#  Generated on ',cdate,' at ',ctime
-    write(dos_file,*) "# Column        Data"
-    write(dos_file,*) "#    1        Energy (eV)"
-    if(nspins>1) then
-       write(dos_file,*) "#    1        Up-spin DOS ", trim(dos_units)
-       write(dos_file,*) "#    2        D50own-spin DOS ", trim(dos_units)
-       write(dos_file,*) "#    3        Up-spin Integrated DOS ", trim(intdos_units)
-       write(dos_file,*) "#    4        Down-spin Integrated DOS ", trim(intdos_units)
-    else
-       write(dos_file,*) "#    2        DOS ", trim(dos_units)
-       write(dos_file,*) "#    3        Integrated DOS ", trim(intdos_units)
-    endif
-    write(dos_file, '(1x,a1)') "#"
-    write(dos_file, '(1x,a78)') "##############################################################################"
-
-
-    if(nspins>1) then
-       do i=1,jdos_nbins
-          write(dos_file, *) E(i), dos(i,1), -dos(i,2)
-       enddo
-    else
-       do i=1,jdos_nbins
-          write(dos_file, *) E(i), dos(i,1)
-       enddo
-    endif
-    close(dos_file)
-  end subroutine write_jdos
 
 
   !=============================================================================== 
@@ -424,7 +364,7 @@ contains
 
     integer :: i,ik,is,ib,idos,ierr,iorb,jb
     integer :: m,n,o,nn,N2,N_geom
-    real(kind=dp) :: dos_temp, cuml, intdos_accum, width
+    real(kind=dp) :: dos_temp, cuml, intdos_accum, width, adaptive_smearing_temp
     real(kind=dp) :: grad(1:3), step(1:3), EV(0:4)
 
     character(len=1), intent(in)                      :: jdos_type
@@ -452,7 +392,7 @@ contains
 
 
     if(linear.or.adaptive) step(:) = 1.0_dp/real(kpoint_grid_dim(:),dp)/2.0_dp
-    if(adaptive) adaptive_smearing=adaptive_smearing*sum(step(:))/3
+    if(adaptive) adaptive_smearing_temp=adaptive_smearing*sum(step(:))/3
     if(fixed) width=fixed_smearing
 
     call allocate_jdos(jdos)
@@ -472,7 +412,7 @@ contains
              do jb=vb_max(is)+1,nbands
                 if(linear.or.adaptive) grad(:) = real(band_gradient(jb,jb,:,ik,is)-band_gradient(ib,ib,:,ik,is),dp)
                 if(linear) call doslin_sub_cell_corners(grad,step,band_energy(jb,is,ik)-band_energy(ib,is,ik)+scissor_op,EV)
-                if(adaptive) width = sqrt(dot_product(grad,grad))*adaptive_smearing
+                if(adaptive) width = sqrt(dot_product(grad,grad))*adaptive_smearing_temp
 
                 ! Hybrid Adaptive -- This way we don't lose weight at very flat parts of the
                 ! band. It's a kind of fudge that we wouldn't need if we had infinitely small bins.
@@ -494,7 +434,8 @@ contains
                    ! Also need to remove kpoints weights.
                    if(calc_weighted_jdos) then
                       do N2=1,N_geom
-                         weighted_jdos(idos,is,N2)=weighted_jdos(idos,is,N2) + dos_temp*matrix_weights(ib,jb,ik,is,N2)*electrons_per_state*kpoint_weight(ik) 
+                         weighted_jdos(idos,is,N2)=weighted_jdos(idos,is,N2) + dos_temp*matrix_weights(ib,jb,ik,is,N2)&
+                              &*electrons_per_state*kpoint_weight(ik) 
                       end do
                    end if
 

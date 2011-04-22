@@ -232,6 +232,9 @@ contains
     compute_band_energy    = .true.
     call param_get_keyword('compute_band_energy',found,l_value=compute_band_energy)
 
+    set_efermi_zero = .true. 
+    call param_get_keyword('set_efermi_zero',found,l_value=set_efermi_zero)
+
     dos_per_volume = .false.
     call param_get_keyword('dos_per_volume',found,l_value=dos_per_volume)
 
