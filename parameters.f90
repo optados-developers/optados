@@ -66,22 +66,13 @@ module od_parameters
   ! Belonging to the jdos module
   real(kind=dp),     public, save :: jdos_max_energy 
   real(kind=dp),     public, save :: jdos_spacing
-
   real(kind=dp),     public, save :: scissor_op
 
   ! Optics parameters
   character(len=20), public, save :: optics_geom
   real(kind=dp),     public, save :: optics_qdir(3)
 
-
-
-  !parameters dervied from input -- I think these should end up in the
-  ! electronic module
-  integer,           public, save :: bands_num_spec_points  
-  character(len=1), allocatable,    public, save ::bands_label(:)
-  real(kind=dp), allocatable,    public, save ::bands_spec_points(:,:)
   real(kind=dp),     public, save :: lenconfac
-
 
   private
 
@@ -338,13 +329,6 @@ contains
     enddo
 
 
-    ! Bands labels (eg, x --> X)
-    do loop=1,bands_num_spec_points
-       ic=ichar(bands_label(loop))                           
-       if ((ic.ge.ichar('a')).and.(ic.le.ichar('z'))) &
-            bands_label(loop) = char(ic+ichar('Z')-ichar('z'))
-    enddo
-
     ! Length unit (ang --> Ang, bohr --> Bohr)
     ic=ichar(length_unit(1:1))
     if ((ic.ge.ichar('a')).and.(ic.le.ichar('z'))) &
@@ -410,7 +394,6 @@ contains
 
     ! System
 
-    ! Atoms
     if(num_atoms>0) then
        write(stdout,'(1x,a)') '*----------------------------------------------------------------------------*'
        if (lenconfac.eq.1.0_dp) then
@@ -427,7 +410,7 @@ contains
        end do
        write(stdout,'(1x,a)') '*----------------------------------------------------------------------------*'
     else
-       write(stdout,'(25x,a)') 'No atom positions specified'
+       if(iprint>1)  write(stdout,'(25x,a)') 'No atom positions read'
     end if
     write(stdout,*) ' '
 
@@ -450,7 +433,7 @@ contains
 
 
     !
-    write(stdout,'(1x,a78)')    '*---------------------------------- TASK ------------------------------------*'
+    write(stdout,'(1x,a78)')    '*-------------------------------- TASK --------------------------------------*'
     !
     if(dos) then
        write(stdout,'(1x,a78)') '|  Output Density of States                  :  True                         |'
@@ -477,7 +460,7 @@ contains
     else
        write(stdout,'(1x,a78)') '|  Output Core-level Spectra                 :  False                        |'
     endif
-    write(stdout,'(1x,a78)') '*---------------------------------- UNITS -----------------------------------*'
+    write(stdout,'(1x,a78)')    '*-------------------------------- UNITS -------------------------------------*'
     write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Length Unit                               :',trim(length_unit),'|'  
 
     if(dos.or.pdos) then
@@ -489,7 +472,7 @@ contains
     endif
 
 
-    write(stdout,'(1x,a78)')    '*----------------------------- Broadening -----------------------------------*'
+    write(stdout,'(1x,a78)')    '*-------------------------------- BROADENING --------------------------------*'
     if(fixed) then
        write(stdout,'(1x,a78)') '|  Fixed Width Smearing                      :  True                         |'
        write(stdout,'(1x,a46,1x,1F10.5,20x,a1)') '|  Smearing Width                            :', fixed_smearing,'|'
@@ -508,10 +491,10 @@ contains
          write(stdout,'(1x,a78)') '|  Numerical Integration of P/DOS            :  True                         |'        
 
 
-    write(stdout,'(1x,a78)')    '*----------------------------- Parameters -----------------------------------*'
-    write(stdout,'(1x,a78)')    '|                                                                            |'
+!    write(stdout,'(1x,a78)')    '*----------------------------- Parameters -----------------------------------*'
+!    write(stdout,'(1x,a78)')    '|                                                                            |'
     if(optics) then
-       write(stdout,'(1x,a78)')    '*------------------------------- Optics -------------------------------------*'
+       write(stdout,'(1x,a78)')    '*-------------------------------- OPTICS ------------------------------------*'
        if(index(optics_geom,'polycrys')>0) then
           write(stdout,'(1x,a78)') '|  Geometry for Optics Calculation           :  Polycrytalline               |'        
        elseif (index(optics_geom,'unpolar')>0) then
@@ -1166,96 +1149,17 @@ contains
   end  subroutine param_get_range_vector
 
 
-  !===================================!
-  subroutine param_get_keyword_kpath
-    !===================================!
-    !                                   !
-    !  Fills the kpath data block       !
-    !                                   !
-    !===================================!
-    use od_io,        only : io_error
-
-    implicit none
-
-    character(len=20) :: keyword
-    integer           :: in,ins,ine,loop,i,line_e,line_s,counter
-    logical           :: found_e,found_s
-    character(len=maxlen) :: dummy,end_st,start_st
-
-    keyword="kpoint_path"
-
-    found_s=.false.
-    found_e=.false.
-
-    start_st='begin '//trim(keyword)
-    end_st='end '//trim(keyword)
-
-
-    do loop=1,num_lines
-       ins=index(in_data(loop),trim(keyword))
-       if (ins==0 ) cycle
-       in=index(in_data(loop),'begin')
-       if (in==0 .or. in>1) cycle
-       line_s=loop
-       if (found_s) then
-          call io_error('Error: Found '//trim(start_st)//' more than once in input file')
-       endif
-       found_s=.true.
-    end do
-
-
-
-    do loop=1,num_lines
-       ine=index(in_data(loop),trim(keyword))
-       if (ine==0 ) cycle
-       in=index(in_data(loop),'end')
-       if (in==0 .or. in>1) cycle
-       line_e=loop
-       if (found_e) then
-          call io_error('Error: Found '//trim(end_st)//' more than once in input file')
-       endif
-       found_e=.true.
-    end do
-
-    if(.not. found_e) then
-       call io_error('Error: Found '//trim(start_st)//' but no '//trim(end_st)//' in input file')
-    end if
-
-    if(line_e<=line_s) then
-       call io_error('Error: '//trim(end_st)//' comes before '//trim(start_st)//' in input file')
-    end if
-
-    counter=0
-    do loop=line_s+1,line_e-1
-
-       counter=counter+2
-       dummy=in_data(loop)
-       read(dummy,*,err=240,end=240) bands_label(counter-1),(bands_spec_points(i,counter-1),i=1,3)&
-            ,bands_label(counter),(bands_spec_points(i,counter),i=1,3)
-    end do
-
-
-    in_data(line_s:line_e)(1:maxlen) = ' '
-
-    return
-
-
-240 call io_error('param_get_keyword_kpath: Problem reading kpath '//trim(dummy))
-
-  end subroutine param_get_keyword_kpath
-
-
   subroutine param_dist
 
     use od_comms, only : comms_bcast
 
     implicit none
 
-    call comms_bcast(output_format,20)!len(output_format))
-    call comms_bcast(devel_flag   ,100)!len(devel_flag))
+    call comms_bcast(output_format,len(output_format))
+    call comms_bcast(devel_flag   ,len(devel_flag))
     call comms_bcast(iprint        ,1)
-    call comms_bcast(energy_unit   ,20)!len(energy_unit))
-    call comms_bcast(length_unit ,20)!len(length_unit))
+    call comms_bcast(energy_unit   ,len(energy_unit))
+    call comms_bcast(length_unit ,len(length_unit))
     call comms_bcast(dos    ,1)
     call comms_bcast(pdos   ,1)
     call comms_bcast(jdos   ,1)
