@@ -28,6 +28,10 @@ module od_pdos
   !-------------------------------------------------------------------------!
   real(kind=dp), public, allocatable, save  :: dos_partial(:,:,:)
   real(kind=dp),allocatable, public, dimension(:,:,:,:) :: matrix_weights
+  integer, allocatable :: pdos_projection_array(:,:,:,:)
+  integer :: num_proj
+
+  integer, parameter :: max_am=4
 
   !-------------------------------------------------------------------------!
 
@@ -41,11 +45,24 @@ contains
 
 
   subroutine pdos_calculate
-    use od_electronic, only :  pdos_orbital, pdos_weights,pdos_mwab
+    use od_electronic, only :  pdos_orbital, pdos_weights,elec_pdos_read,pdos_mwab
     use od_dos_utils, only : dos_utils_calculate
     use od_comms, only : on_root
 
     implicit none
+    integer :: loop
+
+    call elec_pdos_read
+
+    write(77,*) pdos_mwab%norbitals
+
+    do loop=1,pdos_mwab%norbitals
+       write(77,*) loop, pdos_orbital(loop)%species_no
+       write(77,*) loop, pdos_orbital(loop)%rank_in_species
+       write(77,*) loop, pdos_orbital(loop)%am_channel
+    end do
+
+    call pdos_get_string
 
     call pdos_merge
 
@@ -65,8 +82,33 @@ contains
     !===============================================================================
     ! This is a mindbendingly horrific exercise in book-keeping
     !===============================================================================
+    use od_electronic, only :  pdos_orbital, pdos_weights,pdos_mwab,nspins
+    use od_cell, only : num_kpoints_on_node
+    use od_comms, only : my_node_id
     implicit none
-    ! Good isn't it?
+
+    integer :: N,N_spin,n_eigen,nproj,orb
+
+    allocate(matrix_weights(num_proj,pdos_mwab%nbands,num_kpoints_on_node(my_node_id),nspins))
+    matrix_weights=0.0_dp
+
+    do N=1,num_kpoints_on_node(my_node_id) ! Loop over kpoints
+       do N_spin=1,nspins                  ! Loop over spins
+          do n_eigen=1,pdos_mwab%nbands    ! Loop over unoccupied states
+             do nproj=1,num_proj
+                do orb=1,pdos_mwab%norbitals
+                   if(pdos_projection_array(pdos_orbital(orb)%species_no,pdos_orbital(orb)%rank_in_species &
+                        ,pdos_orbital(orb)%am_channel+1,nproj)==1) then
+                      write(*,*) 'adding',pdos_orbital(orb)%species_no,pdos_orbital(orb)%rank_in_species, &
+                           pdos_orbital(orb)%am_channel+1,nproj
+                        matrix_weights(nproj,n_eigen,N,N_spin)=matrix_weights(nproj,n_eigen,N,N_spin)+&
+                        pdos_weights(orb,n_eigen,N,N_spin)
+                     end if
+                end do
+             end do
+          end do
+       end do
+    end do
 
     return
   end subroutine pdos_merge
@@ -79,15 +121,16 @@ contains
     ! This is a mindbendingly horrific exercise in book-keeping
     !===============================================================================
     use od_parameters, only : pdos_string
+    use od_cell, only : num_species,atoms_species_num
     use od_io, only : maxlen, io_error
     implicit none
     character(len=maxlen) :: ctemp, ctemp2,c_am,m_string
 
-    integer :: pos_l,pos_r,ia,iz,idiff,ic1,ic2,num_proj,max_site,max_atoms,species,num_sites,num_am
+    integer :: pos_l,pos_r,ia,iz,idiff,ic1,ic2,max_site,max_atoms,species,num_sites,num_am
     character(len=2)  :: c_symbol
     logical :: pdos_sum,am_sum,site_sum
 
-    integer   :: kl, in,loop,num1,num2,i_punc,pos3,loop_l,loop_a,loop_p,max_am,num_species
+    integer   :: kl, in,loop,num1,num2,i_punc,pos3,loop_l,loop_a,loop_p
     integer   :: counter,i_digit,loop_r,range_size
     character(len=maxlen) :: dummy
     character(len=10), parameter :: c_digit="0123456789"
@@ -95,13 +138,17 @@ contains
     character(len=3) , parameter :: c_sep=" ,"
     character(len=5) , parameter :: c_punc=" ,-:"
     character(len=5)  :: c_num1,c_num2
-    integer :: pdos_atoms(20),pdos_ang(4)
-    integer, allocatable :: pdos_array(:,:,:,:)
+    integer, allocatable :: pdos_atoms(:),pdos_ang(:)
     
+
+    allocate(pdos_atoms(maxval(atoms_species_num)))
+    allocate(pdos_ang(max_am))
+
 
     pdos_atoms=0;pdos_ang=0
     site_sum=.false.
     am_sum=.false.
+    species=1
 
     ctemp=pdos_string
     pdos_sum=.false.
@@ -167,10 +214,14 @@ contains
              range_size=abs(num2-num1)+1
              do loop_r=1,range_size
                 counter=counter+1
+                if(min(num1,num2)+loop_r-1>atoms_species_num(species)) &
+                     call io_error('Atom number given in pdos is greater than number of atoms for given species')
                 pdos_atoms(min(num1,num2)+loop_r-1)=1
              end do
           else
-             counter=counter+1 
+             counter=counter+1
+             if(num1>atoms_species_num(species)) &
+                  call io_error('Atom number given in pdos is greater than number of atoms for given species')
              pdos_atoms(num1)=1
           end if
           
@@ -182,7 +233,7 @@ contains
        site_sum=.true.
     end if
     
-    do loop=1,20
+    do loop=1,atoms_species_num(species)
        write(*,*) loop, pdos_atoms(loop)
     end do
 
@@ -237,33 +288,31 @@ contains
     num_proj=num_am*num_sites
     write(*,*) 'num_proj',num_proj
 
-    num_species=1;    max_atoms=20;max_am=4
-    allocate(pdos_array(num_species,max_atoms,max_am,num_proj))
-    pdos_array=0
+    allocate(pdos_projection_array(num_species,maxval(atoms_species_num),max_am,num_proj))
+    pdos_projection_array=0
 
-    species=1
     loop_p=1
     if(site_sum.and.am_sum) then
-       pdos_array(species,:,:,loop_p)=1
+       pdos_projection_array(species,:,:,loop_p)=1
     elseif(site_sum.and..not.am_sum) then
        do loop_l=1,max_am
           if(pdos_ang(loop_l)==0) cycle 
-          pdos_array(species,:,loop_l,loop_p)=1
+          pdos_projection_array(species,:,loop_l,loop_p)=1
           loop_p=loop_p+1
        end do
     elseif(.not.site_sum.and.am_sum) then
-       do loop_a=1,max_atoms
+       do loop_a=1,atoms_species_num(species)
           write(*,*) loop_a
           if(pdos_atoms(loop_a)==0) cycle 
-          pdos_array(species,loop_a,:,loop_p)=1
+          pdos_projection_array(species,loop_a,:,loop_p)=1
           loop_p=loop_p+1
        end do
     else
        do loop_l=1,max_am
           if(pdos_ang(loop_l)==0) cycle 
-          do loop_a=1,max_atoms
+          do loop_a=1,atoms_species_num(species)
              if(pdos_atoms(loop_a)==0) cycle 
-             pdos_array(species,loop_a,loop_l,loop_p)=1
+             pdos_projection_array(species,loop_a,loop_l,loop_p)=1
              loop_p=loop_p+1
           end do
        end do
@@ -271,7 +320,7 @@ contains
 
     do loop=1,num_proj
        write(*,*) 'projection',loop
-       write(*,*) pdos_array(:,:,:,loop)
+       write(*,*) pdos_projection_array(:,:,:,loop)
     end do
     write(*,*) 'finish'
     
@@ -313,7 +362,7 @@ contains
        end do
     else
        do idos = 1,dos_nbins
-          write(58,'(es14.7,'//trim(string)//')') E(idos),(dos_partial(idos,1,i),i=1,pdos_mwab%norbitals)
+          write(58,'(es14.7,'//trim(string)//')') E(idos),(dos_partial(idos,1,i),i=1,num_proj)
        end do
     endif
 

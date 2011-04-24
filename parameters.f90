@@ -242,6 +242,7 @@ contains
 
     pdos_string =''
     call param_get_keyword('pdos',found,c_value=pdos_string)
+    if(pdos.and. (len_trim(pdos_string)==0)) call io_error('pdos requested but pdos is not specified')
 
     jdos_max_energy        = -1.0_dp !! change
     call param_get_keyword('jdos_max_energy',found,r_value=jdos_max_energy)
