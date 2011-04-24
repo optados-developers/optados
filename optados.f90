@@ -22,9 +22,8 @@ program optados
   use od_dos,  only : dos_calculate
   use od_jdos,  only: jdos_calculate
   use od_core, only : core_calculate
-  use od_pdos, only : dos_partial, pdos_write
+  use od_pdos, only : pdos_calculate
   use od_optics, only : optics_calculate
-  !  use od_pdos, only : pdos_write, pdos_weights, dos_partial
   implicit none
 
   real(kind=dp)    :: time0,time1,time2 ! Varaibles for timing
@@ -88,15 +87,7 @@ program optados
   ! C A L L   P D O S   R O U T I N E S
   if(pdos) then
      time0=io_time()
-     !   call cell_pdos_read 
-     !   call pdos_merge
-     time1=io_time()
-     write(stdout,'(1x,a40,f11.3,a)') 'Time to set up Partial DOS ',time1-time0,' (sec)'
-
-     time0=io_time()
-     !    call dos_calculate(matrix_weights=pdos_weights, weighted_dos=dos_partial)
-     call pdos_write
-
+     call pdos_calculate
      time1=io_time()
      if(on_root) write(stdout,'(1x,a40,f11.3,a)') 'Time to calculate Partical DOS ',time1-time0,' (sec)'
   endif

@@ -62,6 +62,9 @@ module od_parameters
   real(kind=dp),     public, save :: dos_spacing
   integer,           public, save :: dos_nbins
 
+  ! pdos
+  character(len=maxlen), public, save :: pdos_string
+
 
   ! Belonging to the jdos module
   real(kind=dp),     public, save :: jdos_max_energy 
@@ -78,6 +81,8 @@ module od_parameters
 
   integer :: num_lines
   character(len=maxlen), allocatable :: in_data(:)
+
+
 
   public :: param_read
   public :: param_write
@@ -152,16 +157,10 @@ contains
 
     num_atoms=0
     num_species=0
-    if(pdos.or.core) then
+    if(pdos) then
        ! try to read in the atoms from the cell file.
        ! We don't need them otherwise, so let's not bother
- !      call cell_get_atoms
-    end if
-    if(pdos) then
-       !parse the start of the pdos file to get info on orbitals
-!       call elec_pdos_read_orbitals
-      !now figure out what to plot
-!       call param_get_pdos
+       call cell_get_atoms
     end if
 
     i_temp=0
@@ -240,6 +239,9 @@ contains
 
     dos_nbins               = -1 ! 10001 LinDOS default
     call param_get_keyword('dos_nbins',found,i_value=dos_nbins)
+
+    pdos_string =''
+    call param_get_keyword('pdos',found,c_value=pdos_string)
 
     jdos_max_energy        = -1.0_dp !! change
     call param_get_keyword('jdos_max_energy',found,r_value=jdos_max_energy)
@@ -1047,6 +1049,7 @@ contains
   end subroutine param_get_block_length
 
 
+  
 
 
   !====================================================================!
@@ -1150,6 +1153,9 @@ contains
 
 
   subroutine param_dist
+    !-----------------------------------------------------
+    ! Send the parameters from the root node to all others
+    !-----------------------------------------------------
 
     use od_comms, only : comms_bcast
 
@@ -1188,6 +1194,7 @@ contains
     call comms_bcast(dos_max_energy,1)
     call comms_bcast(dos_spacing,1)
     call comms_bcast(legacy_file_format,1)
+    call comms_bcast(pdos_string,len(pdos_string))
 
   end subroutine param_dist
 
