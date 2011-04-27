@@ -12,13 +12,6 @@ module od_pdos
   ! (3) The writing out of the pdos, and labelling the columns for easy reading
   !===============================================================================
   use od_constants, only : dp
-  ! use od_dos,       only : matrix_weights_array_boundaries
-  ! use od_cell,      only : nkpoints
-  ! use od_comms,     only : on_root
-  ! use od_io,        only : io_file_unit, io_error, seedname, stdout
-  ! use od_dos,       only : E, matrix_weights_array_boundaries
-  ! use od_electronic,only : nbands,nspins
-  ! use od_parameters
 
   implicit none
 
@@ -31,10 +24,12 @@ module od_pdos
   integer, allocatable :: pdos_projection_array(:,:,:,:)
   integer :: num_proj
 
-  integer, parameter :: max_am=4
-  character(len=3), allocatable :: pdos_symbol(:)
-  integer, allocatable :: pdos_am(:,:)
-  integer, allocatable :: pdos_sites(:)
+  integer, parameter :: max_am=4                   ! s,p,d,f  hard coded!
+
+  ! Data derived from the info in the pdos_weights file 
+  character(len=3), allocatable :: pdos_symbol(:)   ! symbols
+  integer, allocatable :: pdos_am(:,:)              ! angular mtm (num_species,max_am)
+  integer, allocatable :: pdos_sites(:)             ! number of each species
 
 
   !-------------------------------------------------------------------------!
@@ -43,29 +38,32 @@ module od_pdos
 
   public :: pdos_calculate
 
-  ! integer :: nions ! This will probably go into the ion module.
-
 contains
 
 
   subroutine pdos_calculate
-    use od_electronic, only :  pdos_orbital, pdos_weights,elec_pdos_read,pdos_mwab
+    use od_electronic, only :elec_pdos_read
     use od_dos_utils, only : dos_utils_calculate
     use od_comms, only : on_root
 
     implicit none
-    integer :: loop
 
+    ! read in the pdos weights
     call elec_pdos_read
 
-    call pdos_analyise_orbitals
+    ! look at the orbitals and figure out which atoms / states we have
+    call pdos_analyse_orbitals
 
+    ! parse the pdos string to see what we want
     call pdos_get_string
 
+    ! form the right matrix elements
     call pdos_merge
 
+    ! now compute the weighted dos
     call dos_utils_calculate(matrix_weights, dos_partial)
 
+    ! and write everything out
     if (on_root) then
        call pdos_write
     endif
@@ -120,23 +118,21 @@ contains
     use od_cell, only : num_species,atoms_species_num
     use od_io, only : maxlen, io_error
     implicit none
-    character(len=maxlen) :: ctemp, ctemp2,ctemp3,c_am,m_string
+    character(len=maxlen) :: ctemp, ctemp2,ctemp3
 
-    integer :: pos_l,pos_r,ia,iz,idiff,ic1,ic2,max_site,max_atoms,species,num_sites,num_am
-    character(len=2)  :: c_symbol
-    logical :: pdos_sum,am_sum,site_sum
 
-    integer   :: kl, in,loop,num1,num2,i_punc,pos,loop_l,loop_a,loop_p
-    integer   :: counter,i_digit,loop_r,range_size,species_count,species_proj
-    character(len=maxlen) :: dummy
+    integer :: loop4,loop3,loop2
+    logical :: pdos_sum
+
+    integer   :: loop,pos,loop_l,loop_a,loop_p
+    integer   :: i_digit,species_count,species_proj
     character(len=10), parameter :: c_digit="0123456789"
     character(len=2) , parameter :: c_range="-:"
     character(len=1) , parameter :: c_sep=";"
     character(len=5) , parameter :: c_punc=" ,-:"
-    character(len=5)  :: c_num1,c_num2
-    integer, allocatable :: pdos_atoms(:),pdos_ang(:)
+    integer, allocatable :: pdos_temp(:,:,:,:)
     logical :: shortcut
-
+ 
 
 
     !Check for any short cuts
@@ -216,7 +212,7 @@ contains
           else
              ctemp3=ctemp2(1:pos-1)
           end if
-          call pdos_analyise_substring(ctemp3,species_proj)
+          call pdos_analyse_substring(ctemp3,species_proj)
           num_proj=num_proj+species_proj
           if (pos==0) exit
           species_count=species_count+1
@@ -238,27 +234,43 @@ contains
           else
              ctemp3=ctemp2(1:pos-1)
           end if
-          call pdos_analyise_substring(ctemp3)
+          call pdos_analyse_substring(ctemp3)
           ctemp2=ctemp2(pos+1:)
        end do
 
+       if(pdos_sum) then
+          allocate(pdos_temp(num_species,maxval(atoms_species_num),max_am,1))
+          pdos_temp=0
+          do loop4=1,num_proj
+             do loop3=1,max_am
+                do loop2=1,maxval(atoms_species_num)
+                   do loop=1,num_species
+                      if(pdos_projection_array(loop,loop2,loop3,loop4)==1) then
+                         pdos_temp(loop,loop2,loop3,1)=1
+                      end if
+                   end do
+                end do
+             end do
+          end do
+          deallocate(pdos_projection_array)
+          num_proj=1
+          allocate(pdos_projection_array(num_species,maxval(atoms_species_num),max_am,num_proj))
+          pdos_projection_array=0
+          pdos_projection_array=pdos_temp
+       end if
     end if
 
 
     return
 
-101 call io_error('Error parsing keyword ')
-106 call io_error('param_get_projection: Problem reading m state into string ')
-
 
   contains
 
     !===============================================================================
-    subroutine pdos_analyise_substring(ctemp,species_proj)
+    subroutine pdos_analyse_substring(ctemp,species_proj)
       !===============================================================================
       ! This is a mindbendingly horrific exercise in book-keeping
       !===============================================================================
-      use od_parameters, only : pdos_string
       use od_cell, only : num_species,atoms_species_num
       use od_io, only : maxlen, io_error
       implicit none
@@ -271,12 +283,12 @@ contains
 
       character(len=maxlen) :: ctemp2,c_am,m_string
 
-      integer :: pos_l,pos_r,ia,iz,idiff,ic1,ic2,max_site,max_atoms,species,num_sites,num_am
+      integer :: pos_l,pos_r,ia,iz,idiff,ic1,ic2,species,num_sites,num_am
       character(len=3)  :: c_symbol='   '
-      logical :: pdos_sum,am_sum,site_sum
+      logical :: am_sum,site_sum
 
-      integer   :: kl, in,loop,num1,num2,i_punc,pos3,loop_l,loop_a,loop_p
-      integer   :: counter,i_digit,loop_r,range_size
+      integer   :: num1,num2,i_punc,pos3,loop_l,loop_a,loop_p
+      integer   :: counter,loop_r,range_size
       character(len=maxlen) :: dummy
       character(len=10), parameter :: c_digit="0123456789"
       character(len=2) , parameter :: c_range="-:"
@@ -301,8 +313,8 @@ contains
       pos_l=index(ctemp,'(')
       if(pos_l>0) then
          pos_r=index(ctemp,')')
-         if(pos_r==0) call io_error ('found ( but no )')
-         if(pos_r<=pos_l) call io_error (' ) before (')
+         if(pos_r==0) call io_error ('pdos_analyse_substring: found ( but no )')
+         if(pos_r<=pos_l) call io_error ('pdos_analyse_substring: found ) before (')
          c_am=ctemp(pos_l+1:pos_r-1)
          ctemp=ctemp(:pos_l-1)
       else ! implicit sum over AM
@@ -314,7 +326,7 @@ contains
       idiff = ichar('Z')-ichar('z')
 
       ic1=ichar(ctemp(1:1))
-      if(ic1<ia .or. ic1>iz) call io_error ('problem reading atomic symbol in pdos string')
+      if(ic1<ia .or. ic1>iz) call io_error ('pdos_analyse_substring: problem reading atomic symbol in pdos string')
       ic2=ichar(ctemp(2:2))
       if(ic2>=ia .and. ic1<=iz) then
          c_symbol(1:1)=char(ic1+idiff)
@@ -330,7 +342,7 @@ contains
             species=loop
          end if
       end do
-      if(species==0) call io_error('Failed to match atomic symbol in pdos string')
+      if(species==0) call io_error('pdos_analyse_substring: Failed to match atomic symbol in pdos string')
 
 
       !Count atoms numbers
@@ -340,7 +352,7 @@ contains
          dummy=adjustl(dummy)
          do 
             i_punc=scan(dummy,c_punc)
-            if(i_punc==0) call io_error('Error parsing keyword ') 
+            if(i_punc==0) call io_error('pdos_analyse_substring: error looking for atom numbers') 
             c_num1=dummy(1:i_punc-1)
             read(c_num1,*,err=101,end=101) num1
             dummy=adjustl(dummy(i_punc:))
@@ -356,18 +368,20 @@ contains
                do loop_r=1,range_size
                   counter=counter+1
                   if(min(num1,num2)+loop_r-1>pdos_sites(species)) &
-                       call io_error('Atom number given in pdos is greater than number of atoms for given species')
+                       call io_error&
+          ('pdos_analyse_substring: Atom number given in pdos string is greater than number of atoms for given species')
                   pdos_atoms(min(num1,num2)+loop_r-1)=1
                end do
             else
                counter=counter+1
                if(num1>pdos_sites(species)) &
-                    call io_error('Atom number given in pdos is greater than number of atoms for given species')
+                    call io_error&
+          ('pdos_analyse_substring: Atom number given in pdos string is greater than number of atoms for given species')
                pdos_atoms(num1)=1
             end if
 
             if(scan(dummy,c_sep)==1) dummy=adjustl(dummy(2:))
-            if(scan(dummy,c_range)==1) call io_error('Error parsing keyword incorrect range') 
+            if(scan(dummy,c_range)==1) call io_error('pdos_analyse_substring: Error parsing atoms numbers - incorrect range') 
             if(index(dummy,' ')==1) exit
          end do
       else
@@ -377,7 +391,6 @@ contains
       ! count am
       counter=0
       dummy=adjustl(c_am)
-      print*,dummy
       if (len_trim(dummy)>0) then
          do
             pos3=index(dummy,',')
@@ -397,7 +410,7 @@ contains
             case ('f')
                pdos_ang(4)=1
             case default
-               call io_error('param_get_projection: Problem reading l state ')
+               call io_error('pdos_analyse_substring: Problem reading l state ')
             end select
             if (pos3==0) exit
             dummy=dummy(pos3+1:)
@@ -450,18 +463,18 @@ contains
 
       return
 
-101   call io_error('Error parsing keyword ')
-106   call io_error('param_get_projection: Problem reading m state into string ')
+101   call io_error('pdos_analyse_substring Error parsing keyword ')
+106   call io_error('pdos_analyse_substring: Problem reading l state into string ')
 
 
-    end subroutine pdos_analyise_substring
+    end subroutine pdos_analyse_substring
 
 
   end subroutine pdos_get_string
 
 
-  subroutine pdos_analyise_orbitals
-    use od_electronic, only :  pdos_orbital, pdos_weights,elec_pdos_read,pdos_mwab
+  subroutine pdos_analyse_orbitals
+    use od_electronic, only :  pdos_orbital,elec_pdos_read,pdos_mwab
     use od_cell, only : atoms_symbol,num_species
     use od_constants, only : periodic_table_name
     use od_io, only : io_error
@@ -498,7 +511,7 @@ contains
     end do
 
 
-  end subroutine pdos_analyise_orbitals
+  end subroutine pdos_analyse_orbitals
 
 
 
