@@ -478,10 +478,10 @@ contains
     use od_cell, only : atoms_symbol,num_species
     use od_constants, only : periodic_table_name
     use od_io, only : io_error
+    use od_comms
     implicit none
 
     integer :: loop,loop2,counter
-
 
     if(maxval(pdos_orbital(:)%species_no)>num_species) &
          call io_error('More species in pdos file than in cell file')

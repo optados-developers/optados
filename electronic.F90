@@ -589,8 +589,10 @@ contains
     !-------------------------------------------------------------------------
     ! Written by  A J Morris                                         Dec 2010
     !=========================================================================
-    use od_comms,     only : on_root
+    use od_comms,     only : comms_bcast,comms_send,comms_recv,num_nodes,my_node_id,&
+        & on_root,root_id,comms_slice
     use od_io,        only : io_file_unit, io_error, seedname, stdout
+    use od_cell,      only : num_kpoints_on_node
 
     implicit none
 
@@ -598,79 +600,94 @@ contains
     integer, allocatable, dimension(:,:) :: nbands_occ
     real(kind=dp)                        :: dummyr1,dummyr2,dummyr3
     integer                              :: dummyi,ib,ik,is
-    integer                              :: pdos_in_unit,ios,ierr
+    integer                              :: pdos_in_unit,ios,ierr,inodes
+
+    if(allocated(pdos_weights)) return
 
     pdos_in_unit=io_file_unit()
-
-    if(allocated(pdos_orbital)) deallocate(pdos_orbital)
+    
 
     !-------------------------------------------------------------------------!
     ! R E A D   T H E   D A T A   H E A D E R
-    open (pdos_in_unit, iostat=ios, status='old', file=trim(seedname)//".pdos_weights", form='unformatted')
-    if(ios.ne.0) call io_error ("Error : Cannot open pDOS weights")
-
-    read(pdos_in_unit) pdos_mwab%nkpoints
-    read(pdos_in_unit) pdos_mwab%nspins
-    read(pdos_in_unit) pdos_mwab%norbitals
-    read(pdos_in_unit) pdos_mwab%nbands
-
-    allocate(pdos_orbital(pdos_mwab%norbitals),stat=ierr)
-    if(ierr/=0) stop " Error : cannot allocate orbital"
-
-    read(pdos_in_unit) pdos_orbital(1:pdos_mwab%norbitals)%species_no
-    read(pdos_in_unit) pdos_orbital(1:pdos_mwab%norbitals)%rank_in_species
-    read(pdos_in_unit) pdos_orbital(1:pdos_mwab%norbitals)%am_channel
-    !-------------------------------------------------------------------------!
-
+    if(on_root) then
+       open (unit=pdos_in_unit,err=100, status='old', file=trim(seedname)//".pdos_weights", form='unformatted')
+       
+       read(pdos_in_unit) pdos_mwab%nkpoints
+       read(pdos_in_unit) pdos_mwab%nspins
+       read(pdos_in_unit) pdos_mwab%norbitals
+       read(pdos_in_unit) pdos_mwab%nbands
+       
+       allocate(pdos_orbital(pdos_mwab%norbitals),stat=ierr)
+       if(ierr/=0) call io_error(" Error : cannot allocate pdos_orbital")
+       
+       read(pdos_in_unit) pdos_orbital(1:pdos_mwab%norbitals)%species_no
+       read(pdos_in_unit) pdos_orbital(1:pdos_mwab%norbitals)%rank_in_species
+       read(pdos_in_unit) pdos_orbital(1:pdos_mwab%norbitals)%am_channel
+       !-------------------------------------------------------------------------!
+    end if
+    call comms_bcast(pdos_mwab%norbitals,1)
+    call comms_bcast(pdos_mwab%nbands,1)
+    call comms_bcast(pdos_mwab%nkpoints,1)
+    call comms_bcast(pdos_mwab%nspins,1)
+    if(.not. on_root) then
+       allocate(pdos_orbital(pdos_mwab%norbitals),stat=ierr)
+       if(ierr/=0) call io_error(" Error : cannot allocate pdos_orbital")
+       pdos_orbital(:)%species_no=0
+    end if
+    call comms_bcast(pdos_orbital(1)%species_no      ,pdos_mwab%norbitals)
+    call comms_bcast(pdos_orbital(1)%rank_in_species ,pdos_mwab%norbitals)
+    call comms_bcast(pdos_orbital(1)%am_channel      ,pdos_mwab%norbitals)
 
     !-------------------------------------------------------------------------!
     ! N O W   R E A D   T H E   D A T A
-    allocate(nbands_occ(1:pdos_mwab%nkpoints,1:pdos_mwab%nspins),stat=ierr)
+    allocate(nbands_occ(1:num_kpoints_on_node(my_node_id),1:pdos_mwab%nspins),stat=ierr)
     if(ierr/=0) stop " Error : cannot allocate nbands_occ"
-    allocate(pdos_weights(1:pdos_mwab%norbitals,1:pdos_mwab%nbands,1:pdos_mwab%nkpoints,1:pdos_mwab%nspins),stat=ierr)
+    allocate(pdos_weights(1:pdos_mwab%norbitals,1:pdos_mwab%nbands, &
+         1:num_kpoints_on_node(my_node_id),1:pdos_mwab%nspins),stat=ierr)
     if(ierr/=0) stop " Error : cannot allocate pdos_weights"
 
-    do ik=1,pdos_mwab%nkpoints
-       ! The kpoint number, followed by the kpoint-vector
-       read(pdos_in_unit) dummyi, dummyr1, dummyr2, dummyr3
-       do is=1, pdos_mwab%nspins
-          read(pdos_in_unit) dummyi ! this is the spin number
-          read(pdos_in_unit) nbands_occ(ik,is)
-          do ib=1,nbands_occ(ik,is)
-             read(pdos_in_unit) pdos_weights(1:pdos_mwab%norbitals,ib,ik,is)
+    if(on_root) then
+       do inodes=1,num_nodes-1
+          do ik=1,num_kpoints_on_node(inodes)
+             ! The kpoint number, followed by the kpoint-vector
+             read(pdos_in_unit) dummyi, dummyr1, dummyr2, dummyr3
+             do is=1, pdos_mwab%nspins
+                read(pdos_in_unit) dummyi ! this is the spin number
+                read(pdos_in_unit) nbands_occ(ik,is)
+                do ib=1,nbands_occ(ik,is)
+                   read(pdos_in_unit) pdos_weights(1:pdos_mwab%norbitals,ib,ik,is)
+                enddo
+             enddo
+          enddo
+          call comms_send(pdos_weights(1,1,1,1),pdos_mwab%norbitals*pdos_mwab%nbands*&
+                  nspins*num_kpoints_on_node(inodes),inodes)
+       end do
+       do ik=1,num_kpoints_on_node(0)
+          ! The kpoint number, followed by the kpoint-vector
+          read(pdos_in_unit) dummyi, dummyr1, dummyr2, dummyr3
+          do is=1, pdos_mwab%nspins
+             read(pdos_in_unit) dummyi ! this is the spin number
+             read(pdos_in_unit) nbands_occ(ik,is)
+             do ib=1,nbands_occ(ik,is)
+                read(pdos_in_unit) pdos_weights(1:pdos_mwab%norbitals,ib,ik,is)
+             enddo
           enddo
        enddo
-    enddo
-    !-------------------------------------------------------------------------!
+    end if
+
+    if(.not. on_root) then
+       call comms_recv(pdos_weights(1,1,1,1),pdos_mwab%norbitals*pdos_mwab%nbands*&
+                  nspins*num_kpoints_on_node(my_node_id),root_id)
+    end if
+    
+    if(on_root) close(pdos_in_unit)
+    
+    return
+
+100 call io_error('Error: Problem opening elnes file in elec_read_elnes_mat') 
 
 
-    !-------------------------------------------------------------------------!
-    ! O U T P U T   O U R   F I N D I N G S
-    ! call count_atoms(pdos_orbital,pdos_mwab%norbitals,nions)
 
-    if(on_root) then
-       write(stdout, *)
-       write(stdout,'(1x,a78)') '+------------------------- Partial DOS Band Data ----------------------------+'
-       write(stdout,'(1x,a46,i4,a28)')   '|  Number of Bands                           :',pdos_mwab%nbands,"|"
-       write(stdout,'(1x,a46,i4,a28)')   '|  Number of K-points                        :',pdos_mwab%nkpoints,"|"
-       write(stdout,'(1x,a46,i4,a28)')   '|  Number of LCAO                            :',pdos_mwab%norbitals,"|"
-       if(pdos_mwab%nspins > 1) then
-          write(stdout,'(1x,a78)') '|  Spin-Polarised Calculation                :  True                         |'
-       else
-          write(stdout,'(1x,a78)') '|  Spin-Polarised Calculation                :  False                        |'
-       endif
-       !     write(stdout,'(1x,a46,i4,a28)')   '|  Number of Ions                            :',nions,"|"
-       write(stdout,'(1x,a78)') '+----------------------------------------------------------------------------+'
-    endif
-    !-------------------------------------------------------------------------!
-
-
-    !-------------------------------------------------------------------------!
-    ! F I N A L I S E   
-    close(unit=pdos_in_unit)
-    if (allocated(nbands_occ)) deallocate(nbands_occ,stat=ierr)
-    if (ierr/=0) stop " Error: cannot deallocate nbands_occ"
-    !-------------------------------------------------------------------------!
   end subroutine elec_pdos_read
 
   !=========================================================================

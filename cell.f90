@@ -649,10 +649,6 @@ contains
        call comms_bcast(atoms_symbol(1),len(atoms_symbol(1))*num_species)
     endif
 
- 
-
-
-
   end subroutine cell_dist
 
 endmodule od_cell
