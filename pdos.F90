@@ -32,6 +32,10 @@ module od_pdos
   integer :: num_proj
 
   integer, parameter :: max_am=4
+  character(len=3), allocatable :: pdos_symbol(:)
+  integer, allocatable :: pdos_am(:,:)
+  integer, allocatable :: pdos_sites(:)
+
 
   !-------------------------------------------------------------------------!
 
@@ -54,13 +58,7 @@ contains
 
     call elec_pdos_read
 
-    write(77,*) pdos_mwab%norbitals
-
-    do loop=1,pdos_mwab%norbitals
-       write(77,*) loop, pdos_orbital(loop)%species_no
-       write(77,*) loop, pdos_orbital(loop)%rank_in_species
-       write(77,*) loop, pdos_orbital(loop)%am_channel
-    end do
+    call pdos_analyise_orbitals
 
     call pdos_get_string
 
@@ -99,11 +97,9 @@ contains
                 do orb=1,pdos_mwab%norbitals
                    if(pdos_projection_array(pdos_orbital(orb)%species_no,pdos_orbital(orb)%rank_in_species &
                         ,pdos_orbital(orb)%am_channel+1,nproj)==1) then
-                      write(*,*) 'adding',pdos_orbital(orb)%species_no,pdos_orbital(orb)%rank_in_species, &
-                           pdos_orbital(orb)%am_channel+1,nproj
-                        matrix_weights(nproj,n_eigen,N,N_spin)=matrix_weights(nproj,n_eigen,N,N_spin)+&
-                        pdos_weights(orb,n_eigen,N,N_spin)
-                     end if
+                      matrix_weights(nproj,n_eigen,N,N_spin)=matrix_weights(nproj,n_eigen,N,N_spin)+&
+                           pdos_weights(orb,n_eigen,N,N_spin)
+                   end if
                 end do
              end do
           end do
@@ -124,206 +120,129 @@ contains
     use od_cell, only : num_species,atoms_species_num
     use od_io, only : maxlen, io_error
     implicit none
-    character(len=maxlen) :: ctemp, ctemp2,c_am,m_string
+    character(len=maxlen) :: ctemp, ctemp2,ctemp3,c_am,m_string
 
     integer :: pos_l,pos_r,ia,iz,idiff,ic1,ic2,max_site,max_atoms,species,num_sites,num_am
     character(len=2)  :: c_symbol
     logical :: pdos_sum,am_sum,site_sum
 
-    integer   :: kl, in,loop,num1,num2,i_punc,pos3,loop_l,loop_a,loop_p
-    integer   :: counter,i_digit,loop_r,range_size
+    integer   :: kl, in,loop,num1,num2,i_punc,pos,loop_l,loop_a,loop_p
+    integer   :: counter,i_digit,loop_r,range_size,species_count,species_proj
     character(len=maxlen) :: dummy
     character(len=10), parameter :: c_digit="0123456789"
     character(len=2) , parameter :: c_range="-:"
-    character(len=3) , parameter :: c_sep=" ,"
+    character(len=1) , parameter :: c_sep=";"
     character(len=5) , parameter :: c_punc=" ,-:"
     character(len=5)  :: c_num1,c_num2
     integer, allocatable :: pdos_atoms(:),pdos_ang(:)
-    
-
-    allocate(pdos_atoms(maxval(atoms_species_num)))
-    allocate(pdos_ang(max_am))
+    logical :: shortcut
 
 
-    pdos_atoms=0;pdos_ang=0
-    site_sum=.false.
-    am_sum=.false.
-    species=1
+
+    !Check for any short cuts
+    shortcut=.false.
 
     ctemp=pdos_string
-    pdos_sum=.false.
-    if(index(ctemp,'sum:')==1) then
-       pdos_sum=.true.
-       ctemp=ctemp(5:)
-    end if
-    write(*,*) 'pdos_sum',pdos_sum
-    ! take 1st part of string
-
-    ! look for Ang Mtm string eg (s,p)
-    c_am=''
-    pos_l=index(ctemp,'(')
-    if(pos_l>0) then
-       pos_r=index(ctemp,')')
-       if(pos_r==0) call io_error ('found ( but no )')
-       if(pos_r<=pos_l) call io_error (' ) before (')
-       c_am=ctemp(pos_l+1:pos_r-1)
-       write(*,*) c_am
-       ctemp=ctemp(:pos_l-1)
-       write(*,*) ctemp
-    else ! implicit sum over AM
-       am_sum=.true.
-    end if
-
-    ia = ichar('a')
-    iz = ichar('z')
-    idiff = ichar('Z')-ichar('z')
-    
-    ic1=ichar(ctemp(1:1))
-    if(ic1<ia .or. ic1>iz) call io_error ('problem reading atomic symbol in pdos string')
-    ic2=ichar(ctemp(2:2))
-    if(ic2>=ia .and. ic1<=iz) then
-       c_symbol=ctemp(1:2)
-       ctemp=ctemp(3:)
-    else
-       c_symbol=ctemp(1:1)
-       ctemp=ctemp(2:)
-    end if
-    write(*,*) 'c_symbol: ',c_symbol
-    write(*,*) ctemp
-
-
-    !Count atoms numbers
-    counter=0
-    dummy=adjustl(ctemp)
-    if (len_trim(dummy)>0) then
-       dummy=adjustl(dummy)
-       do 
-          i_punc=scan(dummy,c_punc)
-          if(i_punc==0) call io_error('Error parsing keyword ') 
-          c_num1=dummy(1:i_punc-1)
-          read(c_num1,*,err=101,end=101) num1
-          dummy=adjustl(dummy(i_punc:))
-          !look for range
-          if(scan(dummy,c_range)==1) then
-             i_digit=scan(dummy,c_digit)
-             dummy=adjustl(dummy(i_digit:))
-             i_punc=scan(dummy,c_punc)
-             c_num2=dummy(1:i_punc-1)
-             read(c_num2,*,err=101,end=101) num2
-             dummy=adjustl(dummy(i_punc:))
-             range_size=abs(num2-num1)+1
-             do loop_r=1,range_size
-                counter=counter+1
-                if(min(num1,num2)+loop_r-1>atoms_species_num(species)) &
-                     call io_error('Atom number given in pdos is greater than number of atoms for given species')
-                pdos_atoms(min(num1,num2)+loop_r-1)=1
-             end do
-          else
-             counter=counter+1
-             if(num1>atoms_species_num(species)) &
-                  call io_error('Atom number given in pdos is greater than number of atoms for given species')
-             pdos_atoms(num1)=1
-          end if
-          
-          if(scan(dummy,c_sep)==1) dummy=adjustl(dummy(2:))
-          if(scan(dummy,c_range)==1) call io_error('Error parsing keyword incorrect range') 
-          if(index(dummy,' ')==1) exit
+    if(index(ctemp,'species_ang')>0) then
+       num_proj=0
+       do loop=1,num_species
+          num_proj=num_proj+count(pdos_am(loop,:)==1)
        end do
-    else
-       site_sum=.true.
-    end if
-    
-    do loop=1,atoms_species_num(species)
-       write(*,*) loop, pdos_atoms(loop)
-    end do
-
-    ! count am
-    counter=0
-    dummy=adjustl(c_am)
-    print*,dummy
-    if (len_trim(dummy)>0) then
-       do
-          pos3=index(dummy,',')
-          if (pos3==0) then
-             ctemp2=dummy
-          else
-             ctemp2=dummy(:pos3-1)
-          endif
-          read(ctemp2(1:),*,err=106,end=106) m_string
-          select case (trim(adjustl(m_string)))
-          case ('s')
-             pdos_ang(1)=1
-          case ('p')
-             pdos_ang(2)=1
-          case ('d')
-             pdos_ang(3)=1
-          case ('f')
-             pdos_ang(4)=1
-          case default
-             call io_error('param_get_projection: Problem reading l state ')
-          end select
-          if (pos3==0) exit
-          dummy=dummy(pos3+1:)
-       enddo
-    else
-       am_sum=.true.
-    endif
-    
-    do loop=1,4
-       write(*,*) loop,pdos_ang(loop)
-    end do
-
-    if(site_sum) then 
-       num_sites=1
-    else
-       num_sites=count(pdos_atoms==1)
-    end if
-    if(am_sum) then
-       num_am=1
-    else
-       num_am=count(pdos_ang==1)
-    end if
-    write(*,*) 'site_sum',site_sum
-    write(*,*) 'am_sum',am_sum
-    num_proj=num_am*num_sites
-    write(*,*) 'num_proj',num_proj
-
-    allocate(pdos_projection_array(num_species,maxval(atoms_species_num),max_am,num_proj))
-    pdos_projection_array=0
-
-    loop_p=1
-    if(site_sum.and.am_sum) then
-       pdos_projection_array(species,:,:,loop_p)=1
-    elseif(site_sum.and..not.am_sum) then
-       do loop_l=1,max_am
-          if(pdos_ang(loop_l)==0) cycle 
-          pdos_projection_array(species,:,loop_l,loop_p)=1
-          loop_p=loop_p+1
-       end do
-    elseif(.not.site_sum.and.am_sum) then
-       do loop_a=1,atoms_species_num(species)
-          write(*,*) loop_a
-          if(pdos_atoms(loop_a)==0) cycle 
-          pdos_projection_array(species,loop_a,:,loop_p)=1
-          loop_p=loop_p+1
-       end do
-    else
-       do loop_l=1,max_am
-          if(pdos_ang(loop_l)==0) cycle 
-          do loop_a=1,atoms_species_num(species)
-             if(pdos_atoms(loop_a)==0) cycle 
-             pdos_projection_array(species,loop_a,loop_l,loop_p)=1
+       allocate(pdos_projection_array(num_species,maxval(atoms_species_num),max_am,num_proj))
+       pdos_projection_array=0
+       loop_p=1
+       do loop=1,num_species
+          do loop_l=1,max_am
+             if(pdos_am(loop,loop_l)==0) cycle 
+             pdos_projection_array(loop,:,loop_l,loop_p)=1
              loop_p=loop_p+1
           end do
        end do
-    end if
+       shortcut=.true.
+    elseif(index(ctemp,'species')>0) then
+       num_proj=num_species
+       allocate(pdos_projection_array(num_species,maxval(atoms_species_num),max_am,num_proj))
+       pdos_projection_array=0
+       do loop=1,num_species
+          pdos_projection_array(loop,:,:,loop)=1
+       end do
+       shortcut=.true.
+    elseif(index(ctemp,'sites')>0) then
+       num_proj=0
+       do loop=1,num_species
+          num_proj=num_proj+pdos_sites(loop)
+       end do
+       allocate(pdos_projection_array(num_species,maxval(atoms_species_num),max_am,num_proj))
+       pdos_projection_array=0
+       loop_p=1
+       do loop=1,num_species
+          do loop_a=1,pdos_sites(loop)
+             pdos_projection_array(loop,loop_a,:,loop_p)=1
+             loop_p=loop_p+1
+          end do
+       end do
+       shortcut=.true.
+    elseif(index(ctemp,'angular')>0) then
+       num_proj=max_am
+       allocate(pdos_projection_array(num_species,maxval(atoms_species_num),max_am,num_proj))
+       pdos_projection_array=0
+       loop_p=0
+       do loop=1,num_proj
+          pdos_projection_array(:,:,loop,loop)=1
+       end do
+       shortcut=.true.
+    endif
 
-    do loop=1,num_proj
-       write(*,*) 'projection',loop
-       write(*,*) pdos_projection_array(:,:,:,loop)
-    end do
-    write(*,*) 'finish'
-    
+
+    if(.not. shortcut) then
+
+       !look for sum
+       ctemp=pdos_string
+       pdos_sum=.false.
+       if(index(ctemp,'sum:')==1) then
+          pdos_sum=.true.
+          ctemp=ctemp(5:)
+       end if
+       ! take 1st part of string
+
+       ctemp2=ctemp
+       species_count=1;num_proj=0
+       do
+          !look for each species section
+          ! and pass to find number of projections
+          pos=index(ctemp2,c_sep)
+          if(pos==0) then
+             ctemp3=ctemp2
+          else
+             ctemp3=ctemp2(1:pos-1)
+          end if
+          call pdos_analyise_substring(ctemp3,species_proj)
+          num_proj=num_proj+species_proj
+          if (pos==0) exit
+          species_count=species_count+1
+          ctemp2=ctemp2(pos+1:)
+       end do
+
+       ! now allocate the correct sized array
+
+       allocate(pdos_projection_array(num_species,maxval(atoms_species_num),max_am,num_proj))
+       pdos_projection_array=0
+
+       ctemp2=ctemp
+       do loop=1,species_count
+          !loop for each species section
+          !and pass fill in projection
+          pos=index(ctemp2,c_sep)
+          if(pos==0) then
+             ctemp3=ctemp2
+          else
+             ctemp3=ctemp2(1:pos-1)
+          end if
+          call pdos_analyise_substring(ctemp3)
+          ctemp2=ctemp2(pos+1:)
+       end do
+
+    end if
 
 
     return
@@ -332,8 +251,254 @@ contains
 106 call io_error('param_get_projection: Problem reading m state into string ')
 
 
+  contains
+
+    !===============================================================================
+    subroutine pdos_analyise_substring(ctemp,species_proj)
+      !===============================================================================
+      ! This is a mindbendingly horrific exercise in book-keeping
+      !===============================================================================
+      use od_parameters, only : pdos_string
+      use od_cell, only : num_species,atoms_species_num
+      use od_io, only : maxlen, io_error
+      implicit none
+
+
+      character(len=maxlen), intent(inout) :: ctemp
+      integer, optional, intent(out) :: species_proj
+
+      integer, save :: offset=0
+
+      character(len=maxlen) :: ctemp2,c_am,m_string
+
+      integer :: pos_l,pos_r,ia,iz,idiff,ic1,ic2,max_site,max_atoms,species,num_sites,num_am
+      character(len=3)  :: c_symbol='   '
+      logical :: pdos_sum,am_sum,site_sum
+
+      integer   :: kl, in,loop,num1,num2,i_punc,pos3,loop_l,loop_a,loop_p
+      integer   :: counter,i_digit,loop_r,range_size
+      character(len=maxlen) :: dummy
+      character(len=10), parameter :: c_digit="0123456789"
+      character(len=2) , parameter :: c_range="-:"
+      character(len=3) , parameter :: c_sep=" ,"
+      character(len=5) , parameter :: c_punc=" ,-:"
+      character(len=5)  :: c_num1,c_num2
+      integer, allocatable :: pdos_atoms(:),pdos_ang(:)
+      logical :: lcount
+
+
+      allocate(pdos_atoms(maxval(atoms_species_num)))
+      allocate(pdos_ang(max_am))
+
+      lcount=.false.
+      if(present(species_proj)) lcount=.true.
+
+      pdos_atoms=0;pdos_ang=0
+      site_sum=.false.
+      am_sum=.false.
+      ! look for Ang Mtm string eg (s,p)
+      c_am=''
+      pos_l=index(ctemp,'(')
+      if(pos_l>0) then
+         pos_r=index(ctemp,')')
+         if(pos_r==0) call io_error ('found ( but no )')
+         if(pos_r<=pos_l) call io_error (' ) before (')
+         c_am=ctemp(pos_l+1:pos_r-1)
+         ctemp=ctemp(:pos_l-1)
+      else ! implicit sum over AM
+         am_sum=.true.
+      end if
+
+      ia = ichar('a')
+      iz = ichar('z')
+      idiff = ichar('Z')-ichar('z')
+
+      ic1=ichar(ctemp(1:1))
+      if(ic1<ia .or. ic1>iz) call io_error ('problem reading atomic symbol in pdos string')
+      ic2=ichar(ctemp(2:2))
+      if(ic2>=ia .and. ic1<=iz) then
+         c_symbol(1:1)=char(ic1+idiff)
+         c_symbol(2:2)=ctemp(2:2)
+         ctemp=ctemp(3:)
+      else
+         c_symbol(1:1)=char(ic1+idiff)
+         ctemp=ctemp(2:)
+      end if
+      species=0
+      do loop=1,num_species
+         if(adjustl(c_symbol)==adjustl(pdos_symbol(loop))) then
+            species=loop
+         end if
+      end do
+      if(species==0) call io_error('Failed to match atomic symbol in pdos string')
+
+
+      !Count atoms numbers
+      counter=0
+      dummy=adjustl(ctemp)
+      if (len_trim(dummy)>0) then
+         dummy=adjustl(dummy)
+         do 
+            i_punc=scan(dummy,c_punc)
+            if(i_punc==0) call io_error('Error parsing keyword ') 
+            c_num1=dummy(1:i_punc-1)
+            read(c_num1,*,err=101,end=101) num1
+            dummy=adjustl(dummy(i_punc:))
+            !look for range
+            if(scan(dummy,c_range)==1) then
+               i_digit=scan(dummy,c_digit)
+               dummy=adjustl(dummy(i_digit:))
+               i_punc=scan(dummy,c_punc)
+               c_num2=dummy(1:i_punc-1)
+               read(c_num2,*,err=101,end=101) num2
+               dummy=adjustl(dummy(i_punc:))
+               range_size=abs(num2-num1)+1
+               do loop_r=1,range_size
+                  counter=counter+1
+                  if(min(num1,num2)+loop_r-1>pdos_sites(species)) &
+                       call io_error('Atom number given in pdos is greater than number of atoms for given species')
+                  pdos_atoms(min(num1,num2)+loop_r-1)=1
+               end do
+            else
+               counter=counter+1
+               if(num1>pdos_sites(species)) &
+                    call io_error('Atom number given in pdos is greater than number of atoms for given species')
+               pdos_atoms(num1)=1
+            end if
+
+            if(scan(dummy,c_sep)==1) dummy=adjustl(dummy(2:))
+            if(scan(dummy,c_range)==1) call io_error('Error parsing keyword incorrect range') 
+            if(index(dummy,' ')==1) exit
+         end do
+      else
+         site_sum=.true.
+      end if
+
+      ! count am
+      counter=0
+      dummy=adjustl(c_am)
+      print*,dummy
+      if (len_trim(dummy)>0) then
+         do
+            pos3=index(dummy,',')
+            if (pos3==0) then
+               ctemp2=dummy
+            else
+               ctemp2=dummy(:pos3-1)
+            endif
+            read(ctemp2(1:),*,err=106,end=106) m_string
+            select case (trim(adjustl(m_string)))
+            case ('s')
+               pdos_ang(1)=1
+            case ('p')
+               pdos_ang(2)=1
+            case ('d')
+               pdos_ang(3)=1
+            case ('f')
+               pdos_ang(4)=1
+            case default
+               call io_error('param_get_projection: Problem reading l state ')
+            end select
+            if (pos3==0) exit
+            dummy=dummy(pos3+1:)
+         enddo
+      else
+         am_sum=.true.
+      endif
+
+      if(site_sum) then 
+         num_sites=1
+      else
+         num_sites=count(pdos_atoms==1)
+      end if
+      if(am_sum) then
+         num_am=1
+      else
+         num_am=count(pdos_ang==1)
+      end if
+      if(lcount) species_proj=num_am*num_sites
+
+      if(.not. lcount) then
+         loop_p=1+offset
+         if(site_sum.and.am_sum) then
+            pdos_projection_array(species,:,:,loop_p)=1
+         elseif(site_sum.and..not.am_sum) then
+            do loop_l=1,max_am
+               if(pdos_ang(loop_l)==0) cycle 
+               pdos_projection_array(species,:,loop_l,loop_p)=1
+               loop_p=loop_p+1
+            end do
+         elseif(.not.site_sum.and.am_sum) then
+            do loop_a=1,pdos_sites(species)
+               if(pdos_atoms(loop_a)==0) cycle 
+               pdos_projection_array(species,loop_a,:,loop_p)=1
+               loop_p=loop_p+1
+            end do
+         else
+            do loop_l=1,max_am
+               if(pdos_ang(loop_l)==0) cycle 
+               do loop_a=1,pdos_sites(species)
+                  if(pdos_atoms(loop_a)==0) cycle 
+                  pdos_projection_array(species,loop_a,loop_l,loop_p)=1
+                  loop_p=loop_p+1
+               end do
+            end do
+         end if
+         offset=loop_p-1
+      end if
+
+
+      return
+
+101   call io_error('Error parsing keyword ')
+106   call io_error('param_get_projection: Problem reading m state into string ')
+
+
+    end subroutine pdos_analyise_substring
+
+
   end subroutine pdos_get_string
 
+
+  subroutine pdos_analyise_orbitals
+    use od_electronic, only :  pdos_orbital, pdos_weights,elec_pdos_read,pdos_mwab
+    use od_cell, only : atoms_symbol,num_species
+    use od_constants, only : periodic_table_name
+    use od_io, only : io_error
+    implicit none
+
+    integer :: loop,loop2,counter
+
+
+    if(maxval(pdos_orbital(:)%species_no)>num_species) &
+         call io_error('More species in pdos file than in cell file')
+
+    allocate(pdos_sites(maxval(pdos_orbital(:)%species_no)))
+    allocate(pdos_am(maxval(pdos_orbital(:)%species_no),max_am))
+    allocate(pdos_symbol(maxval(pdos_orbital(:)%species_no)))
+    pdos_sites=0;pdos_am=0
+    do loop=1,pdos_mwab%norbitals
+       if(pdos_orbital(loop)%rank_in_species>pdos_sites(pdos_orbital(loop)%species_no)) &
+            pdos_sites(pdos_orbital(loop)%species_no)=pdos_orbital(loop)%rank_in_species
+       if(pdos_orbital(loop)%rank_in_species==1) &
+            pdos_am(pdos_orbital(loop)%species_no,pdos_orbital(loop)%am_channel+1)=1
+    end do
+
+    !Now need to figure out symbols for each species
+
+    counter=1
+    do loop2=1,109
+       do loop=1,num_species
+          if(atoms_symbol(loop)==periodic_table_name(loop2)) then
+             pdos_symbol(counter)=periodic_table_name(loop2)
+             counter=counter+1
+             !check atom count here
+          end if
+       end do
+    end do
+
+
+  end subroutine pdos_analyise_orbitals
 
 
 
