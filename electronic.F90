@@ -38,21 +38,23 @@ module od_electronic
      integer :: nspins
   end type matrix_weights_array_boundaries
 
+
   type, public :: orbitals
-     integer          :: ion_no          ! Unique ion number
-     integer          :: species_no      ! Unique species number
-     integer          :: rank_in_species ! Unique ion number within species
-     integer          :: am_channel      ! The angular momentum Channel (l)
-     integer          :: shell           ! Principal quantum number (n) !n.b typically only know this for core states
-     logical          :: calc_pdos       ! Should pDoS be calculated for this orbital?                                         
-     character(len=1) :: am_channel_name ! Name of angular momentum channel s,p,d, etc
+     integer,allocatable  :: ion_no(:)          ! Unique ion number
+     integer,allocatable  :: species_no(:)      ! Unique species number
+     integer,allocatable  :: rank_in_species(:) ! Unique ion number within species
+     integer,allocatable  :: am_channel(:)      ! The angular momentum Channel (l)
+     integer,allocatable  :: shell(:)           ! Principal quantum number (n) !n.b typically only know this for core states
+     logical,allocatable  :: calc_pdos(:)       ! Should pDoS be calculated for this orbital?                                         
+     character(len=1),allocatable :: am_channel_name(:) ! Name of angular momentum channel s,p,d, etc
   end type orbitals
 
-  type(orbitals), public, allocatable, save :: pdos_orbital(:)
+
+  type(orbitals), public, save :: pdos_orbital
   real(kind=dp), public, allocatable, save  :: pdos_weights(:,:,:,:)
   type(matrix_weights_array_boundaries), public, save :: pdos_mwab
 
-  type(orbitals), public, allocatable, save :: elnes_orbital(:)
+  type(orbitals), public, save :: elnes_orbital
   type(matrix_weights_array_boundaries), public, save :: elnes_mwab
 
 
@@ -67,7 +69,6 @@ module od_electronic
   public :: elec_read_band_gradient
   public :: elec_read_elnes_mat
   public :: elec_pdos_read
-  public :: elec_pdos_read_orbitals
   public :: elec_dealloc_elnes
   public :: elec_dealloc_pdos
   public :: elec_dealloc_band_gradient
@@ -479,13 +480,19 @@ contains
 
        ! check these agree with band data?
 
-       allocate(elnes_orbital(elnes_mwab%norbitals),stat=ierr)
+       allocate(elnes_orbital%species_no(elnes_mwab%norbitals),stat=ierr)
+       if(ierr/=0) call io_error(' Error : cannot allocate elnes_orbital')
+       allocate(elnes_orbital%rank_in_species(elnes_mwab%norbitals),stat=ierr)
+       if(ierr/=0) call io_error(' Error : cannot allocate elnes_orbital')
+       allocate(elnes_orbital%shell(elnes_mwab%norbitals),stat=ierr)
+       if(ierr/=0) call io_error(' Error : cannot allocate elnes_orbital')
+       allocate(elnes_orbital%am_channel(elnes_mwab%norbitals),stat=ierr)
        if(ierr/=0) call io_error(' Error : cannot allocate elnes_orbital')
 
-       read(elnes_unit) elnes_orbital(1:elnes_mwab%norbitals)%species_no      
-       read(elnes_unit) elnes_orbital(1:elnes_mwab%norbitals)%rank_in_species 
-       read(elnes_unit) elnes_orbital(1:elnes_mwab%norbitals)%shell           
-       read(elnes_unit) elnes_orbital(1:elnes_mwab%norbitals)%am_channel      
+       read(elnes_unit) elnes_orbital%species_no(1:elnes_mwab%norbitals)
+       read(elnes_unit) elnes_orbital%rank_in_species(1:elnes_mwab%norbitals)
+       read(elnes_unit) elnes_orbital%shell(1:elnes_mwab%norbitals)
+       read(elnes_unit) elnes_orbital%am_channel(1:elnes_mwab%norbitals)
 
     end if
     call comms_bcast(elnes_mwab%norbitals,1)
@@ -493,13 +500,19 @@ contains
     call comms_bcast(elnes_mwab%nkpoints,1)
     call comms_bcast(elnes_mwab%nspins,1)
     if(.not. on_root) then
-       allocate(elnes_orbital(elnes_mwab%norbitals),stat=ierr)
-       if(ierr/=0) call io_error(" Error : cannot allocate elnes_orbital")
+       allocate(elnes_orbital%species_no(elnes_mwab%norbitals),stat=ierr)
+       if(ierr/=0) call io_error(' Error : cannot allocate elnes_orbital')
+       allocate(elnes_orbital%rank_in_species(elnes_mwab%norbitals),stat=ierr)
+       if(ierr/=0) call io_error(' Error : cannot allocate elnes_orbital')
+       allocate(elnes_orbital%shell(elnes_mwab%norbitals),stat=ierr)
+       if(ierr/=0) call io_error(' Error : cannot allocate elnes_orbital')
+       allocate(elnes_orbital%am_channel(elnes_mwab%norbitals),stat=ierr)
+       if(ierr/=0) call io_error(' Error : cannot allocate elnes_orbital')
     end if
-    call comms_bcast(elnes_orbital(1)%species_no      ,elnes_mwab%norbitals)
-    call comms_bcast(elnes_orbital(1)%rank_in_species ,elnes_mwab%norbitals)
-    call comms_bcast(elnes_orbital(1)%shell           ,elnes_mwab%norbitals)
-    call comms_bcast(elnes_orbital(1)%am_channel      ,elnes_mwab%norbitals)
+    call comms_bcast(elnes_orbital%species_no(1)      ,elnes_mwab%norbitals)
+    call comms_bcast(elnes_orbital%rank_in_species(1) ,elnes_mwab%norbitals)
+    call comms_bcast(elnes_orbital%shell(1)           ,elnes_mwab%norbitals)
+    call comms_bcast(elnes_orbital%am_channel(1)      ,elnes_mwab%norbitals)
 
     ! assume same data distribution as bands
 
@@ -617,12 +630,16 @@ contains
        read(pdos_in_unit) pdos_mwab%norbitals
        read(pdos_in_unit) pdos_mwab%nbands
        
-       allocate(pdos_orbital(pdos_mwab%norbitals),stat=ierr)
+       allocate(pdos_orbital%species_no(pdos_mwab%norbitals),stat=ierr)
+       if(ierr/=0) call io_error(" Error : cannot allocate pdos_orbital")
+       allocate(pdos_orbital%rank_in_species(pdos_mwab%norbitals),stat=ierr)
+       if(ierr/=0) call io_error(" Error : cannot allocate pdos_orbital")
+       allocate(pdos_orbital%am_channel(pdos_mwab%norbitals),stat=ierr)
        if(ierr/=0) call io_error(" Error : cannot allocate pdos_orbital")
        
-       read(pdos_in_unit) pdos_orbital(1:pdos_mwab%norbitals)%species_no
-       read(pdos_in_unit) pdos_orbital(1:pdos_mwab%norbitals)%rank_in_species
-       read(pdos_in_unit) pdos_orbital(1:pdos_mwab%norbitals)%am_channel
+       read(pdos_in_unit) pdos_orbital%species_no(1:pdos_mwab%norbitals)
+       read(pdos_in_unit) pdos_orbital%rank_in_species(1:pdos_mwab%norbitals)
+       read(pdos_in_unit) pdos_orbital%am_channel(1:pdos_mwab%norbitals)
        !-------------------------------------------------------------------------!
     end if
     call comms_bcast(pdos_mwab%norbitals,1)
@@ -630,13 +647,16 @@ contains
     call comms_bcast(pdos_mwab%nkpoints,1)
     call comms_bcast(pdos_mwab%nspins,1)
     if(.not. on_root) then
-       allocate(pdos_orbital(pdos_mwab%norbitals),stat=ierr)
+       allocate(pdos_orbital%species_no(pdos_mwab%norbitals),stat=ierr)
        if(ierr/=0) call io_error(" Error : cannot allocate pdos_orbital")
-       pdos_orbital(:)%species_no=0
+       allocate(pdos_orbital%rank_in_species(pdos_mwab%norbitals),stat=ierr)
+       if(ierr/=0) call io_error(" Error : cannot allocate pdos_orbital")
+       allocate(pdos_orbital%am_channel(pdos_mwab%norbitals),stat=ierr)
+       if(ierr/=0) call io_error(" Error : cannot allocate pdos_orbital")
     end if
-    call comms_bcast(pdos_orbital(1)%species_no      ,pdos_mwab%norbitals)
-    call comms_bcast(pdos_orbital(1)%rank_in_species ,pdos_mwab%norbitals)
-    call comms_bcast(pdos_orbital(1)%am_channel      ,pdos_mwab%norbitals)
+    call comms_bcast(pdos_orbital%species_no(1)      ,pdos_mwab%norbitals)
+    call comms_bcast(pdos_orbital%rank_in_species(1) ,pdos_mwab%norbitals)
+    call comms_bcast(pdos_orbital%am_channel(1)      ,pdos_mwab%norbitals)
 
     !-------------------------------------------------------------------------!
     ! N O W   R E A D   T H E   D A T A
@@ -690,65 +710,6 @@ contains
 
   end subroutine elec_pdos_read
 
-  !=========================================================================
-  subroutine elec_pdos_read_orbitals
-    !=========================================================================
-    ! Read in the full pdos_weights. Write out any variables that we find on the 
-    ! way. These will be checked for consistency in the dos module. We can't do it 
-    ! yet as we haven't read the bands file.
-    !-------------------------------------------------------------------------
-    ! Arguments: None
-    !-------------------------------------------------------------------------
-    ! Parent module variables: pw, pdos_weights, pdos_orbital                          
-    !-------------------------------------------------------------------------
-    ! Modules used:  See below                                                 
-    !-------------------------------------------------------------------------
-    ! Key Internal Variables: None                                                      
-    !-------------------------------------------------------------------------
-    ! Necessary conditions: None     
-    !-------------------------------------------------------------------------
-    ! Known Worries: None                                              
-    !-------------------------------------------------------------------------
-    ! Written by  A J Morris                                         Dec 2010
-    !=========================================================================
-    use od_comms,     only : on_root
-    use od_io,        only : io_file_unit, io_error, seedname, stdout
-
-    implicit none
-
-    ! Band indices used in the read-in of the pdos 
-    integer, allocatable, dimension(:,:) :: nbands_occ
-    real(kind=dp)                        :: dummyr1,dummyr2,dummyr3
-    integer                              :: dummyi,ib,ik,is
-    integer                              :: pdos_in_unit,ios,ierr
-
-    pdos_in_unit=io_file_unit()
-
-    !-------------------------------------------------------------------------!
-    ! R E A D   T H E   D A T A   H E A D E R
-    open (pdos_in_unit, iostat=ios, status='old', file=trim(seedname)//".pdos_weights", form='unformatted')
-    if(ios.ne.0) call io_error ("Error : Cannot open pDOS weights")
-
-    read(pdos_in_unit) pdos_mwab%nkpoints
-    read(pdos_in_unit) pdos_mwab%nspins
-    read(pdos_in_unit) pdos_mwab%norbitals
-    read(pdos_in_unit) pdos_mwab%nbands
-
-    allocate(pdos_orbital(pdos_mwab%norbitals),stat=ierr)
-    if(ierr/=0) stop " Error : cannot allocate orbital"
-
-    read(pdos_in_unit) pdos_orbital(1:pdos_mwab%norbitals)%species_no
-    read(pdos_in_unit) pdos_orbital(1:pdos_mwab%norbitals)%rank_in_species
-    read(pdos_in_unit) pdos_orbital(1:pdos_mwab%norbitals)%am_channel
-    !-------------------------------------------------------------------------!
-
-
-    ! F I N A L I S E   
-    close(unit=pdos_in_unit)
-
-    !-------------------------------------------------------------------------!
-  end subroutine elec_pdos_read_orbitals
-
 
   subroutine elec_dealloc_pdos
     use od_io, only : io_error
@@ -760,10 +721,10 @@ contains
        if (ierr/=0) call io_error('Error in deallocating pdos_weights in elec_dealloc_pdos')
     end if
 
-    if(allocated(pdos_orbital)) then
-       deallocate(pdos_orbital,stat=ierr)
-       if (ierr/=0) call io_error('Error in deallocating pdos_orbital in elec_dealloc_pdos')
-    end if
+!    if(allocated(pdos_orbital)) then
+!       deallocate(pdos_orbital,stat=ierr)
+!       if (ierr/=0) call io_error('Error in deallocating pdos_orbital in elec_dealloc_pdos')
+!    end if
 
 
 
@@ -779,10 +740,10 @@ contains
        if (ierr/=0) call io_error('Error in deallocating elnes_mat in elec_dealloc_elnes')
     end if
 
-    if(allocated(elnes_orbital)) then
-       deallocate(elnes_orbital,stat=ierr)
-       if (ierr/=0) call io_error('Error in deallocating elnes_orbital in elec_dealloc_elnes')
-    end if
+!    if(allocated(elnes_orbital)) then
+!       deallocate(elnes_orbital,stat=ierr)
+!       if (ierr/=0) call io_error('Error in deallocating elnes_orbital in elec_dealloc_elnes')
+!    end if
 
 
   end subroutine elec_dealloc_elnes

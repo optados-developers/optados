@@ -202,10 +202,10 @@ contains
        !if(quad)    call merge_dos(intdos_quad)
     endif
 
-    if(.not.on_root) then
-       if(allocated(E)) deallocate(E, stat=ierr)
-       if (ierr/=0) call io_error ("cannot deallocate  E")
-    endif
+!    if(.not.on_root) then
+!       if(allocated(E)) deallocate(E, stat=ierr)
+!       if (ierr/=0) call io_error ("cannot deallocate  E")
+!    endif
 
     time1=io_time()
     if(on_root)  write(stdout,'(1x,a40,f11.3,a)') 'Time to calculate dos  ',time1-time0,' (sec)'
@@ -632,14 +632,14 @@ contains
 
     if(present(weighted_dos))  call comms_reduce(weighted_dos(1,1,1),mw%nspins*dos_nbins*mw%norbitals,"SUM")
 
-    if(.not.on_root) then 
-       if(allocated(dos)) deallocate(dos,stat=ierr)
-       if (ierr/=0) call io_error (" ERROR : dos : merge_dos : cannot deallocate dos")
-       if(present(weighted_dos))  then
-          if(allocated(weighted_dos)) deallocate(weighted_dos,stat=ierr)
-          if (ierr/=0) call io_error (" ERROR : dos : merge_dos : cannot deallocate weighted_dos")
-       end if
-    endif
+!    if(.not.on_root) then 
+!       if(allocated(dos)) deallocate(dos,stat=ierr)
+!       if (ierr/=0) call io_error (" ERROR : dos : merge_dos : cannot deallocate dos")
+!       if(present(weighted_dos))  then
+!          if(allocated(weighted_dos)) deallocate(weighted_dos,stat=ierr)
+!          if (ierr/=0) call io_error (" ERROR : dos : merge_dos : cannot deallocate weighted_dos")
+!       end if
+!    endif
   end subroutine dos_utils_merge
 
 
@@ -1279,12 +1279,12 @@ contains
 
     if(present(weighted_dos_at_e))  call comms_reduce(weighted_dos_at_e(1,1),mw%nspins*mw%norbitals,"SUM")
 
-    if(.not.on_root) then 
-       if(present(weighted_dos_at_e))  then
-          if(allocated(weighted_dos_at_e)) deallocate(weighted_dos_at_e,stat=ierr)
-          if (ierr/=0) call io_error (" ERROR : dos : merge_dos : cannot deallocate weighted_dos")
-       end if
-    endif
+!    if(.not.on_root) then 
+!       if(present(weighted_dos_at_e))  then
+!          if(allocated(weighted_dos_at_e)) deallocate(weighted_dos_at_e,stat=ierr)
+!          if (ierr/=0) call io_error (" ERROR : dos : merge_dos : cannot deallocate weighted_dos")
+!       end if
+!    endif
   end subroutine dos_utils_merge_at_e
 
 endmodule od_dos_utils

@@ -147,10 +147,10 @@ contains
        !if(quad)    call merge_dos(intdos_quad)
     endif
 
-    if(.not.on_root) then
-       if(allocated(E)) deallocate(E, stat=ierr)
-       if (ierr/=0) call io_error ("cannot deallocate  E")
-    endif
+!    if(.not.on_root) then
+!       if(allocated(E)) deallocate(E, stat=ierr)
+!       if (ierr/=0) call io_error ("cannot deallocate  E")
+!    endif
 
     time1=io_time()
     if(on_root)  write(stdout,'(1x,a40,f11.3,a)') 'Time to calculate dos  ',time1-time0,' (sec)'
@@ -482,14 +482,14 @@ contains
 
     if(present(weighted_jdos))  call comms_reduce(weighted_jdos(1,1,1),nspins*jdos_nbins*1,"SUM")
 
-    if(.not.on_root) then 
-       if(allocated(jdos)) deallocate(jdos,stat=ierr)
-       if (ierr/=0) call io_error (" ERROR : jdos : merge_jdos : cannot deallocate dos")
-       if(present(weighted_jdos))  then
-          if(allocated(weighted_jdos)) deallocate(weighted_jdos,stat=ierr)
-          if (ierr/=0) call io_error (" ERROR : jdos : merge_jdos : cannot deallocate weighted_dos")
-       end if
-    endif
+!    if(.not.on_root) then 
+!       if(allocated(jdos)) deallocate(jdos,stat=ierr)
+!       if (ierr/=0) call io_error (" ERROR : jdos : merge_jdos : cannot deallocate dos")
+!       if(present(weighted_jdos))  then
+!          if(allocated(weighted_jdos)) deallocate(weighted_jdos,stat=ierr)
+!          if (ierr/=0) call io_error (" ERROR : jdos : merge_jdos : cannot deallocate weighted_dos")
+!       end if
+!    endif
   end subroutine jdos_utils_merge
 
 

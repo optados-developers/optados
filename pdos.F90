@@ -93,8 +93,8 @@ contains
           do n_eigen=1,pdos_mwab%nbands    ! Loop over unoccupied states
              do nproj=1,num_proj
                 do orb=1,pdos_mwab%norbitals
-                   if(pdos_projection_array(pdos_orbital(orb)%species_no,pdos_orbital(orb)%rank_in_species &
-                        ,pdos_orbital(orb)%am_channel+1,nproj)==1) then
+                   if(pdos_projection_array(pdos_orbital%species_no(orb),pdos_orbital%rank_in_species(orb) &
+                        ,pdos_orbital%am_channel(orb)+1,nproj)==1) then
                       matrix_weights(nproj,n_eigen,N,N_spin)=matrix_weights(nproj,n_eigen,N,N_spin)+&
                            pdos_weights(orb,n_eigen,N,N_spin)
                    end if
@@ -483,18 +483,18 @@ contains
 
     integer :: loop,loop2,counter
 
-    if(maxval(pdos_orbital(:)%species_no)>num_species) &
+    if(maxval(pdos_orbital%species_no(:))>num_species) &
          call io_error('More species in pdos file than in cell file')
 
-    allocate(pdos_sites(maxval(pdos_orbital(:)%species_no)))
-    allocate(pdos_am(maxval(pdos_orbital(:)%species_no),max_am))
-    allocate(pdos_symbol(maxval(pdos_orbital(:)%species_no)))
+    allocate(pdos_sites(maxval(pdos_orbital%species_no(:))))
+    allocate(pdos_am(maxval(pdos_orbital%species_no(:)),max_am))
+    allocate(pdos_symbol(maxval(pdos_orbital%species_no(:))))
     pdos_sites=0;pdos_am=0
     do loop=1,pdos_mwab%norbitals
-       if(pdos_orbital(loop)%rank_in_species>pdos_sites(pdos_orbital(loop)%species_no)) &
-            pdos_sites(pdos_orbital(loop)%species_no)=pdos_orbital(loop)%rank_in_species
-       if(pdos_orbital(loop)%rank_in_species==1) &
-            pdos_am(pdos_orbital(loop)%species_no,pdos_orbital(loop)%am_channel+1)=1
+       if(pdos_orbital%rank_in_species(loop)>pdos_sites(pdos_orbital%species_no(loop))) &
+            pdos_sites(pdos_orbital%species_no(loop))=pdos_orbital%rank_in_species(loop)
+       if(pdos_orbital%rank_in_species(loop)==1) &
+            pdos_am(pdos_orbital%species_no(loop),pdos_orbital%am_channel(loop)+1)=1
     end do
 
     !Now need to figure out symbols for each species
