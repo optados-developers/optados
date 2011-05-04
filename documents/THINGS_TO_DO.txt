@@ -2,24 +2,23 @@ Things To Do
 ============
 
 AJM
-* Ability to set Fermi energy to 0, or not! SET_EFERMI_ZERO ! Defualt is true.
-* Write out Fermi energy shift from original band energies
+* Make pdos do correct broadening
+* pdos output
+* optics output
+* output beutification
 
 RJN
 * Finish Optics
+* Think about spin and jdos
+
 
 JRY
-* Update manual
-  - Task: needs updating for linear combinations of keywords
-  - Bradening:  needs updating for linear combinations of keywords
-  - Smearing width ==> Fixed smearing, and in that section "spectral_scheme" ==> Broadening
-  - grace default output
 * Domain Name www.optados.org
-* Read symmetries
-* Core loss
-* PDOS parsing
-* Jdos jocos_nbins, jdos_spacing, jdos_max_energy
-* Beautify jdos -- add weightings
+* compare_dos task
+* make i/o robust
+* error messages
+* check mpi
+* blas calls
 
 CJP
 * Quados
