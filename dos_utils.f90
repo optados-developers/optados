@@ -166,7 +166,7 @@ contains
     if(on_root.and.(iprint>1)) write(stdout,*)
 
     if(fixed)then
-       if(calc_weighted_dos)then 
+       if(calc_weighted_dos.and.(.not.adaptive).and.(.not.linear))then 
           call calculate_dos("f",dos_fixed,intdos_fixed, matrix_weights=matrix_weights, weighted_dos=weighted_dos) 
           call dos_utils_merge(dos_fixed,weighted_dos=weighted_dos)    
        else
@@ -176,7 +176,7 @@ contains
        call dos_utils_merge(intdos_fixed)
     endif
     if(adaptive)then
-       if(calc_weighted_dos)then 
+       if(calc_weighted_dos.and.(.not.linear))then 
           call calculate_dos("a",dos_adaptive,intdos_adaptive, matrix_weights=matrix_weights, weighted_dos=weighted_dos)
           call dos_utils_merge(dos_adaptive,weighted_dos=weighted_dos) 
        else

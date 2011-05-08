@@ -2,7 +2,6 @@ Things To Do
 ============
 
 AJM
-* Make pdos do correct broadening
 * pdos output
 * optics output
 * output beutification
