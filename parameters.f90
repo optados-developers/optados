@@ -265,6 +265,9 @@ contains
     if(index(optics_geom,'polar')==0 .and. index(optics_geom,'polycrys')==0 .and. index(optics_geom,'tensor')==0 ) &
          call io_error('Error: value of optics_geom not recognised in param_read')
 
+    scissor_op          = 0.0_dp !! change
+    call param_get_keyword('scissor_op',found,r_value=scissor_op)
+
     optics_qdir = 0.0_dp
     call  param_get_keyword_vector('optics_qdir',found,3,r_value=optics_qdir)
     if(index(optics_geom,'polar')>0 .and. .not. found) &
