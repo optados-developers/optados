@@ -1037,9 +1037,9 @@ contains
 !     character(20) :: legend_b
 !  end type graph_labels
 
-   real(dp), allocatable,  intent(in) :: E(:)
-   real(dp), allocatable, intent(in)  :: column1(:)
-   real(dp), allocatable, optional, intent(in) :: column2(:)
+   real(dp),  intent(in) :: E(:)
+   real(dp),  intent(in)  :: column1(:)
+   real(dp),  optional, intent(in) :: column2(:)
   
    real(dp) :: min_x, max_x, min_y, max_y
   
