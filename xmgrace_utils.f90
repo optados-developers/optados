@@ -11,6 +11,7 @@ module xmgrace_utils
   public :: xmgu_axis
   public :: xmgu_data
   public :: xmgu_data_header
+
   
   private
 
@@ -150,14 +151,14 @@ contains
     
     real(dp), intent(in) :: min_x, max_x, min_y, max_y
           
-    character(13) :: min_x_char, min_y_char, max_x_char, max_y_char      
+    character(20) :: min_x_char, min_y_char, max_x_char, max_y_char      
           
     
           
-    write (min_x_char, '(F11.6)') min_x
-    write (max_x_char, '(F11.6)') max_x
-    write (min_y_char, '(F11.6)') min_y
-    write (max_y_char, '(F11.6)') max_y
+    write (min_x_char, '(F20.6)') min_x
+    write (max_x_char, '(F20.6)') max_x
+    write (min_y_char, '(F20.6)') min_y
+    write (max_y_char, '(F20.6)') max_y
 
     min_x_char=trim(adjustl((min_x_char)))
     max_x_char=trim(adjustl((max_x_char)))
@@ -165,7 +166,7 @@ contains
     max_y_char=trim(adjustl((max_y_char))) 
    
     write(unit,*) '    @with g0'
-     write(unit,*) '@    world '//trim(min_x_char)//', '//trim(min_y_char)&
+    write(unit,*) '@    world '//trim(min_x_char)//', '//trim(min_y_char)&
      &//', '//trim(max_x_char)//', '//trim(max_y_char)
     write(unit,*) '@    stack world 0, 0, 0, 0'
     write(unit,*) '@    znorm 1'
@@ -259,25 +260,25 @@ contains
    write(unit,*)'@    '//trim(axis_name)//' tick minor size 0.500000'
    write(unit,*)'@    '//trim(axis_name)//' ticklabel on'
    write(unit,*)'@    '//trim(axis_name)//' ticklabel format general'
-   write(unit,*)'@    '//trim(axis_name)//' ticklabel prec 5'
-   write(unit,*)'@    '//trim(axis_name)//' ticklabel formula ""'
-   write(unit,*)'@    '//trim(axis_name)//' ticklabel append ""'
-   write(unit,*)'@    '//trim(axis_name)//' ticklabel prepend ""'
-   write(unit,*)'@    '//trim(axis_name)//' ticklabel angle 0'
-   write(unit,*)'@    '//trim(axis_name)//' ticklabel skip 0'
-   write(unit,*)'@    '//trim(axis_name)//' ticklabel stagger 0'
-   write(unit,*)'@    '//trim(axis_name)//' ticklabel place normal'
-   write(unit,*)'@    '//trim(axis_name)//' ticklabel offset auto'
-   write(unit,*)'@    '//trim(axis_name)//' ticklabel offset 0.000000 , 0.010000'
-   write(unit,*)'@    '//trim(axis_name)//' ticklabel start type auto'
-   write(unit,*)'@    '//trim(axis_name)//' ticklabel start 0.000000'
-   write(unit,*)'@    '//trim(axis_name)//' ticklabel stop type auto'
-   write(unit,*)'@    '//trim(axis_name)//' ticklabel stop 0.000000'
-   write(unit,*)'@    '//trim(axis_name)//' ticklabel char size 1.000000'
-   write(unit,*)'@    '//trim(axis_name)//' ticklabel font 4'
-   write(unit,*)'@    '//trim(axis_name)//' ticklabel color 1'
-   write(unit,*)'@    '//trim(axis_name)//' tick place both'
-   write(unit,*)'@    '//trim(axis_name)//' tick spec type none'
+  ! write(unit,*)'@    '//trim(axis_name)//' ticklabel prec 5'
+  ! write(unit,*)'@    '//trim(axis_name)//' ticklabel formula ""'
+  ! write(unit,*)'@    '//trim(axis_name)//' ticklabel append ""'
+  ! write(unit,*)'@    '//trim(axis_name)//' ticklabel prepend ""'
+  ! write(unit,*)'@    '//trim(axis_name)//' ticklabel angle 0'
+  ! write(unit,*)'@    '//trim(axis_name)//' ticklabel skip 0'
+  ! write(unit,*)'@    '//trim(axis_name)//' ticklabel stagger 0'
+  ! write(unit,*)'@    '//trim(axis_name)//' ticklabel place normal'
+  ! write(unit,*)'@    '//trim(axis_name)//' ticklabel offset auto'
+  ! write(unit,*)'@    '//trim(axis_name)//' ticklabel offset 0.000000 , 0.010000'
+  ! write(unit,*)'@    '//trim(axis_name)//' ticklabel start type auto'
+  ! write(unit,*)'@    '//trim(axis_name)//' ticklabel start 0.000000'
+  ! write(unit,*)'@    '//trim(axis_name)//' ticklabel stop type auto'
+  ! 1write(unit,*)'@    '//trim(axis_name)//' ticklabel stop 0.000000'
+  ! write(unit,*)'@    '//trim(axis_name)//' ticklabel char size 1.000000'
+  ! write(unit,*)'@    '//trim(axis_name)//' ticklabel font 4'
+  ! write(unit,*)'@    '//trim(axis_name)//' ticklabel color 1'
+  ! write(unit,*)'@    '//trim(axis_name)//' tick place both'
+  ! write(unit,*)'@    '//trim(axis_name)//' tick spec type none'
  
 !    write(unit,*) trim(axis_name)//" type zero true"
 !    write(unit,*) trim(axis_name)//" bar on"   
@@ -443,6 +444,7 @@ contains
 !s0 avalue append ""
 !s0 avalue offset 0.000000 , 0.01000
   end subroutine xmgu_data_header
+
 
 
 

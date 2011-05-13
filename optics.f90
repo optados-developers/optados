@@ -6,6 +6,16 @@ module od_optics
   private
   public :: optics_calculate
 
+  type :: graph_labels
+     character(20) :: name
+     character(40) :: title
+     character(20) :: x_label
+     character(20) :: y_label
+     character(20) :: legend_a
+     character(20) :: legend_b
+  end type graph_labels
+  
+
   integer, parameter :: dp=selected_real_kind(15,300)
   real(kind=dp) :: q_weight 
 
@@ -574,14 +584,24 @@ contains
     ! This subroutine writes out the dielectric function
 
     use od_cell, only : nkpoints, cell_volume
-    use od_parameters, only : optics_geom, optics_qdir,jdos_max_energy, scissor_op
+    use od_parameters, only : optics_geom, optics_qdir,jdos_max_energy, scissor_op, &
+         &output_format
     use od_electronic, only: nbands, num_electrons, nspins
     use od_jdos_utils, only: E, jdos_nbins
-    use od_io, only : seedname, io_file_unit
+    use od_io, only : seedname, io_file_unit, stdout
 
     integer :: N,N2
     real(kind=dp) ::dE
     integer :: epsilon_unit
+
+    type(graph_labels) :: label
+
+    label%name="epsilon"
+    label%title="Dielectric Function"
+    label%x_label="Energy (eV)"
+    label%y_label=""
+    label%legend_a="Real"
+    label%legend_b="Imaginary"
 
     dE=E(2)-E(1)
 
@@ -620,6 +640,14 @@ contains
        do N=1,jdos_nbins
           write(epsilon_unit,*)E(N),epsilon(N,1,1),epsilon(N,2,1)
        end do
+       if(trim(output_format)=="xmgrace") then
+          call write_optics_xmgrace(label,E,epsilon(:,1,1),epsilon(:,2,1))
+       elseif(trim(output_format)=="gnuplot") then 
+          write(stdout,*)  " WARNING: GNUPLOT output not yet available, continuing..."
+       else
+          write(stdout,*)  " WARNING: Unknown output format requested, continuing..."
+       endif
+
     end if
     if (index(optics_geom,'tensor')>0) then
        do N2=1,N_geom  
@@ -628,6 +656,15 @@ contains
           do N=1,jdos_nbins
              write(epsilon_unit,*)E(N),epsilon(N,1,N2),epsilon(N,2,N2)
           end do
+          
+          label%name="epsilon"//trim(achar(N2))
+          if(trim(output_format)=="xmgrace") then
+             call write_optics_xmgrace(label,E,epsilon(:,1,N2),epsilon(:,2,N2))
+          elseif(trim(output_format)=="gnuplot") then 
+             write(stdout,*)  " WARNING: GNUPLOT output not yet available, continuing..."
+          else
+             write(stdout,*)  " WARNING: Unknown output format requested, continuing..."
+          endif
        end do
     end if
 
@@ -642,13 +679,22 @@ contains
     ! This subroutine writes out the loss function
 
     use od_cell, only : nkpoints, cell_volume
-    use od_parameters, only : optics_geom, optics_qdir,jdos_max_energy, scissor_op
+    use od_parameters, only : optics_geom, optics_qdir,jdos_max_energy, scissor_op, output_format
     use od_electronic, only: nbands, num_electrons, nspins
     use od_jdos_utils, only : jdos_nbins, E
-    use od_io, only: seedname, io_file_unit
+    use od_io, only: seedname, io_file_unit,stdout
 
     integer :: N 
     integer :: loss_fn_unit
+
+    type(graph_labels) :: label
+
+
+    label%name="loss_fn"
+    label%title="Loss Function"
+    label%x_label="Energy (eV)"
+    label%y_label=""
+    label%legend_a="loss_fn"
 
     ! Open the output file
     loss_fn_unit = io_file_unit()
@@ -687,6 +733,14 @@ contains
     ! Close output file 
     close(unit=loss_fn_unit)  
 
+    if(trim(output_format)=="xmgrace") then
+       call write_optics_xmgrace(label,E,loss_fn)
+    elseif(trim(output_format)=="gnuplot") then 
+       write(stdout,*)  " WARNING: GNUPLOT output not yet available, continuing..."
+    else
+       write(stdout,*)  " WARNING: Unknown output format requested, continuing..."
+    endif
+
   end subroutine write_loss_fn
 
   !***************************************************************
@@ -695,13 +749,24 @@ contains
     ! This subroutine writes out the conductivity
 
     use od_cell, only : nkpoints, cell_volume
-    use od_parameters, only : optics_geom, optics_qdir,jdos_max_energy, scissor_op
+    use od_parameters, only : optics_geom, optics_qdir,jdos_max_energy, scissor_op, output_format
     use od_electronic, only: nbands, num_electrons, nspins
     use od_jdos_utils, only : jdos_nbins, E
-    use od_io, only : seedname, io_file_unit
+    use od_io, only : seedname, io_file_unit,stdout
 
     integer :: N 
     integer :: conduct_unit
+    
+    type(graph_labels) :: label
+
+
+    label%name="conductivity"
+    label%title="Conductivity"
+    label%x_label="Energy (eV)"
+    label%y_label=""
+    label%legend_a="Real"
+    label%legend_b="Imaginary"
+
 
     ! Open the output file
     conduct_unit = io_file_unit()
@@ -737,6 +802,14 @@ contains
     ! Close output file
     close(unit=conduct_unit)  
 
+   if(trim(output_format)=="xmgrace") then
+       call write_optics_xmgrace(label,E,conduct(:,1),conduct(:,2))
+    elseif(trim(output_format)=="gnuplot") then 
+       write(stdout,*)  " WARNING: GNUPLOT output not yet available, continuing..."
+    else
+       write(stdout,*)  " WARNING: Unknown output format requested, continuing..."
+    endif
+
   end subroutine write_conduct
 
   !***************************************************************
@@ -745,13 +818,23 @@ contains
     ! This subroutine writes out the refractive index
 
     use od_cell, only : nkpoints, cell_volume
-    use od_parameters, only : optics_geom, optics_qdir,jdos_max_energy, scissor_op
+    use od_parameters, only : optics_geom, optics_qdir,jdos_max_energy, scissor_op, output_format
     use od_electronic, only: nbands, num_electrons, nspins
     use od_jdos_utils, only : jdos_nbins, E
-    use od_io, only : seedname, io_file_unit
+    use od_io, only : seedname, io_file_unit, stdout
 
     integer :: N 
     integer :: refract_unit
+
+    type(graph_labels) :: label
+
+
+    label%name="refractive_index"
+    label%title="Refractive Index"
+    label%x_label="Energy (eV)"
+    label%y_label=""
+    label%legend_a="Real"
+    label%legend_b="Imaginary"
 
     ! Open the output file
     refract_unit = io_file_unit()
@@ -789,6 +872,14 @@ contains
     ! Close output file
     close(unit=refract_unit)  
 
+    if(trim(output_format)=="xmgrace") then
+       call write_optics_xmgrace(label,E,refract(:,1),refract(:,2))
+    elseif(trim(output_format)=="gnuplot") then 
+       write(stdout,*)  " WARNING: GNUPLOT output not yet available, continuing..."
+    else
+       write(stdout,*)  " WARNING: Unknown output format requested, continuing..."
+    endif
+
   end subroutine write_refract
 
   !***************************************************************
@@ -797,13 +888,22 @@ contains
     ! This subroutine writes out the absorption coefficient
 
     use od_cell, only : nkpoints, cell_volume
-    use od_parameters, only : optics_geom, optics_qdir,jdos_max_energy, scissor_op
+    use od_parameters, only : optics_geom, optics_qdir,jdos_max_energy, scissor_op, output_format
     use od_electronic, only: nbands, num_electrons, nspins
     use od_jdos_utils, only : jdos_nbins, E
-    use od_io, only : seedname, io_file_unit
+    use od_io, only : seedname, io_file_unit, stdout
 
     integer :: N 
     integer :: absorp_unit
+
+    type(graph_labels) :: label
+
+
+    label%name="absorption"
+    label%title="Absorption Coefficient"
+    label%x_label="Energy (eV)"
+    label%y_label=""
+    label%legend_a="A"
 
     ! Open the output file
     absorp_unit = io_file_unit()
@@ -840,6 +940,14 @@ contains
     ! Close output file
     close(unit=absorp_unit)  
 
+    if(trim(output_format)=="xmgrace") then
+       call write_optics_xmgrace(label,E,absorp)
+    elseif(trim(output_format)=="gnuplot") then 
+       write(stdout,*)  " WARNING: GNUPLOT output not yet available, continuing..."
+    else
+       write(stdout,*)  " WARNING: Unknown output format requested, continuing..."
+    endif
+
   end subroutine write_absorp
 
   !***************************************************************
@@ -848,13 +956,21 @@ contains
     ! This subroutine writes out the reflection coefficient
 
     use od_cell, only : nkpoints, cell_volume
-    use od_parameters, only : optics_geom, optics_qdir,jdos_max_energy, scissor_op
+    use od_parameters, only : optics_geom, optics_qdir,jdos_max_energy, scissor_op, output_format
     use od_electronic, only: nbands, num_electrons, nspins
-    use od_io, only : seedname, io_file_unit
+    use od_io, only : seedname, io_file_unit, stdout
     use od_jdos_utils, only : jdos_nbins, E
 
     integer :: N
     integer :: reflect_unit
+    type(graph_labels) :: label
+
+
+    label%name="reflection"
+    label%title="Reflection Coefficient"
+    label%x_label="Energy (eV)"
+    label%y_label=""
+    label%legend_a="R"
 
     ! Open the output file
     reflect_unit = io_file_unit()
@@ -892,6 +1008,83 @@ contains
     ! Close output file 
     close(unit=reflect_unit)  
 
+    if(trim(output_format)=="xmgrace") then
+       call write_optics_xmgrace(label,E,reflect)
+    elseif(trim(output_format)=="gnuplot") then 
+       write(stdout,*)  " WARNING: GNUPLOT output not yet available, continuing..."
+    else
+       write(stdout,*)  " WARNING: Unknown output format requested, continuing..."
+    endif
+    
+    
   end subroutine write_reflect
+
+   !=============================================================================== 
+  subroutine write_optics_xmgrace(label,E,column1,column2)
+    !=============================================================================== 
+   use xmgrace_utils
+   use od_io,         only : io_file_unit,io_error,seedname 
+   implicit none 
+
+   type(graph_labels),intent(in) :: label
+
+!  type :: graph_labels
+!     character(10) :: name
+!     character(20) :: title
+!     character(20) :: x_label
+!     character(20) :: y_label
+!     character(20) :: legend_a
+!     character(20) :: legend_b
+!  end type graph_labels
+
+   real(dp), allocatable,  intent(in) :: E(:)
+   real(dp), allocatable, intent(in)  :: column1(:)
+   real(dp), allocatable, optional, intent(in) :: column2(:)
+  
+   real(dp) :: min_x, max_x, min_y, max_y
+  
+   integer :: batch_file,ierr, array_lengths
+   
+   batch_file=io_file_unit()
+   open(unit=batch_file,file=trim(seedname)//'.'//trim(label%name)//'.agr',iostat=ierr)
+   if(ierr.ne.0) call io_error(" ERROR: Cannot open xmgrace batch file in dos: write_dos_xmgrace")
+
+   min_x=minval(E)
+   max_x=maxval(E)
+   
+ 
+   if(present(column2)) then
+      min_y=min(minval(column1), minval(column2))
+   else
+      max_y=minval(column1)
+   endif
+   
+
+   if(present(column2)) then
+     max_y=max(maxval(column1), maxval(column2))
+   else
+      max_y=maxval(column1)
+   endif
+ 
+
+   call  xmgu_setup(batch_file)
+   call  xmgu_legend(batch_file)
+   call  xmgu_title(batch_file, min_x, max_x, min_y, max_y, trim(label%title))
+   call  xmgu_subtitle(batch_file,"Generated by OptaDOS")
+    
+   call  xmgu_axis(batch_file,"x",trim(label%x_label))
+   call  xmgu_axis(batch_file,"y",trim(label%y_label))
+
+   if(present(column2)) then
+      call xmgu_data_header(batch_file,0,1,trim(label%legend_a))
+      call xmgu_data_header(batch_file,1,2,trim(label%legend_b))
+      call xmgu_data(batch_file,0,E(:),column1(:))
+      call xmgu_data(batch_file,1,E(:),column2(:))
+   else
+      call xmgu_data_header(batch_file,0,1,trim(label%legend_a))
+      call xmgu_data(batch_file,0,E(:),column1)  
+   endif
+
+ end subroutine write_optics_xmgrace
 
 endmodule od_optics
