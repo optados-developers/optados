@@ -22,12 +22,33 @@ module od_algorithms
   public :: utility_lowercase
   public :: utility_cart_to_frac
   public :: utility_frac_to_cart
+  public :: channel_to_am
   public :: algorithms_erf
   public :: algorithms_dcopy
   public :: algorithms_zcopy
 
 
  contains
+
+  function channel_to_am(no)
+     implicit none
+     character(len=1) :: channel_to_am
+     integer, intent(in) :: no
+
+     select case(no)
+        case(1)
+           channel_to_am="s"
+        case(2)
+           channel_to_am="p"
+        case(3)
+           channel_to_am="d"
+        case(4)
+           channel_to_am="f"
+        case(5)
+           channel_to_am="g"           
+     end select
+
+   end function channel_to_am
 
 !=========================================================================!
   function gaussian(m,w,x)

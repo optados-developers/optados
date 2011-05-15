@@ -30,6 +30,7 @@ module od_pdos
   character(len=3), allocatable :: pdos_symbol(:)   ! symbols
   integer, allocatable :: pdos_am(:,:)              ! angular mtm (num_species,max_am)
   integer, allocatable :: pdos_sites(:)             ! number of each species
+  logical :: shortcut
 
 
   !-------------------------------------------------------------------------!
@@ -45,6 +46,7 @@ contains
     use od_electronic, only :elec_pdos_read
     use od_dos_utils, only : dos_utils_calculate
     use od_comms, only : on_root
+    use od_parameters, only : iprint
 
     implicit none
 
@@ -59,6 +61,10 @@ contains
 
     ! form the right matrix elements
     call pdos_merge
+
+    if(on_root.and.(iprint>2)) then
+       call pdos_report_projectors
+    endif
 
     ! now compute the weighted dos
     call dos_utils_calculate(matrix_weights, dos_partial)
@@ -131,7 +137,7 @@ contains
     character(len=1) , parameter :: c_sep=";"
     character(len=5) , parameter :: c_punc=" ,-:"
     integer, allocatable :: pdos_temp(:,:,:,:)
-    logical :: shortcut
+    
  
 
 
@@ -524,28 +530,134 @@ contains
     !===============================================================================
     use od_dos_utils,       only : E
     use od_parameters,only : dos_nbins
+    use od_algorithms, only : channel_to_am
     use od_electronic, only         : pdos_mwab
+    use od_cell, only : atoms_species_num, num_species 
+    use od_io, only : io_file_unit, seedname, io_error, io_date
 
     implicit none
 
+   character(len=11) :: cdate
+   character(len=9) :: ctime
     character(len=20) :: string 
-    integer :: idos, i
+    integer :: iproj, iam, ispecies_num, ispecies
+    integer :: idos, i, pdos_file,ierr 
     write(string,'(I4,"(x,es14.7)")') pdos_mwab%norbitals
 
+    ! If we have a shortcut then the below is fine... as long as we know what the columns are labelled as.
+    if(shortcut) then ! we can put them all into the same file.
+       pdos_file=io_file_unit()
+       open(unit=pdos_file,file=trim(seedname)//'.pdos.dat',iostat=ierr)
+       if(ierr.ne.0) call io_error(" ERROR: Cannot open output file in pdos: pdos_write")
+
+    endif
+
+    ! If we don't have shortcuts then we divide into atomic sites, each in a seperate file
+
+    write(pdos_file, *) "##############################################################################"
+    write(pdos_file,*) "#"
+    write(pdos_file, *) "#                  O p t a D O S   o u t p u t   f i l e "  
+    write(pdos_file, '(1x,a1)') "#"
+    call io_date(cdate,ctime)
+    write(pdos_file,*)  '#  Generated on ',cdate,' at ',ctime
+    write(pdos_file, '(1x,a78)') "##############################################################################"
+    write(pdos_file,'(1a,a)') '#','*----------------------------------------------------------------------------*'   
+    write(pdos_file,'(1a,a)') '#','|                    Partial Density of States -- Projectors                 |'
+    write(pdos_file,'(1a,a)') '#','+----------------------------------------------------------------------------+'
+
     if(pdos_mwab%nspins>1) then
+       do iproj=1,num_proj
+          write(pdos_file,'(1a,a1,a12,i4,a10,50x,a1)') '#','|', ' Projector: ',iproj, ' contains:', '|'
+          write(pdos_file,'(1a,a1,a16,10x,a14,5x,a12,17x,a1)') '#','|', ' Atom ', ' AngM Channel ', ' Spin Channel ', '|'
+          do iam=1,max_am
+             do ispecies_num=1,maxval(atoms_species_num)
+                do  ispecies=1,num_species   
+                   if(pdos_projection_array(ispecies,ispecies_num,iam,iproj)==1) then
+                      write(pdos_file,'(1a,a1,a13,i3,a18,8x,2a,32x,a1)') "#","|", pdos_symbol(ispecies), &
+                           &ispecies_num, channel_to_am(iam),'Up','|' !, " |  DEBUG :",  ispecies ,iam
+                   endif
+                enddo
+             enddo
+          enddo
+          write(pdos_file,'(1a,a)') '#','+----------------------------------------------------------------------------+'
+       enddo
+       do iproj=1,num_proj
+          write(pdos_file,'(1a,a1,a12,i4,a10,50x,a1)') '#','|', ' Projector: ',iproj, ' contains:', '|'
+          write(pdos_file,'(1a,a1,a16,10x,a14,5x,a12,17x,a1)') '#','|', ' Atom ', ' AngM Channel ', ' Spin Channel ', '|'
+          do iam=1,max_am
+             do ispecies_num=1,maxval(atoms_species_num)
+                do  ispecies=1,num_species   
+                   if(pdos_projection_array(ispecies,ispecies_num,iam,iproj)==1) then
+                      write(pdos_file,'(1a,a1,a13,i3,a18,7x,4a,32x,a1)') "#","|", pdos_symbol(ispecies), &
+                           &ispecies_num, channel_to_am(iam),'Down','|' !, " |  DEBUG :",  ispecies ,iam
+                   endif
+                enddo
+             enddo
+          enddo
+          write(pdos_file,'(1a,a)') '#','+----------------------------------------------------------------------------+'
+       enddo       
+
+
        dos_partial(:,2,:)=-dos_partial(:,2,:)
        do idos = 1,dos_nbins
-          write(58,'(es14.7,'//trim(string)//trim(string)//')') E(idos),(dos_partial(idos,1,i),i=1,pdos_mwab%norbitals) &
+          write(pdos_file,'(es14.7,'//trim(string)//trim(string)//')') E(idos),(dos_partial(idos,1,i),i=1,pdos_mwab%norbitals) &
                & ,(dos_partial(idos,2,i),i=1,pdos_mwab%norbitals)
        end do
     else
+       do iproj=1,num_proj
+          write(pdos_file,'(1a,a1,a12,i4,a10,50x,a1)') '#','|', ' Projector: ',iproj, ' contains:', '|'
+          write(pdos_file,'(1a,a1,a16,10x,a14,36x,a1)') '#','|', ' Atom ', ' AngM Channel ', '|'
+          do iam=1,max_am
+             do ispecies_num=1,maxval(atoms_species_num)
+                do  ispecies=1,num_species   
+                   if(pdos_projection_array(ispecies,ispecies_num,iam,iproj)==1) then
+                      write(pdos_file,'(1a,a1,a13,i3,a18,42x,a1)') "#","|", pdos_symbol(ispecies), &
+                           &ispecies_num, channel_to_am(iam),'|' !, " |  DEBUG :",  ispecies ,iam
+                   endif
+                enddo
+             enddo
+          enddo
+          write(pdos_file,'(1a,a)') '#','+----------------------------------------------------------------------------+'
+       enddo
+
        do idos = 1,dos_nbins
-          write(58,'(es14.7,'//trim(string)//')') E(idos),(dos_partial(idos,1,i),i=1,num_proj)
+          write(pdos_file,'(es14.7,'//trim(string)//')') E(idos),(dos_partial(idos,1,i),i=1,num_proj)
        end do
     endif
 
+    close(pdos_file)
 
   end subroutine pdos_write
+
+  subroutine pdos_report_projectors
+    use od_algorithms, only : channel_to_am
+    use od_electronic, only         : pdos_mwab
+    use od_cell, only : atoms_species_num, num_species 
+    use od_io, only : stdout
+    implicit none
+    
+    integer :: iproj, iam, ispecies_num, ispecies
+
+    write(stdout,*)
+    write(stdout,'(1x,a)') '*----------------------------------------------------------------------------*'   
+    write(stdout,'(1x,a)') '|                    Partial Density of States -- Projectors                 |'
+    write(stdout,'(1x,a)') '+----------------------------------------------------------------------------+'
+    do iproj=1,num_proj
+       write(stdout,'(1x,a1,a12,i4,a10,50x,a1)') '|', ' Projector: ',iproj, ' contains:', '|'
+       write(stdout,'(1x,a1,a16,10x,a14,36x,a1)') '|', ' Atom ', ' AngM Channel ', '|'
+       do iam=1,max_am
+          do ispecies_num=1,maxval(atoms_species_num)
+             do  ispecies=1,num_species   
+                if(pdos_projection_array(ispecies,ispecies_num,iam,iproj)==1) then
+                   write(stdout,'(1x,a1,a13,i3,a18,42x,a1)') "|", pdos_symbol(ispecies), ispecies_num, channel_to_am(iam),'|' !, " |  DEBUG :",  ispecies ,iam
+                endif
+             enddo
+          enddo
+       enddo
+       write(stdout,'(1x,a)') '+----------------------------------------------------------------------------+'
+    enddo
+  end subroutine pdos_report_projectors
+
 !!$
 !!$!===============================================================================
 !!$ subroutine count_atoms(orbital,num_orbitals,num_atoms)
