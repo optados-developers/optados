@@ -545,15 +545,11 @@ contains
     write(string,'(I4,"(x,es14.7)")') pdos_mwab%norbitals
 
     ! If we have a shortcut then the below is fine... as long as we know what the columns are labelled as.
-    if(shortcut) then ! we can put them all into the same file.
-       pdos_file=io_file_unit()
-       open(unit=pdos_file,file=trim(seedname)//'.pdos.dat',iostat=ierr)
-       if(ierr.ne.0) call io_error(" ERROR: Cannot open output file in pdos: pdos_write")
-
-    endif
-
-    ! If we don't have shortcuts then we divide into atomic sites, each in a seperate file
-
+    ! if(shortcut) then ! we can put them all into the same file.
+    pdos_file=io_file_unit()
+    open(unit=pdos_file,file=trim(seedname)//'.pdos.dat',iostat=ierr)
+    if(ierr.ne.0) call io_error(" ERROR: Cannot open output file in pdos: pdos_write")
+    
     write(pdos_file, *) "##############################################################################"
     write(pdos_file,*) "#"
     write(pdos_file, *) "#                  O p t a D O S   o u t p u t   f i l e "  
@@ -568,13 +564,13 @@ contains
     if(pdos_mwab%nspins>1) then
        do iproj=1,num_proj
           write(pdos_file,'(1a,a1,a12,i4,a10,50x,a1)') '#','|', ' Projector: ',iproj, ' contains:', '|'
-          write(pdos_file,'(1a,a1,a16,10x,a14,5x,a12,17x,a1)') '#','|', ' Atom ', ' AngM Channel ', ' Spin Channel ', '|'
+          write(pdos_file,'(1a,a1,a16,10x,a14,5x,a15,16x,a1)') '#','|', ' Atom ', ' AngM Channel ', ' Spin Channel ', '|'
           do iam=1,max_am
              do ispecies_num=1,maxval(atoms_species_num)
                 do  ispecies=1,num_species   
                    if(pdos_projection_array(ispecies,ispecies_num,iam,iproj)==1) then
-                      write(pdos_file,'(1a,a1,a13,i3,a18,8x,2a,32x,a1)') "#","|", pdos_symbol(ispecies), &
-                           &ispecies_num, channel_to_am(iam),'Up','|' !, " |  DEBUG :",  ispecies ,iam
+                      write(pdos_file,'(1a,a1,a13,i3,a18,16x,a2,24x,1a)') "#","|", pdos_symbol(ispecies), &
+                           &ispecies_num, channel_to_am(iam),'Up','|'
                    endif
                 enddo
              enddo
@@ -583,13 +579,13 @@ contains
        enddo
        do iproj=1,num_proj
           write(pdos_file,'(1a,a1,a12,i4,a10,50x,a1)') '#','|', ' Projector: ',iproj, ' contains:', '|'
-          write(pdos_file,'(1a,a1,a16,10x,a14,5x,a12,17x,a1)') '#','|', ' Atom ', ' AngM Channel ', ' Spin Channel ', '|'
+          write(pdos_file,'(1a,a1,a16,10x,a14,5x,a15,16x,a1)') '#','|', ' Atom ', ' AngM Channel ', ' Spin Channel ', '|'
           do iam=1,max_am
              do ispecies_num=1,maxval(atoms_species_num)
                 do  ispecies=1,num_species   
                    if(pdos_projection_array(ispecies,ispecies_num,iam,iproj)==1) then
-                      write(pdos_file,'(1a,a1,a13,i3,a18,7x,4a,32x,a1)') "#","|", pdos_symbol(ispecies), &
-                           &ispecies_num, channel_to_am(iam),'Down','|' !, " |  DEBUG :",  ispecies ,iam
+                      write(pdos_file,'(1a,a1,a13,i3,a18,15x,a4,23x,1a)') "#","|", pdos_symbol(ispecies), &
+                           &ispecies_num, channel_to_am(iam),'Down','|'
                    endif
                 enddo
              enddo
@@ -597,11 +593,10 @@ contains
           write(pdos_file,'(1a,a)') '#','+----------------------------------------------------------------------------+'
        enddo       
 
-
        dos_partial(:,2,:)=-dos_partial(:,2,:)
        do idos = 1,dos_nbins
-          write(pdos_file,'(es14.7,'//trim(string)//trim(string)//')') E(idos),(dos_partial(idos,1,i),i=1,pdos_mwab%norbitals) &
-               & ,(dos_partial(idos,2,i),i=1,pdos_mwab%norbitals)
+          write(pdos_file,'(es14.7,'//trim(string)//trim(string)//')') E(idos),(dos_partial(idos,1,i),i=1,num_proj) &
+               & ,(dos_partial(idos,2,i),i=1,num_proj)
        end do
     else
        do iproj=1,num_proj
