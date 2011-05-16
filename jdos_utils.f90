@@ -100,7 +100,6 @@ contains
     ! For an insulator
     vb_max(:)=num_electrons(:)/electrons_per_state
 
-
     !-------------------------------------------------------------------------------
     ! C A L C U L A T E   J D O S 
     ! Now everything is set up, we can perform the dos accumulation in parellel
@@ -111,7 +110,7 @@ contains
     if(on_root.and.(iprint>1)) write(stdout,*)
 
     if(fixed)then
-       if(calc_weighted_jdos)then 
+       if(calc_weighted_jdos)then
           call calculate_jdos('f',jdos_fixed, matrix_weights, weighted_jdos)
           call jdos_utils_merge(jdos_fixed,weighted_jdos)
        else
@@ -124,19 +123,19 @@ contains
     if(adaptive)then
        if(calc_weighted_jdos)then 
           call calculate_jdos('a',jdos_adaptive, matrix_weights, weighted_jdos)
-          call dos_utils_merge(jdos_adaptive, weighted_jdos)
+          call jdos_utils_merge(jdos_adaptive, weighted_jdos)
        else
           call calculate_jdos('a',jdos_adaptive)
-          call dos_utils_merge(jdos_adaptive)
+          call jdos_utils_merge(jdos_adaptive)
        endif
     endif
     if(linear)then
        if(calc_weighted_jdos)then 
           call calculate_jdos('l',jdos_linear, matrix_weights, weighted_jdos)
-          call dos_utils_merge(jdos_linear, weighted_jdos)
+          call jdos_utils_merge(jdos_linear, weighted_jdos)
        else
           call calculate_jdos('l',jdos_linear)
-          call dos_utils_merge(jdos_linear)
+          call jdos_utils_merge(jdos_linear)
        endif
     endif
 
