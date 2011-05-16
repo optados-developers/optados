@@ -35,8 +35,10 @@ module od_parameters
 
   !Task parameters
   logical, public, save :: dos
+  logical, public, save :: compare_dos
   logical, public, save :: pdos
   logical, public, save :: jdos
+  logical, public, save :: compare_jdos
   logical, public, save :: optics
   logical, public, save :: core
 
@@ -113,7 +115,8 @@ contains
     logical :: found,found2,eig_found,lunits,chk_found
     character(len=6) :: spin_str
     real(kind=dp) :: cosa(3),rv_temp(3)
-    character(len=10), allocatable :: task_string(:)
+    character(len=20), allocatable :: task_string(:)
+    character(len=20) :: c_string
 
     
 
@@ -128,7 +131,7 @@ contains
     energy_unit     =  'ev'          !
     call param_get_keyword('energy_unit',found,c_value=energy_unit)
 
-    dos=.false.; pdos=.false.; jdos=.false.; optics=.false.; core=.false.
+    dos=.false.; pdos=.false.; jdos=.false.; optics=.false.; core=.false.; compare_dos=.false.;compare_jdos=.false.
     call param_get_vector_length('task',found,i_temp)
     if(found .and. i_temp>0) then
        allocate(task_string(i_temp))
@@ -138,22 +141,30 @@ contains
              optics=.true.
           elseif(index(task_string(loop),'core')>0) then
              core=.true.
+          elseif(index(task_string(loop),'compare_jdos')>0) then
+             jdos=.true.; compare_jdos=.true.
           elseif(index(task_string(loop),'jdos')>0) then
              jdos=.true.
           elseif(index(task_string(loop),'pdos')>0) then
              pdos=.true.
+          elseif(index(task_string(loop),'compare_dos')>0) then
+             dos=.true.; compare_dos=.true.
           elseif(index(task_string(loop),'dos')>0) then
              dos=.true.
           elseif(index(task_string(loop),'none')>0) then
              dos=.false.; pdos=.false.; jdos=.false.; optics=.false.; core=.false.
           elseif(index(task_string(loop),'all')>0) then
-             dos=.true.; pdos=.false.; jdos=.false.; optics=.false.; core=.false.
+             dos=.true.; pdos=.true.; jdos=.true.; optics=.true.; core=.true.
           else
              call io_error('Error: value of task unrecognised in param_read')
           endif
        end do
        deallocate(task_string)
     end if
+    if( (compare_dos.or.compare_jdos) .and. (pdos.or.core.or.optics)) &
+         call io_error('Error: compare_dos/compare_jdos are not comptable with pdos, core or optics tasks') 
+
+
 
     num_atoms=0
     num_species=0
@@ -165,26 +176,23 @@ contains
 
     i_temp=0
     fixed=.false.; adaptive=.false.; linear=.false.; quad=.false. 
-    call param_get_vector_length('broadening',found,i_temp)
-    if(found .and. i_temp>0) then
-       allocate(task_string(i_temp))
-       call param_get_keyword_vector('broadening',found,i_temp,c_value=task_string)
-       do loop=1,i_temp
-          if(index(task_string(loop),'fixed')>0) then
-             fixed=.true.
-          elseif(index(task_string(loop),'adaptive')>0) then
-             adaptive=.true.
-          elseif(index(task_string(loop),'linear')>0) then
-             linear=.true.
-          elseif(index(task_string(loop),'quad')>0) then
-             quad=.true.
-          elseif(index(task_string(loop),'all')>0) then
-             fixed=.true.;adaptive=.true.;linear=.true. 
-          else
-             call io_error('Error: value of broadening unrecognised in param_read')
-          endif
-       end do
-       deallocate(task_string)
+    call param_get_keyword('broadening',found,c_value=c_string)
+    if (found) then
+       if(index(c_string,'fixed')>0) then
+          fixed=.true.
+       elseif(index(c_string,'adaptive')>0) then
+          adaptive=.true.
+       elseif(index(c_string,'linear')>0) then
+          linear=.true.
+       elseif(index(c_string,'quad')>0) then
+          quad=.true.
+!          fixed=.true.;adaptive=.true.;linear=.true. 
+       else
+          call io_error('Error: value of broadening unrecognised in param_read')
+       endif
+    end if
+    if(compare_dos.or.compare_jdos) then
+       fixed=.true.;adaptive=.true.;linear=.true.
     end if
 
     if(.not.(fixed.or.adaptive.or.linear.or.quad)) then ! Piak a default
@@ -1175,6 +1183,8 @@ contains
     call comms_bcast(jdos   ,1)
     call comms_bcast(optics ,1)
     call comms_bcast(core   ,1)
+    call comms_bcast(compare_dos  ,1)
+    call comms_bcast(compare_jdos ,1)
     call comms_bcast(fixed,1)
     call comms_bcast(adaptive,1)
     call comms_bcast(linear,1)

@@ -18,9 +18,16 @@ COMMS_ARCH := serial
  
  
  
+ 
 
 # Where would you like the executables?
 BIN_DIR=./
+
+SYSTEM := $(strip $(SYSTEM))
+BUILD  := $(strip $(BUILD))
+COMMS_ARCH := $(strip $(COMMS_ARCH))
+BIN_DIR := $(strip $(BIN_DIR))
+
 
 #-------------------------------------------
 # T H I N G S   Y O U   M I G H T  W A N T  
