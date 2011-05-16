@@ -413,6 +413,7 @@ contains
     use od_electronic, only : num_electrons, nspins
     use od_parameters, only : dos_nbins
     use od_io,         only : stdout
+    use od_comms,      only : on_root
 
     implicit none
     real(kind=dp), intent(in) :: INTDOS(1:dos_nbins,1:nspins)
@@ -435,10 +436,12 @@ contains
 
     calc_efermi_from_intdos = (efermi + E(i))/2.0_dp
 
-    do j=1,nspins
-       write(stdout,'(1x,a1,a20,i1,a20,f12.5,a6,f12.5,5x,a1)') "|","Spin Component : ",j,&
-            &" occupation between ", INTDOS(i,j), "and", INTDOS(idos,j),"|"
-    enddo
+    if(on_root) then
+       do j=1,nspins
+          write(stdout,'(1x,a1,a20,i1,a20,f12.5,a6,f12.5,5x,a1)') "|","Spin Component : ",j,&
+               &" occupation between ", INTDOS(i,j), "and", INTDOS(idos,j),"|"
+       enddo
+    end if
 
   end function calc_efermi_from_intdos
 
