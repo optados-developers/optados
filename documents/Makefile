@@ -6,7 +6,7 @@ all:
 	dvipdfm $(MANUAL_NAME)
 
 clean:
-	rm *.aux *.dvi *.log
+	rm -f *.aux *.dvi *.log
 
 veryclean: 
-	rm *.pdf
+	rm -f *.pdf
