@@ -40,7 +40,7 @@ module od_comms
      module procedure comms_bcast_real
      module procedure comms_bcast_cmplx
      module procedure comms_bcast_char
-  end interface
+  end interface comms_bcast
 
   interface comms_send
      module procedure comms_send_int
@@ -48,7 +48,7 @@ module od_comms
      module procedure comms_send_real
      module procedure comms_send_cmplx
      module procedure comms_send_char
-  end interface
+  end interface comms_send
 
   interface comms_recv
      module procedure comms_recv_int
@@ -56,19 +56,19 @@ module od_comms
      module procedure comms_recv_real
      module procedure comms_recv_cmplx
      module procedure comms_recv_char
-  end interface
+  end interface comms_recv
 
   interface comms_reduce
-!     module procedure comms_reduce_int !not working but trivial to fix
+     module procedure comms_reduce_int 
      module procedure comms_reduce_real
      module procedure comms_reduce_cmplx
-  end interface
+  end interface comms_reduce
 
 
 contains
 
   subroutine comms_setup
- 
+
     implicit none
 
     integer :: ierr
@@ -86,11 +86,11 @@ contains
 
     on_root=.false.
     if(my_node_id==root_id) on_root=.true.
-    
+
   end subroutine comms_setup
 
   subroutine comms_end
- 
+
     implicit none
 
     integer :: ierr
@@ -99,9 +99,9 @@ contains
 #ifdef MPI
     call mpi_finalize(ierr)
 #else
-    STOP
+    stop
 #endif
-    
+
   end subroutine comms_end
 
   subroutine comms_bcast_int(array,size)
@@ -494,9 +494,9 @@ contains
   subroutine comms_error
 
     implicit none
-    
+
     integer :: error
-    
+
 #ifdef MPI
 
     call MPI_abort(MPI_comm_world,1,error)
@@ -505,7 +505,7 @@ contains
 
   end subroutine comms_error
 
-  
+
   ! COMMS_REDUCE (collect data on the root node)
 
   subroutine comms_reduce_int(array,size,op)
@@ -540,10 +540,7 @@ contains
 
     end select
 
-!    call icopy(size,array,1,array_red,1)
-
-! For the moment I'm lazy and this routine doesn't work
-! just need to write an integer BLAS copy routine (trivial)
+    call my_icopy(size,array,1,array_red,1)
 
     if(error.ne.MPI_success) then
        print*,'Error in comms_reduce_real'
@@ -557,7 +554,6 @@ contains
 
 
   subroutine comms_reduce_real(array,size,op)
-    use od_algorithms, only : algorithms_dcopy
     implicit none
 
     real(kind=dp), intent(inout) :: array
@@ -593,9 +589,7 @@ contains
 
     end select
 
-!    call algorithms_dcopy(size,array_red(1),1,array(1),1)
-    call dcopy(size,array_red,1,array,1)
-
+    call my_dcopy(size,array_red,1,array,1)
 
     if(error.ne.MPI_success) then
        print*,'Error in comms_reduce_real'
@@ -609,7 +603,6 @@ contains
 
 
   subroutine comms_reduce_cmplx(array,size,op)
-    use od_algorithms, only : algorithms_zcopy
     implicit none
 
     complex(kind=dp), intent(inout) :: array
@@ -640,9 +633,7 @@ contains
 
     end select
 
-!    call algorithms_zcopy(size,array_red(1),1,array(1),1)
-    call zcopy(size,array_red,1,array,1)
-!    array(1:size)=array_red(1:size)
+    call my_zcopy(size,array_red,1,array,1)
 
     if(error.ne.MPI_success) then
        print*,'Error in comms_reduce_cmplx'
@@ -654,33 +645,190 @@ contains
 
   end subroutine comms_reduce_cmplx
 
-! Extra function AJM gets the blame
-!======================================================
-subroutine comms_slice(num_elements,elements_per_node)
-! Takes the number of elements in an array, num_elements
-! Returns an array 0,num_nodes-1 which contains the number of 
-! elements that should be on each node.
-! AJM based on an idea from JRY
-!======================================================
- implicit none
- integer, intent(in)                :: num_elements
- integer, allocatable, intent(out)  :: elements_per_node(:)
- 
- integer :: loop,ierr
- 
-  allocate(elements_per_node(0:num_nodes-1),stat=ierr)
-  if (ierr/=0)  call io_error('Error: Problem allocating elements_per_node in comms_slice')  
+  ! Extra function AJM gets the blame
+  !======================================================
+  subroutine comms_slice(num_elements,elements_per_node)
+    ! Takes the number of elements in an array, num_elements
+    ! Returns an array 0,num_nodes-1 which contains the number of 
+    ! elements that should be on each node.
+    ! AJM based on an idea from JRY
+    !======================================================
+    implicit none
+    integer, intent(in)                :: num_elements
+    integer, allocatable, intent(out)  :: elements_per_node(:)
 
-  elements_per_node(:)=num_elements/num_nodes
+    integer :: loop,ierr
 
-  ! Distribute the remainder
-  
-  if(elements_per_node(0)*num_nodes.ne.num_elements) then
-    do loop=0,num_elements-elements_per_node(0)*num_nodes-1
-      elements_per_node(loop)=elements_per_node(loop)+1
-    end do
-   endif
+    allocate(elements_per_node(0:num_nodes-1),stat=ierr)
+    if (ierr/=0)  call io_error('Error: Problem allocating elements_per_node in comms_slice')  
 
-end subroutine comms_slice
+    elements_per_node(:)=num_elements/num_nodes
+
+    ! Distribute the remainder
+
+    if(elements_per_node(0)*num_nodes.ne.num_elements) then
+       do loop=0,num_elements-elements_per_node(0)*num_nodes-1
+          elements_per_node(loop)=elements_per_node(loop)+1
+       end do
+    endif
+
+  end subroutine comms_slice
 
 end module od_comms
+
+subroutine my_DCOPY(N,DX,INCX,DY,INCY)
+  use od_constants, only : dp
+  !     .. Scalar Arguments ..
+  integer INCX,INCY,N
+  !     ..
+  !     .. Array Arguments ..
+  real(kind=dp) DX(*),DY(*)
+  !     ..
+  !
+  !  Purpose
+  !  =======
+  !
+  !     copies a vector, x, to a vector, y.
+  !     uses unrolled loops for increments equal to one.
+  !     jack dongarra, linpack, 3/11/78.
+  !     modified 12/3/93, array(1) declarations changed to array(*)
+  !
+  !
+  !     .. Local Scalars ..
+  integer I,IX,IY,M,MP1
+  !     ..
+  !     .. Intrinsic Functions ..
+  intrinsic MOD
+  !     ..
+  if (N.le.0) return
+  if (INCX.eq.1 .and. INCY.eq.1) GO TO 20
+  !
+  !        code for unequal increments or equal increments
+  !          not equal to 1
+  !
+  IX = 1
+  IY = 1
+  if (INCX.lt.0) IX = (-N+1)*INCX + 1
+  if (INCY.lt.0) IY = (-N+1)*INCY + 1
+  do I = 1,N
+     DY(IY) = DX(IX)
+     IX = IX + INCX
+     IY = IY + INCY
+  end do
+  return
+  !
+  !        code for both increments equal to 1
+  !
+  !
+  !        clean-up loop
+  !
+20 M = mod(N,7)
+  if (M.eq.0) GO TO 40
+  do I = 1,M
+     DY(I) = DX(I)
+  end do
+  if (N.lt.7) return
+40 MP1 = M + 1
+  do I = MP1,N,7
+     DY(I) = DX(I)
+     DY(I+1) = DX(I+1)
+     DY(I+2) = DX(I+2)
+     DY(I+3) = DX(I+3)
+     DY(I+4) = DX(I+4)
+     DY(I+5) = DX(I+5)
+     DY(I+6) = DX(I+6)
+  end do
+  return
+end subroutine my_DCOPY
+
+subroutine my_ZCOPY(N,ZX,INCX,ZY,INCY)
+  !     .. Scalar Arguments ..
+  integer INCX,INCY,N
+  !     ..
+  !     .. Array Arguments ..
+  double complex ZX(*),ZY(*)
+  !     ..
+  !
+  !  Purpose
+  !  =======
+  !
+  !     copies a vector, x, to a vector, y.
+  !     jack dongarra, linpack, 4/11/78.
+  !     modified 12/3/93, array(1) declarations changed to array(*)
+  !
+  !
+  !     .. Local Scalars ..
+  integer I,IX,IY
+  !     ..
+  if (N.le.0) return
+  if (INCX.eq.1 .and. INCY.eq.1) GO TO 20
+  !
+  !        code for unequal increments or equal increments
+  !          not equal to 1
+  !
+  IX = 1
+  IY = 1
+  if (INCX.lt.0) IX = (-N+1)*INCX + 1
+  if (INCY.lt.0) IY = (-N+1)*INCY + 1
+  do I = 1,N
+     ZY(IY) = ZX(IX)
+     IX = IX + INCX
+     IY = IY + INCY
+  end do
+  return
+  !
+  !        code for both increments equal to 1
+  !
+20 do I = 1,N
+     ZY(I) = ZX(I)
+  end do
+  return
+end subroutine my_ZCOPY
+
+
+
+subroutine my_ICOPY(N,ZX,INCX,ZY,INCY)
+  !     .. Scalar Arguments ..
+  integer INCX,INCY,N
+  !     ..
+  !     .. Array Arguments ..
+  integer ZX(*),ZY(*)
+  !     ..
+  !
+  !  Purpose
+  !  =======
+  !
+  !     copies a vector, x, to a vector, y.
+  !     jack dongarra, linpack, 4/11/78.
+  !     modified 12/3/93, array(1) declarations changed to array(*)
+  !
+  !
+  !     .. Local Scalars ..
+  integer I,IX,IY
+  !     ..
+  if (N.le.0) return
+  if (INCX.eq.1 .and. INCY.eq.1) GO TO 20
+  !
+  !        code for unequal increments or equal increments
+  !          not equal to 1
+  !
+  IX = 1
+  IY = 1
+  if (INCX.lt.0) IX = (-N+1)*INCX + 1
+  if (INCY.lt.0) IY = (-N+1)*INCY + 1
+  do I = 1,N
+     ZY(IY) = ZX(IX)
+     IX = IX + INCX
+     IY = IY + INCY
+  end do
+  return
+  !
+  !        code for both increments equal to 1
+  !
+20 do I = 1,N
+     ZY(I) = ZX(I)
+  end do
+  return
+end subroutine my_ICOPY
+
+
