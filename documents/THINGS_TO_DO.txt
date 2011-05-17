@@ -2,14 +2,10 @@ Things To Do
 ============
 
 AJM
-* pdos output
-* optics output
-* output beutification
 
 RJN
 * Finish Optics
 * Think about spin and jdos
-
 
 JRY
 * Domain Name www.optados.org

@@ -19,6 +19,7 @@ module od_electronic
   complex(kind=dp), allocatable, public, save  :: elnes_mat(:,:,:,:,:)
 
   real(kind=dp), public, save :: efermi ! The fermi energy we finally decide on
+  real(kind=dp), public, save :: unshifted_efermi ! The fermi energy we finally decide on, perhaps not set to 0
   real(kind=dp), public, save :: efermi_castep ! Fermi energy as reported by CASTEP
 
   real(kind=dp), allocatable, public, save :: num_electrons(:) ! Holds up-spin and 

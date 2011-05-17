@@ -93,7 +93,8 @@ contains
     use od_io,        only : stdout,io_time,io_error
     use od_comms,     only : on_root,my_node_id
     use od_electronic,only : band_gradient,band_energy, efermi, efermi_castep,nspins, &
-         & elec_read_band_gradient,elec_read_band_energy,elec_report_parameters
+         & elec_read_band_gradient,elec_read_band_energy,elec_report_parameters, &
+         & unshifted_efermi
     use od_parameters,only : linear, adaptive, fixed, quad, compute_band_energy, &
          & compute_efermi,dos,dos_per_volume,fermi_energy,iprint,set_efermi_zero
     use od_cell,         only : cell_volume, nkpoints, cell_calc_lattice, &
@@ -284,14 +285,17 @@ contains
        efermi=efermi_linear
     endif
 
+    unshifted_efermi=efermi
+
     if(set_efermi_zero) then
        write(stdout,'(1x,a1,a46,a31)')"|", " Setting Fermi energy to 0 : ","|"
        E(:)=E(:)-efermi
        band_energy(:,:,:) = band_energy(:,:,:) - efermi
+       efermi=0.0_dp
     endif
 
     if(on_root) then
-       write(stdout,'(1x,a1,a46,f8.4,a3,19x,a1)')"|", " Fermi energy used : ", efermi,"eV","|"
+       write(stdout,'(1x,a1,a46,f8.4,a3,19x,a1)')"|", " Fermi energy used : ", unshifted_efermi,"eV","|"
        write(stdout,'(1x,a78)')    '+----------------------------------------------------------------------------+'
        time1=io_time()
        write(stdout,'(1x,a40,f11.3,a)') 'Time to calculate Fermi energies ',time1-time0,' (sec)'
