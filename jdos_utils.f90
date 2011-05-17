@@ -296,7 +296,7 @@ contains
     jdos_max_energy=jdos_nbins*jdos_spacing
     
     allocate(E(1:jdos_nbins),stat=ierr)
-    if (ierr/=0) call io_error ("cannot allocate E")
+    if (ierr/=0) call io_error ("Error: jdos_utils, setup_energy_scale: cannot allocate E")
 
     delta_bins=jdos_max_energy/real(jdos_nbins-1,dp)
     do idos=1,jdos_nbins
@@ -338,11 +338,28 @@ contains
   subroutine jdos_deallocate
     !===============================================================================
     !===============================================================================
+    use od_io, only : io_error
     implicit none
-    if(allocated(jdos_adaptive)) deallocate(jdos_adaptive)
-    if(allocated(jdos_fixed))    deallocate(jdos_fixed)
-    if(allocated(jdos_linear))   deallocate(jdos_linear) 
-    if(allocated(E))             deallocate(E)
+    
+    integer :: ierr
+
+    if(allocated(jdos_adaptive)) then
+       deallocate(jdos_adaptive,stat=ierr)
+       if(ierr/=0) call io_error('Error: jdos_deallocate - failed to deallocate jdos_adaptive')
+    end if
+    if(allocated(jdos_fixed)) then
+       deallocate(jdos_fixed,stat=ierr)
+       if(ierr/=0) call io_error('Error: jdos_deallocate - failed to deallocate jdos_fixed')
+    end if
+    if(allocated(jdos_linear)) then
+       deallocate(jdos_linear,stat=ierr)
+       if(ierr/=0) call io_error('Error: jdos_deallocate - failed to deallocate jdos_linear')
+    end if
+    if(allocated(E)) then
+       deallocate(E,stat=ierr)
+       if(ierr/=0) call io_error('Error: jdos_deallocate - failed to deallocate E')
+    end if
+
   end subroutine jdos_deallocate
 
 
@@ -361,7 +378,7 @@ contains
     implicit none
 
     integer :: ik,is,ib,idos,jb
-    integer :: N2,N_geom
+    integer :: N2,N_geom, ierr
     real(kind=dp) :: dos_temp, cuml, width, adaptive_smearing_temp
     real(kind=dp) :: grad(1:3), step(1:3), EV(0:4)
 
@@ -396,7 +413,8 @@ contains
     call allocate_jdos(jdos)
     if(calc_weighted_jdos) then
        N_geom=size(matrix_weights,5)
-       allocate(weighted_jdos(jdos_nbins, nspins, N_geom))
+       allocate(weighted_jdos(jdos_nbins, nspins, N_geom),stat=ierr)
+       if(ierr/=0) call io_error('Error: calculate_jdos - failed to allocate weighted_jdos')
        weighted_jdos=0.0_dp
     endif
 

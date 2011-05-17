@@ -700,13 +700,38 @@ contains
 
 
   subroutine dos_utils_deallocate
-    if(allocated(dos_adaptive)) deallocate(dos_adaptive)
-    if(allocated(dos_fixed)) deallocate(dos_fixed)
-    if(allocated(dos_linear)) deallocate(dos_linear)
-    if(allocated(intdos_adaptive)) deallocate(intdos_adaptive)
-    if(allocated(intdos_fixed)) deallocate(intdos_fixed)
-    if(allocated(intdos_linear)) deallocate(intdos_linear)
-    if(allocated(E)) deallocate(E)
+    use od_io, only : io_error
+    implicit none
+    integer :: ierr
+
+    if(allocated(dos_adaptive)) then
+       deallocate(dos_adaptive,stat=ierr)
+       if(ierr/=0) call io_error('Error: dos_utils_deallocate - failed to deallocate dos_adaptive')
+    end if
+    if(allocated(dos_fixed)) then
+       deallocate(dos_fixed,stat=ierr)
+       if(ierr/=0) call io_error('Error: dos_utils_deallocate - failed to deallocate dos_fixed')
+    end if
+    if(allocated(dos_linear)) then
+       deallocate(dos_linear,stat=ierr)
+       if(ierr/=0) call io_error('Error: dos_utils_deallocate - failed to deallocate dos_linear')
+    end if
+    if(allocated(intdos_adaptive)) then
+       deallocate(intdos_adaptive,stat=ierr)
+       if(ierr/=0) call io_error('Error: dos_utils_deallocate - failed to deallocate intdos_adaptive')
+    end if
+    if(allocated(intdos_fixed)) then
+       deallocate(intdos_fixed,stat=ierr)
+       if(ierr/=0) call io_error('Error: dos_utils_deallocate - failed to deallocate intdos_fixed')
+    end if
+    if(allocated(intdos_linear)) then
+       deallocate(intdos_linear,stat=ierr)
+       if(ierr/=0) call io_error('Error: dos_utils_deallocate - failed to deallocate intdos_fixed')
+    end if
+    if(allocated(E)) then
+       deallocate(E,stat=ierr)
+       if(ierr/=0) call io_error('Error: dos_utils_deallocate - failed to deallocate E')
+    end if
   end subroutine dos_utils_deallocate
 
   !===============================================================================

@@ -67,7 +67,7 @@ contains
 
     real(kind=dp), dimension(3) :: qdir 
     real(kind=dp) :: q_weight
-    integer :: N, N_spin, n_eigen, orb
+    integer :: N, N_spin, n_eigen, orb, ierr
     real(kind=dp), dimension(2) :: num_occ
     complex(kind=dp) :: g
 
@@ -80,14 +80,15 @@ contains
        num_occ(1) = num_occ(1)/2.0_dp
     endif
 
-    allocate(matrix_weights(elnes_mwab%norbitals,elnes_mwab%nbands,num_kpoints_on_node(my_node_id),nspins))
+    allocate(matrix_weights(elnes_mwab%norbitals,elnes_mwab%nbands,num_kpoints_on_node(my_node_id),nspins),stat=ierr)
+    if(ierr/=0) call io_error('Error: core_prepare_matrix_elements - allocation failed for matrix_weights')
     matrix_weights=0.0_dp
 
     if (index(optics_geom,'polar')>0) then 
        qdir=optics_qdir            
        q_weight=((qdir(1)**2.0_dp)+(qdir(2)**2.0_dp)+(qdir(3)**2.0_dp))**0.5_dp
        if(q_weight<0.001_dp)&
-            call io_error("Error:  please check optics_qdir, norm close to zero")
+            call io_error("Error: core_prepare_matrix_elements.  please check optics_qdir, norm close to zero")
     end if
 
 
