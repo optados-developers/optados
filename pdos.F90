@@ -102,11 +102,13 @@ contains
     use od_electronic, only :  pdos_orbital, pdos_weights,pdos_mwab,nspins
     use od_cell, only : num_kpoints_on_node
     use od_comms, only : my_node_id
+    use od_io, only : io_error
     implicit none
 
-    integer :: N,N_spin,n_eigen,nproj,orb
+    integer :: N,N_spin,n_eigen,nproj,orb,ierr
 
-    allocate(matrix_weights(num_proj,pdos_mwab%nbands,num_kpoints_on_node(my_node_id),nspins))
+    allocate(matrix_weights(num_proj,pdos_mwab%nbands,num_kpoints_on_node(my_node_id),nspins),stat=ierr)
+    if(ierr/=0) call io_error('Error: pdos_merge - allocation of matrix_weights failed')
     matrix_weights=0.0_dp
 
     do N=1,num_kpoints_on_node(my_node_id) ! Loop over kpoints
@@ -137,12 +139,12 @@ contains
     !===============================================================================
     use od_parameters, only : pdos_string
     use od_cell, only : num_species,atoms_species_num
-    use od_io, only : maxlen
+    use od_io, only : maxlen,io_error
     implicit none
     character(len=maxlen) :: ctemp, ctemp2,ctemp3
 
 
-    integer :: loop4,loop3,loop2
+    integer :: loop4,loop3,loop2,ierr
     logical :: pdos_sum
 
     integer   :: loop,pos,loop_l,loop_a,loop_p
@@ -159,7 +161,9 @@ contains
        do loop=1,num_species
           num_proj=num_proj+count(pdos_am(loop,:)==1)
        end do
-       allocate(pdos_projection_array(num_species,maxval(atoms_species_num),max_am,num_proj))
+       allocate(pdos_projection_array(num_species,maxval(atoms_species_num),max_am,num_proj),stat=ierr)
+       if(ierr/=0) call io_error('Error: pdos_get_string - allocation of pdos_projection_array failed')
+
        pdos_projection_array=0
        loop_p=1
        do loop=1,num_species
@@ -172,7 +176,9 @@ contains
        shortcut=.true.
     elseif(index(ctemp,'species')>0) then
        num_proj=num_species
-       allocate(pdos_projection_array(num_species,maxval(atoms_species_num),max_am,num_proj))
+       allocate(pdos_projection_array(num_species,maxval(atoms_species_num),max_am,num_proj),stat=ierr)
+       if(ierr/=0) call io_error('Error: pdos_get_string - allocation of pdos_projection_array failed')
+
        pdos_projection_array=0
        do loop=1,num_species
           pdos_projection_array(loop,:,:,loop)=1
@@ -183,7 +189,9 @@ contains
        do loop=1,num_species
           num_proj=num_proj+pdos_sites(loop)
        end do
-       allocate(pdos_projection_array(num_species,maxval(atoms_species_num),max_am,num_proj))
+       allocate(pdos_projection_array(num_species,maxval(atoms_species_num),max_am,num_proj),stat=ierr)
+       if(ierr/=0) call io_error('Error: pdos_get_string - allocation of pdos_projection_array failed')
+
        pdos_projection_array=0
        loop_p=1
        do loop=1,num_species
@@ -195,7 +203,8 @@ contains
        shortcut=.true.
     elseif(index(ctemp,'angular')>0) then
        num_proj=max_am
-       allocate(pdos_projection_array(num_species,maxval(atoms_species_num),max_am,num_proj))
+       allocate(pdos_projection_array(num_species,maxval(atoms_species_num),max_am,num_proj),stat=ierr)
+       if(ierr/=0) call io_error('Error: pdos_get_string - allocation of pdos_projection_array failed')
        pdos_projection_array=0
        loop_p=0
        do loop=1,num_proj
@@ -236,7 +245,8 @@ contains
 
        ! now allocate the correct sized array
 
-       allocate(pdos_projection_array(num_species,maxval(atoms_species_num),max_am,num_proj))
+       allocate(pdos_projection_array(num_species,maxval(atoms_species_num),max_am,num_proj),stat=ierr)
+       if(ierr/=0) call io_error('Error: pdos_get_string - allocation of pdos_projection_array failed')
        pdos_projection_array=0
 
        ctemp2=ctemp
@@ -254,7 +264,9 @@ contains
        end do
 
        if(pdos_sum) then
-          allocate(pdos_temp(num_species,maxval(atoms_species_num),max_am,1))
+          allocate(pdos_temp(num_species,maxval(atoms_species_num),max_am,1),stat=ierr)
+       if(ierr/=0) call io_error('Error: pdos_get_string - allocation of pdos_temp failed')
+
           pdos_temp=0
           do loop4=1,num_proj
              do loop3=1,max_am
@@ -267,9 +279,11 @@ contains
                 end do
              end do
           end do
-          deallocate(pdos_projection_array)
+          deallocate(pdos_projection_array,stat=ierr)
+          if(ierr/=0) call io_error('Error: pdos_get_string - deallocation of pdos_projection_array failed')
           num_proj=1
-          allocate(pdos_projection_array(num_species,maxval(atoms_species_num),max_am,num_proj))
+          allocate(pdos_projection_array(num_species,maxval(atoms_species_num),max_am,num_proj),stat=ierr)
+          if(ierr/=0) call io_error('Error: pdos_get_string - allocation of pdos_projection_array failed')
           pdos_projection_array=0
           pdos_projection_array=pdos_temp
        end if
@@ -303,7 +317,7 @@ contains
       logical :: am_sum,site_sum
 
       integer   :: num1,num2,i_punc,pos3,loop_l,loop_a,loop_p
-      integer   :: counter,loop_r,range_size
+      integer   :: counter,loop_r,range_size,ierr
       character(len=maxlen) :: dummy
       character(len=10), parameter :: c_digit="0123456789"
       character(len=2) , parameter :: c_range="-:"
@@ -314,8 +328,11 @@ contains
       logical :: lcount
 
 
-      allocate(pdos_atoms(maxval(atoms_species_num)))
-      allocate(pdos_ang(max_am))
+      allocate(pdos_atoms(maxval(atoms_species_num)),stat=ierr)
+      if(ierr/=0) call io_error('Error: pdos_analyse_substring - allocation of pdos_atoms failed')
+      allocate(pdos_ang(max_am),stat=ierr)
+      if(ierr/=0) call io_error('Error: pdos_analyse_substring - allocation of pdos_ang failed')
+
 
       lcount=.false.
       if(present(species_proj)) lcount=.true.
@@ -495,14 +512,17 @@ contains
     use od_io, only : io_error
     implicit none
 
-    integer :: loop,loop2,counter
+    integer :: loop,loop2,counter,ierr
 
     if(maxval(pdos_orbital%species_no(:))>num_species) &
-         call io_error('More species in pdos file than in cell file')
+         call io_error('Error: pdos_analyse_substring - more species in pdos file than in cell file')
 
-    allocate(pdos_sites(maxval(pdos_orbital%species_no(:))))
-    allocate(pdos_am(maxval(pdos_orbital%species_no(:)),max_am))
-    allocate(pdos_symbol(maxval(pdos_orbital%species_no(:))))
+    allocate(pdos_sites(maxval(pdos_orbital%species_no(:))),stat=ierr)
+    if(ierr/=0) call io_error('Error: pdos_analyse_substring - allocation of pdos_sites failed')
+    allocate(pdos_am(maxval(pdos_orbital%species_no(:)),max_am),stat=ierr)
+    if(ierr/=0) call io_error('Error: pdos_analyse_substring - allocation of pdos_am failed')
+    allocate(pdos_symbol(maxval(pdos_orbital%species_no(:))),stat=ierr)
+    if(ierr/=0) call io_error('Error: pdos_analyse_substring - allocation of pdos_symbol failed')
     pdos_sites=0;pdos_am=0
     do loop=1,pdos_mwab%norbitals
        if(pdos_orbital%rank_in_species(loop)>pdos_sites(pdos_orbital%species_no(loop))) &
