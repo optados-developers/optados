@@ -8,12 +8,6 @@ RJN
 * Think about spin and jdos
 
 JRY
-* Domain Name www.optados.org
-* compare_dos task
-* make i/o robust
-* error messages
-* check mpi
-* blas calls
 
 CJP
 * Quados
@@ -24,4 +18,40 @@ Developer Notes
 1 Normal
 2 "Progress Report"
 3 Full Debug for developers
+
+
+=================
+Post beta release
+=================
+
+
+
+Core-loss
+---------
+
+ Sort out q directions
+ Life-time and instrument broadening
+ energy dependent broadening
+
+Optics
+------
+
+ Metalic system - proper treatment of intra-band term
+
+
+Pdos
+----
+
+ Project onto individual (real) spherical harmonics
+
+
+File-formats
+------------
+
+ Think about the new file formats and see if they can be made better
+
+
+Domain name and website
+
+
 
