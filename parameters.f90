@@ -130,7 +130,8 @@ contains
     dos=.false.; pdos=.false.; jdos=.false.; optics=.false.; core=.false.; compare_dos=.false.;compare_jdos=.false.
     call param_get_vector_length('task',found,i_temp)
     if(found .and. i_temp>0) then
-       allocate(task_string(i_temp))
+       allocate(task_string(i_temp),stat=ierr)
+       if(ierr/=0) call io_error('Error: param_read - allocation failed for task_string')
        call param_get_keyword_vector('task',found,i_temp,c_value=task_string)
        do loop=1,i_temp
           if(index(task_string(loop),'optics')>0) then
@@ -155,7 +156,8 @@ contains
              call io_error('Error: value of task unrecognised in param_read')
           endif
        end do
-       deallocate(task_string)
+       deallocate(task_string,stat=ierr)
+       if(ierr/=0) call io_error('Error: param_read - deallocation failed for task_string')
     end if
     if( (compare_dos.or.compare_jdos) .and. (pdos.or.core.or.optics)) &
          call io_error('Error: compare_dos/compare_jdos are not comptable with pdos, core or optics tasks') 
