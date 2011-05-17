@@ -37,7 +37,7 @@ module od_dos
     !-------------------------------------------------------------------------------
     ! Written by : A J Morris December 2010
     !=============================================================================== 
-    use od_io,        only : stdout,io_time,io_error
+    use od_io,        only : stdout,io_time
     use od_dos_utils, only : E, dos_fixed, intdos_fixed, dos_adaptive, &
     &intdos_adaptive, dos_linear, intdos_linear
     use od_parameters,only : fixed,adaptive,linear

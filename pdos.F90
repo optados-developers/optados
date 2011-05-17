@@ -137,7 +137,7 @@ contains
     !===============================================================================
     use od_parameters, only : pdos_string
     use od_cell, only : num_species,atoms_species_num
-    use od_io, only : maxlen, io_error
+    use od_io, only : maxlen
     implicit none
     character(len=maxlen) :: ctemp, ctemp2,ctemp3
 
@@ -147,10 +147,7 @@ contains
 
     integer   :: loop,pos,loop_l,loop_a,loop_p
     integer   :: i_digit,species_count,species_proj
-    character(len=10), parameter :: c_digit="0123456789"
-    character(len=2) , parameter :: c_range="-:"
     character(len=1) , parameter :: c_sep=";"
-    character(len=5) , parameter :: c_punc=" ,-:"
     integer, allocatable :: pdos_temp(:,:,:,:)
 
     !Check for any short cuts
@@ -492,11 +489,10 @@ contains
 
 
   subroutine pdos_analyse_orbitals
-    use od_electronic, only :  pdos_orbital,elec_pdos_read,pdos_mwab
+    use od_electronic, only :  pdos_orbital,pdos_mwab
     use od_cell, only : atoms_symbol,num_species
     use od_constants, only : periodic_table_name
     use od_io, only : io_error
-    use od_comms
     implicit none
 
     integer :: loop,loop2,counter
@@ -690,7 +686,6 @@ contains
   
   subroutine pdos_report_projectors
     use od_algorithms, only : channel_to_am
-    use od_electronic, only         : pdos_mwab
     use od_cell, only : atoms_species_num, num_species 
     use od_io, only : stdout
     implicit none
@@ -708,7 +703,8 @@ contains
           do ispecies_num=1,maxval(atoms_species_num)
              do  ispecies=1,num_species   
                 if(pdos_projection_array(ispecies,ispecies_num,iam,iproj)==1) then
-                   write(stdout,'(1x,a1,a13,i3,a18,42x,a1)') "|", pdos_symbol(ispecies), ispecies_num, channel_to_am(iam),'|' !, " |  DEBUG :",  ispecies ,iam
+                   write(stdout,'(1x,a1,a13,i3,a18,42x,a1)') "|", pdos_symbol(ispecies), &
+                        ispecies_num, channel_to_am(iam),'|' !, " |  DEBUG :",  ispecies ,iam
                 endif
              enddo
           enddo

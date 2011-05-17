@@ -17,7 +17,7 @@ module od_core
 contains
 
   subroutine core_calculate
-    use od_electronic, only  : elec_read_elnes_mat, elnes_mat,  elnes_mwab
+    use od_electronic, only  : elec_read_elnes_mat
     use od_dos_utils, only : dos_utils_calculate
     use od_comms, only : on_root
     use od_io, only : stdout
@@ -60,8 +60,8 @@ contains
 
   subroutine core_prepare_matrix_elements
     use od_electronic, only  : elnes_mat,  elnes_mwab, nbands, nspins,num_electrons, electrons_per_state
-    use od_comms, only : on_root, my_node_id
-    use od_cell, only : nkpoints, cell_volume, num_kpoints_on_node
+    use od_comms, only : my_node_id
+    use od_cell, only : num_kpoints_on_node
     use od_parameters, only : optics_geom, optics_qdir ! needs changing to elnes
     use od_io, only : io_error
 
@@ -104,7 +104,7 @@ contains
                    matrix_weights(orb,n_eigen,N,N_spin) = ( &
                         elnes_mat(orb,n_eigen,1,N,N_spin)*conjg(elnes_mat(orb,n_eigen,1,N,N_spin)) + &
                         elnes_mat(orb,n_eigen,2,N,N_spin)*conjg(elnes_mat(orb,n_eigen,2,N,N_spin)) + &
-                        elnes_mat(orb,n_eigen,3,N,N_spin)*conjg(elnes_mat(orb,n_eigen,3,N,N_spin)) ) /3.0_dp
+                    elnes_mat(orb,n_eigen,3,N,N_spin)*conjg(elnes_mat(orb,n_eigen,3,N,N_spin)) ) / 3.0_dp
                    !                matrix_weights(orb,n_eigen,N,N_spin) = real(g*conjg(g),dp)
                    !           matrix_weights(n_eigen,n_eigen2,N,N_spin) = 1.0_dp  ! 
                 end if
@@ -120,9 +120,8 @@ contains
     ! This subroutine writes out the Core loss function
 
     use od_constants, only : bohr2ang
-    use od_cell, only : nkpoints, cell_volume
     use od_parameters, only : dos_nbins
-    use od_electronic, only: nbands, num_electrons, nspins, elnes_mwab
+    use od_electronic, only: elnes_mwab
     use od_io, only : seedname, io_file_unit
     use od_dos_utils, only : E
 

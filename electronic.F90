@@ -46,7 +46,6 @@ module od_electronic
      integer,allocatable  :: rank_in_species(:) ! Unique ion number within species
      integer,allocatable  :: am_channel(:)      ! The angular momentum Channel (l)
      integer,allocatable  :: shell(:)           ! Principal quantum number (n) !n.b typically only know this for core states
-     logical,allocatable  :: calc_pdos(:)       ! Should pDoS be calculated for this orbital?                                         
      character(len=1),allocatable :: am_channel_name(:) ! Name of angular momentum channel s,p,d, etc
   end type orbitals
 
@@ -100,7 +99,6 @@ contains
     use od_io,   only : stdout 
     use od_cell, only : kpoint_grid_dim, nkpoints
     implicit none
-    integer :: i
 
     write (stdout,*)
 
@@ -286,7 +284,7 @@ contains
 
     real(kind=dp), allocatable :: all_kpoints(:,:)
     integer :: inodes,ik,is,ib,band_unit,iall_kpoints,i
-    integer :: all_kpoints_pointer, dum_i1, ierr, str_pos
+    integer :: dum_i1, ierr, str_pos
     character(filename_len) :: band_filename
     character(len=80) :: dummy
     real(kind=dp) :: time0, time1
@@ -443,23 +441,19 @@ contains
     !-------------------------------------------------------------------------
     ! Written by  A J Morris                                         Dec 2010
     !=========================================================================
-    use od_constants, only : H2eV
-    use od_cell,      only : nkpoints,kpoint_r,kpoint_weight,cell_find_MP_grid,&
-         & real_lattice,kpoint_grid_dim,num_kpoints_on_node
+    use od_cell,      only : num_kpoints_on_node
     use od_comms,     only : comms_bcast,comms_send,comms_recv,num_nodes,my_node_id,&
-         & on_root,root_id,comms_slice
-    use od_io,        only : io_file_unit, seedname, filename_len,stdout, io_time,&
+         & on_root,root_id
+    use od_io,        only : io_file_unit, seedname, filename_len, io_time,&
          & io_error
     use od_parameters, only : legacy_file_format
 
     implicit none
 
-    real(kind=dp), allocatable :: all_kpoints(:,:)
-    integer :: inodes,ik,is,ib,nk,ns,nb,indx
-    integer :: dum_i1, ierr, str_pos,elnes_unit,orb
+    integer :: inodes,ik,ns,nb,indx
+    integer :: ierr,elnes_unit,orb
     character(filename_len) :: elnes_filename
-    character(len=80) :: dummy
-    real(kind=dp) :: time0, time1
+    real(kind=dp) :: time0
 
     time0=io_time()
 
@@ -604,8 +598,8 @@ contains
     ! Written by  A J Morris                                         Dec 2010
     !=========================================================================
     use od_comms,     only : comms_bcast,comms_send,comms_recv,num_nodes,my_node_id,&
-        & on_root,root_id,comms_slice
-    use od_io,        only : io_file_unit, io_error, seedname, stdout
+        & on_root,root_id
+    use od_io,        only : io_file_unit, io_error, seedname
     use od_cell,      only : num_kpoints_on_node
 
     implicit none
@@ -614,7 +608,7 @@ contains
     integer, allocatable, dimension(:,:) :: nbands_occ
     real(kind=dp)                        :: dummyr1,dummyr2,dummyr3
     integer                              :: dummyi,ib,ik,is
-    integer                              :: pdos_in_unit,ios,ierr,inodes
+    integer                              :: pdos_in_unit,ierr,inodes
 
     if(allocated(pdos_weights)) return
 

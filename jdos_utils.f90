@@ -8,20 +8,8 @@
 ! allow this behaviour. gfotran will not.
 !=============================================================================== 
 module od_jdos_utils
-  use od_algorithms, only : heap_sort,gaussian
-  use od_constants,  only : bohr2ang, dp
-  use od_comms,      only : on_root, num_nodes, my_node_id, root_id,comms_slice,comms_bcast,& 
-       &comms_send, comms_recv,comms_reduce
-  use od_electronic, only : band_energy,band_gradient,efermi,efermi_castep,num_electrons, &
-       &nbands, nspins, spin_polarised, elec_report_parameters, elec_read_band_gradient, &
-       &elec_read_band_energy, electrons_per_state
-  use od_io,         only : stdout,io_date,io_error,maxlen,seedname,filename_len, &
-       &io_file_unit,io_time
-  use od_cell,       only : real_lattice, recip_lattice, cell_volume, cell_find_MP_grid, & 
-       &kpoint_r, kpoint_weight, nkpoints, kpoint_grid_dim, cell_calc_lattice, &
-       &cell_report_parameters
-  use od_dos_utils,        only : dos_utils_merge, doslin_sub_cell_corners, doslin
-  use od_parameters, only :
+  use od_constants,  only : dp
+
 
   implicit none
 
@@ -52,14 +40,19 @@ module od_jdos_utils
 contains
 
   !=============================================================================== 
-  subroutine jdos_utils_calculate(matrix_weights, weighted_jdos) ! I've changed this
+  subroutine jdos_utils_calculate(matrix_weights, weighted_jdos)
     !=============================================================================== 
     ! Main routine in dos module, drives the calculation of Density of states for
     ! both task : dos and also if it is required elsewhere.
     !=============================================================================== 
     use od_parameters, only : linear, fixed, adaptive, quad, iprint, dos_per_volume
+    use od_electronic, only : elec_read_band_gradient,band_gradient,nspins,electrons_per_state,&
+         num_electrons
+    use od_comms, only      : on_root
+    use od_io, only         : stdout,io_error,io_time
+    use od_cell, only       : cell_volume
     implicit none
-    integer :: ierr, idos, i, ik, is, ib
+    integer :: ierr
     real(kind=dp) :: time0, time1
 
     real(kind=dp),intent(out), allocatable, optional    :: weighted_jdos(:,:,:)  !I've added this
@@ -272,11 +265,13 @@ contains
     !=============================================================================== 
     use od_dos_utils, only : dos_utils_calculate
     use od_parameters, only : compute_efermi,jdos_max_energy, jdos_spacing, iprint
-    use od_electronic, only : efermi_castep
+    use od_electronic, only : efermi_castep,efermi,band_energy
+    use od_comms, only : comms_reduce,comms_bcast,on_root
+    use od_io, only : stdout,io_error
 
     implicit none
 
-    integer       :: idos,i,ierr
+    integer       :: idos,ierr
     real(kind=dp) :: max_band_energy
 
     if(compute_efermi)then
@@ -321,19 +316,20 @@ contains
 
 
   !===============================================================================
-  subroutine allocate_jdos(dos)
+  subroutine allocate_jdos(jdos)
     !===============================================================================
     !===============================================================================
+    use od_electronic, only : nspins
+    use od_io, only : io_error
     implicit none
 
-    real(kind=dp), allocatable  :: dos(:,:)
-    real(kind=dp), allocatable  :: intdos(:,:)
+    real(kind=dp), allocatable, intent(out)  :: jdos(:,:)
 
     integer :: ierr 
 
-    allocate(dos(jdos_nbins,nspins), stat=ierr)
-    if(ierr/=0) call io_error("error in allocating dos")
-    dos=0.0_dp
+    allocate(jdos(jdos_nbins,nspins), stat=ierr)
+    if(ierr/=0) call io_error("Error in allocating jdos (jdos_utils)")
+    jdos=0.0_dp
 
   end subroutine allocate_jdos
 
@@ -351,19 +347,22 @@ contains
 
 
   !===============================================================================
-  subroutine calculate_jdos(jdos_type,jdos, matrix_weights, weighted_jdos)  ! I've changed this
+  subroutine calculate_jdos(jdos_type,jdos, matrix_weights, weighted_jdos) 
     !===============================================================================
 
     !===============================================================================
     use od_comms, only : my_node_id, on_root
-    use od_constants, only : H2eV
-    use od_cell, only : num_kpoints_on_node
+    use od_cell, only : num_kpoints_on_node, kpoint_grid_dim,kpoint_weight
     use od_parameters, only : adaptive_smearing, fixed_smearing, iprint, finite_bin_correction, scissor_op
+    use od_io, only : io_error,stdout
+    use od_electronic, only : band_gradient,nbands,band_energy,nspins,electrons_per_state
+    use od_dos_utils, only : doslin, doslin_sub_cell_corners
+    use od_algorithms, only : gaussian
     implicit none
 
-    integer :: i,ik,is,ib,idos,ierr,iorb,jb
-    integer :: m,n,o,nn,N2,N_geom
-    real(kind=dp) :: dos_temp, cuml, intdos_accum, width, adaptive_smearing_temp
+    integer :: ik,is,ib,idos,jb
+    integer :: N2,N_geom
+    real(kind=dp) :: dos_temp, cuml, width, adaptive_smearing_temp
     real(kind=dp) :: grad(1:3), step(1:3), EV(0:4)
 
     character(len=1), intent(in)                      :: jdos_type
@@ -386,7 +385,7 @@ contains
     case("f")
        fixed=.true.
     case default
-       if (ierr/=0) call io_error (" ERROR : unknown jdos_type in jcalculate_dos ")
+       call io_error (" ERROR : unknown jdos_type in jcalculate_dos ")
     end select
 
 
@@ -468,12 +467,11 @@ contains
     !-------------------------------------------------------------------------------
     ! Written by : A J Morris December 2010 
     !===============================================================================  
-    use od_comms!,      only : on_root, comms_reduce
+    use od_comms,      only : comms_reduce
     use od_electronic, only : nspins
-    use od_io,         only : io_error 
+    use od_comms,      only : comms_reduce
 
     implicit none
-    integer :: idos,ierr
     real(kind=dp),intent(inout), allocatable, optional :: weighted_jdos(:,:,:) ! bins.spins, orbitals
     real(kind=dp),allocatable,intent(inout) :: jdos(:,:)
 

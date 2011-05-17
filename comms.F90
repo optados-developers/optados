@@ -742,11 +742,12 @@ subroutine my_DCOPY(N,DX,INCX,DY,INCY)
 end subroutine my_DCOPY
 
 subroutine my_ZCOPY(N,ZX,INCX,ZY,INCY)
+  use od_constants, only : dp
   !     .. Scalar Arguments ..
   integer INCX,INCY,N
   !     ..
   !     .. Array Arguments ..
-  double complex ZX(*),ZY(*)
+  complex(kind=dp) ZX(*),ZY(*)
   !     ..
   !
   !  Purpose

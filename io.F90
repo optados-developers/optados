@@ -57,7 +57,6 @@ subroutine io_get_seedname (  )
 #ifndef NAG
     integer :: iargc
 #endif
-         character(len=50) :: ctemp 
 
          num_arg=iargc()
          if (num_arg==0) then

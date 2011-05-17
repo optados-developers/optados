@@ -93,18 +93,15 @@ contains
     use od_io,        only : stdout,io_time,io_error
     use od_comms,     only : on_root,my_node_id
     use od_electronic,only : band_gradient,band_energy, efermi, efermi_castep,nspins, &
-         & elec_read_band_gradient,elec_read_band_energy,elec_report_parameters, &
-         & unshifted_efermi
+         & elec_read_band_gradient, unshifted_efermi
     use od_parameters,only : linear, adaptive, fixed, quad, compute_band_energy, &
-         & compute_efermi,dos,dos_per_volume,fermi_energy,iprint,set_efermi_zero
-    use od_cell,         only : cell_volume, nkpoints, cell_calc_lattice, &
-         & cell_report_parameters,cell_dist,kpoint_grid_dim,num_kpoints_on_node
+         & compute_efermi,dos_per_volume,fermi_energy,iprint,set_efermi_zero
+    use od_cell,         only : cell_volume, num_kpoints_on_node
 
     implicit none
 
     !-------------------------------------------------------------------------------
     ! I N T E R N A L   V A R I A B L E S
-    integer :: ierr, idos, i, ik, is, ib
     real(kind=dp) :: time0, time1
     real(kind=dp),intent(in), allocatable, optional  :: matrix_weights(:,:,:,:)
     real(kind=dp),intent(out),allocatable, optional  :: weighted_dos(:,:,:) ! bins.spins, orbitals
@@ -161,7 +158,7 @@ contains
     endif
     !-------------------------------------------------------------------------------
     ! C A L C U L A T E   D O S 
-    ! Now everything is set up, we can perform the dos accumulation in parellel
+    ! Now everything is set up, we can perform the dos accumulation in parallel
     time0=io_time()
 
     call setup_energy_scale
@@ -267,7 +264,7 @@ contains
           efermi_linear=efermi_castep
        endif
     else ! computer_efermi neither T nor F !
-        if (ierr/=0) call io_error (" ERROR: Bug in dos_utils_calculate: computer_efermi ambiguous")
+        call io_error (" ERROR: Bug in dos_utils_calculate: computer_efermi ambiguous")
     endif
 
     ! NB If you have asked for more than one type of broadening
@@ -478,7 +475,7 @@ contains
     !=============================================================================== 
     use od_parameters, only : adaptive, linear, fixed
     use od_electronic, only : electrons_per_state,efermi,nbands,nspins,band_energy
-    use od_cell,       only : nkpoints, kpoint_weight,num_kpoints_on_node
+    use od_cell,       only : kpoint_weight,num_kpoints_on_node
     use od_comms,      only : comms_reduce,my_node_id,on_root
     use od_io,         only : stdout,io_time
 
@@ -550,12 +547,12 @@ contains
     use od_parameters, only : dos_nbins,dos_min_energy,dos_max_energy,dos_spacing,iprint
     use od_electronic, only : band_energy
     use od_io,         only : io_error,stdout
-    use od_comms!,      only : comms_reduce
+    use od_comms,      only : comms_reduce,comms_bcast,on_root
 
     implicit none
 
     real(kind=dp) :: min_band_energy, max_band_energy 
-    integer       :: idos,i,ierr
+    integer       :: idos,ierr
 
 
     ! If we do have dos_min_energy and dos_max_energy set, then we'd better
@@ -629,13 +626,11 @@ contains
     !-------------------------------------------------------------------------------
     ! Written by : A J Morris December 2010 
     !===============================================================================  
-    use od_comms!,      only : on_root, comms_reduce
+    use od_comms,      only : comms_reduce
     use od_electronic, only : nspins
     use od_parameters, only : dos_nbins
-    use od_io,         only : io_error 
 
     implicit none
-    integer :: idos,ierr
     real(kind=dp),intent(inout), allocatable, optional :: weighted_dos(:,:,:) ! bins.spins, orbitals
     real(kind=dp),allocatable,intent(inout) :: dos(:,:)
 
@@ -740,19 +735,18 @@ contains
     !-------------------------------------------------------------------------------
     ! Written by : A J Morris December 2010 Heavliy modified from LinDOS
     !===============================================================================
-    use od_constants,  only : H2eV,sqrt_two
+    use od_constants,  only : sqrt_two
     use od_algorithms, only : gaussian, algorithms_erf
-    use od_cell,       only : kpoint_grid_dim,nkpoints,kpoint_weight,num_kpoints_on_node
+    use od_cell,       only : kpoint_grid_dim,kpoint_weight,num_kpoints_on_node
     use od_electronic, only : band_gradient, electrons_per_state, nbands,nspins,band_energy
     use od_parameters, only : adaptive_smearing,fixed_smearing&
          &,finite_bin_correction,iprint,dos_nbins,numerical_intdos 
     use od_io,         only : stdout,io_error
-    use od_comms!,         only : my_node_id
+    use od_comms,      only : my_node_id,on_root
 
     implicit none
 
-    integer :: i,ik,is,ib,idos,ierr,iorb,dunit
-    integer :: m,n,o,nn
+    integer :: ik,is,ib,idos,iorb
     real(kind=dp) :: adaptive_smearing_temp,dos_temp, cuml, intdos_accum, width
     real(kind=dp) :: grad(1:3), step(1:3), EV(0:4)
 
@@ -776,7 +770,7 @@ contains
     case("f")
        fixed=.true.
     case default
-       if (ierr/=0) call io_error (" ERROR : unknown dos_type in calculate_dos ")
+       call io_error (" ERROR : unknown dos_type in calculate_dos ")
     end select
 
 
@@ -872,15 +866,16 @@ contains
     ! Written by : A J Morris December 2010 Heavliy modified from LinDOS
     !===============================================================================
     use od_algorithms,only : heap_sort
-    use od_constants, only : bohr2ang
     use od_cell,      only : recip_lattice
 
     implicit none
-    integer :: m,n,o,nn,i
-    real(kind=dp), intent(in) :: grad(1:3), step(1:3)
-    real(kind=dp), intent(out) :: EigenV(0:4) 
+    real(kind=dp), intent(in)  :: grad(1:3), step(1:3)
+    real(kind=dp), intent(out) :: EigenV(0:4)
+    real(kind=dp), intent(in)  :: energy
 
-    real(kind=dp) :: stepp(1:3),DE(1:8),energy
+
+    integer :: m,n,o,nn,i
+    real(kind=dp) :: stepp(1:3),DE(1:8)
 
     nn = 0
     do m=-1,1,2
@@ -1086,18 +1081,14 @@ contains
     ! Written by : A J Morris December 2010
     !=============================================================================== 
     use od_io,        only : stdout,io_time,io_error
-    use od_comms,     only : on_root,my_node_id
-    use od_electronic,only : band_gradient,band_energy, efermi, efermi_castep,nspins, &
-         & elec_read_band_gradient,elec_read_band_energy,elec_report_parameters
-    use od_parameters,only : linear, adaptive, fixed, quad, compute_band_energy, &
-         & compute_efermi,dos,dos_per_volume,fermi_energy,iprint
-    use od_cell,         only : cell_volume, nkpoints, cell_calc_lattice, &
-         & cell_report_parameters,cell_dist,kpoint_grid_dim
+    use od_comms,     only : on_root
+    use od_electronic,only : band_gradient,nspins,elec_read_band_gradient
+    use od_parameters,only : linear, adaptive, fixed, quad, iprint
+    use od_cell,      only : nkpoints
     implicit none
 
     !-------------------------------------------------------------------------------
     ! I N T E R N A L   V A R I A B L E S
-    integer :: ierr, idos, i, ik, is, ib
     real(kind=dp) :: time0, time1
     real(kind=dp),intent(in), allocatable, optional  :: matrix_weights(:,:,:,:)
     real(kind=dp),intent(out),allocatable, optional  :: weighted_dos_at_e(:,:) ! spins, orbitals
@@ -1184,19 +1175,17 @@ contains
     !-------------------------------------------------------------------------------
     ! Written by : A J Morris December 2010 Heavliy modified from LinDOS
     !===============================================================================
-    use od_constants,  only : H2eV,sqrt_two
     use od_algorithms, only : gaussian
-    use od_cell,       only : kpoint_grid_dim,nkpoints,kpoint_weight,num_kpoints_on_node
+    use od_cell,       only : kpoint_grid_dim,kpoint_weight,num_kpoints_on_node
     use od_electronic, only : band_gradient, electrons_per_state, nbands,nspins,band_energy
     use od_parameters, only : linear,fixed,adaptive,adaptive_smearing,fixed_smearing&
-         &,finite_bin_correction,iprint,dos_nbins,numerical_intdos 
-    use od_io,         only : stdout,io_error
-    use od_comms!,         only : my_node_id
+         &,finite_bin_correction,iprint
+    use od_io,         only : stdout
+    use od_comms,      only : my_node_id,on_root
 
     implicit none
 
-    integer :: i,ik,is,ib,idos,ierr,iorb,dunit
-    integer :: m,n,o,nn
+    integer :: ik,ib,is,iorb
     real(kind=dp) :: dos_temp, cuml, intdos_accum, width
     real(kind=dp) :: grad(1:3), step(1:3), EV(0:4)
 
@@ -1276,13 +1265,10 @@ contains
     !-------------------------------------------------------------------------------
     ! Written by : A J Morris December 2010 
     !===============================================================================  
-    use od_comms!,      only : on_root, comms_reduce
+    use od_comms,      only : comms_reduce
     use od_electronic, only : nspins
-    use od_parameters, only : dos_nbins
-    use od_io,         only : io_error 
 
     implicit none
-    integer :: idos,ierr
     real(kind=dp),intent(inout), allocatable, optional :: weighted_dos_at_e(:,:) ! bins.spins, orbitals
     real(kind=dp),intent(inout) :: dos(nspins)
 

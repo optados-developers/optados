@@ -13,7 +13,7 @@
 !=========================================================================!
 module od_cell
   use od_constants,only : dp
-  use od_io,        only : stdout,maxlen 
+  use od_io,        only : maxlen 
   implicit none
 
   private
@@ -209,10 +209,8 @@ contains
     integer,       intent(out) :: points
 
     real(kind=dp) :: real_points
-    real(kind=dp) :: vect(1:length)
     real(kind=dp) :: distance
 
-    logical :: small_found
     integer :: i,j
     ! THIS IS THE BOMB-PROOF 2nd VERSION
     ! from LinDOS
@@ -254,21 +252,19 @@ contains
   end subroutine kpoint_density
 
   subroutine cell_get_atoms
-    use od_comms,     only : on_root
     use od_constants, only : bohr2ang
-    use od_io,        only : io_file_unit, io_error, seedname, stdout, maxlen
+    use od_io,        only : io_file_unit, io_error, seedname, maxlen
     use od_algorithms,only : utility_cart_to_frac, utility_frac_to_cart, utility_lowercase
 
     implicit none
 
-    logical           :: lunits
     real(kind=dp),allocatable     :: atoms_pos_frac_tmp(:,:)
     real(kind=dp),allocatable    :: atoms_pos_cart_tmp(:,:)
     character(len=20) :: keyword
     integer           :: in,in1,in2,ins,ine,loop,i,line_e,line_s,counter,tot_num_lines
-    integer           :: i_temp,loop2,max_sites,ierr,ic,num_lines,line_counter,in_unit
-    logical           :: found_e,found_s,found,frac
-    character(len=maxlen) :: dummy,end_st,start_st
+    integer           :: loop2,max_sites,ierr,ic,num_lines,line_counter,in_unit
+    logical           :: found_e,found_s,frac
+    character(len=maxlen) :: dummy
     character(len=maxlen),allocatable :: ctemp(:)
     character(len=maxlen),allocatable :: atoms_label_tmp(:)
     logical           :: lconvert
@@ -368,7 +364,7 @@ contains
     end if
 
     if(line_e<=line_s) then
-       call io_error('Error: '//trim(end_st)//' comes before '//trim(start_st)//' in input file')
+       call io_error('Error: %endblock'//trim(keyword)//' comes before %block'//trim(keyword)//' in input file')
     end if
 
     ! now we know where the atoms block is

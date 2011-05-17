@@ -18,8 +18,7 @@ module od_parameters
 
   use od_constants, only : dp
   use od_io,        only : stdout,maxlen
-  use od_cell, only : real_lattice, recip_lattice, cell_volume, kpoint_grid_dim, nkpoints, &
-       & kpoint_r, kpoint_r_cart, atoms_label, num_atoms, num_species, atoms_symbol, &
+  use od_cell, only : atoms_label, num_atoms, num_species, atoms_symbol, &
        & atoms_species_num, atoms_pos_frac, atoms_pos_cart
 
   implicit none
@@ -104,17 +103,14 @@ contains
     !===================================================================  
 
     use od_constants, only : bohr2ang
-    use od_io,        only : io_error,io_file_unit,seedname
+    use od_io,        only : io_error
     use od_cell,      only : cell_get_atoms
-!    use od_electronic,only : elec_pdos_read_orbitals
+
     implicit none
 
     !local variables
-    real(kind=dp)  :: real_lattice_tmp(3,3)
-    integer :: nkp,i,j,n,k,itmp,i_temp,i_temp2,eig_unit,loop,ierr,iv_temp(3)
-    logical :: found,found2,eig_found,lunits,chk_found
-    character(len=6) :: spin_str
-    real(kind=dp) :: cosa(3),rv_temp(3)
+    integer :: i_temp,loop,ierr
+    logical :: found
     character(len=20), allocatable :: task_string(:)
     character(len=20) :: c_string
 
@@ -286,8 +282,6 @@ contains
 
     call param_uppercase()
 
-303 continue
-
     deallocate(in_data,stat=ierr)
     if (ierr/=0) call io_error('Error deallocating in_data in param_read')
 
@@ -311,9 +305,6 @@ contains
 
     return
 
-105 call io_error('Error: Problem opening eigenvalue file '//trim(seedname)//'.eig')
-106 call io_error('Error: Problem reading eigenvalue file '//trim(seedname)//'.eig')
-
   end subroutine param_read
 
 
@@ -327,7 +318,7 @@ contains
 
     implicit none
 
-    integer :: nsp,ic,loop
+    integer :: nsp,ic
 
     ! Atom labels (eg, si --> Si)
     do nsp=1,num_species
@@ -404,7 +395,7 @@ contains
 
     implicit none
 
-    integer :: i,nkp,loop,nat,nsp
+    integer :: nat,nsp
 
     ! System
 
@@ -418,8 +409,8 @@ contains
        write(stdout,'(1x,a)') '+----------------------------------------------------------------------------+'
        do nsp=1,num_species
           do nat=1,atoms_species_num(nsp)
-             write(stdout,'(1x,a1,1x,a2,1x,i3,3F10.5,3x,a1,1x,3F10.5,4x,a1)') '|',atoms_symbol(nsp),nat,atoms_pos_frac(:,nat,nsp),&
-                  '|',atoms_pos_cart(:,nat,nsp)*lenconfac,'|'
+             write(stdout,'(1x,a1,1x,a2,1x,i3,3F10.5,3x,a1,1x,3F10.5,4x,a1)') '|',atoms_symbol(nsp),nat,&
+                  atoms_pos_frac(:,nat,nsp),'|',atoms_pos_cart(:,nat,nsp)*lenconfac,'|'
           end do
        end do
        write(stdout,'(1x,a)') '*----------------------------------------------------------------------------*'
@@ -438,7 +429,8 @@ contains
        endif
        write(stdout,'(1x,a)') '+----------------------------------------------------------------------------+'
        !       do nkp=1,nkpoints
-       !          write(stdout,'(1x,a1,i6,1x,3F10.5,3x,a1,1x,3F10.5,4x,a1)') '|',nkp,kpoint_r(:,nkp),'|',kpoint_r_cart(:,nkp)/lenconfac,'|'
+       !          write(stdout,'(1x,a1,i6,1x,3F10.5,3x,a1,1x,3F10.5,4x,a1)') '|',&
+       ! nkp,kpoint_r(:,nkp),'|',kpoint_r_cart(:,nkp)/lenconfac,'|'
        !       end do
        write(stdout,'(1x,a)') '*----------------------------------------------------------------------------*'
        write(stdout,*) ' '
@@ -526,8 +518,6 @@ contains
     write(stdout,'(1x,a78)')    '------------------------------------------------------------------------------'
 
 
-101 format(20x,a3,2x,3F11.6)
-
   end subroutine param_write
 
 
@@ -538,10 +528,8 @@ contains
     ! release memory from allocated parameters                         !
     !                                                                  !
     !===================================================================  
-    use od_io, only : io_error
 
     implicit none
-    integer :: ierr
 
     !    if ( allocated ( ndimwin ) ) then
     !       ieallocate (  ndimwin, stat=ierr  )
