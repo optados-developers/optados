@@ -296,7 +296,7 @@ contains
 
     ! now read in for real - ignoring comments
     allocate(in_data(num_lines),stat=ierr)
-    if (ierr/=0) call io_error('Error allocating in_data in param_in_file')
+    if (ierr/=0) call io_error('Error allocating in_data in cell_get_atoms')
 
     line_counter=0
     do loop=1,tot_num_lines
