@@ -20,8 +20,18 @@ contains
     use od_electronic, only  : elec_read_elnes_mat, elnes_mat,  elnes_mwab
     use od_dos_utils, only : dos_utils_calculate
     use od_comms, only : on_root
+    use od_io, only : stdout
 
     implicit none
+
+    if(on_root) then
+       write(stdout,*)
+       write(stdout,'(1x,a78)') '+============================================================================+'
+       write(stdout,'(1x,a78)') '+============================ Core Loss Calculation =========================+'
+       write(stdout,'(1x,a78)') '+============================================================================+'
+       write(stdout,*)
+    endif
+
 
     ! read in the core matrix elements from disk
     call  elec_read_elnes_mat
@@ -34,6 +44,15 @@ contains
     if (on_root) then
        call write_core
     endif
+
+   if(on_root) then
+       write(stdout,*)
+       write(stdout,'(1x,a78)') '+============================================================================+'
+       write(stdout,'(1x,a78)') '+========================== Core Loss Calculation End =======================+'
+       write(stdout,'(1x,a78)') '+============================================================================+'
+       write(stdout,*)
+    endif
+
 
   end subroutine core_calculate
 

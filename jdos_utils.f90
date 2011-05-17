@@ -70,9 +70,9 @@ contains
 
     if(on_root) then
        write(stdout,*)
-       write(stdout,'(1x,a78)')'+============================================================================+'
-       write(stdout,'(1x,a78)')'+================== Joint Density Of States Calculation =====================+'
-       write(stdout,'(1x,a78)')'+============================================================================+'
+       write(stdout,'(1x,a78)')'  +========================================================================+  '
+       write(stdout,'(1x,a78)')'  +================ Joint Density Of States Calculation ===================+  '
+       write(stdout,'(1x,a78)')'  +========================================================================+  '
        write(stdout,*)
     endif
 
@@ -152,7 +152,7 @@ contains
 !    endif
 
     time1=io_time()
-    if(on_root)  write(stdout,'(1x,a40,f11.3,a)') 'Time to calculate dos  ',time1-time0,' (sec)'
+    if(on_root)  write(stdout,'(1x,a40,f11.3,a)') 'Time to calculate jdos  ',time1-time0,' (sec)'
     !-------------------------------------------------------------------------------
 
 
@@ -252,9 +252,9 @@ contains
     endif
 
     if (on_root) then
-       write(stdout,'(1x,a78)')    '+============================================================================+'
-       write(stdout,'(1x,a78)')    '+============== Joint Density Of States Calculation End =====================+'
-       write(stdout,'(1x,a78)')    '+============================================================================+'
+       write(stdout,'(1x,a78)')    '  +========================================================================+  '
+       write(stdout,'(1x,a78)')    '  +============ Joint Density Of States Calculation End ===================+  '
+       write(stdout,'(1x,a78)')    '  +========================================================================+  '
        write(stdout,*)
     end if
 

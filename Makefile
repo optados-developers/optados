@@ -3,12 +3,12 @@
 # S E T
 
 # one of gfortran, g95, ifort, pfg90
-SYSTEM := ifort
+SYSTEM := g95
  
  
 
 # fast / debug
-BUILD := fast
+BUILD := debug
  
 
 # serial / mpi
@@ -21,7 +21,7 @@ COMMS_ARCH := serial
  
 
 # Where would you like the executables?
-BIN_DIR=./
+BIN_DIR=${HOME}/bin
 
 SYSTEM := $(strip $(SYSTEM))
 BUILD  := $(strip $(BUILD))

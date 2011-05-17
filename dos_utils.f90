@@ -132,13 +132,15 @@ contains
 
     if(on_root) then
        write(stdout,*)
-       write(stdout,'(1x,a78)') '+============================================================================+'
        if(calc_weighted_dos) then
-          write(stdout,'(1x,a78)') '+============== Weighted Density Of States Calculation ======================+'
+          write(stdout,'(1x,a78)') '    +====================================================================+    '
+          write(stdout,'(1x,a78)') '    +========== Weighted Density Of States Calculation ==================+    '
+          write(stdout,'(1x,a78)') '    +====================================================================+    '
        else
-          write(stdout,'(1x,a78)')'+=================== Density Of States Calculation ==========================+'
+          write(stdout,'(1x,a78)') '    +====================================================================+    '
+          write(stdout,'(1x,a78)') '    +=============== Density Of States Calculation ======================+    '
+          write(stdout,'(1x,a78)') '    +====================================================================+    '
        endif
-       write(stdout,'(1x,a78)') '+============================================================================+'
        write(stdout,*)
     endif
 
@@ -329,18 +331,20 @@ contains
 
 
 
-
-    if(on_root) then
-       write(stdout,'(1x,a78)')    '+============================================================================+'
-       if(calc_weighted_dos) then
-          write(stdout,'(1x,a78)')    '+=========== Weighted Density Of States Calculation End =====================+'
-       else
-          write(stdout,'(1x,a78)')    '+================  Density Of States Calculation End ========================+'
-       endif
-       write(stdout,'(1x,a78)')    '+============================================================================+'
+  if(on_root) then
        write(stdout,*)
-    end if
-
+       if(calc_weighted_dos) then
+          write(stdout,'(1x,a78)') '    +====================================================================+    '
+          write(stdout,'(1x,a78)') '    +=========== Weighted Density Of States Calculation End =============+    '
+          write(stdout,'(1x,a78)') '    +====================================================================+    '
+       else
+          write(stdout,'(1x,a78)') '    +====================================================================+    '
+          write(stdout,'(1x,a78)') '    +=============== Density Of States Calculation End ==================+    '
+          write(stdout,'(1x,a78)') '    +====================================================================+    '
+       endif
+       write(stdout,*)
+    endif
+ 
 
   end subroutine dos_utils_calculate
 

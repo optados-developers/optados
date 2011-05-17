@@ -53,6 +53,15 @@ contains
     use od_jdos_utils, only : jdos_utils_calculate
     use od_comms, only : on_root
     use od_parameters, only : optics_geom
+    use od_io, only : stdout
+
+    if(on_root) then
+       write(stdout,*)
+       write(stdout,'(1x,a78)') '+============================================================================+'
+       write(stdout,'(1x,a78)') '+=============================== Optics Calculation =========================+'
+       write(stdout,'(1x,a78)') '+============================================================================+'
+       write(stdout,*)
+    endif
 
     ! Get information from .cst_ome file 
     call elec_read_band_gradient
@@ -88,6 +97,14 @@ contains
           call write_absorp
           call write_reflect
        end if
+    endif
+
+  if(on_root) then
+       write(stdout,*)
+       write(stdout,'(1x,a78)') '+============================================================================+'
+       write(stdout,'(1x,a78)') '+============================== Optics Calculation End ======================+'
+       write(stdout,'(1x,a78)') '+============================================================================+'
+       write(stdout,*)
     endif
 
   end subroutine optics_calculate

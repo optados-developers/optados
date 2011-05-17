@@ -12,7 +12,7 @@ program optados
   ! Written by Andrew Morris, Rebecca Nicholls, Chris Pickard               ! 
   !             and Jonathan Yates      2010                                !
   !=========================================================================!
-  use od_comms, only  : comms_setup,on_root,comms_end,my_node_id
+  use od_comms, only  : comms_setup,on_root,comms_end
   use od_constants, only : dp
   use od_io, only     : io_get_seedname, io_time, io_date, io_file_unit,&! Functions
        & stdout, stderr, seedname                                            ! Variables
@@ -26,7 +26,7 @@ program optados
   use od_optics, only : optics_calculate
   implicit none
 
-  real(kind=dp)    :: time0,time1,time2 ! Varaibles for timing
+  real(kind=dp)    :: time0,time1       ! Varaibles for timing
   logical          :: odo_found         ! Ouptut file exists?
   character(len=9) :: stat,pos          ! Status and position of .odo file
   character(len=9) :: ctime             ! Temp. time string
@@ -122,7 +122,7 @@ program optados
      time0=io_time()
      call optics_calculate
      time1=io_time()
-     if(on_root) write(stdout,'(1x,a40,f11.3,a)') 'Time to calculate Optical properties (Total) ',time1-time0,' (sec)'
+     if(on_root) write(stdout,'(1x,a50,f11.3,a)') 'Time to calculate Optical properties (Total) ',time1-time0,' (sec)'
   endif
   !-------------------------------------------------------------------------!
 
