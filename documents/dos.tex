@@ -39,11 +39,26 @@
 \setlength{\footskip}{0.25in}
 \setlength{\parindent}{0in}
 
-\title{{\tt OptaDOS}: User Guide}
+\title{{\huge {\tt OptaDOS}: User Guide}\\ {Version 1.0}}
 
-\author{Version 0.9}
+\author{Andrew J. Morris, Rebecca J. Nicholls, Jonathan R. Yates and Chris J. Pickard \\
+\\
+Department of Materials\\
+University of Oxford\\
+Parks Road\\
+Oxford OX1 3PH\\
+UK \\
+\\
+{\small and} \\
+\\
+Department of Physics and Astronomy\\
+Univeristy College London\\
+Gower Street\\
+London, WC1E 6BT\\
+UK}
 
-\date{27th October 2010}
+
+\date{May 2010}
 
 \begin{document}
 \newcommand{\optados}{\texttt{OptaDOS}}
@@ -60,7 +75,7 @@
 
 The code is freely available through the GPL licence with the request that the following citation (quoted in full) is required in any publication resulting from the use of \optados.
 
-\emph{Andrew\,J. Morris, R.\,J. Nicholls, C.\,J. Pickard and Jonathan\,R. Yates, The \optados\ code, CPC (2011)}.
+\emph{Andrew\,J. Morris, R.\,J. Nicholls, C.\,J. Pickard and Jonathan\,R. Yates, The \optados\ code, Comp. Phys. Comm. (2011)}.
 
 \begin{center}
 Further information and examples can be found at
@@ -77,11 +92,11 @@ Along with data text files \optados\ also generates \verb#.agr# files of results
 
 \chapter{Getting Started}\label{chap:getting_started}
 \section{Installation}
-\optados\ is usually obtained in a gzipped tarball, \verb#optados-X.X.tar.gz#. Extract this ( \verb# tar -xzf optados-X.X.tar.gz#) in the desired directory. Inside the  \verb#optados/# directory are a number of sub directories,  \verb#documents/#,  \verb#source/#,  \verb#examples/#.  The code may be compiled using the \verb#Makefile# in the  \verb#optados/# directory.  The \verb#SYSTEM#, \verb#BUILD#, \verb#COMMS_ARCH# and \verb#BIN_DIR# flags must be set, either in the  \verb#Makefile#, or from the command line (for example  \verb#make BUILD=fast#).  
+\optados\ is usually obtained in a gzipped tarball, \verb#optados-X.X.tar.gz#. Extract this ( \verb# tar -xzf optados-X.X.tar.gz#) in the desired directory. Inside the  \verb#optados/# directory are a number of sub directories,  \verb#documents/#,   \verb#examples/#.  The code may be compiled using the \verb#Makefile# in the  \verb#optados/# directory.  The \verb#SYSTEM#, \verb#BUILD#, \verb#COMMS_ARCH# and \verb#BIN_DIR# flags must be set, either in the  \verb#Makefile#, or from the command line (for example  \verb#make BUILD=fast#).  
 
 \subsection[system]{\tt SYSTEM}
 
-Tells the build system which compiler to use to make \optados. The valid values are:
+Choose which compiler to use to make \optados. The valid values are:
 \begin{itemize}
 \item[{\bf --}]  \verb#g95# (default)
 \item[{\bf --}]  \verb#gfortran#
@@ -93,7 +108,7 @@ Tells the build system which compiler to use to make \optados. The valid values 
 
 \subsection[build]{\tt BUILD}
 
-Tells the build system the level of optimisations required when making \optados.  The valid values are:
+Choose the level of optimisations required when making \optados.  The valid values are:
 \begin{itemize}
 \item[{\bf --}]  \verb#fast# (default) All optimisations
 \item[{\bf --}]  \verb#debug# No optimisations, full debug information
@@ -101,24 +116,23 @@ Tells the build system the level of optimisations required when making \optados.
 
 \subsection[comms_arch]{\tt COMMS\_ARCH}
 
-Tells the build system whether to compile for serial or parallel execution. The valid values are:
+Whether to compile for serial or parallel execution. The valid values are:
 \begin{itemize}
 \item[{\bf --}]  \verb#serial# (default) 
 \item[{\bf --}]  \verb#mpi# 
 \end{itemize}
 
 \subsection[bin_dir]{\tt BIN\_DIR}
-Tells the build system where to place the \optados\ binary. The default is the \optados\ directory.
+Choose where to place the \optados\ binary. The default is the \optados\ directory.
 
 
 \section{Usage}
 {\tt
 \begin{quote}
-optados.x  [seedname]
+optados.x86\_64  [seedname]
 \end{quote} }
 \begin{itemize}
-\item{ {\tt seedname}: If a seedname string is given the code will read its input
-from a file {\tt seedname.odi}. The default value is {\tt castep}.}
+\item{  {\tt seedname}: If a seedname string is given the code will read its input from a file {\tt seedname.odi}. The default value is \castep.}
 \end{itemize}
 
 \chapter{Parameters}\label{chap:parameters}
@@ -130,7 +144,7 @@ structure.
 The ordering of the keywords is not significant. Case is ignored (so
 \verb#smearing_width# is the same as \verb#Smearing_Width#). Characters after !, or \#
 are treated as comments. Most keywords have a default value that is
-used unless the keyword is given in {\tt seedname.odi}. Keywords can be set
+used unless the keyword is given in {\tt seedname.odi}. Keywords may be set
 in any of the following ways
 {\tt
 \begin{quote}
@@ -148,21 +162,25 @@ strings: {\tt T}, {\tt true}, {\tt .true.}.
 
 
 \section{Parameters}
-\subsection[task]{\tt character(len=50) :: task}
+\subsection[task]{\tt character(len=20) :: task}
 
 Tells the code what to compute. 
 
 The valid options for this parameter are:
 \begin{itemize}
 \item[{\bf --}]  \verb#dos# (default)
+\item[{\bf --}]  \verb#compare_dos#
+\item[{\bf --}]  \verb#compare_jdos#
 \item[{\bf --}]  \verb#jdos#
 \item[{\bf --}]  \verb#pdos#
 \item[{\bf --}]  \verb#optics#
 \item[{\bf --}]  \verb#core#
 \item[{\bf --}]  \verb#all#
 \end{itemize}
-Several taks can be specified eg to compute dos and jdos use
-\verb#task : dos jdos#.
+Several taks can be specified \emph{e.g.} to compute dos and jdos use
+\verb#task : dos jdos#.  
+
+\verb#compare_dos# and \verb#compare_jdos# calculate the DOS and JDOS respectivly using all broadening schemes. It is good practice to check the quality of the underlying DOS before other tasks are requested. 
 
 \subsection[broadening]{\tt character(len=50) :: broadening}
 
@@ -176,18 +194,16 @@ The valid options for this parameter are:
 \item[{\bf --}]  \verb#linear#
 \item[{\bf --}]  \verb#quad#
 \end{itemize}
-Several schemes can be specified eg 
-\verb#broadening : adaptive fixed#.
 
 \subsection[iprint]{\tt integer :: iprint}
 
 This indicates the level of verbosity of the output from 1,
-the bare minimum, to 3, which corresponds to full debugging output.
+the bare minimum: 2, with progress reports: to 3, which corresponds to full debugging output.
 
 The default value is 1.
 
 
-\subsection[length\_unit]{\tt character(len=20) :: energy\_unit}
+\subsection[energy\_unit]{\tt character(len=20) :: energy\_unit}
 The energy unit to be used for writing quantities in the output files.
 
 The valid options for this parameter are:
@@ -197,24 +213,30 @@ The valid options for this parameter are:
 \item[{\bf --}]  \verb#Ha#
 \end{itemize}
 
+\subsection[adaptive\_smearing]{\tt logical :: legacy\_file\_format}
+\begin{itemize}
+\item[{\bf --}] \verb#TRUE# (Default).  Read \castep\ input compatible with versions $<$ 6.0.
+\item[{\bf --}] \verb#FALSE# Read \castep\ input compatible for use with \castep\ versions 6.0$+$. 
+\end{itemize}
+
 \subsection[adaptive\_smearing]{\tt real(kind=dp) :: adaptive\_smearing}
-Set the relative smearing in the adaptive scheme
+Set the relative smearing in the adaptive scheme.
 
 Default value is 1.4
 
 \subsection[fixed\_smearing]{\tt real(kind=dp) :: fixed\_smearing}
-Smearing width for fixed broadening
+Smearing width for fixed broadening.
 
 If $\verb#spectral_scheme# = \verb#fixed#$ default value is 0.3eV.
 
 \subsection[scissor\_op]{\tt real(kind=dp) :: scissor\_op}
 Value of the scissor operator. 
 
-Default value is 0eV (ie not used)
+Default value is 0\,eV (\emph{i.e.} not used)
 
 \subsection[compute\_efermi]{{\tt logical :: compute\_efermi}}
 
-If {\tt compute\_efermi=TRUE}, then \optados\ will use the value of the fermi
+If {\tt compute\_efermi=TRUE}, then \optados\ will use the value of the Fermi
 level computed from the integration of the DOS. If {\tt
   compute\_efermi=FALSE}, then the value set by {\tt fermi\_energy} will be
 used, if {\tt fermi\_energy} is not set the value from the bands file will be used.
@@ -222,24 +244,43 @@ used, if {\tt fermi\_energy} is not set the value from the bands file will be us
 The default value is {\tt FALSE}.
 
 \subsection[fermi\_energy]{\tt real(kind=dp) :: fermi\_energy}
-Value of the fermi energy
+Value of the Fermi energy.
 
 No default value
 
 \subsection[output\_format]{\tt character(len=20) :: output\_format}
-Format in which to output data
+Format in which to output data.
 
 The valid options for this parameter are:
 \begin{itemize}
-\item[{\bf --}]  \verb#gnuplot#
+\item[{\bf --}]  \verb#gnuplot# (not implemented yet)
 \item[{\bf --}]  \verb#grace# (default)
 \end{itemize}
 
 \subsection[finite\_bin\_correction]{\tt logical :: finite\_bin\_correction}
+Force each Gaussian to be larger than a single energy bin. (Useful for adaptive smearing and semi-core states when \verb#numerical\_intdos=TRUE#). 
 
+Default value \verb#FALSE#.
+
+\subsection[numerical\_intdos]{\tt logical :: numerical\_intdos}
+Calculate the integrated dos by numerical integration instead of semi-analytically. (Useful for comparison with \lindos.)
+
+Default value \verb#FALSE#.
 
 \subsection[set\_efermi\_zero]{\tt logical :: set\_efermi\_zero}
+Shift energy scales so that the Fermi eergy is at 0.
 
+Default value \verb#TRUE#.
+
+\subsection[compute\_band\_energy]{\tt logical :: compute\_band\_energy}
+Compute the band energy by summing bands both using \castep\'s eignevalue and \optados\'s density of states.
+
+Default value \verb#TRUE#.
+
+\subsection[dos\_per\_volume]{\tt logical :: dos\_per\_volume}
+Present DOS per simulation cell volume
+
+Default value \verb#FALSE#.
 
 \subsection[dos\_min\_energy]{\tt real(kind=dp) :: dos\_min\_energy}
 Lower energy range for DOS and related properties.
@@ -251,19 +292,24 @@ Upper energy range for DOS and related properties.
 
 Default value is 5eV above the highest eigenvalue in the bands file.
 
+
+\subsection[dos\_nbins]{\tt real(kind=dp) :: dos\_nbins}
+Instead of setting a Default value \verb#dos_spacing# the toal number of DOS bins may be given.  (Useful for comparison with \lindos.)
+
 \subsection[dos\_spacing]{\tt real(kind=dp) :: dos\_spacing}
 Resolution at which to compute the DOS and related properties.
-Default value is 0.1eV (AJM??)
+Default value is 0.1eV 
+
 
 \subsection[jdos\_max\_energy]{\tt real(kind=dp) :: jdos\_max\_energy}
 Upper energy range for JDOS and related properties.
 
 Default value is the difference between the valence band maximum (or
-fermi level) and the highest eigenvalue in the bands file.
+Fermi level) and the highest eigenvalue in the bands file.
 
 \subsection[jdos\_spacing]{\tt real(kind=dp) :: jdos\_spacing} 
 Resolution at which to compute the DOS and related properties.
-Default value is 0.1eV (AJM??)
+Default value is 0.01eV. 
 
 \subsection[optics\_geom]{\tt character(len=20) :: optics\_geom}
 
@@ -281,21 +327,20 @@ or \verb#optics_geom : unpolarized# .
 No default
 
 
-\subsection[pdos]{\tt integer :: pdos}
+\subsection[pdos]{\tt character :: pdos}
 Defines which components to include in the pdos analysis:
 
 \begin{itemize}
-\item[{\bf --}]  \verb#angular# (decompose as s,p,d etc)
-\item[{\bf --}]  \verb#atom#    (decompose onto atomic sites)
+\item[{\bf --}]  \verb#angular# (decompose as s,p,d \emph{etc.})
+\item[{\bf --}]  \verb#sites#    (decompose onto atomic sites)
+\item[{\bf --}]  \verb#species#    (decompose onto atomic species)
+\item[{\bf --}]  \verb#species_ang#    (decompose onto angular momentum channels and species)
 \item[{\bf --}]  \verb#C:H#     (decompose onto Carbon and Hydrogen sites)
 \item[{\bf --}]  \verb#C1:C3:C4-C8#  (decompose onto atoms C1, C2 and C4,C5,C6,C7,C8)
 \item[{\bf --}]  \verb#Si1[s;d]#     (decompose onto 's' and 'd' channels for
   atom Si1)
 
 \end{itemize}
-
-
-
 
 
 \subsection[devel\_flag]{\tt character(len=50) :: devel\_flag}
@@ -306,6 +351,25 @@ string into the code to be used inside a new routine as it is developed.
 No default.
 
 
+
+\chapter{Examples}
+
+Each example in the \verb#examples/# directory contains example \castep\ input files and a sample \optados\ input file.
+\section{DOS}
+See  \verb#examples/Si2_DOS/#.  This is a simple example of using \optados\ for calculating electronic density of states.  We choose to recalculate the Fermi level using the calculated DOS, rather than use the Fermi level suggested by \castep. The DOS is outputted to {\tt Si2.adaptive.dat}. A file suitable for plotting using {\tt xmgrace} is written to {\tt Si2.adaptive.agr}.  If {\tt TASK : compare\_dos} is used instead, \optados\ will calculate DOS using all the broadening methods, this is good practice to see whether the broadening widths are appropriate before more advanced tasks are carried out, such as JDOS, core and optical calculations.
+
+\section{PDOS}
+See  \verb#examples/Si2_PDOS/#. This is a simple example of using \optados\ for calculating partial electronic density of states. We choose to decompse the DOS into angular momentum channels ({\tt PDOS : angular}). We choose to recalculate the Fermi level using the calculated DOS, rather than use the Fermi level suggested by \castep.  The output can be found in {\tt Si2.pdos.dat}. Other things to try are:
+\begin{itemize}
+\item[{\bf --}]  \verb#PDOS : Si1;Si2(s)#  -- Output the PDOS on Si atom 1 and the PDOS on the s-channel of Si atom 2. (Resulting in two projectors)
+\item[{\bf --}]  \verb#PDOS : sum:Si1-2(s)#  --  Output the sum of the s-channels on the two Si atoms. (Resulting in one projector)
+\item[{\bf --}]  \verb#PDOS : Si1(p)# -- Output the p-channel on Si atom 1. (Resulting in one projector)
+\end{itemize}
+
+
+
+\section{JDOS}
+See  \verb#examples/Si2_JDOS/#. This is a simple example of using \optados\ for calculating joint electronic density of states. This is a simple example of using \optados\ for calculating joint electronic density of states.  We choose to recalculate the Fermi level using the calculated DOS, rather than use the Fermi level suggested by \castep.  If {\tt TASK : compare\_jdos} is used instead, \optados\ will calculate the JDOS using all the broadening methods, this is good practice to see whether the broadening widths are appropriate before more advanced tasks are carried out.  The JDOS is outputted to {\tt Si2.jadaptive.dat}. A file suitable for plotting using {\tt xmgrace} is written to {\tt Si2.jadaptive.agr}. 
 
 
 \end{document}

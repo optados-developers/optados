@@ -1,4 +1,4 @@
-MANUAL_NAME := dos 
+MANUAL_NAME := dos
 
 all:
 	latex $(MANUAL_NAME).tex

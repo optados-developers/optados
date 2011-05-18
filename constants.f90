@@ -13,7 +13,7 @@ module od_constants
   
   private ! unless otherise stated
 
- character(len=6), parameter, public :: optados_version=" 0.9  "
+ character(len=6), parameter, public :: optados_version=" 1.0  "
 
  integer, parameter, public :: dp=selected_real_kind(15,300)
 

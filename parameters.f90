@@ -162,8 +162,6 @@ contains
     if( (compare_dos.or.compare_jdos) .and. (pdos.or.core.or.optics)) &
          call io_error('Error: compare_dos/compare_jdos are not comptable with pdos, core or optics tasks') 
 
-
-
     num_atoms=0
     num_species=0
     if(pdos) then
