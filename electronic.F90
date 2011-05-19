@@ -143,13 +143,14 @@ contains
     !-------------------------------------------------------------------------
     ! Written by  A J Morris                                         Dec 2010
     !=========================================================================
-    use od_comms, only : on_root, comms_slice, my_node_id, num_nodes, root_id,&
+    use od_comms, only : on_root, my_node_id, num_nodes, root_id,&
          & comms_recv, comms_send
     use od_io,    only : io_time, filename_len, seedname, stdout, io_file_unit,&
          & io_error  
     use od_cell,  only : num_kpoints_on_node,nkpoints
     use od_constants,only : bohr2ang, H2eV
     use od_parameters, only : legacy_file_format
+    use od_algorithms, only : algor_dist_array
     implicit none
 
     integer :: gradient_unit,i,ib,jb,is,ik,inodes,ierr 
@@ -169,7 +170,7 @@ contains
     endif
 
     ! Figure out how many kpoint should be on each node
-    call comms_slice(nkpoints,num_kpoints_on_node)
+    call algor_dist_array(nkpoints,num_kpoints_on_node)
     allocate(band_gradient(1:nbands,1:nbands,1:3,1:num_kpoints_on_node(my_node_id),1:nspins),stat=ierr)
     if (ierr/=0) call io_error('Error: Problem allocating band_gradient in read_band_energy')
 
@@ -276,9 +277,10 @@ contains
     use od_cell,      only : nkpoints,kpoint_r,kpoint_weight,cell_find_MP_grid,&
          & real_lattice,kpoint_grid_dim,num_kpoints_on_node
     use od_comms,     only : comms_bcast,comms_send,comms_recv,num_nodes,my_node_id,&
-         & on_root,root_id,comms_slice
+         & on_root,root_id
     use od_io,        only : io_file_unit, seedname, filename_len,stdout, io_time,&
          & io_error
+    use od_algorithms, only : algor_dist_array
 
     implicit none
 
@@ -335,7 +337,7 @@ contains
     call comms_bcast(nbands,1)
     call comms_bcast(efermi_castep,1)
     !
-    call comms_slice(nkpoints,num_kpoints_on_node)
+    call algor_dist_array(nkpoints,num_kpoints_on_node)
     !
     allocate(band_energy(1:nbands,1:nspins,1:num_kpoints_on_node(my_node_id)),stat=ierr)
     if (ierr/=0) call io_error('Error: Problem allocating band_energy in read_band_energy') 

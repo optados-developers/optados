@@ -24,6 +24,7 @@ module od_algorithms
   public :: utility_frac_to_cart
   public :: channel_to_am
   public :: algorithms_erf
+  public :: algor_dist_array
 
  contains
 
@@ -286,6 +287,40 @@ module od_algorithms
    endif
       
  end function algorithms_erf
+
+  !======================================================
+  subroutine algor_dist_array(num_elements,elements_per_node)
+    ! Takes the number of elements in an array, num_elements
+    ! Returns an array 0,num_nodes-1 which contains the number of 
+    ! elements that should be on each node.
+    ! AJM based on an idea from JRY
+    !======================================================
+    use od_comms, only : num_nodes
+    use od_io, only    : io_error
+    implicit none
+    integer, intent(in)                :: num_elements
+    integer, allocatable, intent(out)  :: elements_per_node(:)
+
+    integer :: loop,ierr
+
+    allocate(elements_per_node(0:num_nodes-1),stat=ierr)
+    if (ierr/=0)  call io_error('Error: Problem allocating elements_per_node in algor_dist_array')  
+
+    elements_per_node(:)=num_elements/num_nodes
+
+    if(num_elements<num_nodes) then
+       call io_error('Fewer kpoints than nodes. Reduce the number of nodes used!')     
+    end if
+
+    ! Distribute the remainder
+
+    if(elements_per_node(0)*num_nodes.ne.num_elements) then
+       do loop=0,num_elements-elements_per_node(0)*num_nodes-1
+          elements_per_node(loop)=elements_per_node(loop)+1
+       end do
+    endif
+
+  end subroutine algor_dist_array
 
 
 endmodule od_algorithms

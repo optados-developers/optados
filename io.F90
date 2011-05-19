@@ -82,12 +82,10 @@ subroutine io_get_seedname (  )
 
          implicit none
          character(len=*), intent(in) :: error_msg
-
          write(stderr,*)  'Exiting.......' 
          write(stderr, '(1x,a)') trim(error_msg)
-         
          close(stderr)
-         
+
          stop "Optados error: examine the output/error file for details" 
          
        end subroutine io_error

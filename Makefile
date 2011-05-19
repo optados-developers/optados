@@ -3,16 +3,16 @@
 # S E T
 
 # one of gfortran, g95, ifort, pfg90
-SYSTEM := g95
+SYSTEM := ifort 
  
  
 
 # fast / debug
-BUILD := debug
+BUILD := fast 
  
 
 # serial / mpi
-COMMS_ARCH := serial
+COMMS_ARCH := serial 
  
  
  
@@ -21,7 +21,7 @@ COMMS_ARCH := serial
  
 
 # Where would you like the executables?
-BIN_DIR=${HOME}/bin
+BIN_DIR=./
 
 SYSTEM := $(strip $(SYSTEM))
 BUILD  := $(strip $(BUILD))
@@ -64,7 +64,7 @@ endif
 
 ifeq ($(SYSTEM), ifort)
    F90_SERIAL= ifort
-   F90_PARALLEL= mpif90
+   F90_PARALLEL= mpifort 
    FFLAGS= -convert big_endian
    FFLAGS_PARALLEL= -DMPI
    FFLAGS_FAST= -O3
@@ -74,7 +74,7 @@ endif
 
 ifeq ($(SYSTEM), pathscale)
    F90_SERIAL= pathf95
-   F90_PARALLEL= mpif90
+   F90_PARALLEL= mppathf90 
    FFLAGS= -byteswapio
    FFLAGS_PARALLEL=  -DMPI
    FFLAGS_FAST= -O3 -OPT:Ofast -ffast-math -OPT:recip=ON -OPT:malloc_algorithm=1
@@ -88,7 +88,7 @@ ifeq ($(SYSTEM), pgf90)
    FFLAGS= -byteswapio
    FFLAGS_PARALLEL= -DMPI
    FFLAGS_FAST= -O3
-   FFLAGS_DEBUG= -O0 -C -pg -g -Warn
+   FFLAGS_DEBUG= -O0 -C -pg -g 
    EXTENSION=.pgf90
 endif
 
@@ -148,7 +148,7 @@ constants.o : constants.f90
 core.o : core.f90 parameters.o electronic.o dos_utils.o constants.o io.o
 	$(F90) -c $(FFLAGS) core.f90
 
-comms.o : comms.F90 constants.o io.o
+comms.o : comms.F90 constants.o 
 	$(F90) -c $(FFLAGS) comms.F90
 
 dos.o : dos.f90 dos_utils.o xmgrace_utils.o electronic.o parameters.o io.o
@@ -160,7 +160,7 @@ dos_utils.o : dos_utils.f90 algorithms.o cell.o constants.o comms.o electronic.o
 electronic.o : electronic.F90 comms.o parameters.o constants.o 
 	$(F90) -c $(FFLAGS) electronic.F90
 
-io.o : io.F90 constants.o
+io.o : io.F90 constants.o comms.o
 	$(F90) -c $(FFLAGS) io.F90
 
 jdos.o : jdos.f90 jdos_utils.o xmgrace_utils.o electronic.o parameters.o io.o
