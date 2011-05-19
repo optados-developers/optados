@@ -1197,6 +1197,7 @@ contains
     call comms_bcast(dos_spacing,1)
     call comms_bcast(legacy_file_format,1)
     call comms_bcast(pdos_string,len(pdos_string))
+    call comms_bcast(set_efermi_zero,1)
 
   end subroutine param_dist
 

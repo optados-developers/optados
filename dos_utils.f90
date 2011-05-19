@@ -91,7 +91,7 @@ contains
     ! Written by : A J Morris December 2010
     !=============================================================================== 
     use od_io,        only : stdout,io_time,io_error
-    use od_comms,     only : on_root,my_node_id
+    use od_comms,     only : on_root,my_node_id,comms_bcast
     use od_electronic,only : band_gradient,band_energy, efermi, efermi_castep,nspins, &
          & elec_read_band_gradient, unshifted_efermi
     use od_parameters,only : linear, adaptive, fixed, quad, compute_band_energy, &
@@ -143,7 +143,7 @@ contains
     endif
 
     if(calc_weighted_dos) then 
-!       print*,'mw%nkpoints.ne.num_nkpoints_on_node(my_node_id))',mw%nkpoints,nunum_nkpoints_on_node(my_node_id)
+       !       print*,'mw%nkpoints.ne.num_nkpoints_on_node(my_node_id))',mw%nkpoints,nunum_nkpoints_on_node(my_node_id)
        if(mw%nspins.ne.nspins)     call io_error ("ERROR : DOS :  mw%nspins not equal to nspins.")
        if(mw%nkpoints.ne.num_kpoints_on_node(my_node_id)) &
             call io_error ("ERROR : DOS : mw%nkpoints not equal to nkpoints.")
@@ -202,10 +202,10 @@ contains
        !if(quad)    call merge_dos(intdos_quad)
     endif
 
-!    if(.not.on_root) then
-!       if(allocated(E)) deallocate(E, stat=ierr)
-!       if (ierr/=0) call io_error ("cannot deallocate  E")
-!    endif
+    !    if(.not.on_root) then
+    !       if(allocated(E)) deallocate(E, stat=ierr)
+    !       if (ierr/=0) call io_error ("cannot deallocate  E")
+    !    endif
 
     time1=io_time()
     if(on_root)  write(stdout,'(1x,a40,f11.3,a)') 'Time to calculate dos  ',time1-time0,' (sec)'
@@ -214,58 +214,65 @@ contains
 
     !-------------------------------------------------------------------------------
     ! F E R M I   E N E R G Y   A N A L Y S I S
-    time0=io_time()
-    if(on_root)       write(stdout,*)
-    if(on_root)   write(stdout,'(1x,a78)')  '+------------------------ Fermi Energy Analysis -----------------------------+'
-    if(on_root)   write(stdout,'(1x,a1,a45,f8.4,a3,20x,a1)') "|","Fermi energy from CASTEP :",efermi_castep," eV","|"
-    if(on_root)   write(stdout,'(1x,a78)')    '+----------------------------------------------------------------------------+'
+    if(on_root) then
+       time0=io_time()
+       write(stdout,*)
+       write(stdout,'(1x,a78)')  '+------------------------ Fermi Energy Analysis -----------------------------+'
+       write(stdout,'(1x,a1,a45,f8.4,a3,20x,a1)') "|","Fermi energy from CASTEP :",efermi_castep," eV","|"
+       write(stdout,'(1x,a78)')    '+----------------------------------------------------------------------------+'
 
-    if(compute_efermi) then
-       if(fixed) then 
-          if(on_root)write(stdout,'(1x,a78)') "| From Fixed broadening                                                      | "
-          efermi_fixed= calc_efermi_from_intdos(intdos_fixed)
-          if(on_root)write(stdout,'(1x,a1,a46,f8.4,a3,19x,a1)')"|", " Fermi energy (Fixed braodening) : ", efermi_fixed,"eV","|"
-          if(on_root)write(stdout,'(1x,a78)')    '+----------------------------------------------------------------------------+'
+       if(compute_efermi) then
+          if(fixed) then 
+             write(stdout,'(1x,a78)') "| From Fixed broadening                                                      | "
+             efermi_fixed= calc_efermi_from_intdos(intdos_fixed)
+             write(stdout,'(1x,a1,a46,f8.4,a3,19x,a1)')"|", " Fermi energy (Fixed braodening) : ", efermi_fixed,"eV","|"
+             write(stdout,'(1x,a78)')    '+----------------------------------------------------------------------------+'
 
-       endif
-       if(adaptive) then
-          if(on_root)write(stdout,'(1x,a78)') "| From Adaptive broadening                                                   | "  
-          efermi_adaptive=calc_efermi_from_intdos(intdos_adaptive)
-          if(on_root)write(stdout,'(1x,a1,a46,f8.4,a3,19x,a1)')"|", " Fermi energy (Adaptive braodening) : " &
-               , efermi_adaptive,"eV","|"
-          if(on_root)write(stdout,'(1x,a78)') &
-               '+----------------------------------------------------------------------------+'
+          endif
+          if(adaptive) then
+             write(stdout,'(1x,a78)') "| From Adaptive broadening                                                   | "  
+             efermi_adaptive=calc_efermi_from_intdos(intdos_adaptive)
+             write(stdout,'(1x,a1,a46,f8.4,a3,19x,a1)')"|", " Fermi energy (Adaptive braodening) : " &
+                  , efermi_adaptive,"eV","|"
+             write(stdout,'(1x,a78)') &
+                  '+----------------------------------------------------------------------------+'
 
-       endif
-       if(linear) then
-          if(on_root)write(stdout,'(1x,a78)') &
-               "| From Linear broadening                                                     | " 
-          efermi_linear=calc_efermi_from_intdos(intdos_linear) 
-          if(on_root)write(stdout,'(1x,a1,a46,f8.4,a3,19x,a1)')"|", " Fermi energy (Linear braodening) : ",&
-               efermi_linear," eV","|"
-          if(on_root)write(stdout,'(1x,a78)')  &
-               '+----------------------------------------------------------------------------+'
+          endif
+          if(linear) then
+             write(stdout,'(1x,a78)') &
+                  "| From Linear broadening                                                     | " 
+             efermi_linear=calc_efermi_from_intdos(intdos_linear) 
+             write(stdout,'(1x,a1,a46,f8.4,a3,19x,a1)')"|", " Fermi energy (Linear braodening) : ",&
+                  efermi_linear," eV","|"
+             write(stdout,'(1x,a78)')  &
+                  '+----------------------------------------------------------------------------+'
 
+          endif
+       elseif(.not.compute_efermi)then
+          ! Use the derived Fermi energy shifts if calculated. It not use the fermi_energy supplied
+          ! if not, use the CASTEP Fermi energy
+          if(fermi_energy.ne.-990.0_dp)then
+             write(stdout,'(1x,a78)')   "| No Fermi energies calculated : Using user-defined value                    | "
+             efermi_fixed=fermi_energy
+             efermi_adaptive=fermi_energy
+             efermi_linear=fermi_energy
+          else 
+             ! User has not set fermi_energy, nor wants it calculating
+             ! so we'll have to use the CASTEP value. 
+             write(stdout,'(1x,a78)')   "| No Fermi energies calculated : Using CASTEP value                          | "
+             efermi_fixed=efermi_castep
+             efermi_adaptive=efermi_castep
+             efermi_linear=efermi_castep
+          endif
+       else ! computer_efermi neither T nor F !
+          call io_error (" ERROR: Bug in dos_utils_calculate: computer_efermi ambiguous")
        endif
-    elseif(.not.compute_efermi)then
-       ! Use the derived Fermi energy shifts if calculated. It not use the fermi_energy supplied
-       ! if not, use the CASTEP Fermi energy
-       if(fermi_energy.ne.-990.0_dp)then
-          if(on_root) write(stdout,'(1x,a78)')   "| No Fermi energies calculated : Using user-defined value                    | "
-          efermi_fixed=fermi_energy
-          efermi_adaptive=fermi_energy
-          efermi_linear=fermi_energy
-       else 
-          ! User has not set fermi_energy, nor wants it calculating
-          ! so we'll have to use the CASTEP value. 
-          if(on_root) write(stdout,'(1x,a78)')   "| No Fermi energies calculated : Using CASTEP value                          | "
-          efermi_fixed=efermi_castep
-          efermi_adaptive=efermi_castep
-          efermi_linear=efermi_castep
-       endif
-    else ! computer_efermi neither T nor F !
-        call io_error (" ERROR: Bug in dos_utils_calculate: computer_efermi ambiguous")
     endif
+    call comms_bcast(fermi_energy,1)
+    call comms_bcast(efermi_fixed,1)
+    call comms_bcast(efermi_linear,1)
+    call comms_bcast(efermi_adaptive,1)
+
 
     ! NB If you have asked for more than one type of broadening
     ! If one of your options is linear then all will have the linear efermi
@@ -285,7 +292,7 @@ contains
     unshifted_efermi=efermi
 
     if(set_efermi_zero) then
-       write(stdout,'(1x,a1,a46,a31)')"|", " Setting Fermi energy to 0 : ","|"
+       if(on_root) write(stdout,'(1x,a1,a46,a31)')"|", " Setting Fermi energy to 0 : ","|"
        E(:)=E(:)-efermi
        band_energy(:,:,:) = band_energy(:,:,:) - efermi
        efermi=0.0_dp
@@ -332,7 +339,7 @@ contains
 
 
 
-  if(on_root) then
+    if(on_root) then
        write(stdout,*)
        if(calc_weighted_dos) then
           write(stdout,'(1x,a78)') '    +====================================================================+    '
@@ -345,7 +352,7 @@ contains
        endif
        write(stdout,*)
     endif
- 
+
 
   end subroutine dos_utils_calculate
 
