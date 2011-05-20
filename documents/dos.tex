@@ -41,7 +41,7 @@
 
 \title{{\huge {\tt OptaDOS}: User Guide}\\ {Version 1.0}}
 
-\author{Andrew J. Morris, Rebecca J. Nicholls, Jonathan R. Yates and Chris J. Pickard \\
+\author{Andrew J. Morris, Rebecca J. Nicholls, Chris J. Pickard, Jonathan R. Yates \\
 \\
 Department of Materials\\
 University of Oxford\\
@@ -58,7 +58,7 @@ London, WC1E 6BT\\
 UK}
 
 
-\date{May 2010}
+\date{May 2011}
 
 \begin{document}
 \newcommand{\optados}{\texttt{OptaDOS}}
@@ -104,6 +104,7 @@ Choose which compiler to use to make \optados. The valid values are:
 \item[{\bf --}]  \verb#nag#
 \item[{\bf --}]  \verb#pathscale#
 \item[{\bf --}]  \verb#pgf90#
+\item[{\bf --}]  \verb#sun#
 \end{itemize}
 
 \subsection[build]{\tt BUILD}
@@ -162,7 +163,7 @@ strings: {\tt T}, {\tt true}, {\tt .true.}.
 
 
 \section{Parameters}
-\subsection[task]{\tt character(len=20) :: task}
+\subsection[task]{\tt character(lex=20) :: task}
 
 Tells the code what to compute. 
 
@@ -177,12 +178,12 @@ The valid options for this parameter are:
 \item[{\bf --}]  \verb#core#
 \item[{\bf --}]  \verb#all#
 \end{itemize}
-Several taks can be specified \emph{e.g.} to compute dos and jdos use
+Several tasks can be specified \emph{e.g.} to compute doi and jdos use
 \verb#task : dos jdos#.  
+However, the \verb#compare_dos# and \verb#compare_jdos# tasks can only be combined with each other, and no additional tasks.
+\verb#compare_dos# and \verb#compare_jdos# calculate the DOS and JDOS respectively using all broadening schemes. It is good practice to check the quality of the underlying DOS before other tasks are requested. 
 
-\verb#compare_dos# and \verb#compare_jdos# calculate the DOS and JDOS respectivly using all broadening schemes. It is good practice to check the quality of the underlying DOS before other tasks are requested. 
-
-\subsection[broadening]{\tt character(len=50) :: broadening}
+\subsection[broadening]{\tt character(lex=50) :: broadening}
 
 Specified the scheme used to broaden a discrete sampling of the
 Brillouin Zone to a continuous spectral function.
@@ -192,7 +193,7 @@ The valid options for this parameter are:
 \item[{\bf --}]  \verb#adaptive# (default)
 \item[{\bf --}]  \verb#fixed#
 \item[{\bf --}]  \verb#linear#
-\item[{\bf --}]  \verb#quad#
+\item[{\bf --}]  \verb#quad# (not currently implemented)
 \end{itemize}
 
 \subsection[iprint]{\tt integer :: iprint}
@@ -203,7 +204,7 @@ the bare minimum: 2, with progress reports: to 3, which corresponds to full debu
 The default value is 1.
 
 
-\subsection[energy\_unit]{\tt character(len=20) :: energy\_unit}
+\subsection[energy\_unit]{\tt character(Len=20) :: energy\_unit}
 The energy unit to be used for writing quantities in the output files.
 
 The valid options for this parameter are:
@@ -216,7 +217,7 @@ The valid options for this parameter are:
 \subsection[adaptive\_smearing]{\tt logical :: legacy\_file\_format}
 \begin{itemize}
 \item[{\bf --}] \verb#TRUE#  Read \castep\ input compatible with versions $<$ 6.0.
-\item[{\bf --}] \verb#FALSE# (Default) Read \castep\ input compatible for use with \castep\ versions 6.0$+$. 
+\item[{\bf --}] \verb#FALSE# (Default) Read \castep\ input compatible for use with \castep\ versions 6.0$+$ and generated with the castep spectral task.
 \end{itemize}
 
 \subsection[adaptive\_smearing]{\tt real(kind=dp) :: adaptive\_smearing}
@@ -268,16 +269,16 @@ Calculate the integrated dos by numerical integration instead of semi-analytical
 Default value \verb#FALSE#.
 
 \subsection[set\_efermi\_zero]{\tt logical :: set\_efermi\_zero}
-Shift energy scales so that the Fermi eergy is at 0.
+Shift energy scales so that the Fermi energy is at 0.
 
 Default value \verb#TRUE#.
 
 \subsection[compute\_band\_energy]{\tt logical :: compute\_band\_energy}
-Compute the band energy by summing bands both using \castep\'s eignevalue and \optados\'s density of states.
+Compute the band energy by summing bands both using \castep\'s eigenvalue and \optados\'s density of states.
 
 Default value \verb#TRUE#.
 
-\subsection[dos\_per\_volume]{\tt logical :: dos\_per\_volume}
+\subsection[DSO\_per\_volume]{\tt logical :: dos\_per\_volume}
 Present DOS per simulation cell volume
 
 Default value \verb#FALSE#.
@@ -294,7 +295,7 @@ Default value is 5eV above the highest eigenvalue in the bands file.
 
 
 \subsection[dos\_nbins]{\tt real(kind=dp) :: dos\_nbins}
-Instead of setting a Default value \verb#dos_spacing# the toal number of DOS bins may be given.  (Useful for comparison with \lindos.)
+Instead of setting a Default value \verb#dos_spacing# the total number of DOS bins may be given.  (Useful for comparison with \lindos.)
 
 \subsection[dos\_spacing]{\tt real(kind=dp) :: dos\_spacing}
 Resolution at which to compute the DOS and related properties.
@@ -332,13 +333,14 @@ Defines which components to include in the pdos analysis:
 
 \begin{itemize}
 \item[{\bf --}]  \verb#angular# (decompose as s,p,d \emph{etc.})
-\item[{\bf --}]  \verb#sites#    (decompose onto atomic sites)
-\item[{\bf --}]  \verb#species#    (decompose onto atomic species)
-\item[{\bf --}]  \verb#species_ang#    (decompose onto angular momentum channels and species)
+\item[{\bf --}]  \verb#sites#    (decompose onto atomic sites, C, H \emph{etc.})
+\item[{\bf --}]  \verb#species#    (decompose onto atomic species C1, H1, H2 \emph{etc.})
+\item[{\bf --}]  \verb#species_ang#    (decompose onto angular momentum channels and species C1s, C1p \emph{etc.})
 \item[{\bf --}]  \verb#C:H#     (decompose onto Carbon and Hydrogen sites)
 \item[{\bf --}]  \verb#C1:C3:C4-C8#  (decompose onto atoms C1, C2 and C4,C5,C6,C7,C8)
 \item[{\bf --}]  \verb#Si1[s;d]#     (decompose onto 's' and 'd' channels for
   atom Si1)
+\item[{\bf --}]  \verb#sum:C1:C3:C4-C8#  (decompose onto atoms C1, C2 and C4,C5,C6,C7,C8 and combine into the single projection)
 
 \end{itemize}
 
@@ -359,7 +361,7 @@ Each example in the \verb#examples/# directory contains example \castep\ input f
 See  \verb#examples/Si2_DOS/#.  This is a simple example of using \optados\ for calculating electronic density of states.  We choose to recalculate the Fermi level using the calculated DOS, rather than use the Fermi level suggested by \castep. The DOS is outputted to {\tt Si2.adaptive.dat}. A file suitable for plotting using {\tt xmgrace} is written to {\tt Si2.adaptive.agr}.  If {\tt TASK : compare\_dos} is used instead, \optados\ will calculate DOS using all the broadening methods, this is good practice to see whether the broadening widths are appropriate before more advanced tasks are carried out, such as JDOS, core and optical calculations.
 
 \section{PDOS}
-See  \verb#examples/Si2_PDOS/#. This is a simple example of using \optados\ for calculating partial electronic density of states. We choose to decompse the DOS into angular momentum channels ({\tt PDOS : angular}). We choose to recalculate the Fermi level using the calculated DOS, rather than use the Fermi level suggested by \castep.  The output can be found in {\tt Si2.pdos.dat}. Other things to try are:
+See  \verb#examples/Si2_PDOS/#. This is a simple example of using \optados\ for calculating partial electronic density of states. We choose to decompose the DOS into angular momentum channels ({\tt PDOS : angular}). We choose to recalculate the Fermi level using the calculated DOS, rather than use the Fermi level suggested by \castep.  The output can be found in {\tt Si2.pdos.dat}. Other things to try are:
 \begin{itemize}
 \item[{\bf --}]  \verb#PDOS : Si1;Si2(s)#  -- Output the PDOS on Si atom 1 and the PDOS on the s-channel of Si atom 2. (Resulting in two projectors)
 \item[{\bf --}]  \verb#PDOS : sum:Si1-2(s)#  --  Output the sum of the s-channels on the two Si atoms. (Resulting in one projector)
@@ -373,3 +375,5 @@ See  \verb#examples/Si2_JDOS/#. This is a simple example of using \optados\ for 
 
 
 \end{document}
+
+% LocalWords:  odi jdos dos

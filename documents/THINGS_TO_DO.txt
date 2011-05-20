@@ -1,24 +1,6 @@
 Things To Do
 ============
 
-AJM
-
-RJN
-* Finish Optics
-* Think about spin and jdos
-
-JRY
-
-CJP
-* Quados
-
-Developer Notes
-===============
-
-1 Normal
-2 "Progress Report"
-3 Full Debug for developers
-
 
 =================
 Post beta release
@@ -36,7 +18,7 @@ Core-loss
 Optics
 ------
 
- Metalic system - proper treatment of intra-band term
+ Metalic systems - proper treatment of intra-band term
 
 
 Pdos
