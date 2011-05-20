@@ -192,3 +192,18 @@ clean:
 	rm -f *.o *.mod *.MOD
 	make -C ./documents clean
 
+dist:
+	 @(tar cf - \
+                ./*.?90 \
+                ./examples/*/*.cell \
+                ./examples/*/*.param \
+                ./examples/*/*.odi \
+                ./documents/*.tex \
+                ./documents/*.pdf \
+		./documents/Makefile \
+		./documents/THINGS_TO_DO.txt \
+                ./Makefile \
+	| gzip -c > \
+		./optados.tar.gz)
+
+
