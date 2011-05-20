@@ -1,4 +1,4 @@
-TASK                   : OPTICS
+TASK                   : SPECTRAL
 PDOS_CALCULATE_WEIGHTS : TRUE
 CUT_OFF_ENERGY         : 200
 IPRINT                 : 1

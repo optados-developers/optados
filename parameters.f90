@@ -121,7 +121,7 @@ contains
     iprint          =  1             ! Verbosity
     call param_get_keyword('iprint',found,i_value=iprint)
 
-    legacy_file_format=.true. 
+    legacy_file_format=.false. 
     call param_get_keyword('legacy_file_format',found,l_value=legacy_file_format)
 
     energy_unit     =  'ev'          !
