@@ -105,6 +105,7 @@ contains
     real(kind=dp) :: time0, time1
     real(kind=dp),intent(in), allocatable, optional  :: matrix_weights(:,:,:,:)
     real(kind=dp),intent(out),allocatable, optional  :: weighted_dos(:,:,:) ! bins.spins, orbitals
+
     !-------------------------------------------------------------------------------
 
     if(.not.(linear.or.adaptive.or.fixed.or.quad)) call io_error (" DOS: No Broadening Set")
@@ -306,12 +307,20 @@ contains
        !-------------------------------------------------------------------------------
     end if
 
+
+    !-------------------------------------------------------------------------------
+    ! D O S   A T   F E R M I  L E V E L   A N A L Y S I S
+    call compute_dos_at_efermi
+    !-------------------------------------------------------------------------------
+
     !-------------------------------------------------------------------------------
     ! B A N D   E N E R G Y   A N A L Y S I S
     ! Now for a bit of crosschecking  band energies
     ! These should all converge to the same number as the number of bins is increased
     if(compute_band_energy) call compute_band_energies
     !-------------------------------------------------------------------------------
+
+
 
     if(on_root) then
        if(dos_per_volume) then
@@ -356,6 +365,61 @@ contains
 
   end subroutine dos_utils_calculate
 
+ !===============================================================================
+  subroutine compute_dos_at_efermi
+ !===============================================================================
+    use od_io,         only : stdout, io_time
+    use od_comms,      only : on_root
+    use od_electronic, only : efermi, nspins
+    use od_parameters, only : fixed, linear, adaptive
+    implicit none
+
+    real(dp) :: time0, time1
+    real(dp) :: dos_at_efermi(1:3,1:nspins) ! Fix,Adapt,Linear
+    integer :: is,i
+
+    time0=io_time()
+    call dos_utils_calculate_at_e(efermi,dos_at_e=dos_at_efermi)
+    
+    if(on_root) then
+       write(stdout,*)
+       write(stdout,'(1x,a78)')  '+----------------------- DOS at Fermi Energy Analysis -----------------------+'
+       write(stdout,'(1x,a1,a46,f8.4,a3,19x,a1)')"|", " Fermi energy used : ", efermi,"eV","|"
+       
+       if(fixed) then 
+          write(stdout,'(1x,a78)') "| From Fixed broadening                                                      |" 
+          do is=1,nspins
+             write(stdout,'(1x,a1,a20,i1,a25,f12.5,a9,9x,a1)') "|","Spin Component : ",is,&
+                  &"  DOS at Fermi Energy : ", dos_at_efermi(1,is)," eln/cell","|"
+          enddo                                                  
+          write(stdout,'(1x,a78)')    '+----------------------------------------------------------------------------+'
+       endif
+           
+       if(adaptive) then 
+          write(stdout,'(1x,a78)') "| From Adaptive broadening                                                   |" 
+          do is=1,nspins
+             write(stdout,'(1x,a1,a20,i1,a25,f12.5,a9,9x,a1)') "|","Spin Component : ",is,&
+                  &"  DOS at Fermi Energy : ", dos_at_efermi(2,is)," eln/cell","|"
+          enddo                                                  
+          write(stdout,'(1x,a78)')    '+----------------------------------------------------------------------------+'
+       endif
+
+       if(linear) then 
+          write(stdout,'(1x,a78)') "| From Linear broadening                                                     |" 
+          do is=1,nspins
+             write(stdout,'(1x,a1,a20,i1,a25,f12.5,a9,9x,a1)') "|","Spin Component : ",is,&
+                  &"  DOS at Fermi Energy : ", dos_at_efermi(3,is)," eln/cell","|"
+          enddo                                                  
+          write(stdout,'(1x,a78)')    '+----------------------------------------------------------------------------+'
+       endif
+  
+       time1=io_time()
+       write(stdout,'(1x,a40,f11.3,a)') 'Time to calculate DOS at Fermi energy ',time1-time0,' (sec)'
+       !-------------------------------------------------------------------------------
+    end if
+ 
+  end subroutine compute_dos_at_efermi
+  
 
   !===============================================================================
   function calc_band_energies(dos)
@@ -1113,10 +1177,10 @@ contains
     ! Written by : A J Morris December 2010
     !=============================================================================== 
     use od_io,        only : stdout,io_time,io_error
-    use od_comms,     only : on_root
+    use od_comms,     only : on_root,my_node_id
     use od_electronic,only : band_gradient,nspins,elec_read_band_gradient
     use od_parameters,only : linear, adaptive, fixed, quad, iprint
-    use od_cell,      only : nkpoints
+    use od_cell,      only : nkpoints,num_kpoints_on_node
     implicit none
 
     !-------------------------------------------------------------------------------
@@ -1125,11 +1189,13 @@ contains
     real(kind=dp),intent(in), allocatable, optional  :: matrix_weights(:,:,:,:)
     real(kind=dp),intent(out),allocatable, optional  :: weighted_dos_at_e(:,:) ! spins, orbitals
     real(kind=dp),intent(in) :: energy
-    real(kind=dp),intent(out) :: dos_at_e(nspins) ! spins
+    real(kind=dp),intent(out) :: dos_at_e(1:3,nspins) ! fixed, adaptive, linear : spins
     !-------------------------------------------------------------------------------
 
     if(.not.(linear.or.adaptive.or.fixed.or.quad)) call io_error (" DOS: No Broadening Set")
 
+
+    
 
     calc_weighted_dos=.false.
     if(present(matrix_weights)) calc_weighted_dos=.true.
@@ -1144,7 +1210,8 @@ contains
 
     if(calc_weighted_dos) then 
        if(mw%nspins.ne.nspins)     call io_error ("ERROR : DOS :  mw%nspins not equal to nspins.")
-       if(mw%nkpoints.ne.nkpoints) call io_error ("ERROR : DOS : mw%nkpoints not equal to nkpoints.")
+       if(mw%nkpoints.ne.num_kpoints_on_node(my_node_id)) &
+            & call io_error ("ERROR : DOS : mw%nkpoints not equal to nkpoints.")
     endif
 
     !-------------------------------------------------------------------------------
@@ -1162,25 +1229,52 @@ contains
 
     if(on_root.and.(iprint>1)) write(stdout,*)
 
-
-    if(calc_weighted_dos)then 
-       call calculate_dos_at_e(energy,dos_at_e, matrix_weights=matrix_weights, &
-            &weighted_dos_at_e=weighted_dos_at_e) 
-       call dos_utils_merge_at_e(dos_at_e,weighted_dos_at_e=weighted_dos_at_e)    
-    else
-       call calculate_dos_at_e(energy,dos_at_e)
-       call dos_utils_merge_at_e(dos_at_e) 
+    if(fixed) then
+       if(calc_weighted_dos.and.(.not.adaptive).and.(.not.linear))then 
+          call calculate_dos_at_e("f",energy, dos_at_e(1,:), matrix_weights=matrix_weights, &
+               &weighted_dos_at_e=weighted_dos_at_e) 
+          call dos_utils_merge_at_e(dos_at_e(1,:),weighted_dos_at_e=weighted_dos_at_e)    
+       else
+          call calculate_dos_at_e("f",energy,dos_at_e(1,:))
+          call dos_utils_merge_at_e(dos_at_e(1,:)) 
+       endif
     endif
+    if(adaptive) then
+       if(calc_weighted_dos.and.(.not.adaptive))then 
+          call calculate_dos_at_e("a",energy, dos_at_e(2,:), matrix_weights=matrix_weights, &
+               &weighted_dos_at_e=weighted_dos_at_e) 
+          call dos_utils_merge_at_e(dos_at_e(2,:),weighted_dos_at_e=weighted_dos_at_e)    
+       else
+          call calculate_dos_at_e("a",energy,dos_at_e(2,:))
+          call dos_utils_merge_at_e(dos_at_e(2,:)) 
+       endif
+    endif
+    if(linear) then
+       if(calc_weighted_dos)then 
+          call calculate_dos_at_e("l",energy, dos_at_e(3,:), matrix_weights=matrix_weights, &
+               &weighted_dos_at_e=weighted_dos_at_e) 
+          call dos_utils_merge_at_e(dos_at_e(3,:),weighted_dos_at_e=weighted_dos_at_e)    
+       else
+          call calculate_dos_at_e("l",energy,dos_at_e(3,:))
+          call dos_utils_merge_at_e(dos_at_e(3,:)) 
+       endif
+    endif
+       ! if(quad) then
+   
+   !  
+   ! endif
+
+
 
     time1=io_time()
-    if(on_root)  write(stdout,'(1x,a40,f11.3,a)') 'Time to calculate dos  ',time1-time0,' (sec)'
+    if(on_root)  write(stdout,'(1x,a40,f11.3,a)') 'Time to calculate dos at e ',time1-time0,' (sec)'
     !-------------------------------------------------------------------------------
 
   end subroutine dos_utils_calculate_at_e
 
 
   !===============================================================================
-  subroutine calculate_dos_at_e(energy, dos_at_e, matrix_weights, weighted_dos_at_e)
+  subroutine calculate_dos_at_e(dos_type,energy, dos_at_e, matrix_weights, weighted_dos_at_e)
     !===============================================================================
     ! Once everything is set up this is the main workhorse of the module.
     ! It accumulates the DOS and WDOS be looping over spins, kpoints and bands.
@@ -1210,9 +1304,9 @@ contains
     use od_algorithms, only : gaussian
     use od_cell,       only : kpoint_grid_dim,kpoint_weight,num_kpoints_on_node
     use od_electronic, only : band_gradient, electrons_per_state, nbands,nspins,band_energy
-    use od_parameters, only : linear,fixed,adaptive,adaptive_smearing,fixed_smearing&
+    use od_parameters, only : adaptive_smearing,fixed_smearing&
          &,finite_bin_correction,iprint
-    use od_io,         only : stdout
+    use od_io,         only : stdout,io_error
     use od_comms,      only : my_node_id,on_root
 
     implicit none
@@ -1221,24 +1315,49 @@ contains
     real(kind=dp) :: dos_temp, cuml, intdos_accum, width
     real(kind=dp) :: grad(1:3), step(1:3), EV(0:4)
 
+    character(len=1), intent(in)                    :: dos_type
     real(kind=dp),intent(out),allocatable, optional :: weighted_dos_at_e(:,:)  
     real(kind=dp),intent(in),              optional :: matrix_weights(:,:,:,:)
     real(kind=dp),intent(in) :: energy 
     real(kind=dp),intent(out) :: dos_at_e(nspins)
 
+
+    logical :: linear,fixed,adaptive
+
+    linear=.false.
+    fixed=.false.
+    adaptive=.false.
+
+    select case (dos_type)
+    case ("l")
+       linear=.true.
+    case("a")
+       adaptive=.true.
+    case("f")
+       fixed=.true.
+    case default
+       call io_error (" ERROR : unknown dos_type in calculate_dos ")
+    end select
+
+    dos_at_e=0.0_dp
+
     if(linear.or.adaptive) step(:) = 1.0_dp/real(kpoint_grid_dim(:),dp)/2.0_dp
     if(adaptive) adaptive_smearing=adaptive_smearing*sum(step(:))/3
     if(fixed) width=fixed_smearing
 
-    weighted_dos_at_e=0.0_dp
+    if(calc_weighted_dos) weighted_dos_at_e=0.0_dp
+
 
     do ik=1,num_kpoints_on_node(my_node_id)
+
        if(iprint>1.and.on_root) then
           if (mod(real(ik,dp),10.0_dp) == 0.0_dp) write(stdout,'(a40,i4,a3,i4,a14,21x,a7)') &
                &"Calculating k-point ", ik, " of", num_kpoints_on_node(my_node_id)," on this node.","<-- DOS"
        endif
        do is=1,nspins
+  
           do ib=1,nbands
+
              if(linear.or.adaptive) grad(:) = real(band_gradient(ib,ib,:,ik,is),dp)
              if(linear) call doslin_sub_cell_corners(grad,step,band_energy(ib,is,ik),EV)
              if(adaptive) width = sqrt(dot_product(grad,grad))*adaptive_smearing

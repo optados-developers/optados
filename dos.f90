@@ -42,12 +42,15 @@ module od_dos
     &intdos_adaptive, dos_linear, intdos_linear
     use od_parameters,only : fixed,adaptive,linear
     use od_comms,     only : on_root
+    use od_electronic,only : nspins,efermi
        
        
     real(dp) :: time0, time1
-       
+ 
     call dos_utils_calculate   ! Will return if this has already been done.
        
+
+    
     ! W R I T E   O U T   D O S  
        time0=io_time()
        ! Otherwise we have written to wdos and dos, so they can be called 
