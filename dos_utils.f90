@@ -95,7 +95,8 @@ contains
     use od_electronic,only : band_gradient,band_energy, efermi, efermi_castep,nspins, &
          & elec_read_band_gradient, unshifted_efermi
     use od_parameters,only : linear, adaptive, fixed, quad, compute_band_energy, &
-         & compute_efermi,dos_per_volume,fermi_energy,iprint,set_efermi_zero
+         & compute_efermi,dos_per_volume,fermi_energy,iprint,set_efermi_zero, &
+         & compute_band_gap
     use od_cell,         only : cell_volume, num_kpoints_on_node
 
     implicit none
@@ -314,7 +315,8 @@ contains
     
     !-------------------------------------------------------------------------------
     ! B A N D  G A P  A N A L Y S I S
-    if(on_root) call compute_bandgap
+    ! The compute_dos_at_efermi routine may have set compute_band_gap to true
+    if(on_root.and.compute_band_gap) call compute_bandgap
     !-------------------------------------------------------------------------------
 
 
@@ -376,7 +378,7 @@ contains
     use od_io,         only : stdout, io_time
     use od_comms,      only : on_root
     use od_electronic, only : efermi, nspins
-    use od_parameters, only : fixed, linear, adaptive, iprint
+    use od_parameters, only : fixed, linear, adaptive, iprint,compute_band_gap, dos_zero_tol
     implicit none
 
     real(dp) :: time0, time1
@@ -392,6 +394,7 @@ contains
     
     call dos_utils_calculate_at_e(efermi,dos_at_e=dos_at_efermi)
     
+    
     if(on_root) then
        write(stdout,*)
        write(stdout,'(1x,a71)')  '+----------------------- DOS at Fermi Energy Analysis ----------------+'
@@ -402,15 +405,17 @@ contains
           do is=1,nspins
              write(stdout,'(1x,a1,a20,i1,a25,f8.4,a9,6x,a8)') "|","Spin Component : ",is,&
                   &"  DOS at Fermi Energy : ", dos_at_efermi(1,is)," eln/cell","| <- DEF"
-          enddo                                                  
+             if(dos_at_efermi(1,is) < dos_zero_tol) compute_band_gap=.true.
+          enddo
           write(stdout,'(1x,a71)')    '+---------------------------------------------------------------------+'
        endif
-           
+     
        if(adaptive) then 
           write(stdout,'(1x,a71)') "| From Adaptive broadening                                            |" 
           do is=1,nspins
              write(stdout,'(1x,a1,a20,i1,a25,f8.4,a9,6x,a8)') "|","Spin Component : ",is,&
                   &"  DOS at Fermi Energy : ", dos_at_efermi(2,is)," eln/cell","| <- DEA"
+             if(dos_at_efermi(2,is) < dos_zero_tol) compute_band_gap=.true.
           enddo                                                  
           write(stdout,'(1x,a71)')    '+---------------------------------------------------------------------+'
        endif
@@ -420,11 +425,12 @@ contains
           do is=1,nspins
              write(stdout,'(1x,a1,a20,i1,a25,f8.4,a9,6x,a8)') "|","Spin Component : ",is,&
                   &"  DOS at Fermi Energy : ", dos_at_efermi(3,is)," eln/cell","| <- DEL"
+             if(dos_at_efermi(3,is) < dos_zero_tol) compute_band_gap=.true.
           enddo                                                  
           write(stdout,'(1x,a71)')    '+---------------------------------------------------------------------+'
        endif
   
-       time1=io_time()
+        time1=io_time()
        write(stdout,'(1x,a40,f11.3,a)') 'Time to calculate DOS at Fermi energy ',time1-time0,' (sec)'
        !-------------------------------------------------------------------------------
     end if
@@ -438,7 +444,7 @@ contains
     ! Modified from LINDOS -- AJM 3rd June 2011
     use od_electronic, only : nspins, nbands, efermi, band_energy
     use od_cell,       only : nkpoints
-    use od_io,         only : stdout, io_time
+    use od_io,         only : stdout, io_time, io_error
     use od_parameters, only : iprint
     implicit none
 
@@ -451,18 +457,13 @@ contains
     
     real(dp) :: time0, time1
     
-    integer :: ik, is, ib
+    integer :: ik, is, ib, ierr, i 
     logical :: direct_gap
     
-    type(band_gap)              :: bandgap
+    type(band_gap),allocatable   :: bandgap(:)
     
     time0=io_time()
-    ! AJM
-    bandgap%cbm=huge(1.0_dp)
-    bandgap%vbm=-huge(1.0_dp)
-    bandgap%vk=-1
-    bandgap%ck=-1
-    
+       
     if(iprint>2) then
        write(stdout,*)
        write(stdout,'(1x,a46)') "Finding an estimate of the maximum bandgap..."
@@ -470,56 +471,74 @@ contains
     
    ! EV ( ib,is,ik) ==> band_energy(:,:,:)
     
-    do ik=1,nkpoints
-       do is=1,nspins
+    allocate(bandgap(1:nspins), stat=ierr)
+    if (ierr/=0) call io_error('Error allocating bandgap in dos_utils: compute_bandgap')
+   
+    write (stdout,*)
+    write (stdout,'(1x,a71)')  '+----------------------------- Bandgap Analysis ----------------------+'
+    do is=1,nspins
+       bandgap(is)%vk=-1
+       bandgap(is)%ck=-1
+       bandgap(is)%cbm=huge(1.0_dp)
+       bandgap(is)%vbm=-huge(1.0_dp)
+ 
+       if(nspins>1)  write (stdout,'(1x,a1,a20,i1,48x,a1)')  '|','Spin Component : ', is, '|'
+       do ik=1,nkpoints          
           do ib=1,nbands
              if(band_energy(ib,is,ik).gt.efermi) then
-                if(band_energy(ib,is,ik).lt.bandgap%cbm) then
-                   bandgap%cbm = band_energy(ib,is,ik)
-                   bandgap%ck(1)=ib
-                   bandgap%ck(2)=is
-                   bandgap%ck(3)=ik
-                   if(iprint>2) write(stdout,'(5x,e12.6,3x,e12.6,3x,e12.6,3x,i4,3x,i4,3x,i4,3x,a8)') &
-                        & bandgap%cbm, bandgap%vbm, (bandgap%cbm-bandgap%vbm),ib,is,ik, " <-- BG "
+                if(band_energy(ib,is,ik).lt.bandgap(is)%cbm) then
+                   bandgap(is)%cbm = band_energy(ib,is,ik)
+                   bandgap(is)%ck(1)=ib
+                   bandgap(is)%ck(2)=is
+                   bandgap(is)%ck(3)=ik
+                   if(iprint>2) write(stdout,'(1x,a4,e12.6,3x,e12.6,3x,e12.6,3x,i4,3x,i4,3x,i4,3x,a8)') &
+                        & "|   ",bandgap(is)%cbm, bandgap(is)%vbm, (bandgap(is)%cbm-bandgap(is)%vbm),&
+                        &ib,is,ik, " <-- BG "
                 end if
              end if
              
              if(band_energy(ib,is,ik).lt.efermi) then
-                if(band_energy(ib,is,ik).gt.bandgap%vbm) then
-                   bandgap%vbm = band_energy(ib,is,ik)
-                   bandgap%vk(1)=ib
-                   bandgap%vk(2)=is
-                   bandgap%vk(3)=ik
-                   if(iprint>2) write(stdout,'(5x,e12.6,3x,e12.6,3x,e12.6,3x,i4,3x,i4,3x,i4,3x,a8)') &
-                        &bandgap%cbm, bandgap%vbm, (bandgap%cbm-bandgap%vbm),ib,is,ik, " <-- BG "  
+                if(band_energy(ib,is,ik).gt.bandgap(is)%vbm) then
+                   bandgap(is)%vbm = band_energy(ib,is,ik)
+                   bandgap(is)%vk(1)=ib
+                   bandgap(is)%vk(2)=is
+                   bandgap(is)%vk(3)=ik
+                   if(iprint>2) write(stdout,'(1x,a4,e12.6,3x,e12.6,3x,e12.6,3x,i4,3x,i4,3x,i4,3x,a8)') &
+                        &"|   ",bandgap(is)%cbm, bandgap(is)%vbm, (bandgap(is)%cbm-bandgap(is)%vbm),&
+                        &ib,is,ik, " <-- BG "  
                 end if
              end if
           end do
        end do
-    end do
+       
+       
 
-    write (stdout,*)
-    write (stdout,'(1x,a71)')  '+----------------------------- Bandgap Analysis ----------------------+'
-    write (stdout,'(1x,a1,7x,30x,a7,a7,a7,a12)') "|",  "Band","Spin","Kpoint","|"
-    write (stdout,'(1x,a1,7x,a30,i4,3x,i4,3x,i4,3x,a12)') "|","Valence Band Maximum:",&
-         & bandgap%vk(1),bandgap%vk(2),bandgap%vk(3), "|"
-    write (stdout,'(1x,a1,7x,a30,i4,3x,i4,3x,i4,3x,a12)') "|","Conduction Band Minimum:", &
-         & bandgap%ck(1),bandgap%ck(2),bandgap%ck(3), "|"
- 
-    
-    if(bandgap%vk(3)==bandgap%ck(3)) then
-       write (stdout,'(1x,a71)') '|          ==> Direct Gap                                             |'  
-        direct_gap=.true.
-    else
-       write (stdout,'(1x,a71)') '|          ==> Indirect Gap                                           |'
-       direct_gap=.false. 
-    endif
+       write (stdout,'(1x,a1,7x,30x,a7,a7,a7,a12)') "|",  "Band","Spin","Kpoint","|"
+       write (stdout,'(1x,a1,7x,a30,i4,3x,i4,3x,i4,3x,a12)') "|","Valence Band Maximum:",&
+            & bandgap(is)%vk(1),bandgap(is)%vk(2),bandgap(is)%vk(3), "|"
+       write (stdout,'(1x,a1,7x,a30,i4,3x,i4,3x,i4,3x,a12)') "|","Conduction Band Minimum:", &
+            & bandgap(is)%ck(1),bandgap(is)%ck(2),bandgap(is)%ck(3), "|"
+       
+       
+       if(bandgap(is)%vk(3)==bandgap(is)%ck(3)) then
+          write (stdout,'(1x,a71)') '|          ==> Direct Gap                                             |'  
+          direct_gap=.true.
+       else
+          write (stdout,'(1x,a71)') '|          ==> Indirect Gap                                           |'
+          direct_gap=.false. 
+       endif
+       
+       write (stdout,'(1x,a1,a37,f15.10,1x,a3,13x,8a)') "|",'Maximum Band gap : ',&
+            & bandgap(is)%cbm-bandgap(is)%vbm, " eV ", "| <- BGa"
+       
+    enddo
+    write(stdout,'(1x,a71)')    '+---------------------------------------------------------------------+'  
 
-   write (stdout,'(1x,a1,a37,f15.10,1x,a3,13x,8a)') "|",'Band gap : ', bandgap%cbm-bandgap%vbm, " eV ", "| <- BGa"
+    if(allocated(bandgap)) deallocate(bandgap,stat=ierr)
+    if (ierr/=0) call io_error (" ERROR : dos : compute_bandgap : cannot deallocate bandgap")
 
-   write(stdout,'(1x,a71)')    '+---------------------------------------------------------------------+'  
-   time1=io_time()
-   write(stdout,'(1x,a40,f11.3,a)') 'Time to calculate Bandgap ',time1-time0,' (sec)'
+    time1=io_time()
+    write(stdout,'(1x,a40,f11.3,a)') 'Time to calculate Bandgap ',time1-time0,' (sec)'
   end subroutine compute_bandgap
   !===============================================================================
 

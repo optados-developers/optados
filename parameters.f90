@@ -55,7 +55,9 @@ module od_parameters
   real(kind=dp),     public, save :: fermi_energy
   logical,           public, save :: compute_efermi
   logical,           public, save :: finite_bin_correction
-  logical,           public, save :: numerical_intdos 
+  logical,           public, save :: numerical_intdos
+  logical,           public, save :: compute_band_gap
+  real(kind=dp),     public, save :: dos_zero_tol ! The DOS is assumed to be zero if less than this
 
   logical,           public, save :: set_efermi_zero  ! Set fermi level to zero in dos plot default true
   real(kind=dp),     public, save :: dos_min_energy
@@ -256,6 +258,12 @@ contains
 
     compute_efermi        = .false.
     call param_get_keyword('compute_efermi',found,l_value=compute_efermi)
+
+    compute_band_gap        = .false.
+    call param_get_keyword('compute_band_gap',found,l_value=compute_band_gap)
+
+    dos_zero_tol          = 0.01_dp !! change
+    call param_get_keyword('dos_zero_tol',found,r_value=dos_zero_tol)
 
     devel_flag=' '
     call param_get_keyword('devel_flag',found,c_value=devel_flag)
