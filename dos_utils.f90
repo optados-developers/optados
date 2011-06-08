@@ -109,8 +109,7 @@ contains
 
     !-------------------------------------------------------------------------------
 
-    write(*,*) "IN"
-
+ 
     if(.not.(linear.or.adaptive.or.fixed.or.quad)) call io_error (" DOS: No Broadening Set")
 
 
@@ -637,7 +636,7 @@ contains
 
     if(on_root) then
        do j=1,nspins
-          write(stdout,'(1x,a1,a20,i1,a20,f9.5,a4,f9.5,6x,a8)') "|","Spin Component : ",j,&
+          write(stdout,'(1x,a1,a20,i1,a20,f10.5,a4,1x,f10.5,3x,a7)') "|","Spin Component : ",j,&
                &" occupation between ", INTDOS(i,j), "and", INTDOS(idos,j),"| <- Occ"
        enddo
     end if

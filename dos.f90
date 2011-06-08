@@ -48,7 +48,6 @@ module od_dos
     real(dp) :: time0, time1
 
 
-    write(*,*) "OK" 
     call dos_utils_calculate   ! Will return if this has already been done.
        
 
