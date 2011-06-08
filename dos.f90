@@ -2,7 +2,7 @@
 !=============================================================================== 
 module od_dos
   use od_constants, only : dp
-  use od_dos_utils, only : dos_utils_calculate
+  !use od_dos_utils, only : dos_utils_calculate
   implicit none
   
     !-------------------------------------------------------------------------------
@@ -39,14 +39,16 @@ module od_dos
     !=============================================================================== 
     use od_io,        only : stdout,io_time
     use od_dos_utils, only : E, dos_fixed, intdos_fixed, dos_adaptive, &
-    &intdos_adaptive, dos_linear, intdos_linear
+    &intdos_adaptive, dos_linear, intdos_linear,dos_utils_calculate
     use od_parameters,only : fixed,adaptive,linear
     use od_comms,     only : on_root
     use od_electronic,only : nspins,efermi
        
        
     real(dp) :: time0, time1
- 
+
+
+    write(*,*) "OK" 
     call dos_utils_calculate   ! Will return if this has already been done.
        
 

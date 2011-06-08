@@ -104,10 +104,12 @@ contains
     !-------------------------------------------------------------------------------
     ! I N T E R N A L   V A R I A B L E S
     real(kind=dp) :: time0, time1
-    real(kind=dp),intent(in), allocatable, optional  :: matrix_weights(:,:,:,:)
-    real(kind=dp),intent(out),allocatable, optional  :: weighted_dos(:,:,:) ! bins.spins, orbitals
+    real(kind=dp),  allocatable, optional  :: matrix_weights(:,:,:,:)
+    real(kind=dp), allocatable, optional  :: weighted_dos(:,:,:) ! bins.spins, orbitals
 
     !-------------------------------------------------------------------------------
+
+    write(*,*) "IN"
 
     if(.not.(linear.or.adaptive.or.fixed.or.quad)) call io_error (" DOS: No Broadening Set")
 
@@ -871,7 +873,7 @@ contains
     real(kind=dp), allocatable, intent(inout)  :: dos(:,:)
     real(kind=dp), allocatable, intent(inout)  :: intdos(:,:)
 
-    real(kind=dp),intent(out),optional,allocatable    :: w_dos(:,:,:) ! bins.spins, orbitals 
+    real(kind=dp),optional,allocatable    :: w_dos(:,:,:) ! bins.spins, orbitals 
 
     integer :: ierr 
 
@@ -968,8 +970,10 @@ contains
     real(kind=dp) :: grad(1:3), step(1:3), EV(0:4)
 
     character(len=1), intent(in)                    :: dos_type
-    real(kind=dp),intent(out),allocatable, optional :: weighted_dos(:,:,:)  
-    real(kind=dp),intent(in),              optional :: matrix_weights(:,:,:,:)
+
+    real(kind=dp),allocatable, optional :: weighted_dos(:,:,:)  
+    real(kind=dp),             optional :: matrix_weights(:,:,:,:)
+
 
     real(kind=dp),intent(out),allocatable :: dos(:,:), intdos(:,:)
 
@@ -1307,8 +1311,8 @@ contains
     !-------------------------------------------------------------------------------
     ! I N T E R N A L   V A R I A B L E S
     real(kind=dp) :: time0, time1
-    real(kind=dp),intent(in), allocatable, optional  :: matrix_weights(:,:,:,:)
-    real(kind=dp),intent(out),allocatable, optional  :: weighted_dos_at_e(:,:) ! spins, orbitals
+    real(kind=dp),allocatable, optional  :: matrix_weights(:,:,:,:)
+    real(kind=dp),allocatable, optional  :: weighted_dos_at_e(:,:) ! spins, orbitals
     real(kind=dp),intent(in) :: energy
     real(kind=dp),intent(out) :: dos_at_e(1:3,nspins) ! fixed, adaptive, linear : spins
     !-------------------------------------------------------------------------------
@@ -1437,8 +1441,8 @@ contains
     real(kind=dp) :: grad(1:3), step(1:3), EV(0:4)
 
     character(len=1), intent(in)                    :: dos_type
-    real(kind=dp),intent(out),allocatable, optional :: weighted_dos_at_e(:,:)  
-    real(kind=dp),intent(in),              optional :: matrix_weights(:,:,:,:)
+    real(kind=dp), allocatable, optional :: weighted_dos_at_e(:,:)  
+    real(kind=dp),              optional :: matrix_weights(:,:,:,:)
     real(kind=dp),intent(in) :: energy 
     real(kind=dp),intent(out) :: dos_at_e(nspins)
 
@@ -1541,7 +1545,7 @@ contains
     use od_electronic, only : nspins
 
     implicit none
-    real(kind=dp),intent(inout), allocatable, optional :: weighted_dos_at_e(:,:) ! bins.spins, orbitals
+    real(kind=dp), allocatable, optional :: weighted_dos_at_e(:,:) ! bins.spins, orbitals
     real(kind=dp),intent(inout) :: dos(nspins)
 
     call comms_reduce(dos(1),nspins,"SUM")

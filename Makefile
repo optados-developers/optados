@@ -4,21 +4,12 @@
 
 # one of gfortran, g95, ifort, pfg90
 SYSTEM := ifort 
- 
- 
 
 # fast / debug
 BUILD := fast 
- 
 
 # serial / mpi
 COMMS_ARCH := serial 
- 
- 
- 
- 
- 
- 
 
 # Where would you like the executables?
 BIN_DIR=./
@@ -88,7 +79,7 @@ ifeq ($(SYSTEM), pgf90)
    FFLAGS= -byteswapio
    FFLAGS_PARALLEL= -DMPI
    FFLAGS_FAST= -O3
-   FFLAGS_DEBUG= -O0 -C -pg -g 
+   FFLAGS_DEBUG= -O0 -C -pg -g -Mbounds 
    EXTENSION=.pgf90
 endif
 
