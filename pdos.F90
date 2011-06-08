@@ -646,9 +646,9 @@ contains
        do iproj=start_proj,stop_proj
           write(pdos_file,'(1a,a1,a12,i4,a10,50x,a1)') '#','|', ' Column: ',iproj, ' contains:', '|'
           write(pdos_file,'(1a,a1,a16,10x,a14,5x,a15,16x,a1)') '#','|', ' Atom ', ' AngM Channel ', ' Spin Channel ', '|'
-          do iam=1,max_am
-             do ispecies_num=1,maxval(atoms_species_num)
-                do  ispecies=1,num_species   
+             do  ispecies=1,num_species   
+                do ispecies_num=1,atoms_species_num(ispecies)
+                   do iam=1,max_am
                    if(pdos_projection_array(ispecies,ispecies_num,iam,iproj)==1) then
                       write(pdos_file,'(1a,a1,a13,i3,a18,16x,a2,24x,1a)') "#","|", pdos_symbol(ispecies), &
                            &ispecies_num, channel_to_am(iam),'Up','|'
@@ -661,9 +661,9 @@ contains
        do iproj=1,start_proj,stop_proj
           write(pdos_file,'(1a,a1,a12,i4,a10,50x,a1)') '#','|', ' Column: ',iproj+num_proj, ' contains:', '|'
           write(pdos_file,'(1a,a1,a16,10x,a14,5x,a15,16x,a1)') '#','|', ' Atom ', ' AngM Channel ', ' Spin Channel ', '|'
-          do iam=1,max_am
-             do ispecies_num=1,maxval(atoms_species_num)
-                do  ispecies=1,num_species   
+          do  ispecies=1,num_species   
+             do ispecies_num=1,atoms_species_num(ispecies)
+                do iam=1,max_am
                    if(pdos_projection_array(ispecies,ispecies_num,iam,iproj)==1) then
                       write(pdos_file,'(1a,a1,a13,i3,a18,15x,a4,23x,1a)') "#","|", pdos_symbol(ispecies), &
                            &ispecies_num, channel_to_am(iam),'Down','|'
@@ -683,9 +683,9 @@ contains
        do iproj=start_proj,stop_proj
           write(pdos_file,'(1a,a1,a12,i4,a10,50x,a1)') '#','|', ' Projector: ',iproj, ' contains:', '|'
           write(pdos_file,'(1a,a1,a16,10x,a14,36x,a1)') '#','|', ' Atom ', ' AngM Channel ', '|'
-          do iam=1,max_am
-             do ispecies_num=1,maxval(atoms_species_num)
-                do  ispecies=1,num_species   
+          do  ispecies=1,num_species   
+             do ispecies_num=1,atoms_species_num(ispecies)
+                do iam=1,max_am
                    if(pdos_projection_array(ispecies,ispecies_num,iam,iproj)==1) then
                       write(pdos_file,'(1a,a1,a13,i3,a18,42x,a1)') "#","|", pdos_symbol(ispecies), &
                            &ispecies_num, channel_to_am(iam),'|' 
@@ -719,9 +719,10 @@ contains
     do iproj=1,num_proj
        write(stdout,'(1x,a1,a12,i4,a10,50x,a1)') '|', ' Projector: ',iproj, ' contains:', '|'
        write(stdout,'(1x,a1,a16,10x,a14,36x,a1)') '|', ' Atom ', ' AngM Channel ', '|'
-       do iam=1,max_am
-          do ispecies_num=1,maxval(atoms_species_num)
-             do  ispecies=1,num_species   
+     
+       do  ispecies=1,num_species 
+          do ispecies_num=1,atoms_species_num(ispecies)
+             do iam=1,max_am
                 if(pdos_projection_array(ispecies,ispecies_num,iam,iproj)==1) then
                    write(stdout,'(1x,a1,a13,i3,a18,42x,a1)') "|", pdos_symbol(ispecies), &
                         ispecies_num, channel_to_am(iam),'|' !, " |  DEBUG :",  ispecies ,iam
@@ -732,7 +733,7 @@ contains
        write(stdout,'(1x,a)') '+----------------------------------------------------------------------------+'
     enddo
   end subroutine pdos_report_projectors
-
+  
 !!$!===============================================================================
 !!$ subroutine count_atoms(orbital,num_orbitals,num_atoms)
 !!$!===============================================================================
