@@ -546,8 +546,6 @@ contains
           bandenergies_of_extrema     =0.0_dp
           kpoints_of_extrema(:,0)     =k_of_e_local
           bandenergies_of_extrema(:,0)=be_of_e_local
-          write(*,*) "on node", inode, be_of_e_local
-          write(*,*) "on node", inode, k_of_e_local
        endif
 
 

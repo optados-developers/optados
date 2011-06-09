@@ -12,7 +12,7 @@ program optados
   ! Written by Andrew Morris, Rebecca Nicholls, Chris Pickard               ! 
   !             and Jonathan Yates      2010                                !
   !=========================================================================!
-  use od_comms, only  : comms_setup,on_root,comms_end
+  use od_comms, only  : comms_setup,on_root,comms_end,num_nodes
   use od_constants, only : dp
   use od_io, only     : io_get_seedname, io_time, io_date, io_file_unit,&! Functions
        & stdout, stderr, seedname                                            ! Variables
@@ -64,6 +64,7 @@ program optados
      stdout=io_file_unit()
      open(unit=stdout,file=trim(seedname)//'.odo',status=trim(stat),position=trim(pos))
      write(stdout,*)  'OptaDOS: Execution started on ',cdate,' at ',ctime
+     write(stdout,'(1x,a26,i5,a10)')  'Parallelised over', num_nodes, ' thread(s)'
      call param_write_header()
      call param_write()
      time1=io_time()
