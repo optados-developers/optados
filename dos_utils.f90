@@ -317,7 +317,7 @@ contains
     !-------------------------------------------------------------------------------
     ! B A N D  G A P  A N A L Y S I S
     ! The compute_dos_at_efermi routine may have set compute_band_gap to true
-    if(on_root.and.compute_band_gap) call compute_bandgap
+    if(compute_band_gap) call compute_bandgap
     !-------------------------------------------------------------------------------
 
 
@@ -377,7 +377,7 @@ contains
   subroutine compute_dos_at_efermi
  !===============================================================================
     use od_io,         only : stdout, io_time
-    use od_comms,      only : on_root
+    use od_comms,      only : on_root, comms_bcast
     use od_electronic, only : efermi, nspins
     use od_parameters, only : fixed, linear, adaptive, iprint,compute_band_gap, dos_zero_tol
     implicit none
@@ -435,7 +435,7 @@ contains
        write(stdout,'(1x,a40,f11.3,a)') 'Time to calculate DOS at Fermi energy ',time1-time0,' (sec)'
        !-------------------------------------------------------------------------------
     end if
- 
+    call comms_bcast(compute_band_gap,1)
   end subroutine compute_dos_at_efermi
   
 
@@ -444,9 +444,11 @@ contains
     !===============================================================================
     ! Modified from LINDOS -- AJM 3rd June 2011
     use od_electronic, only : nspins, nbands, efermi, band_energy
-    use od_cell,       only : nkpoints
+    use od_cell,       only : nkpoints,num_kpoints_on_node
     use od_io,         only : stdout, io_time, io_error
     use od_parameters, only : iprint
+    use od_comms,      only : comms_send, comms_recv, comms_reduce, comms_bcast, on_root, my_node_id, &
+         &num_nodes, root_id
     implicit none
 
     type band_gap
@@ -456,16 +458,19 @@ contains
        integer :: ck(1:3)    ! CBM : band, spin, kpoint
     end type band_gap
     
-    real(dp) :: time0, time1
-    
-    integer :: ik, is, ib, ierr, i 
+    real(dp) :: time0, time1, my_cbm, my_vbm, kpoints_before_this_node
+
+    integer :: ik, is, ib, ierr, i, inode, cbm_node, vbm_node, cumulative_kpoint_number
     logical :: direct_gap
     
     type(band_gap),allocatable   :: bandgap(:)
     
+    real(dp)              :: be_of_e_local(1:2), k_of_e_local(1:2)
+    real(dp), allocatable :: bandenergies_of_extrema(:,:), kpoints_of_extrema(:,:)
+
     time0=io_time()
        
-    if(iprint>2) then
+    if(on_root.and.(iprint>2)) then
        write(stdout,*)
        write(stdout,'(1x,a46)') "Finding an estimate of the maximum bandgap..."
     endif
@@ -475,16 +480,19 @@ contains
     allocate(bandgap(1:nspins), stat=ierr)
     if (ierr/=0) call io_error('Error allocating bandgap in dos_utils: compute_bandgap')
    
-    write (stdout,*)
-    write (stdout,'(1x,a71)')  '+----------------------------- Bandgap Analysis ----------------------+'
+    if(on_root) then
+       write (stdout,*)
+       write (stdout,'(1x,a71)')  '+----------------------------- Bandgap Analysis ----------------------+'
+    endif
+    
     do is=1,nspins
        bandgap(is)%vk=-1
        bandgap(is)%ck=-1
        bandgap(is)%cbm=huge(1.0_dp)
        bandgap(is)%vbm=-huge(1.0_dp)
- 
-       if(nspins>1)  write (stdout,'(1x,a1,a20,i1,48x,a1)')  '|','Spin Component : ', is, '|'
-       do ik=1,nkpoints          
+       
+       if(on_root.and.(nspins>1))  write (stdout,'(1x,a1,a20,i1,48x,a1)')  '|','Spin Component : ', is, '|'
+       do ik=1,num_kpoints_on_node(my_node_id)       
           do ib=1,nbands
              if(band_energy(ib,is,ik).gt.efermi) then
                 if(band_energy(ib,is,ik).lt.bandgap(is)%cbm) then
@@ -492,7 +500,7 @@ contains
                    bandgap(is)%ck(1)=ib
                    bandgap(is)%ck(2)=is
                    bandgap(is)%ck(3)=ik
-                   if(iprint>2) write(stdout,'(1x,a4,e12.6,3x,e12.6,3x,e12.6,3x,i4,3x,i4,3x,i4,3x,a8)') &
+                   if(on_root.and.(iprint>2)) write(stdout,'(1x,a4,e12.6,3x,e12.6,3x,e12.6,3x,i4,3x,i4,3x,i4,3x,a8)') &
                         & "|   ",bandgap(is)%cbm, bandgap(is)%vbm, (bandgap(is)%cbm-bandgap(is)%vbm),&
                         &ib,is,ik, " <-- BG "
                 end if
@@ -504,7 +512,7 @@ contains
                    bandgap(is)%vk(1)=ib
                    bandgap(is)%vk(2)=is
                    bandgap(is)%vk(3)=ik
-                   if(iprint>2) write(stdout,'(1x,a4,e12.6,3x,e12.6,3x,e12.6,3x,i4,3x,i4,3x,i4,3x,a8)') &
+                   if(on_root.and.(iprint>2)) write(stdout,'(1x,a4,e12.6,3x,e12.6,3x,e12.6,3x,i4,3x,i4,3x,i4,3x,a8)') &
                         &"|   ",bandgap(is)%cbm, bandgap(is)%vbm, (bandgap(is)%cbm-bandgap(is)%vbm),&
                         &ib,is,ik, " <-- BG "  
                 end if
@@ -512,34 +520,95 @@ contains
           end do
        end do
        
+       ! Now merge these
        
+       kpoints_before_this_node=0
+       do inode=0,(my_node_id-1)
+          kpoints_before_this_node=kpoints_before_this_node+num_kpoints_on_node(inode)
+       enddo
 
-       write (stdout,'(1x,a1,7x,30x,a7,a7,a7,a12)') "|",  "Band","Spin","Kpoint","|"
-       write (stdout,'(1x,a1,7x,a30,i4,3x,i4,3x,i4,3x,a12)') "|","Valence Band Maximum:",&
-            & bandgap(is)%vk(1),bandgap(is)%vk(2),bandgap(is)%vk(3), "|"
-       write (stdout,'(1x,a1,7x,a30,i4,3x,i4,3x,i4,3x,a12)') "|","Conduction Band Minimum:", &
-            & bandgap(is)%ck(1),bandgap(is)%ck(2),bandgap(is)%ck(3), "|"
-       
-       
-       if(bandgap(is)%vk(3)==bandgap(is)%ck(3)) then
-          write (stdout,'(1x,a71)') '|          ==> Direct Gap                                             |'  
-          direct_gap=.true.
-       else
-          write (stdout,'(1x,a71)') '|          ==> Indirect Gap                                           |'
-          direct_gap=.false. 
+       be_of_e_local(1)=bandgap(is)%vbm
+       be_of_e_local(2)=bandgap(is)%cbm
+       k_of_e_local(1)=bandgap(is)%vk(3)+kpoints_before_this_node
+       k_of_e_local(2)=bandgap(is)%ck(3)+kpoints_before_this_node
+
+       call comms_reduce(bandgap(is)%cbm,1,'MIN')
+       call comms_bcast(bandgap(is)%cbm,1)
+       call comms_reduce(bandgap(is)%vbm,1,'MAX')
+       call comms_bcast(bandgap(is)%vbm,1)
+
+       if(on_root) then
+          allocate(kpoints_of_extrema(1:2,0:num_nodes-1),stat=ierr)
+          if (ierr/=0) call io_error ("cannot allocate kpoints_of_extrema")
+          allocate(bandenergies_of_extrema(1:2,0:num_nodes-1),stat=ierr)
+          if (ierr/=0) call io_error ("cannot allocate bandenergies_of_extrema")
+          kpoints_of_extrema          =0
+          bandenergies_of_extrema     =0.0_dp
+          kpoints_of_extrema(:,0)     =k_of_e_local
+          bandenergies_of_extrema(:,0)=be_of_e_local
+          write(*,*) "on node", inode, be_of_e_local
+          write(*,*) "on node", inode, k_of_e_local
        endif
+
+
+       do inode=1,(num_nodes-1)
+          if(my_node_id==inode) call comms_send(k_of_e_local(1),2,root_id)
+          if(on_root)           call comms_recv(kpoints_of_extrema(1,inode),2,inode)
+          if(my_node_id==inode) call comms_send(be_of_e_local(1),2,root_id)
+          if(on_root)           call comms_recv(bandenergies_of_extrema(1,inode),2,inode)
+       enddo
        
-       write (stdout,'(1x,a1,a37,f15.10,1x,a3,13x,8a)') "|",'Maximum Band gap : ',&
+       if(on_root) then
+          cumulative_kpoint_number=0
+          do inode=0,(num_nodes-1)
+             if(bandgap(is)%cbm==bandenergies_of_extrema(2,inode)) then
+                bandgap(is)%ck(3)=kpoints_of_extrema(2,inode)-cumulative_kpoint_number
+                cbm_node=inode
+             endif
+             if(bandgap(is)%vbm==bandenergies_of_extrema(1,inode)) then
+                bandgap(is)%vk(3)=kpoints_of_extrema(1,inode)-cumulative_kpoint_number
+                vbm_node=inode
+             endif
+             cumulative_kpoint_number=cumulative_kpoint_number+num_kpoints_on_node(inode)
+          enddo
+          deallocate(kpoints_of_extrema,stat=ierr)
+          if (ierr/=0) call io_error ("cannot deallocate kpoints_of_extrema")
+          deallocate(bandenergies_of_extrema,stat=ierr)
+          if (ierr/=0) call io_error ("cannot deallocate bandenergies_of_extrema")
+      endif
+       
+       if(on_root) then 
+          
+          ! Since each node has the same number of electrons, I'm allowed to just take the number of
+          ! bands on the root node
+          write (stdout,'(1x,a1,7x,30x,a7,a7,a7,a12)') "|","Band","Node","Kpoint","|"
+          write (stdout,'(1x,a1,7x,a30,i4,3x,i4,3x,i4,3x,a12)') "|","Valence Band Maximum:",&
+               & bandgap(is)%vk(1),vbm_node,bandgap(is)%vk(3), "|"
+          write (stdout,'(1x,a1,7x,a30,i4,3x,i4,3x,i4,3x,a12)') "|","Conduction Band Minimum:", &
+               & bandgap(is)%ck(1),cbm_node,bandgap(is)%ck(3), "|"
+          
+          
+          if(bandgap(is)%vk(3)==bandgap(is)%ck(3)) then
+             write (stdout,'(1x,a71)') '|          ==> Direct Gap                                             |'  
+             direct_gap=.true.
+          else
+             write (stdout,'(1x,a71)') '|          ==> Indirect Gap                                           |'
+             direct_gap=.false. 
+          endif
+       endif
+          
+
+       if(on_root)  write (stdout,'(1x,a1,a37,f15.10,1x,a3,13x,8a)') "|",'Maximum Band gap : ',&
             & bandgap(is)%cbm-bandgap(is)%vbm, " eV ", "| <- BGa"
        
     enddo
-    write(stdout,'(1x,a71)')    '+---------------------------------------------------------------------+'  
-
+    if(on_root) write(stdout,'(1x,a71)')    '+---------------------------------------------------------------------+'  
+        
     if(allocated(bandgap)) deallocate(bandgap,stat=ierr)
     if (ierr/=0) call io_error (" ERROR : dos : compute_bandgap : cannot deallocate bandgap")
-
+    
     time1=io_time()
-    write(stdout,'(1x,a40,f11.3,a)') 'Time to calculate Bandgap ',time1-time0,' (sec)'
+    if(on_root) write(stdout,'(1x,a40,f11.3,a)') 'Time to calculate Bandgap ',time1-time0,' (sec)'
   end subroutine compute_bandgap
   !===============================================================================
 
