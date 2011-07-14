@@ -55,8 +55,8 @@ contains
     integer :: ierr
     real(kind=dp) :: time0, time1
 
-    real(kind=dp),intent(out), allocatable, optional    :: weighted_jdos(:,:,:)  !I've added this
-    real(kind=dp),intent(in), optional  :: matrix_weights(:,:,:,:,:)               !I've added this
+    real(kind=dp), allocatable, optional    :: weighted_jdos(:,:,:)  !I've added this
+    real(kind=dp), optional  :: matrix_weights(:,:,:,:,:)               !I've added this
 
     calc_weighted_jdos=.false.
     if(present(matrix_weights)) calc_weighted_jdos=.true.
@@ -382,9 +382,9 @@ contains
     real(kind=dp) :: dos_temp, cuml, width, adaptive_smearing_temp
     real(kind=dp) :: grad(1:3), step(1:3), EV(0:4)
 
-    character(len=1), intent(in)                      :: jdos_type
-    real(kind=dp),intent(inout),allocatable, optional :: weighted_jdos(:,:,:)
-    real(kind=dp),intent(in), optional                :: matrix_weights(:,:,:,:,:)
+    character(len=1), intent(in)        :: jdos_type
+    real(kind=dp), allocatable, optional:: weighted_jdos(:,:,:)
+    real(kind=dp), optional             :: matrix_weights(:,:,:,:,:)
 
     real(kind=dp),intent(out),allocatable :: jdos(:,:)
 
