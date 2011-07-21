@@ -1022,7 +1022,7 @@ contains
     !===============================================================================
     use od_constants,  only : sqrt_two
     use od_algorithms, only : gaussian, algorithms_erf
-    use od_cell,       only : kpoint_grid_dim,kpoint_weight,num_kpoints_on_node
+    use od_cell,       only : kpoint_grid_dim,kpoint_weight,num_kpoints_on_node,recip_lattice
     use od_electronic, only : band_gradient, electrons_per_state, nbands,nspins,band_energy
     use od_parameters, only : adaptive_smearing,fixed_smearing&
          &,finite_bin_correction,iprint,dos_nbins,numerical_intdos 
@@ -1031,9 +1031,10 @@ contains
 
     implicit none
 
-    integer :: ik,is,ib,idos,iorb
+    integer :: ik,is,ib,idos,iorb,i
     real(kind=dp) :: adaptive_smearing_temp,dos_temp, cuml, intdos_accum, width
     real(kind=dp) :: grad(1:3), step(1:3), EV(0:4)
+    real(kind=dp) :: sub_cell_length(1:3)
 
     character(len=1), intent(in)                    :: dos_type
 
@@ -1062,7 +1063,13 @@ contains
 
 
     if(linear.or.adaptive) step(:) = 1.0_dp/real(kpoint_grid_dim(:),dp)/2.0_dp
-    if(adaptive) adaptive_smearing_temp=adaptive_smearing*sum(step(:))/3
+    if(adaptive) then
+       do i= 1,3
+          sub_cell_length(i)=sqrt(recip_lattice(i,1)**2+recip_lattice(i,2)**2+recip_lattice(i,3)**2)*step(i) 
+       enddo
+       adaptive_smearing_temp=adaptive_smearing*sum(sub_cell_length)/3
+    endif
+
     if(fixed) width=fixed_smearing
 
     if(calc_weighted_dos)then
@@ -1493,7 +1500,8 @@ contains
     ! Written by : A J Morris December 2010 Heavliy modified from LinDOS
     !===============================================================================
     use od_algorithms, only : gaussian
-    use od_cell,       only : kpoint_grid_dim,kpoint_weight,num_kpoints_on_node
+    use od_cell,       only : kpoint_grid_dim,kpoint_weight,num_kpoints_on_node, &
+         & recip_lattice
     use od_electronic, only : band_gradient, electrons_per_state, nbands,nspins,band_energy
     use od_parameters, only : adaptive_smearing,fixed_smearing&
          &,finite_bin_correction,iprint
@@ -1502,9 +1510,9 @@ contains
 
     implicit none
 
-    integer :: ik,ib,is,iorb
-    real(kind=dp) :: dos_temp, cuml, intdos_accum, width
-    real(kind=dp) :: grad(1:3), step(1:3), EV(0:4)
+    integer :: ik,ib,is,iorb,i
+    real(kind=dp) :: dos_temp, cuml, intdos_accum, width, adaptive_smearing_temp
+    real(kind=dp) :: grad(1:3), step(1:3), EV(0:4), sub_cell_length(1:3)
 
     character(len=1), intent(in)                    :: dos_type
     real(kind=dp), allocatable, optional :: weighted_dos_at_e(:,:)  
@@ -1533,7 +1541,13 @@ contains
     dos_at_e=0.0_dp
 
     if(linear.or.adaptive) step(:) = 1.0_dp/real(kpoint_grid_dim(:),dp)/2.0_dp
-    if(adaptive) adaptive_smearing=adaptive_smearing*sum(step(:))/3
+    if(adaptive) then
+       do i= 1,3
+          sub_cell_length(i)=sqrt(recip_lattice(i,1)**2+recip_lattice(i,2)**2+recip_lattice(i,3)**2)*step(i) 
+       enddo
+       adaptive_smearing_temp=adaptive_smearing*sum(sub_cell_length)/3
+    endif
+
     if(fixed) width=fixed_smearing
 
     if(calc_weighted_dos) weighted_dos_at_e=0.0_dp
@@ -1551,7 +1565,7 @@ contains
 
              if(linear.or.adaptive) grad(:) = real(band_gradient(ib,ib,:,ik,is),dp)
              if(linear) call doslin_sub_cell_corners(grad,step,band_energy(ib,is,ik),EV)
-             if(adaptive) width = sqrt(dot_product(grad,grad))*adaptive_smearing
+             if(adaptive) width = sqrt(dot_product(grad,grad))*adaptive_smearing_temp
              ! Hybrid Adaptive -- This way we don't lose weight at very flat parts of the
              ! band. It's a kind of fudge that we wouldn't need if we had infinitely small bins.
              if(finite_bin_correction.and.(width<delta_bins)) width = delta_bins

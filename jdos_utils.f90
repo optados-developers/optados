@@ -369,7 +369,8 @@ contains
 
     !===============================================================================
     use od_comms, only : my_node_id, on_root
-    use od_cell, only : num_kpoints_on_node, kpoint_grid_dim,kpoint_weight
+    use od_cell, only : num_kpoints_on_node, kpoint_grid_dim,kpoint_weight,&
+         &recip_lattice
     use od_parameters, only : adaptive_smearing, fixed_smearing, iprint, finite_bin_correction, scissor_op
     use od_io, only : io_error,stdout
     use od_electronic, only : band_gradient,nbands,band_energy,nspins,electrons_per_state
@@ -377,10 +378,10 @@ contains
     use od_algorithms, only : gaussian
     implicit none
 
-    integer :: ik,is,ib,idos,jb
+    integer :: ik,is,ib,idos,jb,i
     integer :: N2,N_geom, ierr
     real(kind=dp) :: dos_temp, cuml, width, adaptive_smearing_temp
-    real(kind=dp) :: grad(1:3), step(1:3), EV(0:4)
+    real(kind=dp) :: grad(1:3), step(1:3), EV(0:4), sub_cell_length(1:3)
 
     character(len=1), intent(in)        :: jdos_type
     real(kind=dp), allocatable, optional:: weighted_jdos(:,:,:)
@@ -407,7 +408,13 @@ contains
 
 
     if(linear.or.adaptive) step(:) = 1.0_dp/real(kpoint_grid_dim(:),dp)/2.0_dp
-    if(adaptive) adaptive_smearing_temp=adaptive_smearing*sum(step(:))/3
+    if(adaptive) then
+       do i= 1,3
+          sub_cell_length(i)=sqrt(recip_lattice(i,1)**2+recip_lattice(i,2)**2+recip_lattice(i,3)**2)*step(i) 
+       enddo
+       adaptive_smearing_temp=adaptive_smearing*sum(sub_cell_length)/3
+    endif
+
     if(fixed) width=fixed_smearing
 
     call allocate_jdos(jdos)
