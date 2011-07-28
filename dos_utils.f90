@@ -383,7 +383,7 @@ contains
 
     real(dp) :: time0, time1
     real(dp) :: dos_at_efermi(1:3,1:nspins) ! Fix,Adapt,Linear
-    integer :: is,i
+    integer :: is
 
     time0=io_time()
     
@@ -456,9 +456,9 @@ contains
        integer :: ck(1:3)    ! CBM : band, spin, kpoint
     end type band_gap
     
-    real(dp) :: time0, time1, my_cbm, my_vbm, kpoints_before_this_node
+    real(dp) :: time0, time1, kpoints_before_this_node
 
-    integer :: ik, is, ib, ierr, i, inode, cbm_node, vbm_node, cumulative_kpoint_number
+    integer :: ik, is, ib, ierr, inode, cbm_node, vbm_node, cumulative_kpoint_number
     logical :: direct_gap
     
     type(band_gap),allocatable   :: bandgap(:)

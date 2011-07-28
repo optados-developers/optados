@@ -1178,7 +1178,7 @@ contains
 
     real(dp) :: min_x, max_x, min_y, max_y
 
-    integer :: batch_file,ierr, array_lengths
+    integer :: batch_file,ierr
 
     batch_file=io_file_unit()
     open(unit=batch_file,file=trim(seedname)//'.'//trim(label%name)//'.agr',iostat=ierr)

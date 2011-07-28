@@ -104,7 +104,7 @@ module od_dos
     integer :: i, dos_file, ierr
     character(len=11) :: cdate
     character(len=9) :: ctime
-    character(len=20) :: dos_units, intdos_units
+    character(len=22) :: dos_units, intdos_units
 
 
     dos_file=io_file_unit()
