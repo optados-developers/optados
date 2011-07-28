@@ -77,6 +77,17 @@ module od_parameters
   ! Optics parameters
   character(len=20), public, save :: optics_geom
   real(kind=dp),     public, save :: optics_qdir(3)
+  logical,           public, save :: optics_intraband 
+  real(kind=dp),     public, save :: optics_drude_broadening 
+
+  ! Core parameters 
+  character(len=20), public, save :: core_geom
+  real(kind=dp),     public, save :: core_qdir(3) 
+  logical,           public, save :: core_LAI_broadening  
+  real(kind=dp),     public, save :: LAI_gaussian_width
+  real(kind=dp),     public, save :: LAI_lorentzian_width
+  real(kind=dp),     public, save :: LAI_lorentzian_scale 
+  real(kind=dp),     public, save :: LAI_lorentzian_offset 
 
   real(kind=dp),     public, save :: lenconfac
 
@@ -116,7 +127,7 @@ contains
     character(len=20), allocatable :: task_string(:)
     character(len=20) :: c_string
 
-    
+
 
     call param_in_file
 
@@ -184,7 +195,7 @@ contains
           linear=.true.
        elseif(index(c_string,'quad')>0) then
           quad=.true.
-!          fixed=.true.;adaptive=.true.;linear=.true. 
+          !          fixed=.true.;adaptive=.true.;linear=.true. 
        else
           call io_error('Error: value of broadening unrecognised in param_read')
        endif
@@ -193,7 +204,7 @@ contains
        fixed=.true.;adaptive=.true.;linear=.true.
     end if
 
-    if(.not.(fixed.or.adaptive.or.linear.or.quad)) then ! Piak a default
+    if(.not.(fixed.or.adaptive.or.linear.or.quad)) then ! Pick a default
        adaptive=.true.
     endif
 
@@ -286,6 +297,38 @@ contains
          call io_error('Error: polarised or unpolarised optics geometry requested but optics_qdir is not set')
     if( (index(optics_geom,'polycrys')>0 .or. index(optics_geom,'tensor')>0) .and. found) &
          call io_error('Error: polycrystalline optics geometry or full dielectric tensor requested but optics_qdir is set')
+
+    optics_intraband    = .false.
+    call param_get_keyword('optics_intraband',found,l_value=optics_intraband)
+
+    optics_drude_broadening          = 1.0e14_dp
+    call param_get_keyword('optics_drude_broadening',found,r_value=optics_drude_broadening)
+
+    core_geom = 'polycrys'
+    call param_get_keyword('core_geom',found,c_value=core_geom)
+
+    core_qdir = 0.0_dp
+    call  param_get_keyword_vector('core_qdir',found,3,r_value=core_qdir)
+    if(index(core_geom,'polar')>0 .and. .not. found) &
+         call io_error('Error: polarised core geometry requested but core_qdir is not set')
+    if(index(core_geom,'polycrys')>0 .and. found) &
+         call io_error('Error: polycrystalline core geometry requested but core_qdir is set')
+
+    core_LAI_broadening   = .false.
+    call param_get_keyword('core_LAI_broadening',found,l_value=core_LAI_broadening)
+
+    LAI_gaussian_width    = 0.0_dp
+    call param_get_keyword('LAI_gaussian_width',found,r_value=LAI_gaussian_width)
+
+    LAI_lorentzian_width    = 0.0_dp
+    call param_get_keyword('LAI_lorentzian_width',found,r_value=LAI_lorentzian_width)
+
+    LAI_lorentzian_scale    = 0.1_dp
+    call param_get_keyword('LAI_lorentzian_scale',found,r_value=LAI_lorentzian_scale)
+
+    LAI_lorentzian_offset    = 0.0_dp
+    call param_get_keyword('LAI_lorentzian_offset',found,r_value=LAI_lorentzian_offset)
+
 
 
     call param_uppercase()
@@ -505,12 +548,12 @@ contains
          write(stdout,'(1x,a78)') '|  Numerical Integration of P/DOS            :  True                         |'        
 
 
-!    write(stdout,'(1x,a78)')    '*----------------------------- Parameters -----------------------------------*'
-!    write(stdout,'(1x,a78)')    '|                                                                            |'
+    !    write(stdout,'(1x,a78)')    '*----------------------------- Parameters -----------------------------------*'
+    !    write(stdout,'(1x,a78)')    '|                                                                            |'
     if(optics) then
        write(stdout,'(1x,a78)')    '*-------------------------------- OPTICS ------------------------------------*'
        if(index(optics_geom,'polycrys')>0) then
-          write(stdout,'(1x,a78)') '|  Geometry for Optics Calculation           :  Polycrytalline               |'        
+          write(stdout,'(1x,a78)') '|  Geometry for Optics Calculation           :  Polycrysalline               |'        
        elseif (index(optics_geom,'unpolar')>0) then
           write(stdout,'(1x,a78)') '|  Geometry for Optics Calculation           :  Unpolarised                  |'        
           write(stdout,'(1x,a47,2x,f6.2,2x,f6.2,2x,f6.2,3x,a4)') '|  Direction of q-vector (un-normalised)     : ' &
@@ -1057,7 +1100,7 @@ contains
   end subroutine param_get_block_length
 
 
-  
+
 
 
   !====================================================================!
@@ -1199,6 +1242,15 @@ contains
     call comms_bcast(scissor_op,1)
     call comms_bcast(optics_geom,len(optics_geom))
     call comms_bcast(optics_qdir(1),3)
+    call comms_bcast(optics_intraband,1)
+    call comms_bcast(optics_drude_broadening,1)
+    call comms_bcast(core_geom,len(core_geom))
+    call comms_bcast(core_qdir(1),3)
+    call comms_bcast(core_LAI_broadening,1)
+    call comms_bcast(LAI_gaussian_width,1)
+    call comms_bcast(LAI_lorentzian_width,1)
+    call comms_bcast(LAI_lorentzian_scale,1)
+    call comms_bcast(LAI_lorentzian_offset,1)
     call comms_bcast(dos_per_volume,1)
     call comms_bcast(dos_min_energy,1)
     call comms_bcast(dos_max_energy,1)

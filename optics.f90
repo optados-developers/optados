@@ -40,8 +40,6 @@ module od_optics
   real(kind=dp) :: e_fermi
   integer :: N
   integer :: N2
-  integer :: drude
-  real(kind=dp) :: broadening 
 
 
   real(kind=dp), parameter :: epsilon_0 = 8.8541878176E-12  ! need to put in correct number
@@ -62,7 +60,8 @@ contains
     use od_cell, only : cell_volume, num_kpoints_on_node 
     use od_jdos_utils, only : jdos_utils_calculate
     use od_comms, only : on_root, my_node_id
-    use od_parameters, only : optics_geom, compute_efermi, adaptive, linear, fixed
+    use od_parameters, only : optics_geom, compute_efermi, adaptive, linear, fixed, optics_intraband, &
+         optics_drude_broadening 
     use od_dos_utils, only : dos_utils_calculate_at_e, efermi_fixed, efermi_adaptive, efermi_linear
     use od_io, only : stdout 
 
@@ -91,10 +90,8 @@ contains
     ! Send matrix element to jDOS routine and get weighted jDOS back
     call jdos_utils_calculate(matrix_weights, weighted_jdos)
 
-    drude = 1 ! 0 - no drude term, 1 - include drude term 
-
     ! Calculate weighted DOS at Ef for intraband term
-    if(drude==1)then
+    if(optics_intraband)then 
        allocate(dos_matrix_weights(size(matrix_weights,5),nbands,num_kpoints_on_node(my_node_id),nspins))
        allocate(dos_at_e(3,nspins))
        allocate(weighted_dos_at_e(nspins,size(matrix_weights,5)))
@@ -413,6 +410,7 @@ contains
     use od_cell, only : nkpoints, cell_volume 
     use od_electronic, only : nspins, electrons_per_state, nbands
     use od_jdos_utils, only : E,jdos_nbins
+    use od_parameters, only : optics_intraband, optics_drude_broadening
 
     integer :: N_energy
     integer :: N
@@ -426,8 +424,7 @@ contains
     dE = E(2)-E(1)
     epsilon2_const = (e_charge*pi*1E-20)/(cell_volume*1E-30*epsilon_0)
 
-    broadening = 1E14 ! was 1E14
-    if(drude==1)then
+    if(optics_intraband)then
        allocate(intra(N_geom))
        do N=1,N_geom
           do N_spin=1,nspins
@@ -437,7 +434,7 @@ contains
        intra = intra*e_charge/(cell_volume*1E-10*epsilon_0)
     endif
 
-    if(drude==0) then 
+    if(.not. optics_intraband) then 
        allocate(epsilon(jdos_nbins,2,N_geom,1))
     else
        allocate(epsilon(jdos_nbins,2,N_geom,3))
@@ -445,21 +442,13 @@ contains
     epsilon=0.0_dp
 
     do N2=1,N_geom
-       epsilon(1,2,N2,1) = 0.0_dp ! set epsilon_2=0 at 0eV
-       if (drude==1) then 
-          epsilon(1,2,N2,2) = 0.0_dp !
-          epsilon(1,2,N2,3) = 0.0_dp !
-       end if
-    end do
-
-    do N2=1,N_geom
        do N_spin=1,nspins                        ! Loop over spins
           do N_energy=2,jdos_nbins
              epsilon(N_energy,2,N2,1) = epsilon(N_energy,2,N2,1) + &
                   epsilon2_const*weighted_jdos(N_energy,N_spin,N2)
-             if (drude==1) then 
+             if (optics_intraband) then 
                 epsilon(N_energy,2,N2,2) = epsilon(N_energy,2,N2,2) + &
-                     ((intra(N2)*(e_charge**2)*hbar*broadening)/(((E(N_energy)*e_charge)**2)+((broadening*hbar)**2))) 
+                     ((intra(N2)*(e_charge**2)*hbar*optics_drude_broadening)/(((E(N_energy)*e_charge)**2)+((optics_drude_broadening*hbar)**2))) 
                 epsilon(N_energy,2,N2,3) = epsilon(N_energy,2,N2,3) + &
                      epsilon(N_energy,2,N2,2) + epsilon(N_energy,2,N2,1)*E(N_energy)*e_charge
              end if
@@ -470,8 +459,8 @@ contains
     ! Sum rule 
     if (N_geom==1) then 
        x = 0.0_dp
-       do N=2,jdos_nbins  ! Doesn't include the N=1 (E=0eV) term which I've already set to zero
-          if(drude==0)then
+       do N=2,jdos_nbins   !! don't include 0eV as it makes in intraband case blow up (and should be zero otherwise)
+          if(.not. optics_intraband)then
              x = x+((N*(dE**2)*epsilon(N,2,1,1))/(hbar**2))
           else
              x = x+((N*(dE**2)*epsilon(N,2,1,3))/((hbar**2)*E(N)*e_charge))
@@ -489,6 +478,7 @@ contains
 
     use od_constants, only : dp, pi
     use od_jdos_utils, only : E, jdos_nbins
+    use od_parameters, only : optics_intraband, optics_drude_broadening
 
     integer :: N_energy
     integer :: N_energy2
@@ -499,7 +489,7 @@ contains
     real(kind=dp) :: dE
 
     dE=E(2)-E(1)
-    if(drude==0) then 
+    if(.not. optics_intraband) then
        allocate(q(1))
     else 
        allocate(q(3))
@@ -513,17 +503,17 @@ contains
                 energy1 = E(N_energy)  
                 energy2 = E(N_energy2)
                 q(1)=q(1)+(((energy2*epsilon(N_energy2,2,N2,1))/((energy2**2)-(energy1**2)))*dE)
-                if(drude==1)then 
+                if(optics_intraband)then 
                    q(2)=q(2)+((dE*epsilon(N_energy2,2,N2,2))/(((energy2**2)-(energy1**2))*e_charge))
                    q(3)=q(3)+((dE*epsilon(N_energy2,2,N2,3))/(((energy2**2)-(energy1**2))*e_charge))
                 endif
              end if
           end do
           epsilon(N_energy,1,N2,1)=((2.0_dp/pi)*q(1))+1.0_dp
-          if(drude==1) then 
-!             epsilon(N_energy,1,N2,2)=((2.0_dp/pi)*q(2))+1.0_dp
-             epsilon(N_energy,1,N2,2)=1.0_dp-(intra(N_geom)/((E(N_energy)**2)+(((broadening*hbar)/e_charge)**2)))
-!             epsilon(N_energy,1,N2,3)=((2.0_dp/pi)*q(3))+1.0_dp
+          if(optics_intraband) then 
+!             epsilon(N_energy,1,N2,2)=((2.0_dp/pi)*q(2))+1.0_dp  !! old KK method 
+             epsilon(N_energy,1,N2,2)=1.0_dp-(intra(N_geom)/((E(N_energy)**2)+(((optics_drude_broadening*hbar)/e_charge)**2)))
+!             epsilon(N_energy,1,N2,3)=((2.0_dp/pi)*q(3))+1.0_dp  !! old KK method
              epsilon(N_energy,1,N2,3)=epsilon(N_energy,1,N2,1)+epsilon(N_energy,1,N2,2)-1.0_dp
          endif
        end do
@@ -539,14 +529,15 @@ contains
     use od_constants, only : dp, cmplx_i, pi
     use od_jdos_utils, only : E, jdos_nbins
     use od_cell, only : cell_volume
+    use od_parameters, only : optics_intraband
 
     complex(kind=dp) :: g 
     integer :: N_energy
     real(kind=dp) :: x
     real(kind=dp) :: dE
 
-    if(drude==0) allocate(loss_fn(jdos_nbins,1)) 
-    if(drude==1) allocate(loss_fn(jdos_nbins,3)) 
+    if(.not. optics_intraband) allocate(loss_fn(jdos_nbins,1)) 
+    if(optics_intraband) allocate(loss_fn(jdos_nbins,3)) 
     loss_fn=0.0_dp
 
     dE=E(2)-E(1)
@@ -555,18 +546,20 @@ contains
     do N_energy=1,jdos_nbins
        g = epsilon(N_energy,1,1,1)+(cmplx_i*epsilon(N_energy,2,1,1))
        loss_fn(N_energy,1)=-1*aimag(1.0_dp/g)
-       if(drude==1) then 
+       if(optics_intraband) then 
           g = epsilon(N_energy,1,1,2)+(cmplx_i*epsilon(N_energy,2,1,2)/(E(N_energy)*e_charge))
           loss_fn(N_energy,2)=-1*aimag(1.0_dp/g)  
           g = epsilon(N_energy,1,1,3)+(cmplx_i*epsilon(N_energy,2,1,3)/(E(N_energy)*e_charge))
           loss_fn(N_energy,3)=-1*aimag(1.0_dp/g)
        endif
     end do
+    loss_fn(1,2)=0.0_dp  ! gets rid of the NaN from dividing by zero in the loop above
+    loss_fn(1,3)=0.0_dp
 
     ! Sum rule 1
     x = 0.0_dp
     do N_energy=2,jdos_nbins
-       if(drude==0)then 
+       if(.not. optics_intraband)then 
           x = x+(N_energy*(dE**2)*loss_fn(N_energy,1))
        else
           x = x+(N_energy*(dE**2)*loss_fn(N_energy,3))
@@ -577,7 +570,7 @@ contains
     ! Sum rule 2
     x = 0
     do N_energy=2,jdos_nbins
-       if(drude==0)then 
+       if(.not. optics_intraband)then 
           x = x+(loss_fn(N_energy,1)/N_energy)
        else
           x = x+(loss_fn(N_energy,3)/N_energy)
@@ -593,13 +586,14 @@ contains
     ! This subroutine calculates the conductivity
 
     use od_jdos_utils, only : jdos_nbins, E
+    use od_parameters, only : optics_intraband 
 
     integer :: N_energy
 
     allocate(conduct(1:jdos_nbins,2))  
     conduct=0.0_dp
 
-    if(drude==0)then 
+    if(.not. optics_intraband)then
        do N_energy=1,jdos_nbins
           conduct(N_energy,1)=(E(N_energy)*e_charge/hbar)*epsilon_0*epsilon(N_energy,2,1,1)
        end do
@@ -623,13 +617,14 @@ contains
     ! This subroutine calculates the refractive index
 
     use od_jdos_utils, only : jdos_nbins, E
+    use od_parameters, only : optics_intraband
 
     integer :: N_energy
 
     allocate(refract(jdos_nbins,2)) 
     refract=0.0_dp
 
-    if(drude==0)then
+    if(.not. optics_intraband)then
        do N_energy=1,jdos_nbins
           refract(N_energy,1)=(0.5_dp*((((epsilon(N_energy,1,1,1)**2)+&
                &(epsilon(N_energy,2,1,1)**2))**0.5_dp)+epsilon(N_energy,1,1,1)))**(0.5_dp)
@@ -696,7 +691,7 @@ contains
 
     use od_cell, only : nkpoints, cell_volume
     use od_parameters, only : optics_geom, optics_qdir,jdos_max_energy, scissor_op, &
-         &output_format, fixed, adaptive, linear
+         &output_format, fixed, adaptive, linear, optics_intraband
     use od_electronic, only: nbands, num_electrons, nspins
     use od_jdos_utils, only: E, jdos_nbins
     use od_io, only : seedname, io_file_unit, stdout
@@ -745,7 +740,7 @@ contains
        write(epsilon_unit,'(1x,a,f10.3,f10.3,f10.3)')'# Scissor operator:', scissor_op
     end if
     write(epsilon_unit,*)'#'
-    if(drude==1)then 
+    if(optics_intraband)then 
        write(epsilon_unit,*)'# Calculation includes intraband term'
        if(fixed) write(epsilon_unit,*)'# DOS at Ef:', dos_at_e(1,:)
        if(adaptive) write(epsilon_unit,*)'# DOS at Ef:', dos_at_e(2,:)
@@ -755,7 +750,7 @@ contains
     if (N_geom==1) then
        write(epsilon_unit,*)'# Result of sum rule: Neff(E) =  ',N_eff
        write(epsilon_unit,*)'#'
-       if(drude==0)then  
+       if(.not. optics_intraband)then  
           do N=1,jdos_nbins
              write(epsilon_unit,*)E(N),epsilon(N,1,1,1),epsilon(N,2,1,1)
           enddo
@@ -808,7 +803,8 @@ contains
     ! This subroutine writes out the loss function
 
     use od_cell, only : nkpoints, cell_volume
-    use od_parameters, only : optics_geom, optics_qdir,jdos_max_energy, scissor_op, output_format
+    use od_parameters, only : optics_geom, optics_qdir,jdos_max_energy, scissor_op, output_format, &
+         optics_intraband
     use od_electronic, only: nbands, num_electrons, nspins
     use od_jdos_utils, only : jdos_nbins, E
     use od_io, only: seedname, io_file_unit,stdout
@@ -855,7 +851,7 @@ contains
     write(loss_fn_unit,*)'# Result of first sum rule: Neff(E) = ',N_eff2
     write(loss_fn_unit,*)'# Result of second sum rule (pi/2 = 1.570796327):',N_eff3
     write(loss_fn_unit,*)'#' 
-    if(drude==0) then 
+    if(.not. optics_intraband) then 
        do N=1,jdos_nbins
           write(loss_fn_unit,*)E(N),loss_fn(N,1)
        end do
