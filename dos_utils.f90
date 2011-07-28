@@ -104,12 +104,11 @@ contains
     !-------------------------------------------------------------------------------
     ! I N T E R N A L   V A R I A B L E S
     real(kind=dp) :: time0, time1
-    real(kind=dp),  allocatable, optional  :: matrix_weights(:,:,:,:)
-    real(kind=dp), allocatable, optional  :: weighted_dos(:,:,:) ! bins.spins, orbitals
+    real(kind=dp),intent(in), allocatable, optional  :: matrix_weights(:,:,:,:)
+    real(kind=dp),intent(out),allocatable, optional  :: weighted_dos(:,:,:) ! bins.spins, orbitals
 
     !-------------------------------------------------------------------------------
 
- 
     if(.not.(linear.or.adaptive.or.fixed.or.quad)) call io_error (" DOS: No Broadening Set")
 
 
@@ -395,7 +394,6 @@ contains
     
     call dos_utils_calculate_at_e(efermi,dos_at_e=dos_at_efermi)
     
-    
     if(on_root) then
        write(stdout,*)
        write(stdout,'(1x,a71)')  '+----------------------- DOS at Fermi Energy Analysis ----------------+'
@@ -407,10 +405,10 @@ contains
              write(stdout,'(1x,a1,a20,i1,a25,f8.4,a9,6x,a8)') "|","Spin Component : ",is,&
                   &"  DOS at Fermi Energy : ", dos_at_efermi(1,is)," eln/cell","| <- DEF"
              if(dos_at_efermi(1,is) < dos_zero_tol) compute_band_gap=.true.
-          enddo
+          enddo                                                  
           write(stdout,'(1x,a71)')    '+---------------------------------------------------------------------+'
        endif
-     
+           
        if(adaptive) then 
           write(stdout,'(1x,a71)') "| From Adaptive broadening                                            |" 
           do is=1,nspins
@@ -431,11 +429,11 @@ contains
           write(stdout,'(1x,a71)')    '+---------------------------------------------------------------------+'
        endif
   
-        time1=io_time()
+       time1=io_time()
        write(stdout,'(1x,a40,f11.3,a)') 'Time to calculate DOS at Fermi energy ',time1-time0,' (sec)'
        !-------------------------------------------------------------------------------
     end if
-    call comms_bcast(compute_band_gap,1)
+    call comms_bcast(compute_band_gap,1) 
   end subroutine compute_dos_at_efermi
   
 
@@ -464,19 +462,19 @@ contains
     logical :: direct_gap
     
     type(band_gap),allocatable   :: bandgap(:)
-    
+
     real(dp)              :: be_of_e_local(1:2), k_of_e_local(1:2)
     real(dp), allocatable :: bandenergies_of_extrema(:,:), kpoints_of_extrema(:,:)
-
+    
     time0=io_time()
-       
+
     if(on_root.and.(iprint>2)) then
        write(stdout,*)
        write(stdout,'(1x,a46)') "Finding an estimate of the maximum bandgap..."
     endif
     
    ! EV ( ib,is,ik) ==> band_energy(:,:,:)
-    
+
     allocate(bandgap(1:nspins), stat=ierr)
     if (ierr/=0) call io_error('Error allocating bandgap in dos_utils: compute_bandgap')
    
@@ -489,9 +487,9 @@ contains
        bandgap(is)%vk=-1
        bandgap(is)%ck=-1
        bandgap(is)%cbm=huge(1.0_dp)
-       bandgap(is)%vbm=-huge(1.0_dp)
-       
-       if(on_root.and.(nspins>1))  write (stdout,'(1x,a1,a20,i1,48x,a1)')  '|','Spin Component : ', is, '|'
+       bandgap(is)%vbm=-huge(1.0_dp)   
+
+       if(on_root.and.(nspins>1))  write (stdout,'(1x,a1,a20,i1,48x,a1)')  '|','Spin Component : ', is, '|' 
        do ik=1,num_kpoints_on_node(my_node_id)       
           do ib=1,nbands
              if(band_energy(ib,is,ik).gt.efermi) then
@@ -519,7 +517,7 @@ contains
              end if
           end do
        end do
-       
+
        ! Now merge these
        
        kpoints_before_this_node=0
@@ -703,7 +701,7 @@ contains
 
     if(on_root) then
        do j=1,nspins
-          write(stdout,'(1x,a1,a20,i1,a20,f10.5,a4,1x,f10.5,3x,a7)') "|","Spin Component : ",j,&
+           write(stdout,'(1x,a1,a20,i1,a20,f10.5,a4,1x,f10.5,3x,a7)') "|","Spin Component : ",j,&
                &" occupation between ", INTDOS(i,j), "and", INTDOS(idos,j),"| <- Occ"
        enddo
     end if
@@ -939,7 +937,7 @@ contains
     real(kind=dp), allocatable, intent(inout)  :: dos(:,:)
     real(kind=dp), allocatable, intent(inout)  :: intdos(:,:)
 
-    real(kind=dp),optional,allocatable    :: w_dos(:,:,:) ! bins.spins, orbitals 
+    real(kind=dp),intent(out),optional,allocatable    :: w_dos(:,:,:) ! bins.spins, orbitals 
 
     integer :: ierr 
 
@@ -1038,9 +1036,8 @@ contains
 
     character(len=1), intent(in)                    :: dos_type
 
-    real(kind=dp),allocatable, optional :: weighted_dos(:,:,:)  
-    real(kind=dp),             optional :: matrix_weights(:,:,:,:)
-
+    real(kind=dp),intent(out),allocatable, optional :: weighted_dos(:,:,:)  
+    real(kind=dp),intent(in),              optional :: matrix_weights(:,:,:,:)
 
     real(kind=dp),intent(out),allocatable :: dos(:,:), intdos(:,:)
 
@@ -1384,8 +1381,8 @@ contains
     !-------------------------------------------------------------------------------
     ! I N T E R N A L   V A R I A B L E S
     real(kind=dp) :: time0, time1
-    real(kind=dp),allocatable, optional  :: matrix_weights(:,:,:,:)
-    real(kind=dp),allocatable, optional  :: weighted_dos_at_e(:,:) ! spins, orbitals
+    real(kind=dp),intent(in), allocatable, optional  :: matrix_weights(:,:,:,:)
+    real(kind=dp),intent(out), optional  :: weighted_dos_at_e(:,:) ! spins, orbitals RJN3Jun changed
     real(kind=dp),intent(in) :: energy
     real(kind=dp),intent(out) :: dos_at_e(1:3,nspins) ! fixed, adaptive, linear : spins
     !-------------------------------------------------------------------------------
@@ -1425,7 +1422,7 @@ contains
 
     time0=io_time()
 
-   
+ 
 
     if(fixed) then
        if(calc_weighted_dos.and.(.not.adaptive).and.(.not.linear))then 
@@ -1438,7 +1435,7 @@ contains
        endif
     endif
     if(adaptive) then
-       if(calc_weighted_dos.and.(.not.adaptive))then 
+       if(calc_weighted_dos.and.(.not.linear))then 
           call calculate_dos_at_e("a",energy, dos_at_e(2,:), matrix_weights=matrix_weights, &
                &weighted_dos_at_e=weighted_dos_at_e) 
           call dos_utils_merge_at_e(dos_at_e(2,:),weighted_dos_at_e=weighted_dos_at_e)    
@@ -1461,7 +1458,6 @@ contains
    
    !  
    ! endif
-
 
 
     time1=io_time()
@@ -1500,7 +1496,7 @@ contains
     ! Written by : A J Morris December 2010 Heavliy modified from LinDOS
     !===============================================================================
     use od_algorithms, only : gaussian
-    use od_cell,       only : kpoint_grid_dim,kpoint_weight,num_kpoints_on_node, &
+     use od_cell,       only : kpoint_grid_dim,kpoint_weight,num_kpoints_on_node, &
          & recip_lattice
     use od_electronic, only : band_gradient, electrons_per_state, nbands,nspins,band_energy
     use od_parameters, only : adaptive_smearing,fixed_smearing&
@@ -1514,18 +1510,26 @@ contains
     real(kind=dp) :: dos_temp, cuml, intdos_accum, width, adaptive_smearing_temp
     real(kind=dp) :: grad(1:3), step(1:3), EV(0:4), sub_cell_length(1:3)
 
-    character(len=1), intent(in)                    :: dos_type
-    real(kind=dp), allocatable, optional :: weighted_dos_at_e(:,:)  
-    real(kind=dp),              optional :: matrix_weights(:,:,:,:)
+!    character(len=1), intent(in)                    :: dos_type   !! RJN3JUN changed
+    character(len=1)                   :: dos_type   !! RJN3Jun changed
+    real(kind=dp),intent(out), optional :: weighted_dos_at_e(:,:)  !! RJN3Jun changed
+    real(kind=dp),intent(in),              optional :: matrix_weights(:,:,:,:)
     real(kind=dp),intent(in) :: energy 
     real(kind=dp),intent(out) :: dos_at_e(nspins)
 
 
-    logical :: linear,fixed,adaptive
+    logical :: linear,fixed,adaptive,have_weighted_dos
+
+    have_weighted_dos=.false.
+    if(present(weighted_dos_at_e)) have_weighted_dos=.true.
 
     linear=.false.
     fixed=.false.
     adaptive=.false.
+
+    if(fixed)       dos_type="f"     !! RJN3Jun added 
+    if(adaptive)  dos_type="a"       !! RJN3Jun added
+    if(linear)      dos_type="l"     !! RJN3Jun added
 
     select case (dos_type)
     case ("l")
@@ -1550,7 +1554,7 @@ contains
 
     if(fixed) width=fixed_smearing
 
-    if(calc_weighted_dos) weighted_dos_at_e=0.0_dp
+    if(have_weighted_dos) weighted_dos_at_e=0.0_dp
 
 
     do ik=1,num_kpoints_on_node(my_node_id)
@@ -1584,7 +1588,7 @@ contains
 
              dos_at_e(is)=dos_at_e(is)+dos_temp
 
-             if(calc_weighted_dos) then
+             if(have_weighted_dos) then
                 if(ik.le.mw%nkpoints) then
                    if(ib.le.mw%nbands) then
                       do iorb=1,mw%norbitals
@@ -1625,7 +1629,7 @@ contains
     use od_electronic, only : nspins
 
     implicit none
-    real(kind=dp), allocatable, optional :: weighted_dos_at_e(:,:) ! bins.spins, orbitals
+    real(kind=dp),intent(inout), optional :: weighted_dos_at_e(:,:) ! bins.spins, orbitals RJN3Jun changed
     real(kind=dp),intent(inout) :: dos(nspins)
 
     call comms_reduce(dos(1),nspins,"SUM")

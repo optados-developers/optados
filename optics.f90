@@ -14,25 +14,35 @@ module od_optics
      character(20) :: legend_a
      character(20) :: legend_b
   end type graph_labels
-  
+
 
   integer, parameter :: dp=selected_real_kind(15,300)
-  real(kind=dp) :: q_weight 
 
   real(kind=dp),allocatable, public, dimension(:,:,:,:,:) :: matrix_weights
+  real(kind=dp),allocatable, public, dimension(:,:,:,:) :: dos_matrix_weights
   real(kind=dp),allocatable, public, dimension(:,:,:) :: weighted_jdos
+  real(kind=dp),allocatable, public, dimension(:,:) :: weighted_dos_at_e
+  real(kind=dp),allocatable, public, dimension(:,:) :: dos_at_e
 
-  real(kind=dp),allocatable, dimension(:,:,:) :: epsilon
+  real(kind=dp),allocatable, dimension(:,:,:,:) :: epsilon
   real(kind=dp),allocatable, dimension(:,:) :: conduct
   real(kind=dp),allocatable, dimension(:,:) :: refract
-  real(kind=dp),allocatable, dimension(:) :: loss_fn
+  real(kind=dp),allocatable, dimension(:,:) :: loss_fn
   real(kind=dp),allocatable, dimension(:) :: absorp
   real(kind=dp),allocatable, dimension(:) :: reflect
 
+  real(kind=dp),allocatable, dimension(:) :: intra
+  real(kind=dp) :: q_weight 
   real(kind=dp) :: N_eff
   real(kind=dp) :: N_eff2
   real(kind=dp) :: N_eff3
   integer :: N_geom
+  real(kind=dp) :: e_fermi
+  integer :: N
+  integer :: N2
+  integer :: drude
+  real(kind=dp) :: broadening 
+
 
   real(kind=dp), parameter :: epsilon_0 = 8.8541878176E-12  ! need to put in correct number
   real(kind=dp), parameter :: e_charge =  1.60217646E-19 ! need to put in correct number 
@@ -48,12 +58,13 @@ contains
     !
 
     use od_constants, only : dp
-    use od_electronic, only : band_gradient, elec_read_band_gradient
-    use od_cell, only : cell_volume
+    use od_electronic, only : band_gradient, elec_read_band_gradient, nbands, nspins
+    use od_cell, only : cell_volume, num_kpoints_on_node 
     use od_jdos_utils, only : jdos_utils_calculate
-    use od_comms, only : on_root
-    use od_parameters, only : optics_geom
-    use od_io, only : stdout
+    use od_comms, only : on_root, my_node_id
+    use od_parameters, only : optics_geom, compute_efermi, adaptive, linear, fixed
+    use od_dos_utils, only : dos_utils_calculate_at_e, efermi_fixed, efermi_adaptive, efermi_linear
+    use od_io, only : stdout 
 
     if(on_root) then
        write(stdout,*)
@@ -61,6 +72,14 @@ contains
        write(stdout,'(1x,a78)') '+=============================== Optics Calculation =========================+'
        write(stdout,'(1x,a78)') '+============================================================================+'
        write(stdout,*)
+    endif
+
+    ! Get Ef
+    if(compute_efermi) then !this is assuming that I have already run the DOS!!!!  
+       if(adaptive) e_fermi = efermi_adaptive
+       if(linear) e_fermi = efermi_linear
+       if(fixed)  e_fermi = efermi_fixed
+       !   else call io_error ("OPTICS: No Ef set")
     endif
 
     ! Get information from .cst_ome file 
@@ -71,6 +90,22 @@ contains
 
     ! Send matrix element to jDOS routine and get weighted jDOS back
     call jdos_utils_calculate(matrix_weights, weighted_jdos)
+
+    drude = 1 ! 0 - no drude term, 1 - include drude term 
+
+    ! Calculate weighted DOS at Ef for intraband term
+    if(drude==1)then
+       allocate(dos_matrix_weights(size(matrix_weights,5),nbands,num_kpoints_on_node(my_node_id),nspins))
+       allocate(dos_at_e(3,nspins))
+       allocate(weighted_dos_at_e(nspins,size(matrix_weights,5)))
+       weighted_dos_at_e = 0.0_dp
+       do N=1,size(matrix_weights,5)
+          do N2=1,nbands    
+             dos_matrix_weights(N,N2,:,:) = matrix_weights(N2,N2,:,:,N)  
+          enddo
+       enddo
+       call dos_utils_calculate_at_e(e_fermi,dos_matrix_weights,weighted_dos_at_e,dos_at_e) 
+    endif
 
     if(on_root) then
        ! Calculate epsilon_2
@@ -99,7 +134,7 @@ contains
        end if
     endif
 
-  if(on_root) then
+    if(on_root) then
        write(stdout,*)
        write(stdout,'(1x,a78)') '+============================================================================+'
        write(stdout,'(1x,a78)') '+============================== Optics Calculation End ======================+'
@@ -137,6 +172,7 @@ contains
     integer :: num_symm
     real(kind=dp), dimension(2) :: num_occ
     complex(kind=dp), dimension(3) :: g
+    real(kind=dp) :: factor
 
     num_symm=0
     if (.not.legacy_file_format) then 
@@ -198,8 +234,17 @@ contains
 
     do N=1,num_kpoints_on_node(my_node_id)                   ! Loop over kpoints
        do N_spin=1,nspins                                    ! Loop over spins
-          do n_eigen=1,nint(num_occ(N_spin))                 ! Loop over occupied states 
-             do n_eigen2=(nint(num_occ(N_spin))+1),nbands    ! Loop over unoccupied states
+          do n_eigen=1,nbands                                ! Loop over state 1 
+             do n_eigen2=n_eigen,nbands                      ! Loop over state 2  
+                if(band_energy(n_eigen,N_spin,N)>e_fermi.and.n_eigen/=n_eigen2) cycle
+                if(band_energy(n_eigen2,N_spin,N)<e_fermi.and.n_eigen/=n_eigen2) cycle
+                factor = 0.0_dp
+                if(n_eigen2==n_eigen)then 
+                   factor = 1.0_dp
+                elseif(band_energy(n_eigen2,N_spin,N)>e_fermi)then 
+                   factor = 1.0_dp/((band_energy(n_eigen2,N_spin,N)-band_energy(n_eigen,N_spin,N)&
+                        +scissor_op)**2)  
+                endif
                 if(index(optics_geom,'unpolar')>0)then
                    if (num_symm==0) then 
                       g(1) = (((qdir1(1)*band_gradient(n_eigen,n_eigen2,1,N,N_spin))+ &
@@ -209,9 +254,7 @@ contains
                            (qdir2(2)*band_gradient(n_eigen,n_eigen2,2,N,N_spin))+ &
                            (qdir2(3)*band_gradient(n_eigen,n_eigen2,3,N,N_spin)))/q_weight2)
                       matrix_weights(n_eigen,n_eigen2,N,N_spin,N_geom) = &
-                           0.5_dp*(real(g(1)*conjg(g(1)),dp)+real(g(2)*conjg(g(2)),dp))/&
-                           ((band_energy(n_eigen2,N_spin,N)-band_energy(n_eigen,N_spin,N)&
-                           +scissor_op)**2)
+                           0.5_dp*factor*(real(g(1)*conjg(g(1)),dp)+real(g(2)*conjg(g(2)),dp))
                    else
                       do N2=1,num_symm
                          do N3=1,1+N_in
@@ -227,9 +270,7 @@ contains
                                  (qdir(3)*band_gradient(n_eigen,n_eigen2,3,N,N_spin)))/q_weight1)
                             matrix_weights(n_eigen,n_eigen2,N,N_spin,N_geom) =  &
                                  matrix_weights(n_eigen,n_eigen2,N,N_spin,N_geom) + &
-                                 (0.5_dp/Real((num_symm*(N_in+1)),dp))*real(g(1)*conjg(g(1)),dp)/&
-                                 ((band_energy(n_eigen2,N_spin,N)-band_energy(n_eigen,N_spin,N)+&
-                                 scissor_op)**2) 
+                                 (0.5_dp/Real((num_symm*(N_in+1)),dp))*real(g(1)*conjg(g(1)),dp)*factor
                             g(1) = 0.0_dp
                             do i=1,3 ! if I include an extra variable I can merge this and the last do loops
                                qdir(i)=0.0_dp
@@ -243,9 +284,7 @@ contains
                                  (qdir(3)*band_gradient(n_eigen,n_eigen2,3,N,N_spin)))/q_weight2)
                             matrix_weights(n_eigen,n_eigen2,N,N_spin,N_geom) =  &
                                  matrix_weights(n_eigen,n_eigen2,N,N_spin,N_geom) + &
-                                 (0.5_dp/Real((num_symm*(N_in+1)),dp))*real(g(1)*conjg(g(1)),dp)/&
-                                 ((band_energy(n_eigen2,N_spin,N)-band_energy(n_eigen,N_spin,N)+&
-                                 scissor_op)**2) 
+                                 (0.5_dp/Real((num_symm*(N_in+1)),dp))*real(g(1)*conjg(g(1)),dp)*factor
                          end do
                       end do
                    end if
@@ -254,9 +293,7 @@ contains
                       g(1) = (((qdir(1)*band_gradient(n_eigen,n_eigen2,1,N,N_spin))+ &
                            (qdir(2)*band_gradient(n_eigen,n_eigen2,2,N,N_spin))+ &
                            (qdir(3)*band_gradient(n_eigen,n_eigen2,3,N,N_spin)))/q_weight)
-                      matrix_weights(n_eigen,n_eigen2,N,N_spin,N_geom) = real(g(1)*conjg(g(1)),dp)/&
-                           ((band_energy(n_eigen2,N_spin,N)-band_energy(n_eigen,N_spin,N)+&
-                           scissor_op)**2)
+                      matrix_weights(n_eigen,n_eigen2,N,N_spin,N_geom) = factor*real(g(1)*conjg(g(1)),dp)
                       !           matrix_weights(n_eigen,n_eigen2,N,N_spin) = 1.0_dp  ! for JDOS 
                    else
                       do N2=1,num_symm
@@ -274,9 +311,7 @@ contains
                                  (qdir(3)*band_gradient(n_eigen,n_eigen2,3,N,N_spin)))/q_weight)
                             matrix_weights(n_eigen,n_eigen2,N,N_spin,N_geom) =  &
                                  matrix_weights(n_eigen,n_eigen2,N,N_spin,N_geom) + &
-                                 (1.0_dp/Real((num_symm*(N_in+1)),dp))*real(g(1)*conjg(g(1)),dp)/&
-                                 ((band_energy(n_eigen2,N_spin,N)-band_energy(n_eigen,N_spin,N)+&
-                                 scissor_op)**2) 
+                                 (1.0_dp/Real((num_symm*(N_in+1)),dp))*factor*real(g(1)*conjg(g(1)),dp)
                          end do
                       end do
                    end if
@@ -284,19 +319,19 @@ contains
                    if (num_symm==0) then 
                       do N2=1,3  
                          g(N2) = band_gradient(n_eigen,n_eigen2,N2,N,N_spin)
-!if (n_eigen==1) then 
-!if (n_eigen2==NINT(num_occ(N_spin)+1)) then 
-!print *, N, N2 
-!print *, g(N2), abs(g(N2))
-!print *, band_gradient(n_eigen2,n_eigen,N2,N,N_spin)
-!print *, band_gradient(n_eigen,n_eigen,N2,N,N_spin), band_gradient(n_eigen2,n_eigen2,N2,N,N_spin)
-!end if 
-!end if 
+                         !if (n_eigen==1) then 
+                         !if (n_eigen2==NINT(num_occ(N_spin)+1)) then 
+                         !print *, N, N2 
+                         !print *, g(N2), abs(g(N2))
+                         !print *, band_gradient(n_eigen2,n_eigen,N2,N,N_spin)
+                         !print *, band_gradient(n_eigen,n_eigen,N2,N,N_spin), band_gradient(n_eigen2,n_eigen2,N2,N,N_spin)
+                         !end if 
+                         !end if 
                       end do
-                      matrix_weights(n_eigen,n_eigen2,N,N_spin,N_geom) = (real(g(1)*conjg(g(1)),dp)+&
-                           real(g(2)*conjg(g(2)),dp) + real(g(3)*conjg(g(3)),dp))/&
-                           (((band_energy(n_eigen2,N_spin,N)-band_energy(n_eigen,N_spin,N)+&
-                           scissor_op)**2)*3.0_dp)
+                      matrix_weights(n_eigen,n_eigen2,N,N_spin,N_geom) = (factor/3.0_dp)*&
+                           (real(g(1)*conjg(g(1)),dp)+ real(g(2)*conjg(g(2)),dp) + real(g(3)*conjg(g(3)),dp))
+                      !                 print *, n_eigen, n_eigen2, N, matrix_weights(n_eigen,n_eigen2,N,N_spin,N_geom)
+                      !                 print *, band_energy(n_eigen2,N_spin,N), band_energy(n_eigen,N_spin,N)
                    else
                       do N2=1,num_symm
                          do N3=1,1+N_in
@@ -320,10 +355,8 @@ contains
                                  (qdir2(3)*band_gradient(n_eigen,n_eigen2,3,N,N_spin)))
                             matrix_weights(n_eigen,n_eigen2,N,N_spin,N_geom) =  &
                                  matrix_weights(n_eigen,n_eigen2,N,N_spin,N_geom) + &
-                                 (1.0_dp/Real((num_symm*(N_in+1)),dp))*(real(g(1)*conjg(g(1)),dp) + &
-                                 real(g(2)*conjg(g(2)),dp) + real(g(3)*conjg(g(3)),dp))/&
-                                 (((band_energy(n_eigen2,N_spin,N)-band_energy(n_eigen,N_spin,N)+&
-                                 scissor_op)**2)*3.0_dp)
+                                 (1.0_dp/Real((num_symm*(N_in+1)),dp))*factor*((real(g(1)*conjg(g(1)),dp) + &
+                                 real(g(2)*conjg(g(2)),dp) + real(g(3)*conjg(g(3)),dp))/3.0_dp)
                          end do
                       end do
                    end if
@@ -332,24 +365,12 @@ contains
                       do N2=1,3  
                          g(N2) = band_gradient(n_eigen,n_eigen2,N2,N,N_spin)
                       end do
-                      matrix_weights(n_eigen,n_eigen2,N,N_spin,1) = real(g(1)*conjg(g(1)),dp)/&
-                           ((band_energy(n_eigen2,N_spin,N)-band_energy(n_eigen,N_spin,N)+&
-                           scissor_op)**2)
-                      matrix_weights(n_eigen,n_eigen2,N,N_spin,2) = real(g(2)*conjg(g(2)),dp)/&
-                           ((band_energy(n_eigen2,N_spin,N)-band_energy(n_eigen,N_spin,N)+&
-                           scissor_op)**2)
-                      matrix_weights(n_eigen,n_eigen2,N,N_spin,3) = real(g(3)*conjg(g(3)),dp)/&
-                           ((band_energy(n_eigen2,N_spin,N)-band_energy(n_eigen,N_spin,N)+&
-                           scissor_op)**2)
-                      matrix_weights(n_eigen,n_eigen2,N,N_spin,4) = real(g(1)*conjg(g(2)),dp)/&
-                           ((band_energy(n_eigen2,N_spin,N)-band_energy(n_eigen,N_spin,N)+&
-                           scissor_op)**2)
-                      matrix_weights(n_eigen,n_eigen2,N,N_spin,5) = real(g(1)*conjg(g(3)),dp)/&
-                           ((band_energy(n_eigen2,N_spin,N)-band_energy(n_eigen,N_spin,N)+&
-                           scissor_op)**2)
-                      matrix_weights(n_eigen,n_eigen2,N,N_spin,6) = real(g(2)*conjg(g(3)),dp)/&
-                           ((band_energy(n_eigen2,N_spin,N)-band_energy(n_eigen,N_spin,N)+&
-                           scissor_op)**2)
+                      matrix_weights(n_eigen,n_eigen2,N,N_spin,1) = factor*real(g(1)*conjg(g(1)),dp)
+                      matrix_weights(n_eigen,n_eigen2,N,N_spin,2) = factor*real(g(2)*conjg(g(2)),dp)
+                      matrix_weights(n_eigen,n_eigen2,N,N_spin,3) = factor*real(g(3)*conjg(g(3)),dp)
+                      matrix_weights(n_eigen,n_eigen2,N,N_spin,4) = factor*real(g(1)*conjg(g(2)),dp)
+                      matrix_weights(n_eigen,n_eigen2,N,N_spin,5) = factor*real(g(1)*conjg(g(3)),dp)
+                      matrix_weights(n_eigen,n_eigen2,N,N_spin,6) = factor*real(g(2)*conjg(g(3)),dp)
                    else
                       do N2=1,num_symm
                          do N3=1,1+N_in
@@ -361,23 +382,18 @@ contains
                                end do
                             end do
                             matrix_weights(n_eigen,n_eigen2,N,N_spin,1) = matrix_weights(n_eigen,n_eigen2,&
-                                 N,N_spin,1) + real(g(1)*conjg(g(1)),dp)/(((band_energy(n_eigen2,N_spin,N)&
-                                 -band_energy(n_eigen,N_spin,N)+scissor_op)**2)*Real((num_symm*(N_in+1)),dp))
+                                 N,N_spin,1) + factor*real(g(1)*conjg(g(1)),dp)/Real((num_symm*(N_in+1)),dp)
                             matrix_weights(n_eigen,n_eigen2,N,N_spin,2) = matrix_weights(n_eigen,n_eigen2,&
-                                 N,N_spin,2) + real(g(2)*conjg(g(2)),dp)/(((band_energy(n_eigen2,N_spin,N)&
-                                 -band_energy(n_eigen,N_spin,N)+scissor_op)**2)*Real((num_symm*(N_in+1)),dp))
+                                 N,N_spin,2) + factor*real(g(2)*conjg(g(2)),dp)/Real((num_symm*(N_in+1)),dp)
                             matrix_weights(n_eigen,n_eigen2,N,N_spin,3) = matrix_weights(n_eigen,n_eigen2,&
-                                 N,N_spin,3) + real(g(3)*conjg(g(3)),dp)/(((band_energy(n_eigen2,N_spin,N)&
-                                 -band_energy(n_eigen,N_spin,N)+scissor_op)**2)*Real((num_symm*(N_in+1)),dp))
+                                 N,N_spin,3) + factor*real(g(3)*conjg(g(3)),dp)/Real((num_symm*(N_in+1)),dp)
                             matrix_weights(n_eigen,n_eigen2,N,N_spin,4) = matrix_weights(n_eigen,n_eigen2,&
-                                 N,N_spin,4) + real(g(1)*conjg(g(2)),dp)/(((band_energy(n_eigen2,N_spin,N)&
-                                 -band_energy(n_eigen,N_spin,N)+scissor_op)**2)*Real((num_symm*(N_in+1)),dp))
+                                 N,N_spin,4) + factor*real(g(1)*conjg(g(2)),dp)/Real((num_symm*(N_in+1)),dp)
                             matrix_weights(n_eigen,n_eigen2,N,N_spin,5) = matrix_weights(n_eigen,n_eigen2,&
-                                 N,N_spin,5) + real(g(1)*conjg(g(3)),dp)/(((band_energy(n_eigen2,N_spin,N)&
-                                 -band_energy(n_eigen,N_spin,N)+scissor_op)**2)*Real((num_symm*(N_in+1)),dp))
+                                 N,N_spin,5) + factor*real(g(1)*conjg(g(3)),dp)/Real((num_symm*(N_in+1)),dp)
                             matrix_weights(n_eigen,n_eigen2,N,N_spin,6) =  matrix_weights(n_eigen,n_eigen2,&
-                                 N,N_spin,6) + real(g(2)*conjg(g(3)),dp)/(((band_energy(n_eigen2,N_spin,N)&
-                                 -band_energy(n_eigen,N_spin,N)+scissor_op)**2)*Real((num_symm*(N_in+1)),dp))     
+                                 N,N_spin,6) + factor*real(g(2)*conjg(g(3)),dp)/Real((num_symm*(N_in+1)),dp)
+
                          end do
                       end do
                    end if
@@ -395,7 +411,7 @@ contains
 
     use od_constants, only : dp, pi
     use od_cell, only : nkpoints, cell_volume 
-    use od_electronic, only : nspins, electrons_per_state
+    use od_electronic, only : nspins, electrons_per_state, nbands
     use od_jdos_utils, only : E,jdos_nbins
 
     integer :: N_energy
@@ -406,31 +422,60 @@ contains
     real(kind=dp) ::dE
     real(kind=dp) :: x
     real(kind=dp) :: epsilon2_const
-
+ 
     dE = E(2)-E(1)
     epsilon2_const = (e_charge*pi*1E-20)/(cell_volume*1E-30*epsilon_0)
 
-    allocate(epsilon(jdos_nbins,2,N_geom))
+    broadening = 1E14 ! was 1E14
+    if(drude==1)then
+       allocate(intra(N_geom))
+       do N=1,N_geom
+          do N_spin=1,nspins
+             intra(N_geom) = intra(N_geom) + weighted_dos_at_e(N_spin,N_geom)
+          enddo
+       enddo
+       intra = intra*e_charge/(cell_volume*1E-10*epsilon_0)
+    endif
+
+    if(drude==0) then 
+       allocate(epsilon(jdos_nbins,2,N_geom,1))
+    else
+       allocate(epsilon(jdos_nbins,2,N_geom,3))
+    endif
     epsilon=0.0_dp
 
     do N2=1,N_geom
-       epsilon(1,2,N2) = 0.0_dp ! set epsilon_2=0 at 0eV
+       epsilon(1,2,N2,1) = 0.0_dp ! set epsilon_2=0 at 0eV
+       if (drude==1) then 
+          epsilon(1,2,N2,2) = 0.0_dp !
+          epsilon(1,2,N2,3) = 0.0_dp !
+       end if
     end do
 
     do N2=1,N_geom
        do N_spin=1,nspins                        ! Loop over spins
           do N_energy=2,jdos_nbins
-             epsilon(N_energy,2,N2) = epsilon(N_energy,2,N2) + &
+             epsilon(N_energy,2,N2,1) = epsilon(N_energy,2,N2,1) + &
                   epsilon2_const*weighted_jdos(N_energy,N_spin,N2)
+             if (drude==1) then 
+                epsilon(N_energy,2,N2,2) = epsilon(N_energy,2,N2,2) + &
+                     ((intra(N2)*(e_charge**2)*hbar*broadening)/(((E(N_energy)*e_charge)**2)+((broadening*hbar)**2))) 
+                epsilon(N_energy,2,N2,3) = epsilon(N_energy,2,N2,3) + &
+                     epsilon(N_energy,2,N2,2) + epsilon(N_energy,2,N2,1)*E(N_energy)*e_charge
+             end if
           end do
        end do
     end do
 
     ! Sum rule 
-    if (N_geom==1) then  
+    if (N_geom==1) then 
        x = 0.0_dp
-       do N=1,jdos_nbins
-          x = x+((N*(dE**2)*epsilon(N,2,1))/(hbar**2))
+       do N=2,jdos_nbins  ! Doesn't include the N=1 (E=0eV) term which I've already set to zero
+          if(drude==0)then
+             x = x+((N*(dE**2)*epsilon(N,2,1,1))/(hbar**2))
+          else
+             x = x+((N*(dE**2)*epsilon(N,2,1,3))/((hbar**2)*E(N)*e_charge))
+          endif
        end do
        N_eff = (x*e_mass*cell_volume*1E-30*epsilon_0*2)/(pi) 
     end if
@@ -448,12 +493,17 @@ contains
     integer :: N_energy
     integer :: N_energy2
     integer :: N2
-    real(kind=dp) :: q 
+    real(kind=dp),allocatable, dimension(:) :: q
     real(kind=dp) :: energy1
     real(kind=dp) :: energy2
     real(kind=dp) :: dE
 
     dE=E(2)-E(1)
+    if(drude==0) then 
+       allocate(q(1))
+    else 
+       allocate(q(3))
+    endif
 
     do N2=1,N_geom
        do N_energy=1,jdos_nbins
@@ -462,10 +512,20 @@ contains
              if (N_energy2.ne.N_energy) then
                 energy1 = E(N_energy)  
                 energy2 = E(N_energy2)
-                q=q+(((energy2*epsilon(N_energy2,2,N2))/((energy2**2)-(energy1**2)))*dE)
+                q(1)=q(1)+(((energy2*epsilon(N_energy2,2,N2,1))/((energy2**2)-(energy1**2)))*dE)
+                if(drude==1)then 
+                   q(2)=q(2)+((dE*epsilon(N_energy2,2,N2,2))/(((energy2**2)-(energy1**2))*e_charge))
+                   q(3)=q(3)+((dE*epsilon(N_energy2,2,N2,3))/(((energy2**2)-(energy1**2))*e_charge))
+                endif
              end if
           end do
-          epsilon(N_energy,1,N2)=((2.0_dp/pi)*q)+1.0_dp
+          epsilon(N_energy,1,N2,1)=((2.0_dp/pi)*q(1))+1.0_dp
+          if(drude==1) then 
+!             epsilon(N_energy,1,N2,2)=((2.0_dp/pi)*q(2))+1.0_dp
+             epsilon(N_energy,1,N2,2)=1.0_dp-(intra(N_geom)/((E(N_energy)**2)+(((broadening*hbar)/e_charge)**2)))
+!             epsilon(N_energy,1,N2,3)=((2.0_dp/pi)*q(3))+1.0_dp
+             epsilon(N_energy,1,N2,3)=epsilon(N_energy,1,N2,1)+epsilon(N_energy,1,N2,2)-1.0_dp
+         endif
        end do
     end do
 
@@ -485,28 +545,43 @@ contains
     real(kind=dp) :: x
     real(kind=dp) :: dE
 
-    allocate(loss_fn(jdos_nbins)) 
+    if(drude==0) allocate(loss_fn(jdos_nbins,1)) 
+    if(drude==1) allocate(loss_fn(jdos_nbins,3)) 
     loss_fn=0.0_dp
 
     dE=E(2)-E(1)
     g = (0.0_dp,0.0_dp)
 
     do N_energy=1,jdos_nbins
-       g = epsilon(N_energy,1,1)+(cmplx_i*epsilon(N_energy,2,1))
-       loss_fn(N_energy)=-1*aimag(1.0_dp/g)
+       g = epsilon(N_energy,1,1,1)+(cmplx_i*epsilon(N_energy,2,1,1))
+       loss_fn(N_energy,1)=-1*aimag(1.0_dp/g)
+       if(drude==1) then 
+          g = epsilon(N_energy,1,1,2)+(cmplx_i*epsilon(N_energy,2,1,2)/(E(N_energy)*e_charge))
+          loss_fn(N_energy,2)=-1*aimag(1.0_dp/g)  
+          g = epsilon(N_energy,1,1,3)+(cmplx_i*epsilon(N_energy,2,1,3)/(E(N_energy)*e_charge))
+          loss_fn(N_energy,3)=-1*aimag(1.0_dp/g)
+       endif
     end do
 
     ! Sum rule 1
     x = 0.0_dp
-    do N_energy=1,jdos_nbins
-       x = x+(N_energy*(dE**2)*loss_fn(N_energy))
+    do N_energy=2,jdos_nbins
+       if(drude==0)then 
+          x = x+(N_energy*(dE**2)*loss_fn(N_energy,1))
+       else
+          x = x+(N_energy*(dE**2)*loss_fn(N_energy,3))
+       endif
     end do
     N_eff2 = x*(e_mass*cell_volume*1E-30*epsilon_0*2)/(pi*(hbar**2))
 
     ! Sum rule 2
     x = 0
-    do N_energy=1,jdos_nbins
-       x = x+(loss_fn(N_energy)/N_energy)
+    do N_energy=2,jdos_nbins
+       if(drude==0)then 
+          x = x+(loss_fn(N_energy,1)/N_energy)
+       else
+          x = x+(loss_fn(N_energy,3)/N_energy)
+       endif
     end do
     N_eff3 = x
 
@@ -524,13 +599,21 @@ contains
     allocate(conduct(1:jdos_nbins,2))  
     conduct=0.0_dp
 
-    do N_energy=1,jdos_nbins
-       conduct(N_energy,1)=(E(N_energy)*e_charge/hbar)*epsilon_0*epsilon(N_energy,2,1)
-    end do
-
-    do N_energy=1,jdos_nbins
-       conduct(N_energy,2)=(E(N_energy)*e_charge/hbar)*epsilon_0*(1.0_dp-epsilon(N_energy,1,1))
-    end do
+    if(drude==0)then 
+       do N_energy=1,jdos_nbins
+          conduct(N_energy,1)=(E(N_energy)*e_charge/hbar)*epsilon_0*epsilon(N_energy,2,1,1)
+       end do
+       do N_energy=1,jdos_nbins
+          conduct(N_energy,2)=(E(N_energy)*e_charge/hbar)*epsilon_0*(1.0_dp-epsilon(N_energy,1,1,1))
+       end do
+    else
+       do N_energy=1,jdos_nbins
+          conduct(N_energy,1)=epsilon_0*epsilon(N_energy,2,1,3)/hbar
+       end do
+       do N_energy=1,jdos_nbins
+          conduct(N_energy,2)=(E(N_energy)*e_charge/hbar)*epsilon_0*(1.0_dp-epsilon(N_energy,1,1,3))
+       end do
+    end if
 
   end subroutine calc_conduct
 
@@ -539,22 +622,33 @@ contains
     !***************************************************************
     ! This subroutine calculates the refractive index
 
-    use od_jdos_utils, only : jdos_nbins
+    use od_jdos_utils, only : jdos_nbins, E
 
     integer :: N_energy
 
     allocate(refract(jdos_nbins,2)) 
     refract=0.0_dp
 
-    do N_energy=1,jdos_nbins
-       refract(N_energy,1)=(0.5_dp*((((epsilon(N_energy,1,1)**2)+&
-            &(epsilon(N_energy,2,1)**2))**0.5_dp)+epsilon(N_energy,1,1)))**(0.5_dp)
-    end do
+    if(drude==0)then
+       do N_energy=1,jdos_nbins
+          refract(N_energy,1)=(0.5_dp*((((epsilon(N_energy,1,1,1)**2)+&
+               &(epsilon(N_energy,2,1,1)**2))**0.5_dp)+epsilon(N_energy,1,1,1)))**(0.5_dp)
+       end do
+       do N_energy=1,jdos_nbins
+          refract(N_energy,2)=(0.5_dp*((((epsilon(N_energy,1,1,1)**2)+&
+               &(epsilon(N_energy,2,1,1)**2))**0.5_dp)-epsilon(N_energy,1,1,1)))**(0.5_dp)
+       end do
+    else 
+       do N_energy=1,jdos_nbins
+          refract(N_energy,1)=(0.5_dp*((((epsilon(N_energy,1,1,3)**2)+&
+               &((epsilon(N_energy,2,1,3)/(E(N_energy)*e_charge))**2))**0.5_dp)+epsilon(N_energy,1,1,1)))**(0.5_dp)
+       end do
+       do N_energy=1,jdos_nbins
+          refract(N_energy,2)=(0.5_dp*((((epsilon(N_energy,1,1,1)**2)+&
+               &((epsilon(N_energy,2,1,3)/(E(N_energy)*e_charge))**2))**0.5_dp)-epsilon(N_energy,1,1,1)))**(0.5_dp)
+       end do
 
-    do N_energy=1,jdos_nbins
-       refract(N_energy,2)=(0.5_dp*((((epsilon(N_energy,1,1)**2)+&
-            &(epsilon(N_energy,2,1)**2))**0.5_dp)-epsilon(N_energy,1,1)))**(0.5_dp)
-    end do
+    end if
 
   end subroutine calc_refract
 
@@ -602,7 +696,7 @@ contains
 
     use od_cell, only : nkpoints, cell_volume
     use od_parameters, only : optics_geom, optics_qdir,jdos_max_energy, scissor_op, &
-         &output_format
+         &output_format, fixed, adaptive, linear
     use od_electronic, only: nbands, num_electrons, nspins
     use od_jdos_utils, only: E, jdos_nbins
     use od_io, only : seedname, io_file_unit, stdout
@@ -651,14 +745,32 @@ contains
        write(epsilon_unit,'(1x,a,f10.3,f10.3,f10.3)')'# Scissor operator:', scissor_op
     end if
     write(epsilon_unit,*)'#'
+    if(drude==1)then 
+       write(epsilon_unit,*)'# Calculation includes intraband term'
+       if(fixed) write(epsilon_unit,*)'# DOS at Ef:', dos_at_e(1,:)
+       if(adaptive) write(epsilon_unit,*)'# DOS at Ef:', dos_at_e(2,:)
+       if(linear) write(epsilon_unit,*)'# DOS at Ef:', dos_at_e(3,:)
+       write(epsilon_unit,*)'# Plasmon energy:', (intra(1)**0.5)
+    endif
     if (N_geom==1) then
        write(epsilon_unit,*)'# Result of sum rule: Neff(E) =  ',N_eff
-       write(epsilon_unit,*)'#'   
-       do N=1,jdos_nbins
-          write(epsilon_unit,*)E(N),epsilon(N,1,1),epsilon(N,2,1)
-       end do
+       write(epsilon_unit,*)'#'
+       if(drude==0)then  
+          do N=1,jdos_nbins
+             write(epsilon_unit,*)E(N),epsilon(N,1,1,1),epsilon(N,2,1,1)
+          enddo
+       else 
+          do N2=1,3
+             write(epsilon_unit,*)''
+             write(epsilon_unit,*)''         
+             do N=1,jdos_nbins
+                write(epsilon_unit,*)E(N),epsilon(N,1,1,N2),epsilon(N,2,1,N2)
+             enddo
+          enddo
+       endif
+
        if(trim(output_format)=="xmgrace") then
-          call write_optics_xmgrace(label,E,epsilon(:,1,1),epsilon(:,2,1))
+          call write_optics_xmgrace(label,E,epsilon(:,1,1,1),epsilon(:,2,1,1))
        elseif(trim(output_format)=="gnuplot") then 
           write(stdout,*)  " WARNING: GNUPLOT output not yet available, continuing..."
        else
@@ -671,12 +783,12 @@ contains
           write(epsilon_unit,*)''
           write(epsilon_unit,*)''
           do N=1,jdos_nbins
-             write(epsilon_unit,*)E(N),epsilon(N,1,N2),epsilon(N,2,N2)
+             write(epsilon_unit,*)E(N),epsilon(N,1,N2,1),epsilon(N,2,N2,1)
           end do
-          
+
           label%name="epsilon"//trim(achar(N2))
           if(trim(output_format)=="xmgrace") then
-             call write_optics_xmgrace(label,E,epsilon(:,1,N2),epsilon(:,2,N2))
+             call write_optics_xmgrace(label,E,epsilon(:,1,N2,1),epsilon(:,2,N2,1))
           elseif(trim(output_format)=="gnuplot") then 
              write(stdout,*)  " WARNING: GNUPLOT output not yet available, continuing..."
           else
@@ -701,7 +813,7 @@ contains
     use od_jdos_utils, only : jdos_nbins, E
     use od_io, only: seedname, io_file_unit,stdout
 
-    integer :: N 
+    integer :: N, N2 
     integer :: loss_fn_unit
 
     type(graph_labels) :: label
@@ -742,16 +854,25 @@ contains
     write(loss_fn_unit,*)'#'
     write(loss_fn_unit,*)'# Result of first sum rule: Neff(E) = ',N_eff2
     write(loss_fn_unit,*)'# Result of second sum rule (pi/2 = 1.570796327):',N_eff3
-    write(loss_fn_unit,*)'#'    
-    do N=1,jdos_nbins
-       write(loss_fn_unit,*)E(N),loss_fn(N)
-    end do
+    write(loss_fn_unit,*)'#' 
+    if(drude==0) then 
+       do N=1,jdos_nbins
+          write(loss_fn_unit,*)E(N),loss_fn(N,1)
+       end do
+    else
+       do N2=1,3
+          do N=1,jdos_nbins 
+             write(loss_fn_unit,*)E(N),loss_fn(N,N2)
+          enddo
+       enddo
+    endif
+
 
     ! Close output file 
     close(unit=loss_fn_unit)  
 
     if(trim(output_format)=="xmgrace") then
-       call write_optics_xmgrace(label,E,loss_fn)
+       !    call write_optics_xmgrace(label,E,loss_fn) !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     elseif(trim(output_format)=="gnuplot") then 
        write(stdout,*)  " WARNING: GNUPLOT output not yet available, continuing..."
     else
@@ -773,7 +894,7 @@ contains
 
     integer :: N 
     integer :: conduct_unit
-    
+
     type(graph_labels) :: label
 
 
@@ -819,7 +940,7 @@ contains
     ! Close output file
     close(unit=conduct_unit)  
 
-   if(trim(output_format)=="xmgrace") then
+    if(trim(output_format)=="xmgrace") then
        call write_optics_xmgrace(label,E,conduct(:,1),conduct(:,2))
     elseif(trim(output_format)=="gnuplot") then 
        write(stdout,*)  " WARNING: GNUPLOT output not yet available, continuing..."
@@ -1032,76 +1153,76 @@ contains
     else
        write(stdout,*)  " WARNING: Unknown output format requested, continuing..."
     endif
-    
-    
+
+
   end subroutine write_reflect
 
-   !=============================================================================== 
+  !=============================================================================== 
   subroutine write_optics_xmgrace(label,E,column1,column2)
     !=============================================================================== 
-   use xmgrace_utils
-   use od_io,         only : io_file_unit,io_error,seedname 
-   implicit none 
+    use xmgrace_utils
+    use od_io,         only : io_file_unit,io_error,seedname 
+    implicit none 
 
-   type(graph_labels),intent(in) :: label
+    type(graph_labels),intent(in) :: label
 
-!  type :: graph_labels
-!     character(10) :: name
-!     character(20) :: title
-!     character(20) :: x_label
-!     character(20) :: y_label
-!     character(20) :: legend_a
-!     character(20) :: legend_b
-!  end type graph_labels
+    !  type :: graph_labels
+    !     character(10) :: name
+    !     character(20) :: title
+    !     character(20) :: x_label
+    !     character(20) :: y_label
+    !     character(20) :: legend_a
+    !     character(20) :: legend_b
+    !  end type graph_labels
 
-   real(dp),  intent(in) :: E(:)
-   real(dp),  intent(in)  :: column1(:)
-   real(dp),  optional, intent(in) :: column2(:)
-  
-   real(dp) :: min_x, max_x, min_y, max_y
-  
-   integer :: batch_file,ierr, array_lengths
-   
-   batch_file=io_file_unit()
-   open(unit=batch_file,file=trim(seedname)//'.'//trim(label%name)//'.agr',iostat=ierr)
-   if(ierr.ne.0) call io_error(" ERROR: Cannot open xmgrace batch file in dos: write_dos_xmgrace")
+    real(dp),  intent(in) :: E(:)
+    real(dp),  intent(in)  :: column1(:)
+    real(dp),  optional, intent(in) :: column2(:)
 
-   min_x=minval(E)
-   max_x=maxval(E)
-   
- 
-   if(present(column2)) then
-      min_y=min(minval(column1), minval(column2))
-   else
-      max_y=minval(column1)
-   endif
-   
+    real(dp) :: min_x, max_x, min_y, max_y
 
-   if(present(column2)) then
-     max_y=max(maxval(column1), maxval(column2))
-   else
-      max_y=maxval(column1)
-   endif
- 
+    integer :: batch_file,ierr, array_lengths
 
-   call  xmgu_setup(batch_file)
-   call  xmgu_legend(batch_file)
-   call  xmgu_title(batch_file, min_x, max_x, min_y, max_y, trim(label%title))
-   call  xmgu_subtitle(batch_file,"Generated by OptaDOS")
-    
-   call  xmgu_axis(batch_file,"x",trim(label%x_label))
-   call  xmgu_axis(batch_file,"y",trim(label%y_label))
+    batch_file=io_file_unit()
+    open(unit=batch_file,file=trim(seedname)//'.'//trim(label%name)//'.agr',iostat=ierr)
+    if(ierr.ne.0) call io_error(" ERROR: Cannot open xmgrace batch file in dos: write_dos_xmgrace")
 
-   if(present(column2)) then
-      call xmgu_data_header(batch_file,0,1,trim(label%legend_a))
-      call xmgu_data_header(batch_file,1,2,trim(label%legend_b))
-      call xmgu_data(batch_file,0,E(:),column1(:))
-      call xmgu_data(batch_file,1,E(:),column2(:))
-   else
-      call xmgu_data_header(batch_file,0,1,trim(label%legend_a))
-      call xmgu_data(batch_file,0,E(:),column1)  
-   endif
+    min_x=minval(E)
+    max_x=maxval(E)
 
- end subroutine write_optics_xmgrace
+
+    if(present(column2)) then
+       min_y=min(minval(column1), minval(column2))
+    else
+       max_y=minval(column1)
+    endif
+
+
+    if(present(column2)) then
+       max_y=max(maxval(column1), maxval(column2))
+    else
+       max_y=maxval(column1)
+    endif
+
+
+    call  xmgu_setup(batch_file)
+    call  xmgu_legend(batch_file)
+    call  xmgu_title(batch_file, min_x, max_x, min_y, max_y, trim(label%title))
+    call  xmgu_subtitle(batch_file,"Generated by OptaDOS")
+
+    call  xmgu_axis(batch_file,"x",trim(label%x_label))
+    call  xmgu_axis(batch_file,"y",trim(label%y_label))
+
+    if(present(column2)) then
+       call xmgu_data_header(batch_file,0,1,trim(label%legend_a))
+       call xmgu_data_header(batch_file,1,2,trim(label%legend_b))
+       call xmgu_data(batch_file,0,E(:),column1(:))
+       call xmgu_data(batch_file,1,E(:),column2(:))
+    else
+       call xmgu_data_header(batch_file,0,1,trim(label%legend_a))
+       call xmgu_data(batch_file,0,E(:),column1)  
+    endif
+
+  end subroutine write_optics_xmgrace
 
 endmodule od_optics
