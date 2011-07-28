@@ -420,7 +420,7 @@ contains
     real(kind=dp) ::dE
     real(kind=dp) :: x
     real(kind=dp) :: epsilon2_const
- 
+
     dE = E(2)-E(1)
     epsilon2_const = (e_charge*pi*1E-20)/(cell_volume*1E-30*epsilon_0)
 
@@ -448,7 +448,8 @@ contains
                   epsilon2_const*weighted_jdos(N_energy,N_spin,N2)
              if (optics_intraband) then 
                 epsilon(N_energy,2,N2,2) = epsilon(N_energy,2,N2,2) + &
-                     ((intra(N2)*(e_charge**2)*hbar*optics_drude_broadening)/(((E(N_energy)*e_charge)**2)+((optics_drude_broadening*hbar)**2))) 
+                     ((intra(N2)*(e_charge**2)*hbar*optics_drude_broadening)/(((E(N_energy)*e_charge)**2)&
+                     +((optics_drude_broadening*hbar)**2))) 
                 epsilon(N_energy,2,N2,3) = epsilon(N_energy,2,N2,3) + &
                      epsilon(N_energy,2,N2,2) + epsilon(N_energy,2,N2,1)*E(N_energy)*e_charge
              end if
@@ -511,11 +512,11 @@ contains
           end do
           epsilon(N_energy,1,N2,1)=((2.0_dp/pi)*q(1))+1.0_dp
           if(optics_intraband) then 
-!             epsilon(N_energy,1,N2,2)=((2.0_dp/pi)*q(2))+1.0_dp  !! old KK method 
+             !             epsilon(N_energy,1,N2,2)=((2.0_dp/pi)*q(2))+1.0_dp  !! old KK method 
              epsilon(N_energy,1,N2,2)=1.0_dp-(intra(N_geom)/((E(N_energy)**2)+(((optics_drude_broadening*hbar)/e_charge)**2)))
-!             epsilon(N_energy,1,N2,3)=((2.0_dp/pi)*q(3))+1.0_dp  !! old KK method
+             !             epsilon(N_energy,1,N2,3)=((2.0_dp/pi)*q(3))+1.0_dp  !! old KK method
              epsilon(N_energy,1,N2,3)=epsilon(N_energy,1,N2,1)+epsilon(N_energy,1,N2,2)-1.0_dp
-         endif
+          endif
        end do
     end do
 
