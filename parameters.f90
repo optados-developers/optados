@@ -85,9 +85,11 @@ module od_parameters
   real(kind=dp),     public, save :: core_qdir(3) 
   logical,           public, save :: core_LAI_broadening  
   real(kind=dp),     public, save :: LAI_gaussian_width
+  logical,           public, save :: LAI_gaussian 
   real(kind=dp),     public, save :: LAI_lorentzian_width
   real(kind=dp),     public, save :: LAI_lorentzian_scale 
-  real(kind=dp),     public, save :: LAI_lorentzian_offset 
+  real(kind=dp),     public, save :: LAI_lorentzian_offset
+  logical,           public, save :: LAI_lorentzian 
 
   real(kind=dp),     public, save :: lenconfac
 
@@ -315,19 +317,28 @@ contains
          call io_error('Error: polycrystalline core geometry requested but core_qdir is set')
 
     core_LAI_broadening   = .false.
-    call param_get_keyword('core_LAI_broadening',found,l_value=core_LAI_broadening)
+    call param_get_keyword('core_lai_broadening',found,l_value=core_LAI_broadening)
 
     LAI_gaussian_width    = 0.0_dp
-    call param_get_keyword('LAI_gaussian_width',found,r_value=LAI_gaussian_width)
+    LAI_gaussian = .false. 
+    call param_get_keyword('lai_gaussian_width',found,r_value=LAI_gaussian_width)
+    if (LAI_gaussian_width.gt.1E-14) LAI_gaussian=.true.
+    if (LAI_gaussian_width.lt.0.0_dp) call io_error('Error: LAI_gaussian_width must be positive')
 
     LAI_lorentzian_width    = 0.0_dp
-    call param_get_keyword('LAI_lorentzian_width',found,r_value=LAI_lorentzian_width)
+    LAI_lorentzian = .false. 
+    call param_get_keyword('lai_lorentzian_width',found,r_value=LAI_lorentzian_width)
+    if (LAI_lorentzian_width.gt.1E-14) LAI_lorentzian=.true.
+    if (LAI_lorentzian_width.lt.0.0_dp) call io_error('Error: LAI_lorentzian_width must be positive')
 
     LAI_lorentzian_scale    = 0.1_dp
-    call param_get_keyword('LAI_lorentzian_scale',found,r_value=LAI_lorentzian_scale)
+    call param_get_keyword('lai_lorentzian_scale',found,r_value=LAI_lorentzian_scale)
+    if (LAI_lorentzian_scale.gt.1E-14) LAI_lorentzian=.true. 
+    if (LAI_lorentzian_scale.lt.0.0_dp) call io_error('Error: LAI_lorentzian_scale must be positive')
 
     LAI_lorentzian_offset    = 0.0_dp
-    call param_get_keyword('LAI_lorentzian_offset',found,r_value=LAI_lorentzian_offset)
+    call param_get_keyword('lai_lorentzian_offset',found,r_value=LAI_lorentzian_offset)
+    if (LAI_lorentzian_offset.lt.0.0_dp) call io_error('Error: LAI_lorentzian_offset must be positive')
 
 
 
@@ -1248,9 +1259,11 @@ contains
     call comms_bcast(core_qdir(1),3)
     call comms_bcast(core_LAI_broadening,1)
     call comms_bcast(LAI_gaussian_width,1)
+    call comms_bcast(LAI_gaussian,1)
     call comms_bcast(LAI_lorentzian_width,1)
     call comms_bcast(LAI_lorentzian_scale,1)
     call comms_bcast(LAI_lorentzian_offset,1)
+    call comms_bcast(LAI_lorentzian,1)
     call comms_bcast(dos_per_volume,1)
     call comms_bcast(dos_min_energy,1)
     call comms_bcast(dos_max_energy,1)
