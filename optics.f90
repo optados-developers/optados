@@ -426,9 +426,10 @@ contains
 
     if(optics_intraband)then
        allocate(intra(N_geom))
+       intra=0.0_dp
        do N=1,N_geom
           do N_spin=1,nspins
-             intra(N_geom) = intra(N_geom) + weighted_dos_at_e(N_spin,N_geom)
+           intra(N) = intra(N) + weighted_dos_at_e(N_spin,N)
           enddo
        enddo
        intra = intra*e_charge/(cell_volume*1E-10*epsilon_0)
@@ -513,7 +514,7 @@ contains
           epsilon(N_energy,1,N2,1)=((2.0_dp/pi)*q(1))+1.0_dp
           if(optics_intraband) then 
              !             epsilon(N_energy,1,N2,2)=((2.0_dp/pi)*q(2))+1.0_dp  !! old KK method 
-             epsilon(N_energy,1,N2,2)=1.0_dp-(intra(N_geom)/((E(N_energy)**2)+(((optics_drude_broadening*hbar)/e_charge)**2)))
+             epsilon(N_energy,1,N2,2)=1.0_dp-(intra(N2)/((E(N_energy)**2)+(((optics_drude_broadening*hbar)/e_charge)**2)))
              !             epsilon(N_energy,1,N2,3)=((2.0_dp/pi)*q(3))+1.0_dp  !! old KK method
              epsilon(N_energy,1,N2,3)=epsilon(N_energy,1,N2,1)+epsilon(N_energy,1,N2,2)-1.0_dp
           endif
@@ -697,7 +698,7 @@ contains
     use od_jdos_utils, only: E, jdos_nbins
     use od_io, only : seedname, io_file_unit, stdout
 
-    integer :: N,N2
+    integer :: N,N2,N3
     real(kind=dp) ::dE
     integer :: epsilon_unit
 
@@ -746,7 +747,9 @@ contains
        if(fixed) write(epsilon_unit,*)'# DOS at Ef:', dos_at_e(1,:)
        if(adaptive) write(epsilon_unit,*)'# DOS at Ef:', dos_at_e(2,:)
        if(linear) write(epsilon_unit,*)'# DOS at Ef:', dos_at_e(3,:)
-       write(epsilon_unit,*)'# Plasmon energy:', (intra(1)**0.5)
+       do N=1,N_geom
+          write(epsilon_unit,*)'# Plasmon energy:', (intra(N)**0.5)
+       end do
     endif
     if (N_geom==1) then
        write(epsilon_unit,*)'# Result of sum rule: Neff(E) =  ',N_eff
@@ -772,15 +775,28 @@ contains
        else
           write(stdout,*)  " WARNING: Unknown output format requested, continuing..."
        endif
-
     end if
+
     if (index(optics_geom,'tensor')>0) then
+       write(epsilon_unit,*)''
+       write(epsilon_unit,*)''
        do N2=1,N_geom  
+          write(epsilon_unit,*)'# Component ', N2
           write(epsilon_unit,*)''
           write(epsilon_unit,*)''
-          do N=1,jdos_nbins
-             write(epsilon_unit,*)E(N),epsilon(N,1,N2,1),epsilon(N,2,N2,1)
-          end do
+          if(.not. optics_intraband)then  
+             do N=1,jdos_nbins
+                write(epsilon_unit,*)E(N),epsilon(N,1,N2,1),epsilon(N,2,N2,1)
+             end do
+          else 
+             do N3=1,3
+                do N=1,jdos_nbins
+                   write(epsilon_unit,*)E(N),epsilon(N,1,N2,N3),epsilon(N,2,N2,N3)
+                enddo
+                write(epsilon_unit,*)''
+                write(epsilon_unit,*)''   
+             enddo
+          end if
 
           label%name="epsilon"//trim(achar(N2))
           if(trim(output_format)=="xmgrace") then
