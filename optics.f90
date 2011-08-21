@@ -548,15 +548,18 @@ contains
     do N_energy=1,jdos_nbins
        g = epsilon(N_energy,1,1,1)+(cmplx_i*epsilon(N_energy,2,1,1))
        loss_fn(N_energy,1)=-1*aimag(1.0_dp/g)
-       if(optics_intraband) then 
-          g = epsilon(N_energy,1,1,2)+(cmplx_i*epsilon(N_energy,2,1,2)/(E(N_energy)*e_charge))
-          loss_fn(N_energy,2)=-1*aimag(1.0_dp/g)  
-          g = epsilon(N_energy,1,1,3)+(cmplx_i*epsilon(N_energy,2,1,3)/(E(N_energy)*e_charge))
-          loss_fn(N_energy,3)=-1*aimag(1.0_dp/g)
+       if(optics_intraband) then
+          if(N_energy==1) then
+             loss_fn(1,2)=0.0_dp  
+             loss_fn(1,3)=0.0_dp
+          else
+             g = epsilon(N_energy,1,1,2)+(cmplx_i*epsilon(N_energy,2,1,2)/(E(N_energy)*e_charge))
+             loss_fn(N_energy,2)=-1*aimag(1.0_dp/g)  
+             g = epsilon(N_energy,1,1,3)+(cmplx_i*epsilon(N_energy,2,1,3)/(E(N_energy)*e_charge))
+             loss_fn(N_energy,3)=-1*aimag(1.0_dp/g)
+          endif
        endif
     end do
-    loss_fn(1,2)=0.0_dp  ! gets rid of the NaN from dividing by zero in the loop above
-    loss_fn(1,3)=0.0_dp
 
     ! Sum rule 1
     x = 0.0_dp
