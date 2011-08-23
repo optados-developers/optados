@@ -44,7 +44,7 @@ contains
     call dos_utils_calculate(matrix_weights, weighted_dos)
 
     ! Lifetime and instrumental broadening
-    if(core_LAI_broadening.eqv..true.) then  
+    if(core_LAI_broadening.eqv..true.) then 
        allocate(weighted_dos_broadened(size(weighted_dos,1),size(weighted_dos,2),size(weighted_dos,3)))
        weighted_dos_broadened=0.0_dp
        if(LAI_gaussian) call core_gaussian 
@@ -174,6 +174,8 @@ contains
              write(core_unit,*)E(N),weighted_dos(N,1,orb)
           end if
        end do
+       write(core_unit,*)''
+       write(core_unit,*)''
     end do
 
     close(core_unit)
@@ -232,6 +234,7 @@ contains
 
     if(LAI_gaussian) then 
        weighted_dos_temp = weighted_dos_broadened
+       weighted_dos_broadened = 0.0_dp
     else 
        weighted_dos_temp = weighted_dos
     end if

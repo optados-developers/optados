@@ -312,22 +312,6 @@ Fermi level) and the highest eigenvalue in the bands file.
 Resolution at which to compute the DOS and related properties.
 Default value is 0.01eV. 
 
-\subsection[optics\_geom]{\tt character(len=20) :: optics\_geom}
-
-\begin{itemize}
-\item[{\bf --}]  \verb#polycrystalline# (Isotropic average)
-\item[{\bf --}]  \verb#polarized#  
-\item[{\bf --}]  \verb#unpolarized# 
-\item[{\bf --}]  \verb#tensor# (Full dielectric tensor)
-\end{itemize}
-
-
-\subsection[optics\_qdir]{\tt real(kind=dp) :: optics\_qdir(3)}
-Direction of polarisation. Must be specified if \verb#optics_geom :polarized#  
-or \verb#optics_geom : unpolarized# .
-No default
-
-
 \subsection[pdos]{\tt character :: pdos}
 Defines which components to include in the pdos analysis:
 
@@ -343,6 +327,72 @@ Defines which components to include in the pdos analysis:
 \item[{\bf --}]  \verb#sum:C1:C3:C4-C8#  (decompose onto atoms C1, C2 and C4,C5,C6,C7,C8 and combine into the single projection)
 
 \end{itemize}
+
+
+\subsection[optics\_geom]{\tt character(len=20) :: optics\_geom}
+
+Specifies the geometry for the optics calculation.  Possible options:
+\begin{itemize}
+\item[{\bf --}]  \verb#polycrystalline# (Isotropic average)
+\item[{\bf --}]  \verb#polarized#  
+\item[{\bf --}]  \verb#unpolarized# 
+\item[{\bf --}]  \verb#tensor# (Full dielectric tensor)
+\end{itemize}
+The default is polycrystalline.
+
+\subsection[optics\_qdir]{\tt real(kind=dp) :: optics\_qdir(3)}
+Direction of polarisation. Must be specified if \verb#optics_geom :polarized#  
+or \verb#optics_geom : unpolarized#.
+No default
+
+\subsection[optics\_intraband]{\tt logical :: optics\_intraband}
+Calculate the intraband contribution to the dielectric function.  (Important for metals.)    
+The default is FALSE.
+
+\subsection[optics\_drude\_broadening]{\tt real(kind=dp) :: optics\_drude\_broadening}
+Value of broadening included in the Drude term expressed in $s^{-1}$.  
+The default value is 1E-14.  
+
+\subsection[core\_geom]{\tt character(len=20) :: core\_geom}
+
+Specifies the geometry for the core-spectra calculation.  Possible options: 
+\begin{itemize}
+\item[{\bf --}]  \verb#polycrystalline# (Isotropic average)
+\item[{\bf --}]  \verb#polarized#  
+\end{itemize}
+The default is polycrystalline.
+
+\subsection[core\_qdir]{\tt real(kind=dp) :: core\_qdir(3)}
+Direction of polarisation. Must be specified if \verb#core_geom :polarized#.
+No default
+
+\subsection[core\_LAI\_broadening]{\tt logical :: core\_LAI\_broadening}
+Include life-time and instrumentation broadening.  
+The default is FALSE.
+
+\subsection[core\_gaussian\_width]{\tt real(kind=dp) :: core\_gaussian\_width}
+FWHM of Gaussian function used to broaden spectrum.  
+
+The default value, if \verb#core_LAI_broadening :true#, is 0 (i.e. no Gaussian used).
+
+\subsection[core\_lorentzian\_width]{\tt real(kind=dp) :: core\_lorentzian\_width}
+FWHM of fixed Lorentzian function used to broaden spectrum.  
+
+The default value, if \verb#core_LAI_broadening :true#, is 0 (i.e. no fixed Lorentzian used).
+
+\subsection[core\_lorentzian\_scale]{\tt real(kind=dp) :: core\_lorentzian\_scale}
+Variation of Lorentzian function with energy i.e. the width of the Lorentzian is energy x 
+\verb#core_lorentzian_scale#.  If set to zero, no energy dependent broadening is included.  
+If \verb#core_lorentzian_scale# and \verb#core_lorentzian_width# are both specified, the 
+total width of the Lorentzian used will be \verb#core_lorentzian_width# + (energy x 
+\verb#core_lorentzian_scale#).
+
+The default value, if \verb#core_LAI_broadening :true#, is 0.1. 
+
+\subsection[core\_lorentzian\_offset]{\tt real(kind=dp) :: core\_lorentzian\_offset}
+Energy (in eV) above the edge onset that the energy dependent broadening starts.  
+The default value, if \verb#core_LAI_broadening :true#, is 0.
+
 
 
 \subsection[devel\_flag]{\tt character(len=50) :: devel\_flag}
@@ -373,6 +423,11 @@ See  \verb#examples/Si2_PDOS/#. This is a simple example of using \optados\ for 
 \section{JDOS}
 See  \verb#examples/Si2_JDOS/#. This is a simple example of using \optados\ for calculating joint electronic density of states. This is a simple example of using \optados\ for calculating joint electronic density of states.  We choose to recalculate the Fermi level using the calculated DOS, rather than use the Fermi level suggested by \castep.  If {\tt TASK : compare\_jdos} is used instead, \optados\ will calculate the JDOS using all the broadening methods, this is good practice to see whether the broadening widths are appropriate before more advanced tasks are carried out.  The JDOS is outputted to {\tt Si2.jadaptive.dat}. A file suitable for plotting using {\tt xmgrace} is written to {\tt Si2.jadaptive.agr}. 
 
+\section{CORE}
+See  \verb#examples/diamond_CORE/#. This is a simple example of using \optados\ for calculating core level spectra. 
+
+\section{OPTICS}
+See  \verb#examples/Al_OPTICS/#. This is a simple example of using \optados\ for calculating optical properties. 
 
 \end{document}
 
