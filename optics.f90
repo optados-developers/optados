@@ -13,6 +13,7 @@ module od_optics
      character(20) :: y_label
      character(20) :: legend_a
      character(20) :: legend_b
+     character(20) :: legend_c
   end type graph_labels
 
 
@@ -718,7 +719,7 @@ contains
 
     ! Open the output file
     epsilon_unit = io_file_unit()
-    open(unit=epsilon_unit,action='write',file=trim(seedname)//'.epsilon')
+    open(unit=epsilon_unit,action='write',file=trim(seedname)//'_epsilon.dat')
 
     ! Write into the output file
     write(epsilon_unit,*)'#*********************************************'
@@ -774,7 +775,7 @@ contains
        if(trim(output_format)=="xmgrace") then
           call write_optics_xmgrace(label,E,epsilon(:,1,1,1),epsilon(:,2,1,1))
        elseif(trim(output_format)=="gnuplot") then 
-          write(stdout,*)  " WARNING: GNUPLOT output not yet available, continuing..."
+          call write_optics_gnuplot(label,E,epsilon(:,1,1,1),epsilon(:,2,1,1))
        else
           write(stdout,*)  " WARNING: Unknown output format requested, continuing..."
        endif
@@ -801,14 +802,15 @@ contains
              enddo
           end if
 
-          label%name="epsilon"//trim(achar(N2))
-          if(trim(output_format)=="xmgrace") then
-             call write_optics_xmgrace(label,E,epsilon(:,1,N2,1),epsilon(:,2,N2,1))
-          elseif(trim(output_format)=="gnuplot") then 
-             write(stdout,*)  " WARNING: GNUPLOT output not yet available, continuing..."
-          else
-             write(stdout,*)  " WARNING: Unknown output format requested, continuing..."
-          endif
+! I don't think we want to plot in the tensor case, so this is commented out (it's broke anyhow!) jry
+!!$          label%name="epsilon"//trim(achar(N2))
+!!$          if(trim(output_format)=="xmgrace") then
+!!$             call write_optics_xmgrace(label,E,epsilon(:,1,N2,1),epsilon(:,2,N2,1))
+!!$          elseif(trim(output_format)=="gnuplot") then 
+!!$             write(stdout,*)  " WARNING: GNUPLOT output not yet available, continuing..."
+!!$          else
+!!$             write(stdout,*)  " WARNING: Unknown output format requested, continuing..."
+!!$          endif
        end do
     end if
 
@@ -839,11 +841,13 @@ contains
     label%title="Loss Function"
     label%x_label="Energy (eV)"
     label%y_label=""
-    label%legend_a="loss_fn"
+    label%legend_a="Total"
+    label%legend_b="Intraband"
+    label%legend_c="Interband"
 
     ! Open the output file
     loss_fn_unit = io_file_unit()
-    open(unit=loss_fn_unit,action='write',file=trim(seedname)//'.loss_fn')
+    open(unit=loss_fn_unit,action='write',file=trim(seedname)//'_loss_fn.dat')
 
     ! Write into the output file
     write(loss_fn_unit,*)'#*********************************************'
@@ -888,9 +892,17 @@ contains
     close(unit=loss_fn_unit)  
 
     if(trim(output_format)=="xmgrace") then
-       !    call write_optics_xmgrace(label,E,loss_fn) !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+       if(.not. optics_intraband) then 
+          call write_optics_xmgrace(label,E,loss_fn(:,1)) 
+       else
+          call write_optics_xmgrace(label,E,loss_fn(:,1),loss_fn(:,2),loss_fn(:,3)) 
+       endif
     elseif(trim(output_format)=="gnuplot") then 
-       write(stdout,*)  " WARNING: GNUPLOT output not yet available, continuing..."
+       if(.not. optics_intraband) then 
+          call write_optics_gnuplot(label,E,loss_fn(:,1)) 
+       else
+          call write_optics_gnuplot(label,E,loss_fn(:,1),loss_fn(:,2),loss_fn(:,3)) 
+       endif
     else
        write(stdout,*)  " WARNING: Unknown output format requested, continuing..."
     endif
@@ -924,7 +936,7 @@ contains
 
     ! Open the output file
     conduct_unit = io_file_unit()
-    open(unit=conduct_unit,action='write',file=trim(seedname)//'.conductivity')
+    open(unit=conduct_unit,action='write',file=trim(seedname)//'_conductivity.dat')
 
     ! Write into the output file
     write(conduct_unit,*)'#*********************************************'
@@ -959,7 +971,7 @@ contains
     if(trim(output_format)=="xmgrace") then
        call write_optics_xmgrace(label,E,conduct(:,1),conduct(:,2))
     elseif(trim(output_format)=="gnuplot") then 
-       write(stdout,*)  " WARNING: GNUPLOT output not yet available, continuing..."
+       call write_optics_gnuplot(label,E,conduct(:,1),conduct(:,2))
     else
        write(stdout,*)  " WARNING: Unknown output format requested, continuing..."
     endif
@@ -992,7 +1004,7 @@ contains
 
     ! Open the output file
     refract_unit = io_file_unit()
-    open(unit=refract_unit,action='write',file=trim(seedname)//'.refractive_index')
+    open(unit=refract_unit,action='write',file=trim(seedname)//'_refractive_index.dat')
 
     ! Write into the output file
     write(refract_unit,*)'#*********************************************'
@@ -1029,8 +1041,8 @@ contains
     if(trim(output_format)=="xmgrace") then
        call write_optics_xmgrace(label,E,refract(:,1),refract(:,2))
     elseif(trim(output_format)=="gnuplot") then 
-       write(stdout,*)  " WARNING: GNUPLOT output not yet available, continuing..."
-    else
+       call write_optics_gnuplot(label,E,refract(:,1),refract(:,2))
+   else
        write(stdout,*)  " WARNING: Unknown output format requested, continuing..."
     endif
 
@@ -1061,7 +1073,7 @@ contains
 
     ! Open the output file
     absorp_unit = io_file_unit()
-    open(unit=absorp_unit,action='write',file=trim(seedname)//'.absorption')
+    open(unit=absorp_unit,action='write',file=trim(seedname)//'_absorption.dat')
 
     ! Write into the output file
     write(absorp_unit,*)'#*********************************************'
@@ -1097,7 +1109,7 @@ contains
     if(trim(output_format)=="xmgrace") then
        call write_optics_xmgrace(label,E,absorp)
     elseif(trim(output_format)=="gnuplot") then 
-       write(stdout,*)  " WARNING: GNUPLOT output not yet available, continuing..."
+       call write_optics_gnuplot(label,E,absorp)
     else
        write(stdout,*)  " WARNING: Unknown output format requested, continuing..."
     endif
@@ -1128,7 +1140,7 @@ contains
 
     ! Open the output file
     reflect_unit = io_file_unit()
-    open(unit=reflect_unit,action='write',file=trim(seedname)//'.reflection')
+    open(unit=reflect_unit,action='write',file=trim(seedname)//'_reflection.dat')
 
     ! Write into the output file
     write(reflect_unit,*)'#*********************************************'
@@ -1165,7 +1177,7 @@ contains
     if(trim(output_format)=="xmgrace") then
        call write_optics_xmgrace(label,E,reflect)
     elseif(trim(output_format)=="gnuplot") then 
-       write(stdout,*)  " WARNING: GNUPLOT output not yet available, continuing..."
+       call write_optics_gnuplot(label,E,reflect)
     else
        write(stdout,*)  " WARNING: Unknown output format requested, continuing..."
     endif
@@ -1174,7 +1186,7 @@ contains
   end subroutine write_reflect
 
   !=============================================================================== 
-  subroutine write_optics_xmgrace(label,E,column1,column2)
+  subroutine write_optics_xmgrace(label,E,column1,column2,column3)
     !=============================================================================== 
     use xmgrace_utils
     use od_io,         only : io_file_unit,io_error,seedname 
@@ -1182,54 +1194,61 @@ contains
 
     type(graph_labels),intent(in) :: label
 
-    !  type :: graph_labels
-    !     character(10) :: name
-    !     character(20) :: title
-    !     character(20) :: x_label
-    !     character(20) :: y_label
-    !     character(20) :: legend_a
-    !     character(20) :: legend_b
-    !  end type graph_labels
-
     real(dp),  intent(in) :: E(:)
     real(dp),  intent(in)  :: column1(:)
     real(dp),  optional, intent(in) :: column2(:)
+    real(dp),  optional, intent(in) :: column3(:)
 
-    real(dp) :: min_x, max_x, min_y, max_y
+    real(dp) :: min_x, max_x, min_y, max_y, range
 
     integer :: batch_file,ierr
 
     batch_file=io_file_unit()
-    open(unit=batch_file,file=trim(seedname)//'.'//trim(label%name)//'.agr',iostat=ierr)
-    if(ierr.ne.0) call io_error(" ERROR: Cannot open xmgrace batch file in dos: write_dos_xmgrace")
+    open(unit=batch_file,file=trim(seedname)//'_'//trim(label%name)//'.agr',iostat=ierr)
+    if(ierr.ne.0) call io_error(" ERROR: Cannot open xmgrace batch file in optics: write_optics_xmgrace")
 
     min_x=minval(E)
     max_x=maxval(E)
 
-
-    if(present(column2)) then
+    if(present(column3)) then
+       min_y=min(minval(column1), minval(column2),minval(column3))
+    elseif(present(column2)) then
        min_y=min(minval(column1), minval(column2))
     else
-       max_y=minval(column1)
+       min_y=minval(column1)
     endif
 
 
-    if(present(column2)) then
+    if(present(column3)) then
+       max_y=max(maxval(column1), maxval(column2),maxval(column2))
+    elseif(present(column2)) then
        max_y=max(maxval(column1), maxval(column2))
     else
        max_y=maxval(column1)
     endif
 
+    ! For aesthetic reasons we make the axis range 1% larger than the data range
+    range=abs(max_y-min_y)
+    max_y=max_y+0.01_dp*range
+    min_y=min_y-0.01_dp*range
+
 
     call  xmgu_setup(batch_file)
     call  xmgu_legend(batch_file)
     call  xmgu_title(batch_file, min_x, max_x, min_y, max_y, trim(label%title))
-    call  xmgu_subtitle(batch_file,"Generated by OptaDOS")
+!    call  xmgu_subtitle(batch_file,"Generated by OptaDOS")
 
     call  xmgu_axis(batch_file,"x",trim(label%x_label))
     call  xmgu_axis(batch_file,"y",trim(label%y_label))
 
-    if(present(column2)) then
+    if(present(column3)) then
+       call xmgu_data_header(batch_file,0,1,trim(label%legend_a))
+       call xmgu_data_header(batch_file,1,2,trim(label%legend_b))
+       call xmgu_data_header(batch_file,1,2,trim(label%legend_c))
+       call xmgu_data(batch_file,0,E(:),column1(:))
+       call xmgu_data(batch_file,1,E(:),column2(:))
+       call xmgu_data(batch_file,1,E(:),column3(:))
+    elseif(present(column2)) then
        call xmgu_data_header(batch_file,0,1,trim(label%legend_a))
        call xmgu_data_header(batch_file,1,2,trim(label%legend_b))
        call xmgu_data(batch_file,0,E(:),column1(:))
@@ -1240,5 +1259,43 @@ contains
     endif
 
   end subroutine write_optics_xmgrace
+
+  !=============================================================================== 
+  subroutine write_optics_gnuplot(label,E,column1,column2,column3)
+    !=============================================================================== 
+    use od_io,         only : io_file_unit,io_error,seedname 
+    implicit none 
+
+    type(graph_labels),intent(in) :: label
+
+    real(dp),  intent(in) :: E(:)
+    real(dp),  intent(in)  :: column1(:)
+    real(dp),  optional, intent(in) :: column2(:)
+    real(dp),  optional, intent(in) :: column3(:)
+
+    integer :: gnu_unit,ierr
+
+    gnu_unit=io_file_unit()
+    open(unit=gnu_unit,file=trim(seedname)//'_'//trim(label%name)//'.gnu',iostat=ierr)
+    if(ierr.ne.0) call io_error(" ERROR: Cannot open gnuplot batch file in optics: write_optics_gnupot")
+
+    gnu_unit = io_file_unit()
+    open(unit=gnu_unit,action='write',file=trim(seedname)//'_'//trim(label%name)//'.gnu')
+    write(gnu_unit,*) 'set xlabel ','"'//trim(label%x_label)//'"'
+    write(gnu_unit,*) 'set ylabel ','"'//trim(label%y_label)//'"'
+    write(gnu_unit,*) 'set title ','"'//trim(label%title)//'"'
+    if(present(column3)) then
+       write(gnu_unit,*) 'plot ','"'//trim(seedname)//'_'//trim(label%name)//'.dat'//'"',' u 1:2 t ','"'//trim(label%legend_a)//'"',' w l, \'
+       write(gnu_unit,*) '       "'//trim(seedname)//'_'//trim(label%name)//'.dat'//'"',' u 1:3 t ','"'//trim(label%legend_b)//'"',' w l, \'
+       write(gnu_unit,*) '       "'//trim(seedname)//'_'//trim(label%name)//'.dat'//'"',' u 1:4 t ','"'//trim(label%legend_c)//'"',' w l'
+    elseif(present(column2)) then
+       write(gnu_unit,*) 'plot ','"'//trim(seedname)//'_'//trim(label%name)//'.dat'//'"',' u 1:2 t ','"'//trim(label%legend_a)//'"',' w l, \'
+       write(gnu_unit,*) '       "'//trim(seedname)//'_'//trim(label%name)//'.dat'//'"',' u 1:3 t ','"'//trim(label%legend_b)//'"',' w l'
+    else
+       write(gnu_unit,*) 'plot ','"'//trim(seedname)//'_'//trim(label%name)//'.dat'//'"',' u 1:2 t ','"'//trim(label%legend_a)//'"',' w l'
+    endif
+    close(gnu_unit)
+
+  end subroutine write_optics_gnuplot
 
 endmodule od_optics
