@@ -179,7 +179,7 @@ contains
 
     num_atoms=0
     num_species=0
-    if(pdos) then
+    if(pdos.or.core) then
        ! try to read in the atoms from the cell file.
        ! We don't need them otherwise, so let's not bother
        call cell_get_atoms

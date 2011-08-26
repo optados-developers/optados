@@ -46,7 +46,7 @@ module od_electronic
      integer,allocatable  :: rank_in_species(:) ! Unique ion number within species
      integer,allocatable  :: am_channel(:)      ! The angular momentum Channel (l)
      integer,allocatable  :: shell(:)           ! Principal quantum number (n) !n.b typically only know this for core states
-     character(len=1),allocatable :: am_channel_name(:) ! Name of angular momentum channel s,p,d, etc
+     character(len=10),allocatable :: am_channel_name(:) ! Name of angular momentum channel s,p,d, etc
   end type orbitals
 
 
@@ -453,7 +453,7 @@ contains
     implicit none
 
     integer :: inodes,ik,ns,nb,indx
-    integer :: ierr,elnes_unit,orb
+    integer :: ierr,elnes_unit,orb,loop
     character(filename_len) :: elnes_filename
     real(kind=dp) :: time0
 
@@ -477,14 +477,18 @@ contains
 
        ! check these agree with band data?
 
+       allocate(elnes_orbital%ion_no(elnes_mwab%norbitals),stat=ierr)
+       if(ierr/=0) call io_error(' Error : elec_read_elnes_mat cannot allocate elnes_orbital%ion_no')
        allocate(elnes_orbital%species_no(elnes_mwab%norbitals),stat=ierr)
-       if(ierr/=0) call io_error(' Error : cannot allocate elnes_orbital')
+       if(ierr/=0) call io_error(' Error : elec_read_elnes_mat cannot allocate elnes_orbital%species_no')
        allocate(elnes_orbital%rank_in_species(elnes_mwab%norbitals),stat=ierr)
-       if(ierr/=0) call io_error(' Error : cannot allocate elnes_orbital')
+       if(ierr/=0) call io_error(' Error : elec_read_elnes_mat cannot allocate elnes_orbitall%rank_in_species')
        allocate(elnes_orbital%shell(elnes_mwab%norbitals),stat=ierr)
-       if(ierr/=0) call io_error(' Error : cannot allocate elnes_orbital')
+       if(ierr/=0) call io_error(' Error : elec_read_elnes_mat cannot allocate elnes_orbitall%shell')
        allocate(elnes_orbital%am_channel(elnes_mwab%norbitals),stat=ierr)
-       if(ierr/=0) call io_error(' Error : cannot allocate elnes_orbital')
+       if(ierr/=0) call io_error(' Error : elec_read_elnes_mat cannot allocate elnes_orbital%am_channel')
+       allocate(elnes_orbital%am_channel_name(elnes_mwab%norbitals),stat=ierr)
+       if(ierr/=0) call io_error(' Error : elec_read_elnes_mat cannot allocate elnes_orbital%am_channel_name')
 
        read(elnes_unit) elnes_orbital%species_no(1:elnes_mwab%norbitals)
        read(elnes_unit) elnes_orbital%rank_in_species(1:elnes_mwab%norbitals)
@@ -497,14 +501,18 @@ contains
     call comms_bcast(elnes_mwab%nkpoints,1)
     call comms_bcast(elnes_mwab%nspins,1)
     if(.not. on_root) then
+       allocate(elnes_orbital%ion_no(elnes_mwab%norbitals),stat=ierr)
+       if(ierr/=0) call io_error(' Error : elec_read_elnes_mat cannot allocate elnes_orbital%ion_no')
        allocate(elnes_orbital%species_no(elnes_mwab%norbitals),stat=ierr)
-       if(ierr/=0) call io_error(' Error : cannot allocate elnes_orbital')
+       if(ierr/=0) call io_error(' Error : elec_read_elnes_mat cannot allocate elnes_orbital%species_no')
        allocate(elnes_orbital%rank_in_species(elnes_mwab%norbitals),stat=ierr)
-       if(ierr/=0) call io_error(' Error : cannot allocate elnes_orbital')
+       if(ierr/=0) call io_error(' Error : elec_read_elnes_mat cannot allocate elnes_orbitall%rank_in_species')
        allocate(elnes_orbital%shell(elnes_mwab%norbitals),stat=ierr)
-       if(ierr/=0) call io_error(' Error : cannot allocate elnes_orbital')
+       if(ierr/=0) call io_error(' Error : elec_read_elnes_mat cannot allocate elnes_orbitall%shell')
        allocate(elnes_orbital%am_channel(elnes_mwab%norbitals),stat=ierr)
-       if(ierr/=0) call io_error(' Error : cannot allocate elnes_orbital')
+       if(ierr/=0) call io_error(' Error : elec_read_elnes_mat cannot allocate elnes_orbital%am_channel')
+       allocate(elnes_orbital%am_channel_name(elnes_mwab%norbitals),stat=ierr)
+       if(ierr/=0) call io_error(' Error : elec_read_elnes_mat cannot allocate elnes_orbital%am_channel_name')
     end if
     call comms_bcast(elnes_orbital%species_no(1)      ,elnes_mwab%norbitals)
     call comms_bcast(elnes_orbital%rank_in_species(1) ,elnes_mwab%norbitals)
@@ -515,7 +523,7 @@ contains
 
     allocate(elnes_mat(1:elnes_mwab%norbitals,1:elnes_mwab%nbands,1:3, &
          1:num_kpoints_on_node(my_node_id),1:elnes_mwab%nspins),stat=ierr)
-    if (ierr/=0) call io_error('Error: Problem allocating elnes_mat in read_band_energy')
+    if (ierr/=0) call io_error('Error: Problem allocating elnes_mat in elec_read_elnes_mat')
 
     if(on_root) then
        if(legacy_file_format) then
@@ -570,7 +578,64 @@ contains
     end if
     
     if(on_root) close(elnes_unit)
-    
+
+    ! fill in some extra indexing data
+
+
+    do loop=1,elnes_mwab%norbitals
+       if(elnes_orbital%am_channel(loop)==1) then
+          elnes_orbital%am_channel(loop)=0
+          elnes_orbital%am_channel_name(loop)='s'
+       elseif(elnes_orbital%am_channel(loop)==2) then
+          elnes_orbital%am_channel(loop)=1
+          elnes_orbital%am_channel_name(loop)='px'
+       elseif(elnes_orbital%am_channel(loop)==3) then
+          elnes_orbital%am_channel(loop)=1
+          elnes_orbital%am_channel_name(loop)='py'
+       elseif(elnes_orbital%am_channel(loop)==4) then
+          elnes_orbital%am_channel(loop)=1
+          elnes_orbital%am_channel_name(loop)='pz'
+       elseif(elnes_orbital%am_channel(loop)==5) then
+          elnes_orbital%am_channel(loop)=2
+          elnes_orbital%am_channel_name(loop)='dzz'
+       elseif(elnes_orbital%am_channel(loop)==6) then
+          elnes_orbital%am_channel(loop)=2
+          elnes_orbital%am_channel_name(loop)='dzy'
+       elseif(elnes_orbital%am_channel(loop)==7) then
+          elnes_orbital%am_channel(loop)=2
+          elnes_orbital%am_channel_name(loop)='dzx'
+       elseif(elnes_orbital%am_channel(loop)==8) then
+          elnes_orbital%am_channel(loop)=2
+          elnes_orbital%am_channel_name(loop)='dxx-yy'
+       elseif(elnes_orbital%am_channel(loop)==9) then
+          elnes_orbital%am_channel(loop)=2
+          elnes_orbital%am_channel_name(loop)='dxy'
+       elseif(elnes_orbital%am_channel(loop)==10) then
+          elnes_orbital%am_channel(loop)=3
+          elnes_orbital%am_channel_name(loop)='fxxx'
+       elseif(elnes_orbital%am_channel(loop)==11) then
+          elnes_orbital%am_channel(loop)=3
+          elnes_orbital%am_channel_name(loop)='fyyy'
+       elseif(elnes_orbital%am_channel(loop)==12) then
+          elnes_orbital%am_channel(loop)=3
+          elnes_orbital%am_channel_name(loop)='fzzz'
+       elseif(elnes_orbital%am_channel(loop)==13) then
+          elnes_orbital%am_channel(loop)=3
+          elnes_orbital%am_channel_name(loop)='fxyz'
+       elseif(elnes_orbital%am_channel(loop)==14) then
+          elnes_orbital%am_channel(loop)=3
+          elnes_orbital%am_channel_name(loop)='fz(xx-yy)'
+       elseif(elnes_orbital%am_channel(loop)==15) then
+          elnes_orbital%am_channel(loop)=3
+          elnes_orbital%am_channel_name(loop)='fy(zz-xx)'
+       elseif(elnes_orbital%am_channel(loop)==16) then
+          elnes_orbital%am_channel(loop)=3
+          elnes_orbital%am_channel_name(loop)='fx(yy-zz)'
+       else
+          call io_error(' Error : unknown angular momentum state in elec_read_elnes_mat')
+       endif
+    end do
+
     return
 
 100 call io_error('Error: Problem opening elnes file in elec_read_elnes_mat') 

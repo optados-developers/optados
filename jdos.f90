@@ -130,7 +130,6 @@ contains
 
     real(kind=dp), intent(in) :: E(jdos_nbins)
     real(kind=dp), intent(in) :: dos(jdos_nbins,nspins)
-
     real(kind=dp) :: min_x, max_x, min_y, max_y
 
     integer :: batch_file,ierr
