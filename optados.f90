@@ -17,7 +17,7 @@ program optados
   use od_io, only     : io_get_seedname, io_time, io_date, io_file_unit,&! Functions
        & stdout, stderr, seedname                                            ! Variables
   use od_parameters, only : param_read, param_write_header,param_Dist,param_write, &
-       param_dealloc,pdos,dos,jdos,core,optics
+       param_dealloc,pdos,dos,jdos,core,optics,iprint
   use od_cell, only : cell_calc_lattice, cell_report_parameters,cell_dist
   use od_electronic,only : elec_read_band_energy,elec_report_parameters
   use od_dos,  only : dos_calculate
@@ -68,8 +68,8 @@ program optados
      call param_write_header()
      call param_write()
      time1=io_time()
-     write(stdout,*)
-     write(stdout,'(1x,a40,f11.3,a)') 'Time to read parameters ',time1-time0,' (sec)'
+     
+     if(iprint>1) write(stdout,'(1x,a40,f11.3,a)') 'Time to read parameters ',time1-time0,' (sec)'
      !-------------------------------------------------------------------------!
   end if
 

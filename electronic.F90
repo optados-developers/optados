@@ -149,7 +149,7 @@ contains
          & io_error  
     use od_cell,  only : num_kpoints_on_node,nkpoints
     use od_constants,only : bohr2ang, H2eV
-    use od_parameters, only : legacy_file_format
+    use od_parameters, only : legacy_file_format,iprint
     use od_algorithms, only : algor_dist_array
     implicit none
 
@@ -172,7 +172,7 @@ contains
     ! Figure out how many kpoint should be on each node
     call algor_dist_array(nkpoints,num_kpoints_on_node)
     allocate(band_gradient(1:nbands,1:nbands,1:3,1:num_kpoints_on_node(my_node_id),1:nspins),stat=ierr)
-    if (ierr/=0) call io_error('Error: Problem allocating band_gradient in read_band_energy')
+    if (ierr/=0) call io_error('Error: Problem allocating band_gradient in elec_read_band_gradient')
 
     if(legacy_file_format) then
 
@@ -243,7 +243,7 @@ contains
     end if
 
     time1=io_time()
-    if(on_root) write(stdout,'(1x,a40,f11.3,a)') 'Time to read band gradients ',time1-time0,' (sec)'
+    if(on_root.and.iprint>1) write(stdout,'(1x,a40,f11.3,a)') 'Time to read band gradients ',time1-time0,' (sec)'
 
     return
 
@@ -281,6 +281,7 @@ contains
     use od_io,        only : io_file_unit, seedname, filename_len,stdout, io_time,&
          & io_error
     use od_algorithms, only : algor_dist_array
+    use od_parameters, only : iprint
 
     implicit none
 
@@ -415,7 +416,7 @@ contains
     endif
 
     time1=io_time()
-    if(on_root) write(stdout,'(1x,a40,f11.3,a)') 'Time to read band energies  ',time1-time0,' (sec)'
+    if(on_root.and.iprint>1) write(stdout,'(1x,a40,f11.3,a)') 'Time to read band energies  ',time1-time0,' (sec)'
 
     return
 100 call io_error('Error: Problem opening bands file in read_band_energy') 

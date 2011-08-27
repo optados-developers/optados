@@ -461,7 +461,7 @@ contains
                 weighted_dos_broadened(N_energy2,N_spin,N)=weighted_dos_broadened(N_energy2,N_spin,N) &
                      + (g*weighted_dos(N_energy,N_spin,N)*dE)
              end do
-          end do                        ! End look over energy 
+          end do                        ! End loop over energy 
        end do                           ! End loop over spins  
     end do                              ! End loop over orbitals  
 

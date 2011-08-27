@@ -333,7 +333,7 @@ contains
 
     LAI_lorentzian_scale    = 0.1_dp
     call param_get_keyword('lai_lorentzian_scale',found,r_value=LAI_lorentzian_scale)
-    if (LAI_lorentzian_scale.gt.1E-14) LAI_lorentzian=.true. 
+!    if (LAI_lorentzian_scale.gt.1E-14) LAI_lorentzian=.true. 
     if (LAI_lorentzian_scale.lt.0.0_dp) call io_error('Error: LAI_lorentzian_scale must be positive')
 
     LAI_lorentzian_offset    = 0.0_dp
@@ -425,9 +425,9 @@ contains
          &                     | "
     write(stdout,'(a78)') " |                                                                           | "
     write(stdout,'(a78)') " |         Andrew J. Morris, Rebecca Nicholls, Chris J. Pickard              | "
-    write(stdout,'(a78)') " |                       and Jonathan Yates                                  | "
+    write(stdout,'(a78)') " |                       and Jonathan R. Yates                               | "
     write(stdout,'(a78)') " |                                                                           | "
-    write(stdout,'(a78)') " |                       Copyright (c) 2010                                  | "
+    write(stdout,'(a78)') " |                       Copyright (c) 2010-2011                             | "
     write(stdout,'(a78)') " |                                                                           | "
     write(stdout,'(a78)') " |  Please cite:                                                             | "
     write(stdout,'(a78)') " |  Andrew J. Morris, Rebecca Nicholls, Chris J. Pickard and Jonathan Yates  | "
@@ -462,7 +462,7 @@ contains
     ! System
 
     if(num_atoms>0) then
-       write(stdout,'(1x,a)') '*----------------------------------------------------------------------------*'
+       write(stdout,'(1x,a)') '+----------------------------------------------------------------------------+'
        if (lenconfac.eq.1.0_dp) then
           write(stdout,'(1x,a)') '|   Site       Fractional Coordinate          Cartesian Coordinate (Ang)     |'
        else
@@ -475,33 +475,33 @@ contains
                   atoms_pos_frac(:,nat,nsp),'|',atoms_pos_cart(:,nat,nsp)*lenconfac,'|'
           end do
        end do
-       write(stdout,'(1x,a)') '*----------------------------------------------------------------------------*'
+       write(stdout,'(1x,a)') '+----------------------------------------------------------------------------+'
     else
        if(iprint>1)  write(stdout,'(25x,a)') 'No atom positions read'
     end if
     write(stdout,*) ' '
-
-    write(stdout,*) ' '
-    if(iprint>1) then
-       write(stdout,'(1x,a)') '*----------------------------------------------------------------------------*'
-       if (lenconfac.eq.1.0_dp) then
-          write(stdout,'(1x,a)') '| k-point      Fractional Coordinate        Cartesian Coordinate (Ang^-1)    |'
-       else
-          write(stdout,'(1x,a)') '| k-point      Fractional Coordinate        Cartesian Coordinate (Bohr^-1)   |'
-       endif
-       write(stdout,'(1x,a)') '+----------------------------------------------------------------------------+'
-       !       do nkp=1,nkpoints
-       !          write(stdout,'(1x,a1,i6,1x,3F10.5,3x,a1,1x,3F10.5,4x,a1)') '|',&
-       ! nkp,kpoint_r(:,nkp),'|',kpoint_r_cart(:,nkp)/lenconfac,'|'
-       !       end do
-       write(stdout,'(1x,a)') '*----------------------------------------------------------------------------*'
-       write(stdout,*) ' '
-    end if
-    ! Main
+!!$
+!!$    write(stdout,*) ' '
+!!$    if(iprint>1) then
+!!$       write(stdout,'(1x,a)') '*----------------------------------------------------------------------------*'
+!!$       if (lenconfac.eq.1.0_dp) then
+!!$          write(stdout,'(1x,a)') '| k-point      Fractional Coordinate        Cartesian Coordinate (Ang^-1)    |'
+!!$       else
+!!$          write(stdout,'(1x,a)') '| k-point      Fractional Coordinate        Cartesian Coordinate (Bohr^-1)   |'
+!!$       endif
+!!$       write(stdout,'(1x,a)') '+----------------------------------------------------------------------------+'
+!!$       !       do nkp=1,nkpoints
+!!$       !          write(stdout,'(1x,a1,i6,1x,3F10.5,3x,a1,1x,3F10.5,4x,a1)') '|',&
+!!$       ! nkp,kpoint_r(:,nkp),'|',kpoint_r_cart(:,nkp)/lenconfac,'|'
+!!$       !       end do
+!!$       write(stdout,'(1x,a)') '*----------------------------------------------------------------------------*'
+!!$       write(stdout,*) ' '
+!!$    end if
+!!$    ! Main
 
 
     !
-    write(stdout,'(1x,a78)')    '*-------------------------------- TASK --------------------------------------*'
+    write(stdout,'(1x,a78)')    '+------------------------------ JOB CONTROL ---------------------------------+'
     !
     if(dos) then
        write(stdout,'(1x,a78)') '|  Output Density of States                  :  True                         |'
@@ -528,8 +528,8 @@ contains
     else
        write(stdout,'(1x,a78)') '|  Output Core-level Spectra                 :  False                        |'
     endif
-    write(stdout,'(1x,a78)')    '*-------------------------------- UNITS -------------------------------------*'
-    write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Length Unit                               :',trim(length_unit),'|'  
+    write(stdout,'(1x,a78)')    '+-------------------------------- UNITS -------------------------------------+'
+    write(stdout,'(1x,a46,2x,a4,25x,a1)') '|  Length Unit                               :',trim(length_unit),'|'  
 
     if(dos.or.pdos) then
        if(dos_per_volume) then 
@@ -540,7 +540,7 @@ contains
     endif
 
 
-    write(stdout,'(1x,a78)')    '*-------------------------------- BROADENING --------------------------------*'
+    write(stdout,'(1x,a78)')    '+--------------------------SPECTRAL PARAMETERS ------------------------------+'
     if(fixed) then
        write(stdout,'(1x,a78)') '|  Fixed Width Smearing                      :  True                         |'
        write(stdout,'(1x,a46,1x,1F10.5,20x,a1)') '|  Smearing Width                            :', fixed_smearing,'|'
@@ -557,14 +557,21 @@ contains
          write(stdout,'(1x,a78)') '|  Finite Bin Correction                     :  True                         |'
     if(numerical_intdos) &
          write(stdout,'(1x,a78)') '|  Numerical Integration of P/DOS            :  True                         |'        
+    if(dos_per_volume) &
+         write(stdout,'(1x,a78)') '|  Present DOS per simulation cell volume    :  True                         |'        
+    if(set_efermi_zero) then
+         write(stdout,'(1x,a78)') '|  Shift energy scale so fermi_energy=0      :  True                         |'        
+      else
+         write(stdout,'(1x,a78)') '|  Shift energy scale so fermi_energy=0      :  False                        |'        
+      end if
+    if(compute_band_energy) &
+         write(stdout,'(1x,a78)') '|  Compute the band energy                   :  True                         |'        
 
 
-    !    write(stdout,'(1x,a78)')    '*----------------------------- Parameters -----------------------------------*'
-    !    write(stdout,'(1x,a78)')    '|                                                                            |'
     if(optics) then
-       write(stdout,'(1x,a78)')    '*-------------------------------- OPTICS ------------------------------------*'
+       write(stdout,'(1x,a78)')    '+-------------------------------- OPTICS ------------------------------------+'
        if(index(optics_geom,'polycrys')>0) then
-          write(stdout,'(1x,a78)') '|  Geometry for Optics Calculation           :  Polycrysalline               |'        
+          write(stdout,'(1x,a78)') '|  Geometry for Optics Calculation           :  Polycrystalline              |'        
        elseif (index(optics_geom,'unpolar')>0) then
           write(stdout,'(1x,a78)') '|  Geometry for Optics Calculation           :  Unpolarised                  |'        
           write(stdout,'(1x,a47,2x,f6.2,2x,f6.2,2x,f6.2,3x,a4)') '|  Direction of q-vector (un-normalised)     : ' &
@@ -576,9 +583,36 @@ contains
        elseif (index(optics_geom,'tensor')>0) then
           write(stdout,'(1x,a78)') '|  Geometry for Optics Calculation           :  Full dielectric tensor       |'        
        end if
+       if(optics_intraband) then
+          write(stdout,'(1x,a78)') '|  Include Intraband Contribution            :  True                         |'        
+          write(stdout,'(1x,a46,1x,1E10.3,20x,a1)') '|  Drude Broadening                          :',optics_drude_broadening,'|'        
+       else
+          write(stdout,'(1x,a78)') '|  Include Intraband Contribution            :  False                        |'        
+       endif
     end if
-    write(stdout,'(1x,a78)')    '------------------------------------------------------------------------------'
+    if(core) then
+       write(stdout,'(1x,a78)')    '+--------------------------------- CORE -------------------------------------+'
+       if(index(core_geom,'polycrys')>0) then
+          write(stdout,'(1x,a78)') '|  Geometry for Core Calculation             :  Polycrystalline              |'        
+       elseif (index(core_geom,'polar')>0) then
+          write(stdout,'(1x,a78)') '|  Geometry for Core Calculation             :  Polarised                    |'        
+          write(stdout,'(1x,a47,2x,f6.2,2x,f6.2,2x,f6.2,3x,a4)') '|  Direction of q-vector (un-normalised)     : ' &
+               ,core_qdir(1:3),'   |'        
+       endif
+       if(core_LAI_broadening) then
+          write(stdout,'(1x,a78)') '|  Include lifetime and Instrument Broadening:  True                         |'        
+          write(stdout,'(1x,a46,1x,1f10.4,20x,a1)') '|  Gaussian Width                            :',LAI_gaussian_width,'|'        
+          write(stdout,'(1x,a46,1x,1f10.4,20x,a1)') '|  Lorentzian Width                          :',LAI_lorentzian_width,'|'      
+          write(stdout,'(1x,a46,1x,1f10.4,20x,a1)') '|  Lorentzian Scale                          :',LAI_lorentzian_scale,'|'
+          write(stdout,'(1x,a46,1x,1f10.4,20x,a1)') '|  Lorentzian Offset                         :',LAI_lorentzian_offset,'|'
+       else
+          write(stdout,'(1x,a78)') '|  Include lifetime and Instrument Broadening:  False                        |'        
+       endif
+    end if
 
+
+    write(stdout,'(1x,a78)')    '+----------------------------------------------------------------------------+'
+    write(stdout,*) ' '
 
   end subroutine param_write
 
