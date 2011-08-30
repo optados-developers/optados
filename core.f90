@@ -198,7 +198,8 @@ contains
 
        write(temp,'(a2,i1,a17)') 'n=',elnes_orbital%shell(orb),' ang= '//trim(elnes_orbital%am_channel_name(orb))
 
-       write(temp2,'(a5,a2,1x,i0,a28)') 'Ion: ',trim(elnes_symbol(elnes_orbital%species_no(orb))),elnes_orbital%rank_in_species(orb),' State: '//trim(temp)
+       write(temp2,'(a5,a2,1x,i0,a28)') 'Ion: ',trim(elnes_symbol(elnes_orbital%species_no(orb))),&
+	& elnes_orbital%rank_in_species(orb),' State: '//trim(temp)
        write(core_unit,*) '# ',trim(temp2)
 
 
@@ -226,7 +227,8 @@ contains
        else
           found=.false.
           do loop2=1,counter
-             if(elnes_orbital%species_no(loop)==ion_species(loop2).and.elnes_orbital%rank_in_species(loop)==ion_num_in_species(loop2)) then
+             if(elnes_orbital%species_no(loop)==ion_species(loop2).and.&
+	& elnes_orbital%rank_in_species(loop)==ion_num_in_species(loop2)) then
                 found=.true.
              end if
           enddo
@@ -268,7 +270,8 @@ contains
           ! else check if we have this am state
           found=.false.
           do loop2=1,counter
-             if(edge_species(loop2)==elnes_orbital%species_no(loop).and.edge_rank_in_species(loop2)==elnes_orbital%rank_in_species(loop).and.&
+             if(edge_species(loop2)==elnes_orbital%species_no(loop).and.&
+	& edge_rank_in_species(loop2)==elnes_orbital%rank_in_species(loop).and.&
                   edge_shell(loop2)==elnes_orbital%shell(loop).and.edge_am(loop2)==elnes_orbital%am_channel(loop)) then
                 edge_num_am(counter)=edge_num_am(counter)+1
                 edge_list(counter,edge_num_am(counter))=loop

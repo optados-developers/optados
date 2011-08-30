@@ -585,7 +585,8 @@ contains
        end if
        if(optics_intraband) then
           write(stdout,'(1x,a78)') '|  Include Intraband Contribution            :  True                         |'        
-          write(stdout,'(1x,a46,1x,1E10.3,20x,a1)') '|  Drude Broadening                          :',optics_drude_broadening,'|'        
+          write(stdout,'(1x,a46,1x,1E10.3,20x,a1)') '|  Drude Broadening                          :',&
+	& optics_drude_broadening,'|'        
        else
           write(stdout,'(1x,a78)') '|  Include Intraband Contribution            :  False                        |'        
        endif
