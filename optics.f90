@@ -1285,14 +1285,20 @@ contains
     write(gnu_unit,*) 'set ylabel ','"'//trim(label%y_label)//'"'
     write(gnu_unit,*) 'set title ','"'//trim(label%title)//'"'
     if(present(column3)) then
-       write(gnu_unit,*) 'plot ','"'//trim(seedname)//'_'//trim(label%name)//'.dat'//'"',' u 1:2 t ','"'//trim(label%legend_a)//'"',' w l, \'
-       write(gnu_unit,*) '       "'//trim(seedname)//'_'//trim(label%name)//'.dat'//'"',' u 1:3 t ','"'//trim(label%legend_b)//'"',' w l, \'
-       write(gnu_unit,*) '       "'//trim(seedname)//'_'//trim(label%name)//'.dat'//'"',' u 1:4 t ','"'//trim(label%legend_c)//'"',' w l'
+       write(gnu_unit,*) 'plot ','"'//trim(seedname)//'_'//trim(label%name)//'.dat'//'"',' u 1:2 t ','"'//&
+& trim(label%legend_a)//'" w l, \'
+       write(gnu_unit,*) '       "'//trim(seedname)//'_'//trim(label%name)//'.dat'//'"',' u 1:3 t ','"'//&
+&trim(label%legend_b)//'"'," w l, \"
+       write(gnu_unit,*) '       "'//trim(seedname)//'_'//trim(label%name)//'.dat'//'"',' u 1:4 t ','"'//&
+&trim(label%legend_c)//'"',' w l'
     elseif(present(column2)) then
-       write(gnu_unit,*) 'plot ','"'//trim(seedname)//'_'//trim(label%name)//'.dat'//'"',' u 1:2 t ','"'//trim(label%legend_a)//'"',' w l, \'
-       write(gnu_unit,*) '       "'//trim(seedname)//'_'//trim(label%name)//'.dat'//'"',' u 1:3 t ','"'//trim(label%legend_b)//'"',' w l'
+       write(gnu_unit,*) 'plot ','"'//trim(seedname)//'_'//trim(label%name)//'.dat'//'"',' u 1:2 t ','"'//&
+&trim(label%legend_a)//'"'," w l, \"
+       write(gnu_unit,*) '       "'//trim(seedname)//'_'//trim(label%name)//'.dat'//'"',' u 1:3 t ','"'//&
+&trim(label%legend_b)//'"',' w l'
     else
-       write(gnu_unit,*) 'plot ','"'//trim(seedname)//'_'//trim(label%name)//'.dat'//'"',' u 1:2 t ','"'//trim(label%legend_a)//'"',' w l'
+       write(gnu_unit,*) 'plot ','"'//trim(seedname)//'_'//trim(label%name)//'.dat'//'"',' u 1:2 t ','"'//&
+trim(label%legend_a)//'"',' w l'
     endif
     close(gnu_unit)
 
