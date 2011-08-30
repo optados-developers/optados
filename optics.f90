@@ -1284,16 +1284,18 @@ contains
     write(gnu_unit,*) 'set xlabel ','"'//trim(label%x_label)//'"'
     write(gnu_unit,*) 'set ylabel ','"'//trim(label%y_label)//'"'
     write(gnu_unit,*) 'set title ','"'//trim(label%title)//'"'
+    ! Note that char(92) is a backslash, which gnuplot uses as a continuation character
+    ! We reference it this was to stop certain compilers treating it as an escape character
     if(present(column3)) then
        write(gnu_unit,*) 'plot ','"'//trim(seedname)//'_'//trim(label%name)//'.dat'//'"',' u 1:2 t ','"'//&
-& trim(label%legend_a)//'" w l, \'
+            & trim(label%legend_a)//'"'//'w l, ',char(92)
        write(gnu_unit,*) '       "'//trim(seedname)//'_'//trim(label%name)//'.dat'//'"',' u 1:3 t ','"'//&
-&trim(label%legend_b)//'"'," w l, \"
+&trim(label%legend_b)//'"',' w l,',char(92)
        write(gnu_unit,*) '       "'//trim(seedname)//'_'//trim(label%name)//'.dat'//'"',' u 1:4 t ','"'//&
 &trim(label%legend_c)//'"',' w l'
     elseif(present(column2)) then
        write(gnu_unit,*) 'plot ','"'//trim(seedname)//'_'//trim(label%name)//'.dat'//'"',' u 1:2 t ','"'//&
-&trim(label%legend_a)//'"'," w l, \"
+&trim(label%legend_a)//'"',' w l,',char(92)
        write(gnu_unit,*) '       "'//trim(seedname)//'_'//trim(label%name)//'.dat'//'"',' u 1:3 t ','"'//&
 &trim(label%legend_b)//'"',' w l'
     else
