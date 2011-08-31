@@ -370,17 +370,17 @@ No default
 Include life-time and instrumentation broadening.  
 The default is FALSE.
 
-\subsection[core\_gaussian\_width]{\tt real(kind=dp) :: core\_gaussian\_width}
+\subsection[core\_gaussian\_width]{\tt real(kind=dp) :: LAI\_gaussian\_width}
 FWHM of Gaussian function used to broaden spectrum.  
 
 The default value, if \verb#core_LAI_broadening :true#, is 0 (i.e. no Gaussian used).
 
-\subsection[core\_lorentzian\_width]{\tt real(kind=dp) :: core\_lorentzian\_width}
+\subsection[core\_lorentzian\_width]{\tt real(kind=dp) :: LAI\_lorentzian\_width}
 FWHM of fixed Lorentzian function used to broaden spectrum.  
 
 The default value, if \verb#core_LAI_broadening :true#, is 0 (i.e. no fixed Lorentzian used).
 
-\subsection[core\_lorentzian\_scale]{\tt real(kind=dp) :: core\_lorentzian\_scale}
+\subsection[core\_lorentzian\_scale]{\tt real(kind=dp) :: LAI\_lorentzian\_scale}
 Variation of Lorentzian function with energy i.e. the width of the Lorentzian is energy x 
 \verb#core_lorentzian_scale#.  If set to zero, no energy dependent broadening is included.  
 If \verb#core_lorentzian_scale# and \verb#core_lorentzian_width# are both specified, the 
@@ -389,7 +389,7 @@ total width of the Lorentzian used will be \verb#core_lorentzian_width# + (energ
 
 The default value, if \verb#core_LAI_broadening :true#, is 0.1. 
 
-\subsection[core\_lorentzian\_offset]{\tt real(kind=dp) :: core\_lorentzian\_offset}
+\subsection[core\_lorentzian\_offset]{\tt real(kind=dp) :: LAI\_lorentzian\_offset}
 Energy (in eV) above the edge onset that the energy dependent broadening starts.  
 The default value, if \verb#core_LAI_broadening :true#, is 0.
 

@@ -508,7 +508,7 @@ contains
           do N_energy=1,dos_nbins       ! Loop over energy 
              if(E(N_energy).ge.(LAI_lorentzian_offset+e_fermi)) then 
                 L_width = 0.5_dp*LAI_lorentzian_width & ! HWHW of Lorentzian 
-                     + (E(N_energy)*LAI_lorentzian_scale)
+                     + ((E(N_energy)-e_fermi)*LAI_lorentzian_scale)
              else 
                 L_width = 0.5_dp*LAI_lorentzian_width 
              end if
