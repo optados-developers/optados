@@ -12,12 +12,12 @@ BUILD := fast
 COMMS_ARCH := serial 
 
 # Where would you like the executables?
-BIN_DIR=./
+PREFIX:= ~/bin
 
 SYSTEM := $(strip $(SYSTEM))
 BUILD  := $(strip $(BUILD))
 COMMS_ARCH := $(strip $(COMMS_ARCH))
-BIN_DIR := $(strip $(BIN_DIR))
+PREFIX := $(strip $(PREFIX))
 
 
 #-------------------------------------------
@@ -76,8 +76,8 @@ endif
 ifeq ($(SYSTEM), pgf90)
    F90_SERIAL= pgf90
    F90_PARALLEL= mpif90
-   FFLAGS= -byteswapio
-   FFLAGS_PARALLEL= -DMPI
+   FFLAGS= -Mbyteswapio
+   FFLAGS_PARALLEL= -DMPI 
    FFLAGS_FAST= -O3
    FFLAGS_DEBUG= -O0 -C -pg -g -Mbounds 
    EXTENSION=.pgf90
@@ -125,7 +125,7 @@ OBJS=algorithms.o cell.o comms.o constants.o core.o dos.o dos_utils.o electronic
 all : optados
 
 optados : optados.f90 $(OBJS)
-	$(F90) $(FFLAGS)   optados.f90 $(OBJS) -o $(BIN_DIR)/optados$(EXTENSION) 
+	$(F90) $(FFLAGS)   optados.f90 $(OBJS) -o optados$(EXTENSION) 
 
 algorithms.o : algorithms.f90 io.o constants.o
 	$(F90) -c $(FFLAGS) algorithms.f90
@@ -197,4 +197,5 @@ dist:
 	| gzip -c > \
 		./optados.tar.gz)
 
-
+install: 
+	cp optados$(EXTENSION) $(PREFIX)
