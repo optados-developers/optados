@@ -709,7 +709,7 @@ contains
     type(graph_labels) :: label
 
     label%name="epsilon"
-    label%title="Dielectric Function"
+    label%title="Dielectric Function" ! Dimensionless
     label%x_label="Energy (eV)"
     label%y_label=""
     label%legend_a="Real"
@@ -838,12 +838,12 @@ contains
 
 
     label%name="loss_fn"
-    label%title="Loss Function"
+    label%title="Loss Function"  ! Dimensionless 
     label%x_label="Energy (eV)"
     label%y_label=""
-    label%legend_a="Total"
+    label%legend_a="Interband"
     label%legend_b="Intraband"
-    label%legend_c="Interband"
+    label%legend_c="Total"
 
     ! Open the output file
     loss_fn_unit = io_file_unit()
@@ -927,7 +927,7 @@ contains
 
 
     label%name="conductivity"
-    label%title="Conductivity"
+    label%title="Conductivity (S m-1)" ! Siemens per metre 
     label%x_label="Energy (eV)"
     label%y_label=""
     label%legend_a="Real"
@@ -996,7 +996,7 @@ contains
 
 
     label%name="refractive_index"
-    label%title="Refractive Index"
+    label%title="Refractive Index"  ! Dimensionless 
     label%x_label="Energy (eV)"
     label%y_label=""
     label%legend_a="Real"
@@ -1066,7 +1066,7 @@ contains
 
 
     label%name="absorption"
-    label%title="Absorption Coefficient"
+    label%title="Absorption Coefficient (m-1)" ! per metre 
     label%x_label="Energy (eV)"
     label%y_label=""
     label%legend_a="A"
@@ -1133,7 +1133,7 @@ contains
 
 
     label%name="reflection"
-    label%title="Reflection Coefficient"
+    label%title="Reflection Coefficient"  ! Dimensionless 
     label%x_label="Energy (eV)"
     label%y_label=""
     label%legend_a="R"
