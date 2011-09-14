@@ -960,6 +960,9 @@ contains
     if (scissor_op>0) then 
        write(conduct_unit,'(1x,a,f10.3,f10.3,f10.3)')'# Scissor operator:', scissor_op
     end if
+    write(conduct_unit,*)'# Note: the conductivity is outputted in SI units, Siemens per metre'
+    write(conduct_unit,*)'# to convert from SI units (Sm-1) to cgs units (s) divide by 4pixepsilon_0'
+    write(conduct_unit,*)'# to convert from cgs (s) units to SI units (Sm-1) multiply by 4pixepsilon_0, '
     write(conduct_unit,*)'#'
     do N=1,jdos_nbins
        write(conduct_unit,*)E(N),conduct(N,1),conduct(N,2)
