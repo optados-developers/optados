@@ -17,7 +17,7 @@ program optados
   use od_io, only     : io_get_seedname, io_time, io_date, io_file_unit,&! Functions
        & stdout, stderr, seedname                                            ! Variables
   use od_parameters, only : param_read, param_write_header,param_Dist,param_write, &
-       param_dealloc,pdos,dos,jdos,core,optics,iprint
+       param_dealloc,pdos,dos,jdos,core,optics,iprint,param_write_atomic_coord
   use od_cell, only : cell_calc_lattice, cell_report_parameters,cell_dist
   use od_electronic,only : elec_read_band_energy,elec_report_parameters
   use od_dos,  only : dos_calculate
@@ -77,6 +77,7 @@ program optados
 
   if(on_root) then
      call cell_calc_lattice
+     call param_write_atomic_coord
      call cell_report_parameters
      call elec_report_parameters
   end if

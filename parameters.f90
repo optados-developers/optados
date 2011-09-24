@@ -103,6 +103,7 @@ module od_parameters
   public :: param_read
   public :: param_write
   public :: param_write_header
+  public :: param_write_atomic_coord
   public :: param_dealloc
   public :: param_dist
 
@@ -446,6 +447,56 @@ contains
     write(stdout,*)
   end subroutine param_write_header
 
+  subroutine param_write_atomic_coord
+    !==================================================================!
+    !                                                                  !
+    ! write atomic coodes to stdout                                       !
+    !                                                                  !
+    !===================================================================  
+
+    implicit none
+
+    integer :: nat,nsp, atom_counter
+
+    ! System
+
+    if(num_atoms>0) then
+       write(stdout,*) ' '
+       ! IT DOESN'T SEEM HELPFUL TO WRITE OUT TO MULTIPLY THE INITAL ATOMIC POSITIONS WITH THE FINAL LATTICE...
+       if(iprint>2) then
+          write(stdout,'(1x,a)') '+----------------------------------------------------------------------------+'
+          if (lenconfac.eq.1.0_dp) then
+             write(stdout,'(1x,a)') '|   Site       Fractional Coordinate          Cartesian Coordinate (Ang)     |'
+          else
+             write(stdout,'(1x,a)') '|   Site       Fractional Coordinate          Cartesian Coordinate (Bohr)    |'
+          endif
+          write(stdout,'(1x,a)') '+----------------------------------------------------------------------------+'
+          do nsp=1,num_species
+             do nat=1,atoms_species_num(nsp)
+                write(stdout,'(1x,a1,1x,a2,1x,i3,3F10.5,3x,a1,1x,3F10.5,4x,a1)') '|',atoms_symbol(nsp),nat,&
+                     atoms_pos_frac(:,nat,nsp),'|',atoms_pos_cart(:,nat,nsp)*lenconfac,'|'
+             end do
+          end do
+          write(stdout,'(1x,a)') '+----------------------------------------------------------------------------+'
+          write(stdout,'(1x,a)') '  WARNING: These are the CASTEP input coordinates not the output -- here to   '
+          write(stdout,'(1x,a)') '            aid advanced debugging only.'
+       else
+          atom_counter=1
+          write(stdout,'(1x,a)') '+----------------------------------------------------------------------------+'
+          write(stdout,'(1x,a)') '|             Species                  Sites                  Total Atoms    |'
+          write(stdout,'(1x,a)') '+----------------------------------------------------------------------------+'
+          do nsp=1,num_species
+             write(stdout,'(1x,a1,16x,a2,16x,i4,a3,i4,16x,i4,11x,a)') '|', atoms_symbol(nsp), & 
+                  & atom_counter, "to", atom_counter+atoms_species_num(nsp)-1,  atoms_species_num(nsp), "|"
+             atom_counter=atom_counter+atoms_species_num(nsp)
+          enddo
+          write(stdout,'(1x,a)') '+----------------------------------------------------------------------------+'
+       endif
+       else
+       if(iprint>1)  write(stdout,'(25x,a)') 'No atom positions read'
+    end if
+    write(stdout,*) ' '
+  end subroutine param_write_atomic_coord
 
   !===================================================================
   subroutine param_write
@@ -461,25 +512,25 @@ contains
 
     ! System
 
-    if(num_atoms>0) then
-       write(stdout,'(1x,a)') '+----------------------------------------------------------------------------+'
-       if (lenconfac.eq.1.0_dp) then
-          write(stdout,'(1x,a)') '|   Site       Fractional Coordinate          Cartesian Coordinate (Ang)     |'
-       else
-          write(stdout,'(1x,a)') '|   Site       Fractional Coordinate          Cartesian Coordinate (Bohr)    |'
-       endif
-       write(stdout,'(1x,a)') '+----------------------------------------------------------------------------+'
-       do nsp=1,num_species
-          do nat=1,atoms_species_num(nsp)
-             write(stdout,'(1x,a1,1x,a2,1x,i3,3F10.5,3x,a1,1x,3F10.5,4x,a1)') '|',atoms_symbol(nsp),nat,&
-                  atoms_pos_frac(:,nat,nsp),'|',atoms_pos_cart(:,nat,nsp)*lenconfac,'|'
-          end do
-       end do
-       write(stdout,'(1x,a)') '+----------------------------------------------------------------------------+'
-    else
-       if(iprint>1)  write(stdout,'(25x,a)') 'No atom positions read'
-    end if
-    write(stdout,*) ' '
+   ! if(num_atoms>0) then
+   !    write(stdout,'(1x,a)') '+----------------------------------------------------------------------------+'
+   !    if (lenconfac.eq.1.0_dp) then
+   !       write(stdout,'(1x,a)') '|   Site       Fractional Coordinate          Cartesian Coordinate (Ang)     |'
+   !    else
+   !       write(stdout,'(1x,a)') '|   Site       Fractional Coordinate          Cartesian Coordinate (Bohr)    |'
+   !    endif
+   !    write(stdout,'(1x,a)') '+----------------------------------------------------------------------------+'
+   !    do nsp=1,num_species
+   !       do nat=1,atoms_species_num(nsp)
+   !          write(stdout,'(1x,a1,1x,a2,1x,i3,3F10.5,3x,a1,1x,3F10.5,4x,a1)') '|',atoms_symbol(nsp),nat,&
+   !               atoms_pos_frac(:,nat,nsp),'|',atoms_pos_cart(:,nat,nsp)*lenconfac,'|'
+   !       end do
+   !    end do
+   !    write(stdout,'(1x,a)') '+----------------------------------------------------------------------------+'
+   ! else
+   !    if(iprint>1)  write(stdout,'(25x,a)') 'No atom positions read'
+   ! end if
+  !  write(stdout,*) ' '
 !!$
 !!$    write(stdout,*) ' '
 !!$    if(iprint>1) then
