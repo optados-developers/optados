@@ -268,6 +268,19 @@ Calculate the integrated dos by numerical integration instead of semi-analytical
 
 Default value \verb#FALSE#.
 
+\subsection[hybrid\_linear]{\tt logical :: hybrid\_linear}
+Switch from linear broadening scheme to adaptive broadening when band gradient less than \verb#hybrid_linear_grad_tol#. 
+This allows for a good description of very flat bands such as defect and semi-core states. May also be used in conjunction 
+with \verb#finite_bin_correction# further improving the DOS and band energy
+
+Default value \verb#FALSE#.
+
+\subsection[hybrid\_linear\_grad\_tol]{\tt real(kind=dp) :: hybrid\_linear\_grad\_tol}
+Tolrance for switching from linear to adaptive broadening when using hybrid\_linear option.
+
+The default value is 0.01eV/\AA.
+
+
 \subsection[set\_efermi\_zero]{\tt logical :: set\_efermi\_zero}
 Shift energy scales so that the Fermi energy is at 0.
 

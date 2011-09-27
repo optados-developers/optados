@@ -55,6 +55,8 @@ module od_parameters
   real(kind=dp),     public, save :: fermi_energy
   logical,           public, save :: compute_efermi
   logical,           public, save :: finite_bin_correction
+  logical,           public, save :: hybrid_linear
+  real(kind=dp),     public, save :: hybrid_linear_grad_tol
   logical,           public, save :: numerical_intdos
   logical,           public, save :: compute_band_gap
   real(kind=dp),     public, save :: dos_zero_tol ! The DOS is assumed to be zero if less than this
@@ -239,6 +241,14 @@ contains
     numerical_intdos= .false.
     call param_get_keyword('numerical_intdos',found,l_value=numerical_intdos)
 
+    ! Whenever very flat features are found when performing linear broadening, revert to adaptive.
+    ! The tolerance is the gradient of the band at the kpoint.
+    ! N.B. Finite_bin_correction may also be set, to further improve the spectra.
+    hybrid_linear= .false.
+    call param_get_keyword('hybrid_linear',found,l_value=hybrid_linear)
+    hybrid_linear_grad_tol= 0.01_dp ! Seems about right for getting semi-core states correctly integrated. 
+    call param_get_keyword('hybrid_linear_grad_tol',found,r_value=hybrid_linear_grad_tol)
+    
     compute_band_energy    = .true.
     call param_get_keyword('compute_band_energy',found,l_value=compute_band_energy)
 
@@ -606,6 +616,10 @@ contains
          write(stdout,'(1x,a78)') '|  Quadratic Extrapolation                   :  True                         |'
     if(finite_bin_correction) &
          write(stdout,'(1x,a78)') '|  Finite Bin Correction                     :  True                         |'
+    if(hybrid_linear) then
+       write(stdout,'(1x,a78)') '|  Hybrid Linear Correction                     :  True                         |'
+       write(stdout,'(1x,a46,2x,F10.8,19x,a1)') '|  Hybrid Linear Gradient Tolerance             :',hybrid_linear_grad_tol,'|'  
+    endif
     if(numerical_intdos) &
          write(stdout,'(1x,a78)') '|  Numerical Integration of P/DOS            :  True                         |'        
     if(dos_per_volume) &

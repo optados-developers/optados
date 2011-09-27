@@ -1022,8 +1022,8 @@ contains
     use od_algorithms, only : gaussian, algorithms_erf
     use od_cell,       only : kpoint_grid_dim,kpoint_weight,num_kpoints_on_node,recip_lattice
     use od_electronic, only : band_gradient, electrons_per_state, nbands,nspins,band_energy
-    use od_parameters, only : adaptive_smearing,fixed_smearing&
-         &,finite_bin_correction,iprint,dos_nbins,numerical_intdos 
+    use od_parameters, only : adaptive_smearing,fixed_smearing,hybrid_linear &
+         &,finite_bin_correction,iprint,dos_nbins,numerical_intdos,hybrid_linear_grad_tol 
     use od_io,         only : stdout,io_error
     use od_comms,      only : my_node_id,on_root
 
@@ -1041,7 +1041,7 @@ contains
 
     real(kind=dp),intent(out),allocatable :: dos(:,:), intdos(:,:)
 
-    logical :: linear,fixed,adaptive
+    logical :: linear,fixed,adaptive,force_adaptive
 
     linear=.false.
     fixed=.false.
@@ -1060,11 +1060,11 @@ contains
 
 
     if(linear.or.adaptive) step(:) = 1.0_dp/real(kpoint_grid_dim(:),dp)/2.0_dp
-    if(adaptive) then
-       do i= 1,3
+    if(adaptive.or.hybrid_linear) then
+       do i= 1,3 
           sub_cell_length(i)=sqrt(recip_lattice(i,1)**2+recip_lattice(i,2)**2+recip_lattice(i,3)**2)*step(i) 
        enddo
-       adaptive_smearing_temp=adaptive_smearing*sum(sub_cell_length)/3
+       adaptive_smearing_temp=adaptive_smearing*sum(sub_cell_length)/3.0_dp
     endif
 
     if(fixed) width=fixed_smearing
@@ -1083,8 +1083,12 @@ contains
        do is=1,nspins
           do ib=1,nbands
              if(linear.or.adaptive) grad(:) = real(band_gradient(ib,ib,:,ik,is),dp)
-             if(linear) call doslin_sub_cell_corners(grad,step,band_energy(ib,is,ik),EV)
-             if(adaptive) width = sqrt(dot_product(grad,grad))*adaptive_smearing_temp
+             ! If the band is very flat linear broadening can have problems describing it. In this case, fall back to 
+             ! adaptive smearing (and take advantage of FBCS if required).
+             force_adaptive=.false.
+             if(hybrid_linear.and.(hybrid_linear_grad_tol>sqrt(dot_product(grad,grad)))) force_adaptive=.true.
+             if(linear.and..not.force_adaptive) call doslin_sub_cell_corners(grad,step,band_energy(ib,is,ik),EV)
+             if(adaptive.or.force_adaptive) width = sqrt(dot_product(grad,grad))*adaptive_smearing_temp
              ! Hybrid Adaptive -- This way we don't lose weight at very flat parts of the
              ! band. It's a kind of fudge that we wouldn't need if we had infinitely small bins.
              if(finite_bin_correction.and.(width<delta_bins)) width = delta_bins
@@ -1094,7 +1098,7 @@ contains
              do idos=1,dos_nbins
                 ! The linear method has a special way to calculate the integrated dos
                 ! we have to take account for this here.
-                if(linear)then
+                if(linear.and..not.force_adaptive)then
                    dos_temp=doslin(EV(0),EV(1),EV(2),EV(3),EV(4),E(idos),cuml)*electrons_per_state*kpoint_weight(ik)
                    intdos(idos,is) = intdos(idos,is) + electrons_per_state*kpoint_weight(ik)*cuml
                 else
