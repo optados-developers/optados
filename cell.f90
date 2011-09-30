@@ -32,8 +32,10 @@ module od_cell
   real(kind=dp), allocatable, public, save :: kpoint_weight(:)
   integer, allocatable,public, save       :: num_kpoints_on_node(:)
 
+ 
   integer, public, save :: nkpoints 
   integer, public, save :: kpoint_grid_dim(3)
+ 
   !-------------------------------------------------------------------------!
   ! Symmetry Operations
   integer, public, save :: num_crystal_symmetry_operations
@@ -61,44 +63,154 @@ module od_cell
 
 contains
 
-  !=========================================================================!
-  subroutine cell_find_MP_grid(kpoints,num_kpts,kpoint_grid_dim)
-    !=========================================================================!
-    ! Find the MP grid from a set of kpoints                                  !
-    !-------------------------------------------------------------------------!
-    ! Arguments: kpoints - an array of kpoints                                !
-    !            num_kpts - size of the kpoint array                          !
-    !-------------------------------------------------------------------------!
-    ! Returns: kpint_grid_dim - the number of kpoints in each dimension       !
-    !-------------------------------------------------------------------------!
-    ! Parent module variables used: None                                      !
-    !-------------------------------------------------------------------------!
-    ! Modules used:  None                                                     !
-    !-------------------------------------------------------------------------!
-    ! Key Internal Variables:                                                 !
-    ! Described below                                                         !
-    !-------------------------------------------------------------------------!
-    ! Necessary conditions: None                                              
-    !--------------------------------------------------------------------------
-    ! Known Worries: None
-    !-------------------------------------------------------------------------!
-    ! Written by Andrew Morris from the lindos program             11/10/2010 !
-    !=========================================================================!
+ 
+ !=========================================================================!
+  subroutine cell_find_MP_grid(kpoints,num_kpts,kpoint_grid_dim,kpoint_offset)
+    ! WARNING the kpoint_offset is only +/- the true kpoint offset. We need to 
+    ! do some more work to find out its sign
+    ! A J Morris 29th September 2011
+ !=========================================================================!
+    use od_io, only: io_error
     implicit none
-    integer, intent(out) :: kpoint_grid_dim(1:3)
-    integer, intent(in)  :: num_kpts
-    real(kind=dp),intent(in) :: kpoints(1:3,1:num_kpts)
-    real(kind=dp) :: kpoints_TR(1:3,1:num_kpts*2)
+    integer,      intent(out):: kpoint_grid_dim(1:3)
+    integer,      intent(in) :: num_kpts
+    real(kind=dp),intent(in)     :: kpoints(1:3,1:num_kpts)
+    real(kind=dp),intent(out),optional :: kpoint_offset(1:3)
+    real(kind=dp)            :: kpoint_TR(1:3,1:num_kpts*2)
+    real(kind=dp)            :: unique_kpoints(1:3,num_kpts*2)
+    integer                  :: nunique_kpoints,iunique_kpoints
+    integer                  :: ikpt,idim,jkpt,i
+    real(kind=dp)    :: subtraction_tol, min_img, min_img2
+    real(kind=dp)    :: min_img3,image, min_img_tol
 
-    ! We have to take into account time reversal symmetry. 
-    kpoints_TR(1:3,1:num_kpts)           = kpoints(1:3,1:num_kpts)
-    kpoints_TR(1:3,num_kpts+1:num_kpts*2)=-kpoints(1:3,1:num_kpts)
+    ! When two numbers are the same
+    subtraction_tol=epsilon(subtraction_tol)
+    ! When one number is larger than another one
+    min_img_tol=0.000001_dp
 
-    call kpoint_density(kpoints_TR(1,:), num_kpts*2,  kpoint_grid_dim(1))
-    call kpoint_density(kpoints_TR(2,:), num_kpts*2,  kpoint_grid_dim(2))
-    call kpoint_density(kpoints_TR(3,:), num_kpts*2,  kpoint_grid_dim(3))
+    ! Add time reversal
+    kpoint_TR(1:3,1:num_kpts)           = kpoints(1:3,1:num_kpts)
+    kpoint_TR(1:3,num_kpts+1:num_kpts*2)=-kpoints(1:3,1:num_kpts)
+
+    ! Act on each dimension independently 
+     do idim=1,3
+        ! Fold all kpoints between (-0.5,0.5] 
+       do ikpt=1,num_kpts*2
+          kpoint_TR(idim,ikpt)=kpoint_TR(idim,ikpt)-floor(kpoint_TR(idim,ikpt)+0.5_dp)
+       enddo
+    enddo
+
+    unique_kpoints=0.0_dp
+
+    over_dim: do idim=1,3
+       ! Make unique
+       nunique_kpoints=1
+       unique_kpoints(idim,1)=kpoint_TR(idim,1)
+
+       over_kpts: do ikpt=2,2*num_kpts
+          do iunique_kpoints=1,nunique_kpoints
+             if(abs(unique_kpoints(idim,iunique_kpoints)-kpoint_TR(idim,ikpt)).le.subtraction_tol) then 
+                !We've seen this before
+                cycle over_kpts
+             endif
+          enddo
+          ! If we ended up here then, this is new
+          nunique_kpoints=nunique_kpoints+1
+        !  write(*,*) "ikpt= ",ikpt, "nunique_kpoints= ", nunique_kpoints
+          unique_kpoints(idim,nunique_kpoints)=kpoint_TR(idim,ikpt)
+       end do over_kpts
+
+      ! write(*,*) "------------------------ KPOINTS IN+TR+FOLDING+UNIQUE -----------"
+      ! do i=1,nunique_kpoints
+      !    write(*,*) i, idim, unique_kpoints(idim,i)
+      ! enddo
+      ! write(*,*) "-----------------------------------------------------------"
+       
+       ! Look at special cases
+       if(nunique_kpoints==1) then
+          ! There is only 1 k-point
+          ! The shift is it's position (either 0 or 0.5)
+          if(present(kpoint_offset)) kpoint_offset(idim)=unique_kpoints(idim,1)
+          kpoint_grid_dim(idim)=1
+          cycle over_dim
+       elseif(nunique_kpoints==2) then
+          min_img=abs(unique_kpoints(idim,1)-unique_kpoints(idim,2))
+          if(abs(min_img-0.5_dp).le.min_img_tol) then 
+             ! If the 1stMI is 0.5 then there are 2 k-points
+             ! The shift is it's position (either 0 or 0.25)
+             if(present(kpoint_offset)) kpoint_offset(idim)=unique_kpoints(idim,1)
+             kpoint_grid_dim(idim)=2
+             cycle over_dim
+          else
+             ! If the 1stMI .ne.0.5 then there is 1 kpoint
+             ! It's offset is min_img/2
+             if(present(kpoint_offset)) kpoint_offset(idim)=min_img/2
+             kpoint_grid_dim(idim)=1
+             cycle over_dim
+          endif
+       elseif(nunique_kpoints==3) then
+          ! This is the case of a MP3 grid with a point at Gamma
+          if(present(kpoint_offset)) kpoint_offset(idim)=0.0_dp
+          kpoint_grid_dim(idim)=3
+          cycle over_dim
+       endif
+       
+       
+       ! Get 1st, 2nd and 3rd minimum images  
+       ! Get 1st min image
+       min_img=huge(min_img)
+       do ikpt=1,nunique_kpoints
+          do jkpt=ikpt+1,nunique_kpoints
+             image=abs(unique_kpoints(idim,ikpt)-unique_kpoints(idim,jkpt))
+             if(image<min_img) min_img=image
+          enddo
+       enddo
+       if(abs(min_img-huge(min_img)).le.subtraction_tol) &
+            & call io_error('cell_find_MP_grid: Failed to find a 1st min image')
+       
+       ! Get 2nd min image
+       min_img2=huge(min_img2)
+       do ikpt=1,nunique_kpoints
+          do jkpt=ikpt,nunique_kpoints
+             image=abs(unique_kpoints(idim,ikpt)-unique_kpoints(idim,jkpt))
+             if((image<min_img2).and. image>min_img+  min_img_tol) min_img2=image
+          enddo
+       enddo
+       if(abs(min_img2-huge(min_img2)).le.subtraction_tol) &
+            & call io_error('cell_find_MP_grid: Failed to find a 2nd min image')
+        
+        ! Get 3rd min image
+        min_img3=huge(min_img3)
+       do ikpt=1,nunique_kpoints
+          do jkpt=ikpt,nunique_kpoints
+             image=abs(unique_kpoints(idim,ikpt)-unique_kpoints(idim,jkpt))
+             if((image<min_img3).and. image>min_img2+  min_img_tol) min_img3=image
+          enddo
+       enddo
+       if(abs(min_img3-huge(min_img3)).le.subtraction_tol) &
+            & call io_error('cell_find_MP_grid: Failed to find a 3rd min image')
+            
+     !  write(*,*) "Images", min_img, min_img2, min_img3, 1.0_dp/min_img
+       
+       if(abs( 2.0_dp*min_img-min_img2)<subtraction_tol) then
+          ! If 1stMI==2ndMI then 1/1stMP is the grid density
+          if(present(kpoint_offset))  kpoint_offset(idim)=0.0_dp
+            kpoint_grid_dim(idim)=int(1.0_dp/min_img)
+       else
+          ! If 1stMI.ne.2ndMI then 1/3rdMP is the grid density
+          ! and 1stMI/2 is the shift
+            if(present(kpoint_offset))  kpoint_offset(idim)=min_img/2.0_dp
+            kpoint_grid_dim(idim)=int(1.0_dp/min_img3)
+       endif
+            
+    enddo over_dim
+    
+    !write(*,*) "kpoint_grid_dim= ", kpoint_grid_dim
+    !if(present(kpoint_offset))  write(*,*) "kpoint_offset= ",  kpoint_offset
   end subroutine cell_find_MP_grid
-  !=========================================================================!
+ !=========================================================================!
+
+
 
   !=========================================================================!
   subroutine cell_get_symmetry
@@ -178,78 +290,6 @@ contains
 
 
   end subroutine cell_get_symmetry
-
-  !=========================================================================
-  subroutine kpoint_density(vector,length,points)
-    !=========================================================================
-    ! Work out the number of kpoints in a given dimension
-    ! Receives a vector of length, runs though the vector looking for the
-    ! closest distance between points. Then invert this distance to find the
-    ! number of k-points in the given dimension. 
-    !-------------------------------------------------------------------------
-    ! Arguments: vector (in) : vector of kpoints in a particular dimension                              
-    !            length (in) : length of vector                  
-    !            points (out): number of kpoints in the directon of vector
-    !-------------------------------------------------------------------------
-    ! Parent module variables used: None                                      
-    !-------------------------------------------------------------------------
-    ! Modules used:  None                                                     
-    !-------------------------------------------------------------------------
-    ! Key Internal Variables: Described below                                                         
-    !-------------------------------------------------------------------------
-    ! Necessary conditions: None            
-    !-------------------------------------------------------------------------
-    ! Known Worries: None                                      !
-    !-------------------------------------------------------------------------
-    ! Written by Andrew Morris from the LinDOS program             11/10/2010 
-    !=========================================================================
-    implicit none
-    integer,       intent(in)  :: length
-    real(kind=dp), intent(in)  :: vector(1:length)
-    integer,       intent(out) :: points
-
-    real(kind=dp) :: real_points
-    real(kind=dp) :: distance
-
-    integer :: i,j
-    ! THIS IS THE BOMB-PROOF 2nd VERSION
-    ! from LinDOS
-
-    ! Check that there isn't only one-kpoint
-    if(length==1) then
-       points=1
-       return
-    endif
-
-    ! Check that all of the k-points don't have the same value
-    i=1
-    do
-       if(.not.vector(i)==vector(i+1)) exit
-       if((i+1)==length) then ! We haven't exited yet
-          ! therefore all must be the same
-          points=1
-          return
-       endif
-       i=i+1
-    enddo
-
-    ! Now we have more than one k-point and they're not unique
-    distance=huge(distance)
-    do i=1,length
-       do j=i+1,length
-          if(vector(i)>vector(j)) then
-             if((vector(i)-vector(j))<distance) distance=(vector(i)-vector(j))
-          elseif(vector(j)>vector(i)) then
-             if((vector(j)-vector(i))<distance) distance=(vector(j)-vector(i))
-          endif
-       enddo
-    enddo
-
-
-    real_points=1.0_dp/(distance)
-    points=int(real_points+0.5_dp)
-
-  end subroutine kpoint_density
 
   subroutine cell_get_atoms
     use od_constants, only : bohr2ang
