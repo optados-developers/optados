@@ -3,10 +3,10 @@
 # S E T
 
 # one of gfortran, g95, ifort, pfg90
-SYSTEM := ifort 
+SYSTEM := gfortran
 
 # fast / debug
-BUILD := fast 
+BUILD := debug
 
 # serial / mpi
 COMMS_ARCH := serial 

@@ -1086,7 +1086,7 @@ contains
              ! If the band is very flat linear broadening can have problems describing it. In this case, fall back to 
              ! adaptive smearing (and take advantage of FBCS if required).
              force_adaptive=.false.
-             if(hybrid_linear.and.(hybrid_linear_grad_tol>sqrt(dot_product(grad,grad)))) force_adaptive=.true.
+           
              if(linear.and..not.force_adaptive) call doslin_sub_cell_corners(grad,step,band_energy(ib,is,ik),EV)
              if(adaptive.or.force_adaptive) width = sqrt(dot_product(grad,grad))*adaptive_smearing_temp
              ! Hybrid Adaptive -- This way we don't lose weight at very flat parts of the
@@ -1504,7 +1504,7 @@ contains
          & recip_lattice
     use od_electronic, only : band_gradient, electrons_per_state, nbands,nspins,band_energy
     use od_parameters, only : adaptive_smearing,fixed_smearing&
-         &,finite_bin_correction,iprint
+         &,finite_bin_correction,iprint,hybrid_linear_grad_tol,hybrid_linear
     use od_io,         only : stdout,io_error
     use od_comms,      only : my_node_id,on_root
 
@@ -1514,15 +1514,15 @@ contains
     real(kind=dp) :: dos_temp, cuml, intdos_accum, width, adaptive_smearing_temp
     real(kind=dp) :: grad(1:3), step(1:3), EV(0:4), sub_cell_length(1:3)
 
-!    character(len=1), intent(in)                    :: dos_type   !! RJN3JUN changed
-    character(len=1)                   :: dos_type   !! RJN3Jun changed
+    character(len=1), intent(in)                    :: dos_type   !! RJN3JUN changed 
+!    character(len=1)                   :: dos_type   !! RJN3Jun changed
     real(kind=dp),intent(out), optional :: weighted_dos_at_e(:,:)  !! RJN3Jun changed
     real(kind=dp),intent(in),              optional :: matrix_weights(:,:,:,:)
     real(kind=dp),intent(in) :: energy 
     real(kind=dp),intent(out) :: dos_at_e(nspins)
 
 
-    logical :: linear,fixed,adaptive,have_weighted_dos
+    logical :: linear,fixed,adaptive,have_weighted_dos,force_adaptive
 
     have_weighted_dos=.false.
     if(present(weighted_dos_at_e)) have_weighted_dos=.true.
@@ -1531,9 +1531,9 @@ contains
     fixed=.false.
     adaptive=.false.
 
-    if(fixed)       dos_type="f"     !! RJN3Jun added 
-    if(adaptive)  dos_type="a"       !! RJN3Jun added
-    if(linear)      dos_type="l"     !! RJN3Jun added
+!    if(fixed)       dos_type="f"     !! RJN3Jun added 
+!    if(adaptive)  dos_type="a"       !! RJN3Jun added
+!    if(linear)      dos_type="l"     !! RJN3Jun added
 
     select case (dos_type)
     case ("l")
@@ -1549,7 +1549,7 @@ contains
     dos_at_e=0.0_dp
 
     if(linear.or.adaptive) step(:) = 1.0_dp/real(kpoint_grid_dim(:),dp)/2.0_dp
-    if(adaptive) then
+    if(adaptive.or.hybrid_linear) then
        do i= 1,3
           sub_cell_length(i)=sqrt(recip_lattice(i,1)**2+recip_lattice(i,2)**2+recip_lattice(i,3)**2)*step(i) 
        enddo
@@ -1572,8 +1572,12 @@ contains
           do ib=1,nbands
 
              if(linear.or.adaptive) grad(:) = real(band_gradient(ib,ib,:,ik,is),dp)
-             if(linear) call doslin_sub_cell_corners(grad,step,band_energy(ib,is,ik),EV)
-             if(adaptive) width = sqrt(dot_product(grad,grad))*adaptive_smearing_temp
+             ! If the band is very flat linear broadening can have problems describing it. In this case, fall back to 
+             ! adaptive smearing (and take advantage of FBCS if required).
+             force_adaptive=.false.
+             if(hybrid_linear.and.(hybrid_linear_grad_tol>sqrt(dot_product(grad,grad)))) force_adaptive=.true.
+             if(linear.and..not.force_adaptive) call doslin_sub_cell_corners(grad,step,band_energy(ib,is,ik),EV)
+             if(adaptive.or.force_adaptive) width = sqrt(dot_product(grad,grad))*adaptive_smearing_temp
              ! Hybrid Adaptive -- This way we don't lose weight at very flat parts of the
              ! band. It's a kind of fudge that we wouldn't need if we had infinitely small bins.
              if(finite_bin_correction.and.(width<delta_bins)) width = delta_bins
@@ -1582,7 +1586,7 @@ contains
 
              ! The linear method has a special way to calculate the integrated dos
              ! we have to take account for this here.
-             if(linear)then
+             if(linear.and..not.force_adaptive)then
                 dos_temp=doslin(EV(0),EV(1),EV(2),EV(3),EV(4),energy,cuml)*electrons_per_state*kpoint_weight(ik)
 
              else
