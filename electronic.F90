@@ -767,7 +767,7 @@ contains
     
     return
 
-100 call io_error('Error: Problem opening elnes file in elec_read_elnes_mat') 
+100 call io_error('Error: Problem opening pdos_weights file in elec_pdos_read') 
 
 
 
