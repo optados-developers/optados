@@ -1058,6 +1058,7 @@ contains
        call io_error (" ERROR : unknown dos_type in calculate_dos ")
     end select
 
+    width=0.0_dp
 
     if(linear.or.adaptive) step(:) = 1.0_dp/real(kpoint_grid_dim(:),dp)/2.0_dp
     if(adaptive.or.hybrid_linear) then
@@ -1546,6 +1547,7 @@ contains
        call io_error (" ERROR : unknown dos_type in calculate_dos ")
     end select
 
+    width=0.0_dp ! Just in case
     dos_at_e=0.0_dp
 
     if(linear.or.adaptive) step(:) = 1.0_dp/real(kpoint_grid_dim(:),dp)/2.0_dp
@@ -1580,7 +1582,11 @@ contains
              if(adaptive.or.force_adaptive) width = sqrt(dot_product(grad,grad))*adaptive_smearing_temp
              ! Hybrid Adaptive -- This way we don't lose weight at very flat parts of the
              ! band. It's a kind of fudge that we wouldn't need if we had infinitely small bins.
-             if(finite_bin_correction.and.(width<delta_bins)) width = delta_bins
+             if(finite_bin_correction) then ! Force the compiler to do this the right way around
+               if(width<delta_bins) then
+                  width = delta_bins
+               endif
+             endif
 
              intdos_accum=0.0_dp
 

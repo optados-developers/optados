@@ -3,13 +3,13 @@
 # S E T
 
 # one of gfortran, g95, ifort, pfg90
-SYSTEM := gfortran
+SYSTEM := ifort 
 
 # fast / debug
 BUILD := debug
 
 # serial / mpi
-COMMS_ARCH := serial 
+COMMS_ARCH := mpi
 
 # Where would you like the executables?
 PREFIX:= ~/bin
@@ -55,7 +55,7 @@ endif
 
 ifeq ($(SYSTEM), ifort)
    F90_SERIAL= ifort
-   F90_PARALLEL= mpifort 
+   F90_PARALLEL= mpif90 
    FFLAGS= -convert big_endian
    FFLAGS_PARALLEL= -DMPI
    FFLAGS_FAST= -O3
