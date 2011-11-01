@@ -1,0 +1,24 @@
+O p t a D O S   I n s t a l l a t i o n   N o t e s
+  version Beta r168
+
+
+C O M P I L E R S
+OptaDOS has been tested to compile in series and parallel
+1/11/11
+
+GFOTRAN
+gfortran (4.4) and gfortran (4.4)+OpenMPI (1.5.3)
+
+INTEL
+ifort (12.0) and ifort (12.0) +OpenMPI (1.4.2)
+
+PATHSCALE
+pathscale(4.0.9) and pathscale (4.0.9) +OpenMPI(1.5.4)
+
+PORTLAND GROUP
+pgf90 11.8
+
+K N O W N   I S S U S E S
+pgf90 10.4 + OpenMPI (1.4.3) cause OptaDOS to seg. fault.  Unclear of the cause yet.
+pgf90 10.4 + OpenMPI (1.5.3) won't compile. "/usr/local/pgi/linux86-64/10.4/libso/libpgmp.so: undefined reference to `mp_setaffinity'"
+pgf90 11.8 + OpenMPI (1.4.3 and 1.5.3) and MPICH both cause OptaDOS to seg. fault.  Unclear of the cause yet.
