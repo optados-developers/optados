@@ -1,4 +1,25 @@
 !-*- mode: F90; mode: font-lock; column-number-mode: true -*-!
+!
+! This file is part of OptaDOS
+!
+! OptaDOS - For obtaining electronic structure properties based on 
+!             integrations over the Brillouin zone
+! Copyright (C) 2011  Andrew J. Morris,  R. J. Nicholls, C. J. Pickard 
+!                         and J. R. Yates
+!
+! This program is free software: you can redistribute it and/or modify
+! it under the terms of the GNU General Public License as published by
+! the Free Software Foundation, either version 3 of the License, or
+! (at your option) any later version.
+!
+! This program is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+! GNU General Public License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+!
 module xmgrace_utils
  ! use od_constants, only : dp
 
@@ -431,7 +452,7 @@ contains
  ! write(unit,*) trim(char_field)//" symbol skip 0"
  ! write(unit,*) trim(char_field)//" line type 0"
  ! write(unit,*) trim(char_field)//" line linestyle 1"
- ! write(unit,*) trim(char_field)//" line linewidth 1.0"
+ ! write(unit,*) trim(char_field)//" lyine linewidth 1.0"
 !s0 legend  ""
 !s0 avalue on
 !s0 avalue type 4

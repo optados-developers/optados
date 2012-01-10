@@ -1,4 +1,25 @@
 !-*- mode: F90; mode: font-lock; column-number-mode: true -*-!
+!
+! This file is part of OptaDOS
+!
+! OptaDOS - For obtaining electronic structure properties based on 
+!             integrations over the Brillouin zone
+! Copyright (C) 2011  Andrew J. Morris,  R. J. Nicholls, C. J. Pickard 
+!                         and J. R. Yates
+!
+! This program is free software: you can redistribute it and/or modify
+! it under the terms of the GNU General Public License as published by
+! the Free Software Foundation, either version 3 of the License, or
+! (at your option) any later version.
+!
+! This program is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+! GNU General Public License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+!
 !=========================================================================!
 ! E L E C T R O N I C 
 ! Stores variables to do with the electrons and energy eigenvalues in the
@@ -667,7 +688,7 @@ contains
     !=========================================================================
     use od_comms,     only : comms_bcast,comms_send,comms_recv,num_nodes,my_node_id,&
         & on_root,root_id
-    use od_io,        only : io_file_unit, io_error, seedname
+    use od_io,        only : stdout, io_file_unit, io_error, seedname
     use od_cell,      only : num_kpoints_on_node
 
     implicit none
@@ -677,6 +698,8 @@ contains
     real(kind=dp)                        :: dummyr1,dummyr2,dummyr3
     integer                              :: dummyi,ib,ik,is
     integer                              :: pdos_in_unit,ierr,inodes
+    logical                              :: full_debug_pdos_weights=.false.
+    
 
     if(allocated(pdos_weights)) return
 
@@ -692,6 +715,14 @@ contains
        read(pdos_in_unit) pdos_mwab%nspins
        read(pdos_in_unit) pdos_mwab%norbitals
        read(pdos_in_unit) pdos_mwab%nbands
+       if(full_debug_pdos_weights) then
+          write(stdout,*) " ***** F U L L _ D E B U G _ P D O S _ W E I G H T S ***** "
+          write(stdout,*) "pdos_mwab%nkpoints= ",pdos_mwab%nkpoints
+          write(stdout,*) "pdos_mwab%nspins= ",pdos_mwab%nspins
+          write(stdout,*) "pdos_mwab%norbitals= ",pdos_mwab%norbitals
+          write(stdout,*) "pdos_mwab%nbands= ",pdos_mwab%nbands
+          write(stdout,*) "   **** ***** *****  ***** ***** *****  ***** ***** *****  "
+       endif
        
        allocate(pdos_orbital%species_no(pdos_mwab%norbitals),stat=ierr)
        if(ierr/=0) call io_error(" Error : cannot allocate pdos_orbital")
@@ -738,6 +769,11 @@ contains
                 read(pdos_in_unit) dummyi ! this is the spin number
                 read(pdos_in_unit) nbands_occ(ik,is)
                 do ib=1,nbands_occ(ik,is)
+                    if(full_debug_pdos_weights) then
+                       write(stdout,*) " ***** F U L L _ D E B U G _ P D O S _ W E I G H T S ***** "
+                       write(stdout,*) ib, ik, is
+                       write(stdout,*) "   **** ***** *****  ***** ***** *****  ***** ***** *****  "
+                    endif
                    read(pdos_in_unit) pdos_weights(1:pdos_mwab%norbitals,ib,ik,is)
                 enddo
              enddo
