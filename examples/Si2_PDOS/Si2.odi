@@ -65,4 +65,4 @@ NUMERICAL_INTDOS      : false  # Default
 # sure that no Gaussians are smaller than the dos_spacing.
 # (Should always be true, but useful for comparison with
 # LinDOS)
-FINITE_BIN_CORRECTION : false  # Default
+FINITE_BIN_CORRECTION : true  # Default
