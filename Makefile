@@ -6,10 +6,10 @@
 SYSTEM := ifort 
 
 # fast / debug
-BUILD := debug
+BUILD := fast
 
 # serial / mpi
-COMMS_ARCH := mpi
+COMMS_ARCH := serial
 
 # Where would you like the executables?
 PREFIX:= ~/bin
@@ -116,7 +116,8 @@ else
 endif
 
 
-EXTENSION:=$(EXTENSION).x86_64
+EXE_SUFFIX=x86_64
+EXTENSION:=$(EXTENSION).$(EXE_SUFFIX)
 
 
 # Put object names here
@@ -182,6 +183,11 @@ docs:
 clean:
 	rm -f *.o *.mod *.MOD
 	make -C ./documents clean
+
+
+veryclean:
+	make  clean
+	rm -f *.$(EXE_SUFFIX)
 
 dist:
 	 @(tar cf - \
