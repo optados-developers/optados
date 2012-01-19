@@ -161,11 +161,11 @@ module od_dos
 
     if(nspins>1) then
        do i=1,dos_nbins
-          write(dos_file, *) E(i), dos(i,1), -dos(i,2),  intdos(i,1), -intdos(i,2)
+          write(dos_file, '(5(E21.13,2x))') E(i), dos(i,1), -dos(i,2),  intdos(i,1), -intdos(i,2)
        enddo
     else
        do i=1,dos_nbins
-          write(dos_file, *) E(i), dos(i,1), intdos(i,1)
+          write(dos_file, '(3(E21.13,2x))') E(i), dos(i,1), intdos(i,1)
        enddo
     endif
     close(dos_file)
