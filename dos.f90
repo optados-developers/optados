@@ -148,10 +148,10 @@ module od_dos
     write(dos_file,*) "# Column        Data"
     write(dos_file,*) "#    1        Energy (eV)"
     if(nspins>1) then
-       write(dos_file,*) "#    1        Up-spin DOS ", trim(dos_units)
-       write(dos_file,*) "#    2        Down-spin DOS ", trim(dos_units)
-       write(dos_file,*) "#    3        Up-spin Integrated DOS ", trim(intdos_units)
-       write(dos_file,*) "#    4        Down-spin Integrated DOS ", trim(intdos_units)
+       write(dos_file,*) "#    2        Up-spin DOS ", trim(dos_units)
+       write(dos_file,*) "#    3        Down-spin DOS ", trim(dos_units)
+       write(dos_file,*) "#    4        Up-spin Integrated DOS ", trim(intdos_units)
+       write(dos_file,*) "#    5        Down-spin Integrated DOS ", trim(intdos_units)
     else
        write(dos_file,*) "#    2        DOS ", trim(dos_units)
        write(dos_file,*) "#    3        Integrated DOS ", trim(intdos_units)
