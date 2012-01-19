@@ -679,7 +679,7 @@ contains
           enddo
           write(pdos_file,'(1a,a)') '#','+----------------------------------------------------------------------------+'
        enddo
-       do iproj=1,start_proj,stop_proj
+       do iproj=start_proj,stop_proj
           write(pdos_file,'(1a,a1,a12,i4,a10,50x,a1)') '#','|', ' Column: ',iproj+num_proj, ' contains:', '|'
           write(pdos_file,'(1a,a1,a16,10x,a14,5x,a15,16x,a1)') '#','|', ' Atom ', ' AngM Channel ', ' Spin Channel ', '|'
           do  ispecies=1,num_species   
