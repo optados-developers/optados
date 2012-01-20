@@ -92,7 +92,7 @@ Along with data text files \optados\ also generates \verb#.agr# files of results
 
 \chapter{Getting Started}\label{chap:getting_started}
 \section{Installation}
-\optados\ is usually obtained in a gzipped tarball, \verb#optados-X.X.tar.gz#. Extract this ( \verb# tar -xzf optados-X.X.tar.gz#) in the desired directory. Inside the  \verb#optados/# directory are a number of sub directories,  \verb#documents/#,   \verb#examples/#.  The code may be compiled using the \verb#Makefile# in the  \verb#optados/# directory.  The \verb#SYSTEM#, \verb#BUILD#, \verb#COMMS_ARCH# and \verb#BIN_DIR# flags must be set, either in the  \verb#Makefile#, or from the command line (for example  \verb#make BUILD=fast#).  
+\optados\ is usually obtained in a gzipped tarball, \verb#optados-X.X.tar.gz#. Extract this ( \verb# tar -xzf optados-X.X.tar.gz#) in the desired directory. Inside the  \verb#optados/# directory are a number of sub directories,  \verb#documents/#,   \verb#examples/#.  The code may be compiled using the \verb#Makefile# in the  \verb#optados/# directory.  The \verb#SYSTEM#, \verb#BUILD#, \verb#COMMS_ARCH# and \verb#PREFIX# flags must be set, either in the  \verb#Makefile#, or from the command line (for example  \verb#make BUILD=fast#).  
 
 \subsection[system]{\tt SYSTEM}
 
@@ -123,7 +123,7 @@ Whether to compile for serial or parallel execution. The valid values are:
 \item[{\bf --}]  \verb#mpi# 
 \end{itemize}
 
-\subsection[bin_dir]{\tt BIN\_DIR}
+\subsection[bin_dir]{\tt PREFIX}
 Choose where to place the \optados\ binary. The default is the \optados\ directory.
 
 
@@ -259,7 +259,7 @@ The valid options for this parameter are:
 \end{itemize}
 
 \subsection[finite\_bin\_correction]{\tt logical :: finite\_bin\_correction}
-Force each Gaussian to be larger than a single energy bin. (Useful for adaptive smearing and semi-core states when \verb#numerical\_intdos=TRUE#). 
+Force each Gaussian to be larger than a single energy bin. (Useful for adaptive smearing and semi-core states when \verb#numerical_intdos=TRUE#). 
 
 Default value \verb#FALSE#.
 
@@ -287,7 +287,7 @@ Shift energy scales so that the Fermi energy is at 0.
 Default value \verb#TRUE#.
 
 \subsection[compute\_band\_energy]{\tt logical :: compute\_band\_energy}
-Compute the band energy by summing bands both using \castep\'s eigenvalue and \optados\'s density of states.
+Compute the band energy by summing bands both using \castep{'s} eigenvalue and \optados{'s} density of states.
 
 Default value \verb#TRUE#.
 
