@@ -52,7 +52,7 @@ UK \\
 {\small and} \\
 \\
 Department of Physics and Astronomy\\
-Univeristy College London\\
+University College London\\
 Gower Street\\
 London, WC1E 6BT\\
 UK}
@@ -276,7 +276,7 @@ with \verb#finite_bin_correction# further improving the DOS and band energy
 Default value \verb#FALSE#.
 
 \subsection[hybrid\_linear\_grad\_tol]{\tt real(kind=dp) :: hybrid\_linear\_grad\_tol}
-Tolrance for switching from linear to adaptive broadening when using hybrid\_linear option.
+Tolerance for switching from linear to adaptive broadening when using hybrid\_linear option.
 
 The default value is 0.01eV/\AA.
 
@@ -425,7 +425,7 @@ See  \verb#examples/Si2_DOS/#.  This is a simple example of using \optados\ for 
 
 Linear broadening, although a massive improvement over fixed broadening, sometimes appears noisy if used with very low numbers of k-points. Linear and adaptive DOS should be compared and \verb#ADAPTIVE_SMEARING# may be tuned by eye until the adaptive DOS contains the features of the linear DOS, but with less noise.
 
-Both fixed and adaptive broadening can fail to plot the sharpest features, such as semi-core states, if the bin widths are too broad. These sharp features may be forced to be present uing the narrowest Gaussian still reproducable by the chosen bin widths by setting \verb#FINITE_BASIS_SET : true#.  
+Both fixed and adaptive broadening can fail to plot the sharpest features, such as semi-core states, if the bin widths are too broad. These sharp features may be forced to be present using the narrowest Gaussian still reproducible by the chosen bin widths by setting \verb#FINITE_BASIS_SET : true#.  
 
 Linear broadening may also be improved by using \verb#HYBRID_LINEAR : true#. Van Hove singularities and other sharp features are now described at the adaptive broadening level if the bands are flatter than \verb#HYBRID_LINEAR_GRAD_TOL#. Hybrid linear may also take advantage of the finite bin correction if required.
 
