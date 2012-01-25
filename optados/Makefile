@@ -1,3 +1,5 @@
+VER := 1.0.0
+
 default : optados
 
 all : optados docs
@@ -23,19 +25,21 @@ veryclean:
 	make  -C ./src veryclean
 	make -C ./documents veryclean
 
-dist:
-	 @(tar cf - \
-                ./src/*.?90 \
-                ./examples/*/*.cell \
-                ./examples/*/*.param \
-                ./examples/*/*.odi \
-                ./documents/*.tex \
-                ./documents/*.pdf \
-		./documents/Makefile \
-		./documents/THINGS_TO_DO.txt \
-                ./Makefile \
-		./make.sys \
-		COPYING \ 
-	| gzip -c > \
-		./optados.tar.gz)
+dist: optados-$(VER).tar.gz
+
+CURRENT_DIR := $(shell basename ${PWD})
+
+optados-$(VER).tar.gz: 
+	 cd .. && tar -czf $(CURRENT_DIR)/optados-$(VER).tar.gz \
+                $(CURRENT_DIR)/src/*.?90 \
+                $(CURRENT_DIR)/examples/*/*.cell \
+                $(CURRENT_DIR)/examples/*/*.param \
+                $(CURRENT_DIR)/examples/*/*.odi \
+                $(CURRENT_DIR)/documents/*.tex \
+                $(CURRENT_DIR)/documents/*.pdf \
+		$(CURRENT_DIR)/documents/Makefile \
+		$(CURRENT_DIR)/documents/THINGS_TO_DO.txt \
+                $(CURRENT_DIR)/Makefile \
+		$(CURRENT_DIR)/make.sys \
+		$(CURRENT_DIR)/COPYING  
 
