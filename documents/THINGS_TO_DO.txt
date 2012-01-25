@@ -3,7 +3,7 @@ Things To Do
 
 
 =================
-Post beta release
+Beta 2
 =================
 
 6.0 Spectral Bug [JRY]
@@ -23,6 +23,11 @@ Optados
  Work out logic for computing dos before optics [JRY]
 
 
+Adaptive Smearing
+-----------------
+
+* Does JDOS have the update I gave to DOS for adaptive smearing scaling (i.e. when I went from 0.4 to 1.4)? [AJM] 
+
 Core-loss
 ---------
 
@@ -40,8 +45,18 @@ File-formats
 
  Think about the new file formats and see if they can be made better [JRY]
 
+========
+Beta 3
+=======
 
-website
+Examples step by step 
+ -- See Wannier90 user guide.
+ * DOS/PDOS [AJM]
+ * JDOS/Optics [RJN]
+ * Core [JRY]
 
+Website
+  * Get the style right [AJM]
+  * Charlotte's Graph?
 
 
