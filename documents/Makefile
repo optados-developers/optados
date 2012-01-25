@@ -1,4 +1,4 @@
-MANUAL_NAME := dos
+MANUAL_NAME := user_guide 
 
 all:
 	latex $(MANUAL_NAME).tex
@@ -6,7 +6,7 @@ all:
 	dvipdfm $(MANUAL_NAME)
 
 clean:
-	rm -f *.aux *.dvi *.log
+	rm -f *.toc *.aux *.dvi *.log
 
 veryclean: 
 	rm -f *.pdf

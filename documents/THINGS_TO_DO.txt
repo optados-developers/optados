@@ -49,6 +49,8 @@ File-formats
 Beta 3
 =======
 
+Check that the parameters are echo'ed in seed.odo file
+
 Examples step by step 
  -- See Wannier90 user guide.
  * DOS/PDOS [AJM]
