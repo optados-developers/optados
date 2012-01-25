@@ -4,8 +4,6 @@
 ! Copyright (C) 2007 Jonathan Yates, Arash Mostofi,          !
 !  Young-Su Lee, Nicola Marzari, Ivo Souza, David Vanderbilt !
 !                                                            !
-! This version (c) Jonathan Yates 2010                       !
-!                                                            !                                                           !
 ! This file is distributed under the terms of the GNU        !
 ! General Public License. See the file `COPYING' in          !
 ! the root directory of the present distribution, or         !
@@ -72,8 +70,9 @@ module od_parameters
   real(kind=dp),     public, save :: adaptive_smearing
   real(kind=dp),     public, save :: fixed_smearing
   logical,           public, save :: dos_per_volume
-  real(kind=dp),     public, save :: fermi_energy
-  logical,           public, save :: compute_efermi
+  real(kind=dp),     public, save :: efermi_user     ! If the user has set efermi in the odi file
+  character(len=20), public, save :: efermi_choice   ! Where do we want to get the fermi energy from
+!  logical,           public, save :: compute_efermi
   logical,           public, save :: finite_bin_correction
   logical,           public, save :: hybrid_linear
   real(kind=dp),     public, save :: hybrid_linear_grad_tol
@@ -114,6 +113,10 @@ module od_parameters
   logical,           public, save :: LAI_lorentzian 
 
   real(kind=dp),     public, save :: lenconfac
+
+!  real(kind=dp),     public, save :: fermi_energy
+
+
 
   private
 
@@ -246,8 +249,10 @@ contains
     fixed_smearing             = 0.3_dp ! LinDOS default
     call param_get_keyword('fixed_smearing',found,r_value=fixed_smearing)
 
-    fermi_energy        = -990.0_dp
-    call param_get_keyword('fermi_energy',found,r_value=fermi_energy)
+    efermi_user        = -990.0_dp
+    efermi_choice="calculate"
+    call param_get_efermi('efermi',found,efermi_choice,efermi_user)
+!    call param_get_keyword('fermi_energy',found,r_value=fermi_energy)
 
     ! Force all Gaussians to be greater than the width of a bin. When using numerical_indos
     ! this is critical for counting all of the Gaussian DOS peaks. 
@@ -299,9 +304,6 @@ contains
 
     jdos_spacing          = 0.01_dp !! change
     call param_get_keyword('jdos_spacing',found,r_value=jdos_spacing)
-
-    compute_efermi        = .false.
-    call param_get_keyword('compute_efermi',found,l_value=compute_efermi)
 
     compute_band_gap        = .false.
     call param_get_keyword('compute_band_gap',found,l_value=compute_band_gap)
@@ -861,6 +863,70 @@ contains
   end subroutine param_get_keyword
 
 
+  !===========================================================================!
+  subroutine param_get_efermi(keyword,found,c_value,r_value)
+    !===========================================================================!
+    !                                                                           !
+    !             Finds the value of the required keyword.                      !
+    !                                                                           !
+    !===========================================================================!
+
+    use od_io,        only : io_error
+
+    implicit none
+
+    character(*),      intent(in)    :: keyword
+    logical,           intent(out)   :: found
+    character(*),      intent(inout) :: c_value
+    real(kind=dp),     intent(inout) :: r_value
+
+    integer           :: kl, in,loop,itmp
+    character(len=maxlen) :: dummy
+
+    kl=len_trim(keyword)
+
+    found=.false.
+
+    do loop=1,num_lines
+       in=index(in_data(loop),trim(keyword))
+       if (in==0 .or. in>1 ) cycle
+       itmp=in+len(trim(keyword))
+       if (in_data(loop)(itmp:itmp)/='=' &
+            .and. in_data(loop)(itmp:itmp)/=':' &
+            .and. in_data(loop)(itmp:itmp)/=' ') cycle
+       if (found) then
+          call io_error('Error: Found keyword '//trim(keyword)//' more than once in input file')
+       endif
+       found=.true.
+       dummy=in_data(loop)(kl+1:)
+       in_data(loop)(1:maxlen) = ' '
+       dummy=adjustl(dummy)
+       if( dummy(1:1)=='=' .or. dummy(1:1)==':') then
+          dummy=dummy(2:)
+          dummy=adjustl(dummy)
+       end if
+    end do
+
+    if(found) then
+       c_value=dummy
+       if(trim(c_value)=='calculate' .or. trim(c_value)=='file'.or.trim(c_value)=='insulator') then
+          r_value=-999.0_dp ! ie not set
+       else
+          ! assume it is a number
+          read(dummy,*,err=220,end=220) r_value
+          c_value='user'
+       end if
+    end if
+
+    return
+
+220 call io_error('Error: Problem reading keyword '//trim(keyword))
+
+
+  end subroutine param_get_efermi
+
+
+
   !=========================================================================================!
   subroutine param_get_keyword_vector(keyword,found,length,c_value,l_value,i_value,r_value)
     !=========================================================================================!
@@ -1364,8 +1430,8 @@ contains
     call comms_bcast(adaptive_smearing,1)
     call comms_bcast(fixed_smearing,1)
     call comms_bcast(dos_per_volume,1)
-    call comms_bcast(fermi_energy,1)
-    call comms_bcast(compute_efermi,1)
+    call comms_bcast(efermi_user,1)
+    call comms_bcast(efermi_choice,len(efermi_choice))
     call comms_bcast(finite_bin_correction,1)
     call comms_bcast(numerical_intdos ,1)
     call comms_bcast(jdos_max_energy ,1)
