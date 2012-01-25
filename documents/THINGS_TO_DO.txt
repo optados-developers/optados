@@ -6,11 +6,21 @@ Things To Do
 Post beta release
 =================
 
+6.0 Spectral Bug [JRY]
+
+Efermi
+------
+
+* move all analysis from dos_utils_calculate [AJM]
+* compute_dos_at_efermi takes efermi (do it for each l/a/f) [AJM]
+* JDOS vbm as a functino of k [AJM]
+* in dos_utils make set_efermi [AJM}
+* parameters.f90 : efermi_choice (internal variable) efermi (param name): Values =   optados / file / user / insulator [JRY} 
+
 Optados
 -------
 
  Work out logic for computing dos before optics [JRY]
-
 
 
 Core-loss
@@ -23,7 +33,7 @@ Pdos
 ----
 
  Project onto individual (real) spherical harmonics [JRY]
-
+ Bug in PDOS parsing [JRY]
 
 File-formats
 ------------
