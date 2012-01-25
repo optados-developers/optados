@@ -8,6 +8,9 @@ optados :
 # Utility targets
 .PHONY: clean veryclean
 
+install:
+	make -C ./src install
+
 docs:
 	make -C ./documents all
 
@@ -22,7 +25,7 @@ veryclean:
 
 dist:
 	 @(tar cf - \
-                ./*.?90 \
+                ./src/*.?90 \
                 ./examples/*/*.cell \
                 ./examples/*/*.param \
                 ./examples/*/*.odi \
@@ -31,6 +34,8 @@ dist:
 		./documents/Makefile \
 		./documents/THINGS_TO_DO.txt \
                 ./Makefile \
+		./make.sys \
+		COPYING \ 
 	| gzip -c > \
 		./optados.tar.gz)
 
