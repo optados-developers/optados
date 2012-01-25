@@ -72,6 +72,8 @@ contains
     use od_comms, only      : on_root
     use od_io, only         : stdout,io_error,io_time
     use od_cell, only       : cell_volume
+    use dos_utils, only     : dos_utils_set_efermi
+
     implicit none
     integer :: ierr
     real(kind=dp) :: time0, time1
@@ -106,6 +108,11 @@ contains
     endif
     !-------------------------------------------------------------------------------
 
+
+    
+    call dos_utils_set_efermi
+
+ 
 
     allocate(vb_max(nspins), stat=ierr)
     if (ierr/=0) call io_error ("cannot allocate vb_max")
@@ -170,84 +177,6 @@ contains
     !-------------------------------------------------------------------------------
 
 
-    !-------------------------------------------------------------------------------
-    ! F E R M I   E N E R G Y   A N A L Y S I S
-    !time0=io_time()
-    !write(stdout,*)
-    !write(stdout,'(1x,a78)')  '+------------------------ Fermi Energy Analysis -----------------------------+'
-    !write(stdout,'(1x,a1,a45,f8.4,a3,20x,a1)') "|","Fermi energy from CASTEP :",efermi_castep," eV","|"
-    !write(stdout,'(1x,a78)')    '+----------------------------------------------------------------------------+'
-    !
-    !if(compute_efermi) then
-    ! if(fixed) then 
-    !   write(stdout,'(1x,a78)') "| From Fixed broadening                                                      | "
-    !   efermi_fixed= calc_efermi_from_intdos(intdos_fixed)
-    !   write(stdout,'(1x,a1,a46,f8.4,a3,19x,a1)')"|", " Fermi energy (Fixed braodening) : ", Efermi_fixed,"eV","|"
-    !   write(stdout,'(1x,a78)')    '+----------------------------------------------------------------------------+'
-
-    ! endif
-    ! if(adaptive) then
-    !   write(stdout,'(1x,a78)') "| From Adaptive broadening                                                   | "  
-    !   efermi_adaptive=calc_efermi_from_intdos(intdos_adaptive)
-    !   write(stdout,'(1x,a1,a46,f8.4,a3,19x,a1)')"|", " Fermi energy (Adaptive braodening) : ", Efermi_adaptive,"eV","|"
-    ! write(stdout,'(1x,a78)')    '+----------------------------------------------------------------------------+'
-
-    ! endif
-    ! if(linear) then
-    !   write(stdout,'(1x,a78)') "| From Linear broadening                                                     | " 
-    !   efermi_linear=calc_efermi_from_intdos(intdos_linear) 
-    !   write(stdout,'(1x,a1,a46,f8.4,a3,19x,a1)')"|", " Fermi energy (Linear braodening) : ", Efermi_linear," eV","|"
-    ! write(stdout,'(1x,a78)')    '+----------------------------------------------------------------------------+'
-    !
-    ! endif
-    !else
-    ! write(stdout,'(1x,a78)')   "| No Fermi energies calculated                                               | "
-    ! ! Use the derived Fermi energy shifts if calculated. It not use the fermi_energy supplied
-    ! ! if not, use the CASTEP Fermi energy
-    ! if(fermi_energy.ne.-990.0_dp)then
-    !  efermi_fixed=fermi_energy
-    !  efermi_adaptive=fermi_energy
-    !  efermi_linear=fermi_energy
-    ! else
-    !  efermi_fixed=efermi_castep
-    !  efermi_adaptive=efermi_castep
-    !  efermi_linear=efermi_castep
-    ! endif
-    !endif
-
-    ! NB If you have asked for more than one type of broadening
-    ! If one of your options is linear then all will have the linear efermi
-    ! If you have asked for adaptive, but nor linear, you will have the adaptive efermi
-    !if(fixed) then
-    ! efermi=efermi_fixed  
-    !endif
-
-    !if(adaptive) then
-    ! efermi=efermi_adaptive
-    !endif
-    !
-    !if(linear)then
-    ! efermi=efermi_linear
-    !endif
-    !
-    ! write(stdout,'(1x,a1,a46,f8.4,a3,19x,a1)')"|", " Fermi energy used : ", efermi,"eV","|"
-    ! E(:)=E(:)-efermi
-    ! band_energy(:,:,:) = band_energy(:,:,:) - efermi
-    !
-    !write(stdout,'(1x,a78)')    '+----------------------------------------------------------------------------+'
-    !time1=io_time()
-    !write(stdout,'(1x,a40,f11.3,a)') 'Time to calculate Fermi energies ',time1-time0,' (sec)'
-    !-------------------------------------------------------------------------------
-
-
-    !-------------------------------------------------------------------------------
-    ! B A N D   E N E R G Y   A N A L Y S I S
-    ! Now for a bit of crosschecking  band energies
-    ! These should all converge to the same number as the number of bins is increased
-    !if(compute_band_energy) call compute_band_energies
-    !-------------------------------------------------------------------------------
-
-
     if(dos_per_volume) then
        if(fixed) then
           jdos_fixed=jdos_fixed/cell_volume   
@@ -285,8 +214,8 @@ contains
     ! Calls the relevant dos calculator.
     !=============================================================================== 
     use od_dos_utils, only : dos_utils_calculate
-    use od_parameters, only : compute_efermi,jdos_max_energy, jdos_spacing, iprint
-    use od_electronic, only : efermi_castep,efermi,band_energy
+    use od_parameters, only : jdos_max_energy, jdos_spacing, iprint
+    use od_electronic, only : efermi,band_energy
     use od_comms, only : comms_reduce,comms_bcast,on_root
     use od_io, only : stdout,io_error
 
@@ -294,12 +223,7 @@ contains
 
     integer       :: idos,ierr
     real(kind=dp) :: max_band_energy
-
-    if(compute_efermi)then
-       call dos_utils_calculate
-    else
-       efermi=efermi_castep
-    endif
+   
 
     if(jdos_max_energy<0.0_dp) then ! we have to work it out ourselves
        max_band_energy=maxval(band_energy)
@@ -312,6 +236,9 @@ contains
           write(stdout,'(1x,a40,f11.3,a14)') 'max_band_energy (before correction) : ', max_band_energy, " <-- JDOS Grid"
        endif
     endif
+
+
+
     
     jdos_nbins=abs(ceiling(jdos_max_energy/jdos_spacing))
     jdos_max_energy=jdos_nbins*jdos_spacing
