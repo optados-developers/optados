@@ -1,0 +1,23 @@
+task = dos optics  
+
+legacy_file_format = false
+
+broadening = fixed 
+
+fixed_smearing = 0.5
+
+compute_efermi = true
+
+set_efermi_zero = false
+
+output_format = gnuplot
+
+jdos_max_energy = 60
+
+jdos_spacing = 0.1
+
+optics_geom = polycrystalline 
+
+!scissor_op = 5
+
+!optics_qdir = 1 0 0 
