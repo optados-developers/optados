@@ -78,13 +78,13 @@ contains
     !
 
     use od_constants, only : dp
-    use od_electronic, only : band_gradient, elec_read_band_gradient, nbands, nspins
+    use od_electronic, only : band_gradient, elec_read_band_gradient, nbands, nspins, efermi
     use od_cell, only : cell_volume, num_kpoints_on_node 
     use od_jdos_utils, only : jdos_utils_calculate
     use od_comms, only : on_root, my_node_id
-    use od_parameters, only : optics_geom, compute_efermi, adaptive, linear, fixed, optics_intraband, &
+    use od_parameters, only : optics_geom, adaptive, linear, fixed, optics_intraband, &
          optics_drude_broadening 
-    use od_dos_utils, only : dos_utils_calculate_at_e, efermi_fixed, efermi_adaptive, efermi_linear
+    use od_dos_utils, only : dos_utils_calculate_at_e,  dos_utils_set_efermi
     use od_io, only : stdout 
 
     if(on_root) then
@@ -95,13 +95,7 @@ contains
        write(stdout,*)
     endif
 
-    ! Get Ef
-    if(compute_efermi) then !this is assuming that I have already run the DOS!!!!  
-       if(adaptive) e_fermi = efermi_adaptive
-       if(linear) e_fermi = efermi_linear
-       if(fixed)  e_fermi = efermi_fixed
-       !   else call io_error ("OPTICS: No Ef set")
-    endif
+    call dos_utils_set_efermi
 
     ! Get information from .cst_ome file 
     call elec_read_band_gradient
@@ -123,7 +117,7 @@ contains
              dos_matrix_weights(N,N2,:,:) = matrix_weights(N2,N2,:,:,N)  
           enddo
        enddo
-       call dos_utils_calculate_at_e(e_fermi,dos_matrix_weights,weighted_dos_at_e,dos_at_e) 
+       call dos_utils_calculate_at_e(efermi,dos_matrix_weights,weighted_dos_at_e,dos_at_e) 
     endif
 
     if(on_root) then
@@ -255,12 +249,12 @@ contains
        do N_spin=1,nspins                                    ! Loop over spins
           do n_eigen=1,nbands                                ! Loop over state 1 
              do n_eigen2=n_eigen,nbands                      ! Loop over state 2  
-                if(band_energy(n_eigen,N_spin,N)>e_fermi.and.n_eigen/=n_eigen2) cycle
-                if(band_energy(n_eigen2,N_spin,N)<e_fermi.and.n_eigen/=n_eigen2) cycle
+                if(band_energy(n_eigen,N_spin,N)>efermi.and.n_eigen/=n_eigen2) cycle
+                if(band_energy(n_eigen2,N_spin,N)<efermi.and.n_eigen/=n_eigen2) cycle
                 factor = 0.0_dp
                 if(n_eigen2==n_eigen)then 
                    factor = 1.0_dp
-                elseif(band_energy(n_eigen2,N_spin,N)>e_fermi)then 
+                elseif(band_energy(n_eigen2,N_spin,N)>efermi)then 
                    factor = 1.0_dp/((band_energy(n_eigen2,N_spin,N)-band_energy(n_eigen,N_spin,N)&
                         +scissor_op)**2)  
                 endif
