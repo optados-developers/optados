@@ -40,7 +40,7 @@ contains
 
   subroutine core_calculate
     use od_electronic, only  : elec_read_elnes_mat
-    use od_dos_utils, only : dos_utils_calculate
+    use od_dos_utils, only : dos_utils_calculate, dos_utils_set_efermi
     use od_comms, only : on_root
     use od_io, only : stdout
     use od_parameters, only : core_LAI_broadening, LAI_gaussian, LAI_lorentzian
@@ -59,6 +59,8 @@ contains
     ! read in the core matrix elements from disk
     call  elec_read_elnes_mat
     !    (elnes_mat(orb,nb,indx,nk,ns),indx=1,3)
+
+    call dos_utils_set_efermi
 
     call core_prepare_matrix_elements
 
@@ -103,6 +105,9 @@ contains
     complex(kind=dp) :: g
 
     num_occ = 0.0_dp
+
+    !! THIS NEEDS TO USE EFERMI
+
     do N_spin=1,nspins
        num_occ(N_spin) = num_electrons(N_spin)
     enddo
@@ -497,13 +502,13 @@ contains
 
     use od_constants, only : pi, dp
     use od_parameters, only : LAI_lorentzian_width, LAI_lorentzian_scale, LAI_lorentzian_offset, &
-         LAI_gaussian_width, dos_nbins, LAI_gaussian, compute_efermi, adaptive, linear, fixed
+         LAI_gaussian_width, dos_nbins, LAI_gaussian, adaptive, linear, fixed
     use od_dos_utils, only : E
-    use od_electronic, only : nspins, elnes_mwab
+    use od_electronic, only : nspins, elnes_mwab,efermi
     use od_dos_utils, only : efermi_fixed, efermi_adaptive, efermi_linear
 
     integer :: N, N_spin, N_energy, N_energy2 
-    real(kind=dp) :: L_width, l, dE, e_fermi
+    real(kind=dp) :: L_width, l, dE
     real(kind=dp),allocatable, dimension(:,:,:) :: weighted_dos_temp
 
     dE = E(2)-E(1)   
@@ -517,19 +522,13 @@ contains
        weighted_dos_temp = weighted_dos
     end if
 
-    if(compute_efermi) then !this is assuming that I have already run the DOS!!!!  
-       if(adaptive) e_fermi = efermi_adaptive
-       if(linear) e_fermi = efermi_linear
-       if(fixed)  e_fermi = efermi_fixed
-       !   else call io_error ("OPTICS: No Ef set")
-    endif
 
     do N=1,elnes_mwab%norbitals         ! Loop over orbitals 
        do N_spin=1,nspins               ! Loop over spins 
           do N_energy=1,dos_nbins       ! Loop over energy 
-             if(E(N_energy).ge.(LAI_lorentzian_offset+e_fermi)) then 
+             if(E(N_energy).ge.(LAI_lorentzian_offset+efermi)) then 
                 L_width = 0.5_dp*LAI_lorentzian_width & ! HWHW of Lorentzian 
-                     + ((E(N_energy)-e_fermi)*LAI_lorentzian_scale)
+                     + ((E(N_energy)-efermi)*LAI_lorentzian_scale)
              else 
                 L_width = 0.5_dp*LAI_lorentzian_width 
              end if
