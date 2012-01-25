@@ -6,34 +6,32 @@ Things To Do
 Post beta release
 =================
 
+Optados
+-------
+
+ Work out logic for computing dos before optics [JRY]
+
 
 
 Core-loss
 ---------
 
- Sort out q directions
- Life-time and instrument broadening
- energy dependent broadening
-
-Optics
-------
-
- Metalic systems - proper treatment of intra-band term
+ Pretty output [JRY]
 
 
 Pdos
 ----
 
- Project onto individual (real) spherical harmonics
+ Project onto individual (real) spherical harmonics [JRY]
 
 
 File-formats
 ------------
 
- Think about the new file formats and see if they can be made better
+ Think about the new file formats and see if they can be made better [JRY]
 
 
-Domain name and website
+website
 
 
 
