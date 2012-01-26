@@ -2,7 +2,7 @@
 SYSTEM := g95 
 
 # fast / debug
-BUILD := fast
+BUILD := debug 
 
 # serial / mpi
 COMMS_ARCH := serial

@@ -60,19 +60,83 @@ module od_dos
     !=============================================================================== 
     use od_io,        only : stdout,io_time
     use od_dos_utils, only : E, dos_fixed, intdos_fixed, dos_adaptive, &
-    &intdos_adaptive, dos_linear, intdos_linear,dos_utils_calculate
-    use od_parameters,only : fixed,adaptive,linear
+    &intdos_adaptive, dos_linear, intdos_linear,dos_utils_calculate,&
+    &dos_utils_compute_dos_at_efermi, dos_utils_compute_bandgap,&
+    &dos_utils_compute_band_energies, dos_utils_set_efermi
+    use od_parameters,only : fixed,adaptive,linear,compute_band_gap,&
+    &compute_band_energy, set_efermi_zero
+
     use od_comms,     only : on_root
-    use od_electronic,only : nspins,efermi
+    use od_electronic,only : nspins,efermi,band_energy
        
        
-    real(dp) :: time0, time1
+    real(dp) :: time0, time1, unshifted_efermi
 
 
     call dos_utils_calculate   ! Will return if this has already been done.
        
+    call dos_utils_set_efermi
 
     
+  time0=io_time()
+  if(on_root) then
+     write(stdout,*)   
+     write(stdout,'(1x,a78)') '    +====================================================================+    '
+     write(stdout,'(1x,a78)') '    +============================= DOS Analysis =========================+    '
+     write(stdout,'(1x,a78)') '    +====================================================================+    '
+     
+  endif
+  
+    !-------------------------------------------------------------------------------
+    ! D O S   A T   F E R M I  L E V E L   A N A L Y S I S
+    call dos_utils_compute_dos_at_efermi
+    !-------------------------------------------------------------------------------
+
+    
+    !-------------------------------------------------------------------------------
+    ! B A N D  G A P  A N A L Y S I S
+    ! The compute_dos_at_efermi routine may have set compute_band_gap to true
+    if(compute_band_gap) call dos_utils_compute_bandgap
+    !-------------------------------------------------------------------------------
+
+
+    !-------------------------------------------------------------------------------
+    ! B A N D   E N E R G Y   A N A L Y S I S
+    ! Now for a bit of crosschecking  band energies
+    ! These should all converge to the same number as the number of bins is increased
+    if(compute_band_energy) call dos_utils_compute_band_energies
+    !-------------------------------------------------------------------------------
+    
+    unshifted_efermi=efermi
+
+    if(set_efermi_zero) then
+       if(on_root) then
+          write(stdout,*) 
+          write(stdout,'(1x,a71)')  '+----------------------- Shift Fermi Energy --------------------------+'
+       endif
+       write(stdout,'(1x,a1,a46,a24)')"|", " Setting Fermi energy to 0 : ","|"
+       E(:)=E(:)-efermi
+       band_energy(:,:,:) = band_energy(:,:,:) - efermi
+       efermi=0.0_dp
+    endif
+
+    if(on_root) then
+       write(stdout,'(1x,a1,a46,f8.4,a3,12x,a8)')"|", " Fermi energy used : ", unshifted_efermi,"eV","| <- Ef "
+       write(stdout,'(1x,a71)')  '+---------------------------------------------------------------------+'
+     
+       time1=io_time()
+       write(stdout,'(1x,a40,f11.3,a)') 'Time to perfom analysis ',time1-time0,' (sec)'
+       !-------------------------------------------------------------------------------
+    end if
+
+    if(on_root) then
+       write(stdout,*)   
+       write(stdout,'(1x,a78)') '    +====================================================================+    '
+       write(stdout,'(1x,a78)') '    +=========================== DOS Analysis End =======================+    '
+       write(stdout,'(1x,a78)') '    +====================================================================+    '
+       write(stdout,*)  
+    endif
+
     ! W R I T E   O U T   D O S  
        time0=io_time()
        ! Otherwise we have written to wdos and dos, so they can be called 

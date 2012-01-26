@@ -69,6 +69,10 @@ module od_dos_utils
   public :: dos_utils_merge          ! Used by od_jdos
   public :: doslin_sub_cell_corners  ! Used by od_jdos
   public :: doslin                   ! Used by od_jdos
+  public :: dos_utils_compute_dos_at_efermi
+  public :: dos_utils_compute_bandgap
+  public :: dos_utils_compute_band_energies
+  public :: dos_utils_set_efermi
   !-------------------------------------------------------------------------------
 
 
@@ -115,9 +119,8 @@ contains
     use od_comms,     only : on_root,my_node_id,comms_bcast
     use od_electronic,only : band_gradient,band_energy, efermi, efermi_castep,nspins, &
          & elec_read_band_gradient, unshifted_efermi
-    use od_parameters,only : linear, adaptive, fixed, quad, compute_band_energy, &
-         & compute_efermi,dos_per_volume,fermi_energy,iprint,set_efermi_zero, &
-         & compute_band_gap
+    use od_parameters,only : linear, adaptive, fixed, quad, &
+         & dos_per_volume,iprint,set_efermi_zero,efermi_choice
     use od_cell,         only : cell_volume, num_kpoints_on_node
 
     implicit none
@@ -237,119 +240,45 @@ contains
 
     !-------------------------------------------------------------------------------
     ! F E R M I   E N E R G Y   A N A L Y S I S
-    if(on_root) then
-       time0=io_time()
-       write(stdout,*)
-       write(stdout,'(1x,a71)')  '+------------------------ Fermi Energy Analysis ----------------------+'
-       write(stdout,'(1x,a1,a46,f8.4,a3,12x,a8)') "|"," Fermi energy from CASTEP : ",efermi_castep," eV","| <- EfC"
-       write(stdout,'(1x,a71)')  '+---------------------------------------------------------------------+'
-
-       if(compute_efermi) then
+    if(efermi_choice=="optados") then
+       if(on_root) then
+          time0=io_time()
+          write(stdout,*)
+          write(stdout,'(1x,a71)')  '+------------------------ Fermi Energy Analysis ----------------------+'
+          !    write(stdout,'(1x,a1,a46,f8.4,a3,12x,a8)') "|"," Fermi energy from CASTEP : ",efermi_castep," eV","| <- EfC"
+          !    write(stdout,'(1x,a71)')  '+---------------------------------------------------------------------+'
+          
+          
           if(fixed) then 
              write(stdout,'(1x,a23,47x,a1)') "| From Fixed broadening","|"
              efermi_fixed= calc_efermi_from_intdos(intdos_fixed)
              write(stdout,'(1x,a1,a46,f8.4,a3,12x,a8)')"|", " Fermi energy (Fixed broadening) : ", efermi_fixed,"eV","| <- EfF"
-    
-   write(stdout,'(1x,a71)')  '+---------------------------------------------------------------------+'
+             
+             write(stdout,'(1x,a71)')  '+---------------------------------------------------------------------+'
           endif
           if(adaptive) then
              write(stdout,'(1x,a26,44x,a1)') "| From Adaptive broadening","|"  
              efermi_adaptive=calc_efermi_from_intdos(intdos_adaptive)
              write(stdout,'(1x,a1,a46,f8.4,a3,12x,a8)')"|", " Fermi energy (Adaptive broadening) : " &
                   , efermi_adaptive,"eV","| <- EfA"
-
-   write(stdout,'(1x,a71)')  '+---------------------------------------------------------------------+'
+             
+             write(stdout,'(1x,a71)')  '+---------------------------------------------------------------------+'
           endif
           if(linear) then
              write(stdout,'(1x,a24,46x,a1)') "| From Linear broadening","|" 
              efermi_linear=calc_efermi_from_intdos(intdos_linear) 
              write(stdout,'(1x,a1,a46,f8.4,a3,12x,a8)')"|", " Fermi energy (Linear broadening) : ",&
                   efermi_linear," eV","| <- EfL"
-            
-   write(stdout,'(1x,a71)')  '+---------------------------------------------------------------------+'
+             
+             write(stdout,'(1x,a71)')  '+---------------------------------------------------------------------+'
           endif
-       elseif(.not.compute_efermi)then
-          ! Use the derived Fermi energy shifts if calculated. It not use the fermi_energy supplied
-          ! if not, use the CASTEP Fermi energy
-          if(fermi_energy.ne.-990.0_dp)then
-             write(stdout,'(1x,a71)')   "| No Fermi energies calculated : Using user-defined value                    | "
-             efermi_fixed=fermi_energy
-             efermi_adaptive=fermi_energy
-             efermi_linear=fermi_energy
-          else 
-             ! User has not set fermi_energy, nor wants it calculating
-             ! so we'll have to use the CASTEP value. 
-             write(stdout,'(1x,a71)')   "| No Fermi energies calculated : Using CASTEP value                          | "
-             efermi_fixed=efermi_castep
-             efermi_adaptive=efermi_castep
-             efermi_linear=efermi_castep
-          endif
-       else ! computer_efermi neither T nor F !
-          call io_error (" ERROR: Bug in dos_utils_calculate: computer_efermi ambiguous")
        endif
     endif
-    call comms_bcast(fermi_energy,1)
+    
     call comms_bcast(efermi_fixed,1)
     call comms_bcast(efermi_linear,1)
     call comms_bcast(efermi_adaptive,1)
-
-
-    ! NB If you have asked for more than one type of broadening
-    ! If one of your options is linear then all will have the linear efermi
-    ! If you have asked for adaptive, but nor linear, you will have the adaptive efermi
-    if(fixed) then
-       efermi=efermi_fixed  
-    endif
-
-    if(adaptive) then
-       efermi=efermi_adaptive
-    endif
-
-    if(linear)then
-       efermi=efermi_linear
-    endif
-
-    unshifted_efermi=efermi
-
-    if(set_efermi_zero) then
-       if(on_root) write(stdout,'(1x,a1,a46,a24)')"|", " Setting Fermi energy to 0 : ","|"
-       E(:)=E(:)-efermi
-       band_energy(:,:,:) = band_energy(:,:,:) - efermi
-       efermi=0.0_dp
-    endif
-
-    if(on_root) then
-       write(stdout,'(1x,a1,a46,f8.4,a3,12x,a8)')"|", " Fermi energy used : ", unshifted_efermi,"eV","| <- Ef "
-       write(stdout,'(1x,a71)')  '+---------------------------------------------------------------------+'
-     
-       time1=io_time()
-       write(stdout,'(1x,a40,f11.3,a)') 'Time to calculate Fermi energies ',time1-time0,' (sec)'
-       !-------------------------------------------------------------------------------
-    end if
-
-
-    !-------------------------------------------------------------------------------
-    ! D O S   A T   F E R M I  L E V E L   A N A L Y S I S
-    call compute_dos_at_efermi
-    !-------------------------------------------------------------------------------
-
     
-    !-------------------------------------------------------------------------------
-    ! B A N D  G A P  A N A L Y S I S
-    ! The compute_dos_at_efermi routine may have set compute_band_gap to true
-    if(compute_band_gap) call compute_bandgap
-    !-------------------------------------------------------------------------------
-
-
-    !-------------------------------------------------------------------------------
-    ! B A N D   E N E R G Y   A N A L Y S I S
-    ! Now for a bit of crosschecking  band energies
-    ! These should all converge to the same number as the number of bins is increased
-    if(compute_band_energy) call compute_band_energies
-    !-------------------------------------------------------------------------------
-
-
-
     if(on_root) then
        if(dos_per_volume) then
           if(fixed) then
@@ -373,9 +302,7 @@ contains
           ! endif   
        endif
     endif
-
-
-
+   
     if(on_root) then
        write(stdout,*)
        if(calc_weighted_dos) then
@@ -389,12 +316,57 @@ contains
        endif
        write(stdout,*)
     endif
-
-
+    
+    
   end subroutine dos_utils_calculate
- 
+  
  !===============================================================================
-  subroutine compute_dos_at_efermi
+  subroutine dos_utils_set_efermi
+    !===============================================================================
+    use od_parameters, only : efermi_choice, efermi_user, fixed,&
+         & linear, adaptive
+    use od_electronic, only : efermi_castep, num_electrons, nspins, efermi
+    use od_io, only : io_error, stdout
+    use od_comms, only : on_root
+    implicit none   
+    
+    if(on_root) write(stdout,'(1x,a71)')  '+------------------------ Setting Fermi Energy  ----------------------+'
+   
+    select case (efermi_choice)
+       case("castep")
+          if(on_root) write(stdout,'(1x,a1,a46,f8.4,a3,12x,a8)') "|",&
+               &" Fermi energy from CASTEP : ",efermi_castep," eV","| <- EfC"
+          efermi=efermi_castep
+       case("user")
+          if(on_root) write(stdout,'(1x,a1,a46,f8.4,a3,12x,a8)') "|",&
+               &" Fermi energy from user : ",efermi_user," eV","| <- EfU"
+          efermi=efermi_user
+       case("insulator")
+          ! Same fermi level for up and down spins. Different number
+          ! of electrons for up and down spins.
+          ! For an insulator
+          ! vb_max(:)=num_electrons(:)/electrons_per_state
+          ! Go between global VBM and CBM band_energy(ib,is,ik)
+          !efermi=
+          if(on_root) write(stdout,'(1x,a1,a46,f8.4,a3,12x,a8)') "|",&
+               &" Fermi energy assuming insulator : ",efermi_user," eV","| <- EfI"
+          call io_error('Error in dos_utils_set_efermi: insulator not coded yet')
+       case("optados")
+          ! So in the case of compare_jdos we pick efermi_adaptive.
+          call dos_utils_calculate ! This will return if we already have.
+          if(fixed) efermi=efermi_fixed
+          if(linear) efermi=efermi_linear
+          if(adaptive) efermi=efermi_adaptive
+          if(on_root) write(stdout,'(1x,a1,a46,f8.4,a3,12x,a8)') "|",&
+               &" Fermi energy from DOS : ",efermi," eV","| <- EfD"
+       case default
+           call io_error('Error in dos_utils_set_efermi: unknown efermi choice this is a bug')
+    end select
+    if(on_root) write(stdout,'(1x,a71)')  '+---------------------------------------------------------------------+'
+  endsubroutine dos_utils_set_efermi
+
+ !===============================================================================
+  subroutine dos_utils_compute_dos_at_efermi
  !===============================================================================
     use od_io,         only : stdout, io_time
     use od_comms,      only : on_root, comms_bcast
@@ -455,11 +427,11 @@ contains
        !-------------------------------------------------------------------------------
     end if
     call comms_bcast(compute_band_gap,1) 
-  end subroutine compute_dos_at_efermi
+  end subroutine dos_utils_compute_dos_at_efermi
   
 
   !===============================================================================
-  subroutine compute_bandgap
+  subroutine dos_utils_compute_bandgap
     !===============================================================================
     ! Modified from LINDOS -- AJM 3rd June 2011
     use od_electronic, only : nspins, nbands, efermi, band_energy
@@ -626,7 +598,7 @@ contains
     
     time1=io_time()
     if(on_root) write(stdout,'(1x,a40,f11.3,a)') 'Time to calculate Bandgap ',time1-time0,' (sec)'
-  end subroutine compute_bandgap
+  end subroutine dos_utils_compute_bandgap
   !===============================================================================
 
   !===============================================================================
@@ -732,7 +704,7 @@ contains
 
 
   !=============================================================================== 
-  subroutine compute_band_energies
+  subroutine dos_utils_compute_band_energies
     !=============================================================================== 
     ! High-level subroutine to compute band energies of the DOS calculated.
     ! Calculates using the band_energies directly and compares with the
@@ -798,7 +770,7 @@ contains
        write(stdout,'(1x,a40,f11.3,a)') 'Time to calculate Band energies ',time1-time0,' (sec)'
     end if
 
-  end subroutine compute_band_energies
+  end subroutine dos_utils_compute_band_energies
 
 
 

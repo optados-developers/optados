@@ -72,7 +72,7 @@ contains
     use od_comms, only      : on_root
     use od_io, only         : stdout,io_error,io_time
     use od_cell, only       : cell_volume
-    use dos_utils, only     : dos_utils_set_efermi
+    use od_dos_utils, only     : dos_utils_set_efermi
 
     implicit none
     integer :: ierr

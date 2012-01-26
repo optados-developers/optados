@@ -11,11 +11,9 @@ Beta 2
 Efermi
 ------
 
-* move all analysis from dos_utils_calculate [AJM]
-* compute_dos_at_efermi takes efermi (do it for each l/a/f) [AJM]
+* Make set_efermi work for "insulator"
+* compute_dos_at_efermi takes efermi (do it for each l/a/f) [AJM] <-- HAVE WE NOT DECIDED AGAINST THIS NOW?
 * JDOS vbm as a functino of k [AJM]
-* in dos_utils make set_efermi [AJM}
-* parameters.f90 : efermi_choice (internal variable) efermi (param name): Values =   optados / file / user / insulator [JRY} 
 
 Optados
 -------

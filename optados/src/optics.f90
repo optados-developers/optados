@@ -164,7 +164,7 @@ contains
     !***************************************************************
     use od_constants, only : dp
     use od_electronic, only : nbands, nspins, band_gradient, num_electrons, &
-         electrons_per_state, band_energy
+         electrons_per_state, band_energy, efermi
     use od_cell, only : nkpoints, cell_volume, num_kpoints_on_node, cell_get_symmetry, &
          num_crystal_symmetry_operations, crystal_symmetry_operations
     use od_parameters, only : optics_geom, optics_qdir, legacy_file_format, scissor_op

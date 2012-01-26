@@ -250,7 +250,7 @@ contains
     call param_get_keyword('fixed_smearing',found,r_value=fixed_smearing)
 
     efermi_user        = -990.0_dp
-    efermi_choice="calculate"
+    efermi_choice="optados"
     call param_get_efermi('efermi',found,efermi_choice,efermi_user)
 !    call param_get_keyword('fermi_energy',found,r_value=fermi_energy)
 
@@ -909,7 +909,7 @@ contains
 
     if(found) then
        c_value=dummy
-       if(trim(c_value)=='calculate' .or. trim(c_value)=='file'.or.trim(c_value)=='insulator') then
+       if(trim(c_value)=='optados' .or. trim(c_value)=='file'.or.trim(c_value)=='insulator') then
           r_value=-999.0_dp ! ie not set
        else
           ! assume it is a number
