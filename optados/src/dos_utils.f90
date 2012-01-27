@@ -336,11 +336,13 @@ contains
     real(kind=dp) :: vbm, cbm 
     
     if(on_root) write(stdout,'(1x,a71)')  '+------------------------ Setting Fermi Energy  ----------------------+'
-   
+    if(on_root) write(stdout,'(1x,a1,a46,f8.4,a3,12x,a8)') "|",&
+         &" Fermi energy from file : ",efermi_castep," eV","| <- EfC"
+
     select case (efermi_choice)
        case("castep")
           if(on_root) write(stdout,'(1x,a1,a46,f8.4,a3,12x,a8)') "|",&
-               &" Fermi energy from CASTEP : ",efermi_castep," eV","| <- EfC"
+               &" Set fermi energy from file : ",efermi_castep," eV","| <- EfC"
           efermi=efermi_castep
        case("user")
           if(on_root) write(stdout,'(1x,a1,a46,f8.4,a3,12x,a8)') "|",&
@@ -365,7 +367,7 @@ contains
                      &vbm=band_energy(top_occ_band,is,ik)
                 ! If the band_energy array is big enough then there will be occupied states.
                 if (num_electrons(is)+1.le.nbands) then
-                   if (band_energy(top_occ_band+1,is,ik) > vbm) &
+                   if (band_energy(top_occ_band+1,is,ik) < cbm) &
                         &cbm=band_energy(top_occ_band+1,is,ik)
                 endif
              enddo
@@ -389,8 +391,8 @@ contains
 
           
           if(on_root) write(stdout,'(1x,a1,a46,f8.4,a3,12x,a8)') "|",&
-               &" Fermi energy assuming insulator : ",efermi_user," eV","| <- EfI"
-          call io_error('Error in dos_utils_set_efermi: insulator not coded yet')
+               &" Fermi energy assuming insulator : ",efermi," eV","| <- EfI"
+        
        case("optados")
           ! So in the case of compare_jdos we pick efermi_adaptive.
           call dos_utils_calculate ! This will return if we already have.
