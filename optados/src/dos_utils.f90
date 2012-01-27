@@ -324,13 +324,15 @@ contains
   subroutine dos_utils_set_efermi
     !===============================================================================
     use od_parameters, only : efermi_choice, efermi_user, fixed,&
-         & linear, adaptive
-    use od_electronic, only : efermi_castep, num_electrons, nspins, efermi &
-         & electrons_per_state,band_energy
-    use od_io, only : io_error, stdout, iprint
-    use od_comms, only : on_root
+         & linear, adaptive, iprint
+    use od_electronic, only : efermi_castep, num_electrons, nspins, efermi, &
+         & electrons_per_state,band_energy, nbands
+    use od_io, only : io_error, stdout
+    use od_comms, only : on_root, my_node_id,  comms_reduce,  comms_bcast
+    use od_cell, only :  num_kpoints_on_node
     implicit none   
 
+    integer :: is,ik, top_occ_band
     real(kind=dp) :: vbm, cbm 
     
     if(on_root) write(stdout,'(1x,a71)')  '+------------------------ Setting Fermi Energy  ----------------------+'
@@ -351,11 +353,41 @@ contains
           ! band_energy(ib,is,ik)
           vbm=-huge(vbm)
           cbm=huge(cbm)
-          if(on_root.and.iprint>3) write(stdout,*) vbm, " =vbm : cbm= ", cbm
-
-          ! vb_max(:)=num_electrons(:)/electrons_per_state
+          if(on_root.and.iprint>3) write(stdout,*) vbm, " =vbm : cbm= ", cbm      
+          
           ! Go between global VBM and CBM band_energy(ib,is,ik)
-          !efermi=
+          do ik=1,num_kpoints_on_node(my_node_id)
+             do is=1,nspins
+                ! Which is the band below the fermi energy at this spin and kpoint
+                top_occ_band=floor(num_electrons(is)/electrons_per_state)
+
+                if (band_energy(top_occ_band,is,ik) > vbm) &
+                     &vbm=band_energy(top_occ_band,is,ik)
+                ! If the band_energy array is big enough then there will be occupied states.
+                if (num_electrons(is)+1.le.nbands) then
+                   if (band_energy(top_occ_band+1,is,ik) > vbm) &
+                        &cbm=band_energy(top_occ_band+1,is,ik)
+                endif
+             enddo
+             if(on_root.and.iprint>3) write(stdout,*) vbm, " =vbm : cbm= ", cbm
+          enddo
+      
+          ! Find the globals
+          call comms_reduce(cbm,1,'MIN')
+          call comms_bcast(cbm,1)
+          call comms_reduce(vbm,1,'MAX')
+          call comms_bcast(vbm,1)
+          
+          ! If we have a CBM then set the efermi halfway between VBM and CBM
+          ! If we don't have a CBM then set it 0.5 eV above VBM and hope for
+          ! the best.
+          if(cbm==huge(cbm)) then
+             efermi=vbm+0.5_dp
+          else
+             efermi=vbm+0.5_dp*(cbm-vbm)
+          endif
+
+          
           if(on_root) write(stdout,'(1x,a1,a46,f8.4,a3,12x,a8)') "|",&
                &" Fermi energy assuming insulator : ",efermi_user," eV","| <- EfI"
           call io_error('Error in dos_utils_set_efermi: insulator not coded yet')
