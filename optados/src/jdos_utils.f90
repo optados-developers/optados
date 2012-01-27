@@ -355,6 +355,7 @@ contains
        call io_error (" ERROR : unknown jdos_type in jcalculate_dos ")
     end select
 
+    width=0.0_dp
 
     if(linear.or.adaptive) step(:) = 1.0_dp/real(kpoint_grid_dim(:),dp)/2.0_dp
     if(adaptive.or.hybrid_linear) then
@@ -364,7 +365,7 @@ contains
        adaptive_smearing_temp=adaptive_smearing*sum(sub_cell_length)/3.0_dp
     endif
  
-   if(fixed) width=fixed_smearing
+    if(fixed) width=fixed_smearing
 
     call allocate_jdos(jdos)
     if(calc_weighted_jdos) then
@@ -402,7 +403,6 @@ contains
                       dos_temp=doslin(EV(0),EV(1),EV(2),EV(3),EV(4),E(idos),cuml)
                    else
                       dos_temp=gaussian(band_energy(jb,is,ik)-band_energy(ib,is,ik)+scissor_op,width,E(idos))!&
-                      !             &*electrons_per_state*kpoint_weight(ik)
                    endif
 
                    jdos(idos,is)=jdos(idos,is) + dos_temp*electrons_per_state*kpoint_weight(ik)  

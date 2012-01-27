@@ -20,12 +20,6 @@ Optados
 
  Work out logic for computing dos before optics [JRY]
 
-
-Adaptive Smearing
------------------
-
-* Does JDOS have the update I gave to DOS for adaptive smearing scaling (i.e. when I went from 0.4 to 1.4)? [AJM] 
-
 Core-loss
 ---------
 

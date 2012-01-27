@@ -325,10 +325,13 @@ contains
     !===============================================================================
     use od_parameters, only : efermi_choice, efermi_user, fixed,&
          & linear, adaptive
-    use od_electronic, only : efermi_castep, num_electrons, nspins, efermi
-    use od_io, only : io_error, stdout
+    use od_electronic, only : efermi_castep, num_electrons, nspins, efermi &
+         & electrons_per_state,band_energy
+    use od_io, only : io_error, stdout, iprint
     use od_comms, only : on_root
     implicit none   
+
+    real(kind=dp) :: vbm, cbm 
     
     if(on_root) write(stdout,'(1x,a71)')  '+------------------------ Setting Fermi Energy  ----------------------+'
    
@@ -344,7 +347,12 @@ contains
        case("insulator")
           ! Same fermi level for up and down spins. Different number
           ! of electrons for up and down spins.
-          ! For an insulator
+          ! For an insulator. Hence same number of electrons at each kpoint.
+          ! band_energy(ib,is,ik)
+          vbm=-huge(vbm)
+          cbm=huge(cbm)
+          if(on_root.and.iprint>3) write(stdout,*) vbm, " =vbm : cbm= ", cbm
+
           ! vb_max(:)=num_electrons(:)/electrons_per_state
           ! Go between global VBM and CBM band_energy(ib,is,ik)
           !efermi=
@@ -461,6 +469,7 @@ contains
     
     time0=io_time()
 
+
     if(on_root.and.(iprint>2)) then
        write(stdout,*)
        write(stdout,'(1x,a46)') "Finding an estimate of the maximum bandgap..."
@@ -523,6 +532,8 @@ contains
        k_of_e_local(1)=bandgap(is)%vk(3)+kpoints_before_this_node
        k_of_e_local(2)=bandgap(is)%ck(3)+kpoints_before_this_node
 
+       ! Tell all nodes what the cbm and the vbm is for a particular spin. 
+       ! I don't know why this is for a "particular" spin
        call comms_reduce(bandgap(is)%cbm,1,'MIN')
        call comms_bcast(bandgap(is)%cbm,1)
        call comms_reduce(bandgap(is)%vbm,1,'MAX')
@@ -539,7 +550,7 @@ contains
           bandenergies_of_extrema(:,0)=be_of_e_local
        endif
 
-
+       ! Merge all of the extrema into one array on root.
        do inode=1,(num_nodes-1)
           if(my_node_id==inode) call comms_send(k_of_e_local(1),2,root_id)
           if(on_root)           call comms_recv(kpoints_of_extrema(1,inode),2,inode)
@@ -570,6 +581,8 @@ contains
           
           ! Since each node has the same number of electrons, I'm allowed to just take the number of
           ! bands on the root node
+          ! WHAT DOES THE ABOVE COMMENT MEAN?
+          ! I think I mean, since each node has the same number of BANDS.
           write (stdout,'(1x,a1,7x,30x,a7,a7,a7,a12)') "|","Band","Node","Kpoint","|"
           write (stdout,'(1x,a1,7x,a30,i4,3x,i4,3x,i4,3x,a12)') "|","Valence Band Maximum:",&
                & bandgap(is)%vk(1),vbm_node,bandgap(is)%vk(3), "|"

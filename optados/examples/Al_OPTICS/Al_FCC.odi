@@ -24,4 +24,4 @@ optics_geom = polycrystalline
 
 optics_intraband = true
 
-adaptive_smearing = 0.5
+adaptive_smearing = 0.5 
