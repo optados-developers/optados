@@ -170,7 +170,7 @@ contains
 
     integer   :: loop,pos,loop_l,loop_a,loop_p
     integer   :: i_digit,species_count,species_proj
-    character(len=1) , parameter :: c_sep=";"
+    character(len=1) , parameter :: c_sep=":"
     integer, allocatable :: pdos_temp(:,:,:,:)
 
     !Check for any short cuts
@@ -337,13 +337,13 @@ contains
       character(len=3)  :: c_symbol='   '
       logical :: am_sum,site_sum
 
-      integer   :: num1,num2,i_punc,pos3,loop_l,loop_a,loop_p
+      integer   :: num1,num2,i_punc,pos3,loop_l,loop_a,loop_p,loop_j
       integer   :: counter,loop_r,range_size,ierr
       character(len=maxlen) :: dummy
       character(len=10), parameter :: c_digit="0123456789"
-      character(len=2) , parameter :: c_range="-:"
-      character(len=3) , parameter :: c_sep=" ,"
-      character(len=5) , parameter :: c_punc=" ,-:"
+      character(len=1) , parameter :: c_range="-"
+      character(len=1) , parameter :: c_sep=","
+      character(len=4) , parameter :: c_punc=" ,-:"
       character(len=5)  :: c_num1,c_num2
       integer, allocatable :: pdos_atoms(:),pdos_ang(:)
       logical :: lcount
@@ -353,7 +353,6 @@ contains
       if(ierr/=0) call io_error('Error: pdos_analyse_substring - allocation of pdos_atoms failed')
       allocate(pdos_ang(max_am),stat=ierr)
       if(ierr/=0) call io_error('Error: pdos_analyse_substring - allocation of pdos_ang failed')
-
 
       lcount=.false.
       if(present(species_proj)) lcount=.true.
@@ -390,9 +389,9 @@ contains
          ctemp=ctemp(2:)
       end if
       species=0
-      do loop=1,num_species
-         if(adjustl(c_symbol)==adjustl(pdos_symbol(loop))) then
-            species=loop
+      do loop_j=1,num_species
+         if(adjustl(c_symbol)==adjustl(pdos_symbol(loop_j))) then
+            species=loop_j
          end if
       end do
       if(species==0) call io_error('pdos_analyse_substring: Failed to match atomic symbol in pdos string')
