@@ -491,7 +491,7 @@ contains
        integer :: ck(1:3)    ! CBM : band, spin, kpoint
     end type band_gap
     
-    real(dp) :: time0, time1, kpoints_before_this_node
+    real(dp) :: time0, time1, kpoints_before_this_node, band_gap_at_k(1:2), band_gap_sum_on_node(1:2)
 
     integer :: ik, is, ib, ierr, inode, cbm_node, vbm_node, cumulative_kpoint_number
     integer :: cbm_band, vbm_band
@@ -527,10 +527,27 @@ contains
        bandgap(is)%cbm=huge(1.0_dp)
        bandgap(is)%vbm=-huge(1.0_dp)   
 
+       band_gap_at_k=0.0_dp
+       band_gap_sum_on_node=0.0_dp
        if(on_root.and.(nspins>1))  write (stdout,'(1x,a1,a20,i1,48x,a1)')  '|','Spin Component : ', is, '|' 
-       do ik=1,num_kpoints_on_node(my_node_id)       
+       do ik=1,num_kpoints_on_node(my_node_id)  
+          ! Work out the band gap at each k-point
+          bands_loop : do ib=1,nbands
+             if(band_energy(ib,is,ik).gt.efermi) then
+                ! This is the first one above efermi, hence bandgap at
+                ! this kpoint is
+                band_gap_at_k(is)=band_energy(ib,is,ik)-band_energy(ib-1,is,ik)
+                exit bands_loop
+             endif
+          enddo bands_loop
+
+          band_gap_sum_on_node(is)=band_gap_sum_on_node(is)+band_gap_at_k(is)
+
+          ! Work out the vbm and cbm on this node
           do ib=1,nbands
              if(band_energy(ib,is,ik).gt.efermi) then
+           
+
                 if(band_energy(ib,is,ik).lt.bandgap(is)%cbm) then
                    bandgap(is)%cbm = band_energy(ib,is,ik)
                    bandgap(is)%ck(1)=ib
@@ -561,6 +578,9 @@ contains
        do inode=0,(my_node_id-1)
           kpoints_before_this_node=kpoints_before_this_node+num_kpoints_on_node(inode)
        enddo
+
+       ! Sum the band_gap_sum_on_node
+       call comms_reduce(band_gap_sum_on_node(is),1,'SUM')
 
        ! Now we have a derived type that we can't send through MPI, so write it to local
        ! variables. This isn't pretty.
@@ -636,6 +656,9 @@ contains
           if (ierr/=0) call io_error ("cannot deallocate bands_of_extrema")
       endif
        
+    
+
+
        if(on_root) then 
           ! Since each node has the same number of electrons, I'm allowed to just take the number of
           ! bands on the root node
@@ -655,9 +678,10 @@ contains
              direct_gap=.false. 
           endif
        endif
-          
 
-       if(on_root)  write (stdout,'(1x,a1,a37,f15.10,1x,a3,13x,8a)') "|",'Maximum Band gap : ',&
+       if(on_root)  write (stdout,'(1x,a1,a37,f15.10,1x,a3,13x,8a)') "|",'Average Band gap : ',&
+               &  band_gap_sum_on_node(is)/nkpoints , " eV ", "| <- AGa"
+       if(on_root)  write (stdout,'(1x,a1,a37,f15.10,1x,a3,13x,8a)') "|",'Upper bound of Minimum Band gap : ',&
             & bandgap(is)%cbm-bandgap(is)%vbm, " eV ", "| <- BGa"
        
     enddo ! nspins
