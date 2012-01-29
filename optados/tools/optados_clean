@@ -1,0 +1,12 @@
+#!/bin/bash
+echo " +---------------------------------------+"
+echo " |       O p t a D O S   c l e a n       |"
+echo " +---------------------------------------+"
+echo
+echo " Wiping away OptaDOS outfiles...."
+echo 
+rm *.odo
+rm *fixed.dat *adaptive.dat *linear.dat
+rm *fixed.agr *adaptive.agr *linear.agr
+rm *_absorption.dat *_conductivity.dat *_epsilon.dat *_loss_fn.dat *_reflection.dat *_refractive_index.dat
+rm *_absorption.agr *_conductivity.agr *_epsilon.agr *_loss_fn.agr *_reflection.agr *_refractive_index.agr
