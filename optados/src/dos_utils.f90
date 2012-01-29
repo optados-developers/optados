@@ -494,12 +494,14 @@ contains
     real(dp) :: time0, time1, kpoints_before_this_node
 
     integer :: ik, is, ib, ierr, inode, cbm_node, vbm_node, cumulative_kpoint_number
+    integer :: cbm_band, vbm_band
     logical :: direct_gap
     
     type(band_gap),allocatable   :: bandgap(:)
 
-    real(dp)              :: be_of_e_local(1:2), k_of_e_local(1:2)
-    real(dp), allocatable :: bandenergies_of_extrema(:,:), kpoints_of_extrema(:,:)
+    real(dp)              :: be_of_e_local(1:2), k_of_e_local(1:2),nb_of_e_local(1:2)
+    real(dp), allocatable :: bandenergies_of_extrema(:,:),&
+         & kpoints_of_extrema(:,:), bands_of_extrema(:,:)
     
     time0=io_time()
 
@@ -554,32 +556,46 @@ contains
           end do
        end do
 
-       ! Now merge these
-       
+       ! Now merge these. What is this node's global k-point number?
        kpoints_before_this_node=0
        do inode=0,(my_node_id-1)
           kpoints_before_this_node=kpoints_before_this_node+num_kpoints_on_node(inode)
        enddo
 
+       ! Now we have a derived type that we can't send through MPI, so write it to local
+       ! variables. This isn't pretty.
+       ! Band energy of e_local
        be_of_e_local(1)=bandgap(is)%vbm
        be_of_e_local(2)=bandgap(is)%cbm
+       ! Band number of e_local
+       nb_of_e_local(1)=bandgap(is)%vk(1)
+       nb_of_e_local(1)=bandgap(is)%vk(2)
+       ! kpoint number of e_local
        k_of_e_local(1)=bandgap(is)%vk(3)+kpoints_before_this_node
        k_of_e_local(2)=bandgap(is)%ck(3)+kpoints_before_this_node
 
        ! Tell all nodes what the cbm and the vbm is for a particular spin. 
-       ! I don't know why this is for a "particular" spin
        call comms_reduce(bandgap(is)%cbm,1,'MIN')
        call comms_bcast(bandgap(is)%cbm,1)
        call comms_reduce(bandgap(is)%vbm,1,'MAX')
        call comms_bcast(bandgap(is)%vbm,1)
+       
+       ! Now all nodes know what the global VBM and CBM are.
 
        if(on_root) then
           allocate(kpoints_of_extrema(1:2,0:num_nodes-1),stat=ierr)
           if (ierr/=0) call io_error ("cannot allocate kpoints_of_extrema")
           allocate(bandenergies_of_extrema(1:2,0:num_nodes-1),stat=ierr)
           if (ierr/=0) call io_error ("cannot allocate bandenergies_of_extrema")
+          allocate(bands_of_extrema(1:2,0:num_nodes-1),stat=ierr)
+          if (ierr/=0) call io_error ("cannot allocate bands_of_extrema")
+          ! Zero the arrays
+          bands_of_extrema            =0
           kpoints_of_extrema          =0
           bandenergies_of_extrema     =0.0_dp
+          ! Put the root nodes into the array. (0 indexed array because node numbers are
+          ! also zero indexed.)
+          bands_of_extrema(:,0)        =nb_of_e_local
           kpoints_of_extrema(:,0)     =k_of_e_local
           bandenergies_of_extrema(:,0)=be_of_e_local
        endif
@@ -590,17 +606,24 @@ contains
           if(on_root)           call comms_recv(kpoints_of_extrema(1,inode),2,inode)
           if(my_node_id==inode) call comms_send(be_of_e_local(1),2,root_id)
           if(on_root)           call comms_recv(bandenergies_of_extrema(1,inode),2,inode)
+          if(my_node_id==inode) call comms_send(nb_of_e_local(1),2,root_id)
+          if(on_root)           call comms_recv(bands_of_extrema(1,inode),2,inode)
        enddo
        
+       ! The root now has all of the VBMs and CBMs from each node.
+       ! We now search through this for the gloabl VBMs and CBMs, taking note of the
+       ! kpoint number and band number in the other ..._of_extrema arrays.
        if(on_root) then
           cumulative_kpoint_number=0
           do inode=0,(num_nodes-1)
              if(bandgap(is)%cbm==bandenergies_of_extrema(2,inode)) then
                 bandgap(is)%ck(3)=kpoints_of_extrema(2,inode)-cumulative_kpoint_number
+                cbm_band=bands_of_extrema(2,inode)
                 cbm_node=inode
              endif
              if(bandgap(is)%vbm==bandenergies_of_extrema(1,inode)) then
                 bandgap(is)%vk(3)=kpoints_of_extrema(1,inode)-cumulative_kpoint_number
+                cbm_band=bands_of_extrema(1,inode)
                 vbm_node=inode
              endif
              cumulative_kpoint_number=cumulative_kpoint_number+num_kpoints_on_node(inode)
@@ -609,6 +632,8 @@ contains
           if (ierr/=0) call io_error ("cannot deallocate kpoints_of_extrema")
           deallocate(bandenergies_of_extrema,stat=ierr)
           if (ierr/=0) call io_error ("cannot deallocate bandenergies_of_extrema")
+          deallocate(bands_of_extrema,stat=ierr)
+          if (ierr/=0) call io_error ("cannot deallocate bands_of_extrema")
       endif
        
        if(on_root) then 
@@ -616,13 +641,12 @@ contains
           ! Since each node has the same number of electrons, I'm allowed to just take the number of
           ! bands on the root node
           ! WHAT DOES THE ABOVE COMMENT MEAN?
-          ! I think I mean, since each node has the same number of BANDS.
+          ! I think I mean, since each node has the same number of BANDS. AJM 1/12
           write (stdout,'(1x,a1,7x,30x,a7,a7,a7,a12)') "|","Band","Node","Kpoint","|"
           write (stdout,'(1x,a1,7x,a30,i4,3x,i4,3x,i4,3x,a12)') "|","Valence Band Maximum:",&
-               & bandgap(is)%vk(1),vbm_node,bandgap(is)%vk(3), "|"
+               & vbm_band,vbm_node,bandgap(is)%vk(3), "|"
           write (stdout,'(1x,a1,7x,a30,i4,3x,i4,3x,i4,3x,a12)') "|","Conduction Band Minimum:", &
-               & bandgap(is)%ck(1),cbm_node,bandgap(is)%ck(3), "|"
-          
+               & cbm_band,cbm_node,bandgap(is)%ck(3), "|"
           
           if(bandgap(is)%vk(3)==bandgap(is)%ck(3)) then
              write (stdout,'(1x,a71)') '|          ==> Direct Gap                                             |'  
