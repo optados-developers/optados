@@ -569,7 +569,7 @@ contains
        be_of_e_local(2)=bandgap(is)%cbm
        ! Band number of e_local
        nb_of_e_local(1)=bandgap(is)%vk(1)
-       nb_of_e_local(1)=bandgap(is)%vk(2)
+       nb_of_e_local(2)=bandgap(is)%ck(1)
        ! kpoint number of e_local
        k_of_e_local(1)=bandgap(is)%vk(3)+kpoints_before_this_node
        k_of_e_local(2)=bandgap(is)%ck(3)+kpoints_before_this_node
@@ -623,7 +623,7 @@ contains
              endif
              if(bandgap(is)%vbm==bandenergies_of_extrema(1,inode)) then
                 bandgap(is)%vk(3)=kpoints_of_extrema(1,inode)-cumulative_kpoint_number
-                cbm_band=bands_of_extrema(1,inode)
+                vbm_band=bands_of_extrema(1,inode)
                 vbm_node=inode
              endif
              cumulative_kpoint_number=cumulative_kpoint_number+num_kpoints_on_node(inode)
@@ -637,7 +637,6 @@ contains
       endif
        
        if(on_root) then 
-          
           ! Since each node has the same number of electrons, I'm allowed to just take the number of
           ! bands on the root node
           ! WHAT DOES THE ABOVE COMMENT MEAN?
@@ -661,7 +660,7 @@ contains
        if(on_root)  write (stdout,'(1x,a1,a37,f15.10,1x,a3,13x,8a)') "|",'Maximum Band gap : ',&
             & bandgap(is)%cbm-bandgap(is)%vbm, " eV ", "| <- BGa"
        
-    enddo
+    enddo ! nspins
     if(on_root) write(stdout,'(1x,a71)')    '+---------------------------------------------------------------------+'  
         
     if(allocated(bandgap)) deallocate(bandgap,stat=ierr)
