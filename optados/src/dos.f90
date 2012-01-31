@@ -78,15 +78,15 @@ module od_dos
     call dos_utils_set_efermi
 
     
-  time0=io_time()
-  if(on_root) then
-     write(stdout,*)   
-     write(stdout,'(1x,a78)') '    +====================================================================+    '
-     write(stdout,'(1x,a78)') '    +============================= DOS Analysis =========================+    '
-     write(stdout,'(1x,a78)') '    +====================================================================+    '
-     
-  endif
-  
+    time0=io_time()
+    if(on_root) then
+       write(stdout,*)   
+       write(stdout,'(1x,a78)') '    +====================================================================+    '
+       write(stdout,'(1x,a78)') '    +============================= DOS Analysis =========================+    '
+       write(stdout,'(1x,a78)') '    +====================================================================+    '
+       
+    endif
+    
     !-------------------------------------------------------------------------------
     ! D O S   A T   F E R M I  L E V E L   A N A L Y S I S
     call dos_utils_compute_dos_at_efermi
@@ -112,9 +112,9 @@ module od_dos
     if(set_efermi_zero) then
        if(on_root) then
           write(stdout,*) 
-          write(stdout,'(1x,a71)')  '+----------------------- Shift Fermi Energy --------------------------+'
+          write(stdout,'(1x,a71)')  '+----------------------- Shift Fermi Energy --------------------------+' 
+          write(stdout,'(1x,a1,a46,a24)')"|", " Setting Fermi energy to 0 : ","|"
        endif
-       write(stdout,'(1x,a1,a46,a24)')"|", " Setting Fermi energy to 0 : ","|"
        E(:)=E(:)-efermi
        band_energy(:,:,:) = band_energy(:,:,:) - efermi
        efermi=0.0_dp
