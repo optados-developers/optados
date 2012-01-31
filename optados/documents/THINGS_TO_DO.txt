@@ -12,7 +12,6 @@ Efermi
 ------
 
 * compute_dos_at_efermi takes efermi (do it for each l/a/f) [AJM] <-- HAVE WE NOT DECIDED AGAINST THIS NOW?
-* JDOS vbm as a functino of k [AJM]
 
 Optados
 -------

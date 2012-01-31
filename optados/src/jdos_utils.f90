@@ -107,19 +107,15 @@ contains
        if(.not.allocated(band_gradient)) call elec_read_band_gradient
     endif
     !-------------------------------------------------------------------------------
-
-
     
     call dos_utils_set_efermi
 
- 
-
-    allocate(vb_max(nspins), stat=ierr)
-    if (ierr/=0) call io_error ("cannot allocate vb_max")
+  !  allocate(vb_max(nspins), stat=ierr)
+  !  if (ierr/=0) call io_error ("cannot allocate vb_max")
 
 
     ! For an insulator
-    vb_max(:)=num_electrons(:)/electrons_per_state
+ !   vb_max(:)=num_electrons(:)/electrons_per_state
 
     !-------------------------------------------------------------------------------
     ! C A L C U L A T E   J D O S 
@@ -322,8 +318,9 @@ contains
     use od_parameters, only : adaptive_smearing, fixed_smearing, iprint, &
          &finite_bin_correction, scissor_op,hybrid_linear_grad_tol,hybrid_linear
     use od_io, only : io_error,stdout
-    use od_electronic, only : band_gradient,nbands,band_energy,nspins,electrons_per_state
-    use od_dos_utils, only : doslin, doslin_sub_cell_corners
+    use od_electronic, only : band_gradient,nbands,band_energy,nspins,electrons_per_state, &
+         & efermi
+    use od_dos_utils, only : doslin, doslin_sub_cell_corners, dos_utils_set_efermi
     use od_algorithms, only : gaussian
     implicit none
 
@@ -357,6 +354,7 @@ contains
 
     width=0.0_dp
 
+
     if(linear.or.adaptive) step(:) = 1.0_dp/real(kpoint_grid_dim(:),dp)/2.0_dp
     if(adaptive.or.hybrid_linear) then
        do i= 1,3
@@ -381,11 +379,13 @@ contains
                &"Calculating k-point ", ik, " of", num_kpoints_on_node(my_node_id),'on this node.',"<-- JDOS"
        endif
        do is=1,nspins
-          do ib=1,vb_max(is)
-             do jb=vb_max(is)+1,nbands
+          occ_states: do ib=1,nbands
+             if(band_energy(ib,is,ik).ge.efermi) cycle occ_states
+             unocc_states : do jb=1,nbands
+                if(band_energy(jb,is,ik).lt.efermi) cycle unocc_states
                 if(linear.or.adaptive) grad(:) = real(band_gradient(jb,jb,:,ik,is)-band_gradient(ib,ib,:,ik,is),dp)
-             ! If the band is very flat linear broadening can have problems describing it. In this case, fall back to 
-             ! adaptive smearing (and take advantage of FBCS if required).
+                ! If the band is very flat linear broadening can have problems describing it. In this case, fall back to 
+                ! adaptive smearing (and take advantage of FBCS if required).
                 force_adaptive=.false.
                 if(hybrid_linear.and.(hybrid_linear_grad_tol>sqrt(dot_product(grad,grad)))) force_adaptive=.true.
                 if(linear.and..not.force_adaptive) call doslin_sub_cell_corners(grad,step,band_energy(jb,is,ik)-&
@@ -418,8 +418,8 @@ contains
 
 
                 end do
-             end do
-          end do
+             end do unocc_states
+          end do occ_states
        end do
     end do
 
