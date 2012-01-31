@@ -40,6 +40,6 @@ optados-$(VER).tar.gz:
 		$(CURRENT_DIR)/documents/Makefile \
 		$(CURRENT_DIR)/documents/THINGS_TO_DO.txt \
                 $(CURRENT_DIR)/Makefile \
-		$(CURRENT_DIR)/make.sys \
+		$(CURRENT_DIR)/make.system \
 		$(CURRENT_DIR)/COPYING  
 
