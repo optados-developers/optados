@@ -476,220 +476,273 @@ contains
   subroutine dos_utils_compute_bandgap
     !===============================================================================
     ! Modified from LINDOS -- AJM 3rd June 2011
-    use od_electronic, only : nspins, nbands, efermi, band_energy
+    ! Rewritten 31/1/12 AJM
+    use od_electronic, only : nspins, nbands, efermi, band_energy, num_electrons
     use od_cell,       only : nkpoints,num_kpoints_on_node
     use od_io,         only : stdout, io_time, io_error
     use od_parameters, only : iprint
-    use od_comms,      only : comms_send, comms_recv, comms_reduce, comms_bcast, on_root, my_node_id, &
+    use od_comms,      only : comms_send, comms_recv, on_root, my_node_id, &
          &num_nodes, root_id
     implicit none
-
-    type band_gap
-       real(kind=dp) :: cbm  ! Conduction band minimum
-       real(kind=dp) :: vbm  ! Valence band maximum
-       integer :: vk(1:3)    ! VBM : band, spin, kpoint 
-       integer :: ck(1:3)    ! CBM : band, spin, kpoint
-    end type band_gap
     
-    real(dp) :: time0, time1, kpoints_before_this_node, band_gap_at_k(1:2), band_gap_sum_on_node(1:2)
+    ! Local array containing vbm and cbm at each kpoint and spin.
+    real(dp), allocatable :: bandgap(:,:,:)        !nbands=1,2,nspins,nkpoints 
 
-    integer :: ik, is, ib, ierr, inode, cbm_node, vbm_node, cumulative_kpoint_number
-    integer :: cbm_band, vbm_band
-    logical :: direct_gap
-    
-    type(band_gap),allocatable   :: bandgap(:)
+    ! Same as bandgap only merged over all nodes to the root-node
+    real(dp), allocatable :: global_bandgap(:,:,:)
 
-    real(dp)              :: be_of_e_local(1:2), k_of_e_local(1:2),nb_of_e_local(1:2)
-    real(dp), allocatable :: bandenergies_of_extrema(:,:),&
-         & kpoints_of_extrema(:,:), bands_of_extrema(:,:)
+    ! Avergae bandgap for up and down spins (summed over all kpoints and divided
+    ! by num_kpoints)
+    real(dp), allocatable :: average_bandgap(:)
+
+    ! Optical bandgap. Smallest vertical distance between two kpoints
+    real(dp), allocatable ::  optical_bandgap(:)
+
+    ! The number of kpoints that have the vbm and cbm
+    integer, allocatable :: thermal_vbm_multiplicity(:),thermal_cbm_multiplicity(:)
     
+    ! The number of kpoints that have the optical gap
+    integer, allocatable :: optical_multiplicity(:)
+ 
+    ! Timing variables
+    real(dp) :: time0, time1
+
+    ! Loop counters
+    integer :: ik, is, ib, ierr, inode, kpoints_before_this_node
+    
+    ! Temporary variables
+    real(dp), allocatable :: kpoint_bandgap(:)
+    real(dp) :: thermal_cbm, thermal_vbm, thermal_bandgap, weighted_average
+    integer :: thermal_vbm_k, thermal_cbm_k
+    logical :: thermal_multiplicity
+
     time0=io_time()
 
-
-    if(on_root.and.(iprint>2)) then
-       write(stdout,*)
-       write(stdout,'(1x,a46)') "Finding an estimate of the maximum bandgap..."
-    endif
-    
-   ! EV ( ib,is,ik) ==> band_energy(:,:,:)
-
-    allocate(bandgap(1:nspins), stat=ierr)
-    if (ierr/=0) call io_error('Error allocating bandgap in dos_utils: compute_bandgap')
-   
-    if(on_root) then
+    ! Preamble
+    if(on_root) then 
+       if(iprint>2) then
+          write(stdout,*)
+          write(stdout,'(1x,a46)') "Finding an estimate of the maximum bandgap..."
+       endif
        write (stdout,*)
        write (stdout,'(1x,a71)')  '+----------------------------- Bandgap Analysis ----------------------+'
     endif
     
-    do is=1,nspins
-       bandgap(is)%vk=-1
-       bandgap(is)%ck=-1
-       bandgap(is)%cbm=huge(1.0_dp)
-       bandgap(is)%vbm=-huge(1.0_dp)   
+    allocate(bandgap(1:2, 1:nspins, 1:num_kpoints_on_node(my_node_id)), stat=ierr)
+    if (ierr/=0) call io_error('Error allocating bandgap in dos_utils: compute_bandgap')
+    bandgap=-200.00_dp 
 
-       band_gap_at_k=0.0_dp
-       band_gap_sum_on_node=0.0_dp
-       if(on_root.and.(nspins>1))  write (stdout,'(1x,a1,a20,i1,48x,a1)')  '|','Spin Component : ', is, '|' 
-       do ik=1,num_kpoints_on_node(my_node_id)  
-          ! Work out the band gap at each k-point
-          bands_loop : do ib=1,nbands
+    ! Write the VBM and CBM into a slice of an band_energy array
+    ! It is easier to merge these slices onto the root node rather than try 
+    ! the horrendous book-keeping of which kpoint on which node has which
+    ! gap
+    do is=1,nspins
+       do ik=1,num_kpoints_on_node(my_node_id)
+          bands_loop: do ib=1,nbands
+             ! If this eignevalue is greater than efermi, then this is the CBM
+             ! and the one below it is the VBM
              if(band_energy(ib,is,ik).gt.efermi) then
-                ! This is the first one above efermi, hence bandgap at
-                ! this kpoint is
-                band_gap_at_k(is)=band_energy(ib,is,ik)-band_energy(ib-1,is,ik)
+                bandgap(1,is,ik)=band_energy(ib-1,is,ik)
+                bandgap(2,is,ik)=band_energy(ib,is,ik)
                 exit bands_loop
              endif
           enddo bands_loop
+       enddo !ik
+    enddo !is
 
-          band_gap_sum_on_node(is)=band_gap_sum_on_node(is)+band_gap_at_k(is)
+    ! Create a global kpoint array,and set it to something silly in case we need to debug whether
+    ! data was actually written to it.
+    if(on_root) then
+       allocate(global_bandgap(1:2,1:nspins,1:nkpoints), stat=ierr)
+       if (ierr/=0) call io_error('Error allocating global_bandgap in dos_utils: compute_bandgap')  
+       global_bandgap=-100.00_dp
+    endif
 
-          ! Work out the vbm and cbm on this node
-          do ib=1,nbands
-             if(band_energy(ib,is,ik).gt.efermi) then
-           
+    ! Pass all the slices around Efermi to the head node, making sure whe get the global 
+    ! kpoint number. *And* crucially the same kpoint numbers as in the bands file.
+    ! Otherwise the kpoint numbers of the VBM and CBM change as different numbers of nodes
+    ! are used.
+    kpoints_before_this_node=0
+    do inode=1,(num_nodes-1)                
+       if(my_node_id==inode) call comms_send(bandgap(1,1,1),2*is*num_kpoints_on_node(inode),root_id)
+       if(on_root)           call comms_recv(global_bandgap(1,1, &
+            & kpoints_before_this_node+1),2*is*num_kpoints_on_node(inode),inode)
+       kpoints_before_this_node=kpoints_before_this_node+num_kpoints_on_node(inode)
+    enddo
+    ! Copy the root node's slice to the global array.
+    if(on_root) global_bandgap(1:2,1:nspins,kpoints_before_this_node+1:kpoints_before_this_node+num_kpoints_on_node(root_id)) &
+         & =bandgap(1:2,1:nspins,1:num_kpoints_on_node(root_id))
 
-                if(band_energy(ib,is,ik).lt.bandgap(is)%cbm) then
-                   bandgap(is)%cbm = band_energy(ib,is,ik)
-                   bandgap(is)%ck(1)=ib
-                   bandgap(is)%ck(2)=is
-                   bandgap(is)%ck(3)=ik
-                   if(on_root.and.(iprint>2)) write(stdout,'(1x,a4,e12.6,3x,e12.6,3x,e12.6,3x,i4,3x,i4,3x,i4,3x,a8)') &
-                        & "|   ",bandgap(is)%cbm, bandgap(is)%vbm, (bandgap(is)%cbm-bandgap(is)%vbm),&
-                        &ib,is,ik, " <-- BG "
-                end if
-             end if
+    ! We now have an array with the VBM and CBM of all kpoints, so we can deallocate the local ones.
+    deallocate(bandgap,stat=ierr)
+    if (ierr/=0) call io_error('Error deallocating bandgap in dos_utils: compute_bandgap')
+
+    ! We've freed up a bit of memory, so now we can allocate all of the output data arrays on the
+    ! headnode
+    if(on_root) then
+       allocate(average_bandgap(nspins), stat=ierr)
+       if (ierr/=0) call io_error('Error allocating average_bandgap in dos_utils: compute_bandgap')
+       allocate(optical_bandgap(nspins), stat=ierr)
+       if (ierr/=0) call io_error('Error allocating optical_bandgap in dos_utils: compute_bandgap')
+       allocate(kpoint_bandgap(nspins), stat=ierr)
+       if (ierr/=0) call io_error('Error allocating kpoint_bandgap in dos_utils: compute_bandgap')
+       allocate(thermal_vbm_multiplicity(nspins), stat=ierr)
+       if (ierr/=0) call io_error('Error allocating thermal_vbm_multiplicity in dos_utils: compute_bandgap')
+       allocate(thermal_cbm_multiplicity(nspins), stat=ierr)
+       if (ierr/=0) call io_error('Error allocatingthermal_cbm_multiplicity in dos_utils: compute_bandgap')
+       allocate(optical_multiplicity(nspins), stat=ierr)
+       if (ierr/=0) call io_error('Error allocating optical_multiplicity in dos_utils: compute_bandgap')
+    endif
+
+    ! Now lets look for the various bandgaps by cycling through the global_bandgap array
+    if(on_root) then     
+       ! COMMENTED OUT: This writes out the complete global_bandgap array to fort.7 if you'd like
+       ! to take a look
+       !  do ik=1,nkpoints
+       !     do is=1,nspins
+       !        write(7,*) ik,is, global_bandgap(1,is,ik),global_bandgap(2,is,ik)
+       !     enddo
+       ! enddo
+       average_bandgap=0.0_dp
+       thermal_cbm=huge(1.0_dp)
+       thermal_vbm=-huge(1.0_dp) 
+       thermal_vbm_multiplicity=1
+       thermal_cbm_multiplicity=1
+       thermal_vbm_k=-1
+       thermal_cbm_k=-1
+       optical_multiplicity=1
+       optical_bandgap=huge(1.0_dp)       
+
+       do is=1,nspins
+          do ik=1,nkpoints
+             ! Look for the thermal vbm. This is done for both spin components although
+             ! ws care about the individual spin multiplicity
+             if(global_bandgap(1,is,ik).ge.thermal_vbm) then        
+                if(abs(global_bandgap(1,is,ik)-thermal_vbm) < epsilon(thermal_vbm)) then
+                   ! If this is the same value of vbm as we had before, then
+                   ! we have multiple maxima, and we need to know that we might not
+                   ! get the direct/indirect gap right
+                   thermal_vbm_multiplicity(is)=thermal_vbm_multiplicity(is)+1
+                else
+                   ! If we haven't had this high a vbm value before, then we take it
+                   ! and set the multiplicty back to zero
+                   thermal_vbm=global_bandgap(1,is,ik)
+                   thermal_vbm_multiplicity(is)=1
+                   thermal_vbm_k=ik
+                endif
+             endif
+             ! We search for the CBM in the same way as the VBM above.
+             if(global_bandgap(2,is,ik).le.thermal_cbm) then
+                if(abs(global_bandgap(2,is,ik)-thermal_cbm) < epsilon(thermal_cbm)) then
+                   thermal_cbm_multiplicity(is)=thermal_cbm_multiplicity(is)+1
+                else
+                   thermal_cbm=global_bandgap(2,is,ik)
+                   thermal_cbm_multiplicity(is)=1
+                   thermal_cbm_k=ik
+                endif
+             endif
+
+             ! Work out the bandgap for this particular kpoint and spin
+             kpoint_bandgap(is)=global_bandgap(2,is,ik)-global_bandgap(1,is,ik)
              
-             if(band_energy(ib,is,ik).lt.efermi) then
-                if(band_energy(ib,is,ik).gt.bandgap(is)%vbm) then
-                   bandgap(is)%vbm = band_energy(ib,is,ik)
-                   bandgap(is)%vk(1)=ib
-                   bandgap(is)%vk(2)=is
-                   bandgap(is)%vk(3)=ik
-                   if(on_root.and.(iprint>2)) write(stdout,'(1x,a4,e12.6,3x,e12.6,3x,e12.6,3x,i4,3x,i4,3x,i4,3x,a8)') &
-                        &"|   ",bandgap(is)%cbm, bandgap(is)%vbm, (bandgap(is)%cbm-bandgap(is)%vbm),&
-                        &ib,is,ik, " <-- BG "  
-                end if
-             end if
-          end do
-       end do
-
-       ! Now merge these. What is this node's global k-point number?
-       kpoints_before_this_node=0
-       do inode=0,(my_node_id-1)
-          kpoints_before_this_node=kpoints_before_this_node+num_kpoints_on_node(inode)
-       enddo
-
-       ! Sum the band_gap_sum_on_node
-       call comms_reduce(band_gap_sum_on_node(is),1,'SUM')
-
-       ! Now we have a derived type that we can't send through MPI, so write it to local
-       ! variables. This isn't pretty.
-       ! Band energy of e_local
-       be_of_e_local(1)=bandgap(is)%vbm
-       be_of_e_local(2)=bandgap(is)%cbm
-       ! Band number of e_local
-       nb_of_e_local(1)=bandgap(is)%vk(1)
-       nb_of_e_local(2)=bandgap(is)%ck(1)
-       ! kpoint number of e_local
-       k_of_e_local(1)=bandgap(is)%vk(3)+kpoints_before_this_node
-       k_of_e_local(2)=bandgap(is)%ck(3)+kpoints_before_this_node
-
-       ! Tell all nodes what the cbm and the vbm is for a particular spin. 
-       call comms_reduce(bandgap(is)%cbm,1,'MIN')
-       call comms_bcast(bandgap(is)%cbm,1)
-       call comms_reduce(bandgap(is)%vbm,1,'MAX')
-       call comms_bcast(bandgap(is)%vbm,1)
+             ! If this is smaller than the optical gap. Then this is our next iteration
+             ! of the optical gap. Worry about mutiplicties in the same way. Although this
+             ! is just for into, since we can't have direct/indirect optical gaps.
+             if(kpoint_bandgap(is).le.optical_bandgap(is)) then
+                if(abs(kpoint_bandgap(is)-optical_bandgap(is))<epsilon(optical_bandgap(is))) then
+                   optical_multiplicity(is)=optical_multiplicity(is)+1
+                else
+                   optical_bandgap(is)=kpoint_bandgap(is)
+                   optical_multiplicity(is)=1
+                endif
+             endif
+             average_bandgap(is)=average_bandgap(is)+(global_bandgap(2,is,ik)-global_bandgap(1,is,ik))
+          enddo ! nkpoints
+       enddo ! nspins
        
-       ! Now all nodes know what the global VBM and CBM are.
+       ! We now have enough info to calculate the average bandgap and the thermal bandgap
+       average_bandgap=average_bandgap/nkpoints
+       thermal_bandgap=thermal_cbm-thermal_vbm
+       
+       ! Don't want this array hanging around a moment longer than we need it.
+       deallocate(global_bandgap,stat=ierr)
+       if (ierr/=0) call io_error('Error deallocating global_bandgap in dos_utils: compute_bandgap')
 
-       if(on_root) then
-          allocate(kpoints_of_extrema(1:2,0:num_nodes-1),stat=ierr)
-          if (ierr/=0) call io_error ("cannot allocate kpoints_of_extrema")
-          allocate(bandenergies_of_extrema(1:2,0:num_nodes-1),stat=ierr)
-          if (ierr/=0) call io_error ("cannot allocate bandenergies_of_extrema")
-          allocate(bands_of_extrema(1:2,0:num_nodes-1),stat=ierr)
-          if (ierr/=0) call io_error ("cannot allocate bands_of_extrema")
-          ! Zero the arrays
-          bands_of_extrema            =0
-          kpoints_of_extrema          =0
-          bandenergies_of_extrema     =0.0_dp
-          ! Put the root nodes into the array. (0 indexed array because node numbers are
-          ! also zero indexed.)
-          bands_of_extrema(:,0)        =nb_of_e_local
-          kpoints_of_extrema(:,0)     =k_of_e_local
-          bandenergies_of_extrema(:,0)=be_of_e_local
-       endif
+       ! Write out the thermal gap info
+       write(stdout,'(1x,a1,a45,f15.10,1x,a3,5x,a8)') "|", "Thermal Bandgap :", thermal_bandgap,"eV", "| <- TBg"
+       write(stdout,'(1x,a1,a45,1x,i4,1x,a3,1x,i4,10x,a1)') "|","Between kpoints :",  thermal_vbm_k, "and",  thermal_cbm_k, "|"
 
-       ! Merge all of the extrema into one array on root.
-       do inode=1,(num_nodes-1)
-          if(my_node_id==inode) call comms_send(k_of_e_local(1),2,root_id)
-          if(on_root)           call comms_recv(kpoints_of_extrema(1,inode),2,inode)
-          if(my_node_id==inode) call comms_send(be_of_e_local(1),2,root_id)
-          if(on_root)           call comms_recv(bandenergies_of_extrema(1,inode),2,inode)
-          if(my_node_id==inode) call comms_send(nb_of_e_local(1),2,root_id)
-          if(on_root)           call comms_recv(bands_of_extrema(1,inode),2,inode)
+       ! Report the thermal gap multiplicity
+       write(stdout, '(1x,1a,a50, 19x, a1)') "|", "Number of kpoints at       VBM       CBM",  "|"
+       do is=1,nspins
+          write(stdout,'(1x,a1,a25,1x,i3,1x,a3,1x,i5,5x,i5,20x,a1)') "|", " Spin :",is, " : ", &
+               &thermal_vbm_multiplicity(is), thermal_cbm_multiplicity(is),  "|"
        enddo
        
-       ! The root now has all of the VBMs and CBMs from each node.
-       ! We now search through this for the gloabl VBMs and CBMs, taking note of the
-       ! kpoint number and band number in the other ..._of_extrema arrays.
-       if(on_root) then
-          cumulative_kpoint_number=0
-          do inode=0,(num_nodes-1)
-             if(bandgap(is)%cbm==bandenergies_of_extrema(2,inode)) then
-                bandgap(is)%ck(3)=kpoints_of_extrema(2,inode)-cumulative_kpoint_number
-                cbm_band=bands_of_extrema(2,inode)
-                cbm_node=inode
-             endif
-             if(bandgap(is)%vbm==bandenergies_of_extrema(1,inode)) then
-                bandgap(is)%vk(3)=kpoints_of_extrema(1,inode)-cumulative_kpoint_number
-                vbm_band=bands_of_extrema(1,inode)
-                vbm_node=inode
-             endif
-             cumulative_kpoint_number=cumulative_kpoint_number+num_kpoints_on_node(inode)
-          enddo
-          deallocate(kpoints_of_extrema,stat=ierr)
-          if (ierr/=0) call io_error ("cannot deallocate kpoints_of_extrema")
-          deallocate(bandenergies_of_extrema,stat=ierr)
-          if (ierr/=0) call io_error ("cannot deallocate bandenergies_of_extrema")
-          deallocate(bands_of_extrema,stat=ierr)
-          if (ierr/=0) call io_error ("cannot deallocate bands_of_extrema")
-      endif
-       
-    
+       ! If there is more than one VBM and CBM let's flag it up.
+       ! We wouldn't like to comment on the nature of the gap at this point
+       ! Unless we did some more work. (Which should have been done before we deallocated
+       ! global_bandgap!)
+       thermal_multiplicity=.false.
+       do is=1,nspins
+          if( (thermal_vbm_multiplicity(is).ne.1) .or. (thermal_cbm_multiplicity(is).ne.1) ) thermal_multiplicity=.true.
+       enddo
 
-
-       if(on_root) then 
-          ! Since each node has the same number of electrons, I'm allowed to just take the number of
-          ! bands on the root node
-          ! WHAT DOES THE ABOVE COMMENT MEAN?
-          ! I think I mean, since each node has the same number of BANDS. AJM 1/12
-          write (stdout,'(1x,a1,7x,30x,a7,a7,a7,a12)') "|","Band","Node","Kpoint","|"
-          write (stdout,'(1x,a1,7x,a30,i4,3x,i4,3x,i4,3x,a12)') "|","Valence Band Maximum:",&
-               & vbm_band,vbm_node,bandgap(is)%vk(3), "|"
-          write (stdout,'(1x,a1,7x,a30,i4,3x,i4,3x,i4,3x,a12)') "|","Conduction Band Minimum:", &
-               & cbm_band,cbm_node,bandgap(is)%ck(3), "|"
-          
-          if(bandgap(is)%vk(3)==bandgap(is)%ck(3)) then
-             write (stdout,'(1x,a71)') '|          ==> Direct Gap                                             |'  
-             direct_gap=.true.
+       if(thermal_multiplicity==.false.) then
+          if(thermal_vbm_k==thermal_cbm_k) then
+             write (stdout,'(1x,a71)') '|             ==> Direct Gap                                          |'  
           else
-             write (stdout,'(1x,a71)') '|          ==> Indirect Gap                                           |'
-             direct_gap=.false. 
+             write (stdout,'(1x,a71)') '|             ==> Indirect Gap                                        |'
           endif
+       else ! thermal_mutiplicty=.true.
+             write (stdout,'(1x,a71)') '|          ==> Multiple Band Minima and Maxima -- Gap unknown         |' 
        endif
 
-       if(on_root)  write (stdout,'(1x,a1,a37,f15.10,1x,a3,13x,8a)') "|",'Average Band gap : ',&
-               &  band_gap_sum_on_node(is)/nkpoints , " eV ", "| <- AGa"
-       if(on_root)  write (stdout,'(1x,a1,a37,f15.10,1x,a3,13x,8a)') "|",'Upper bound of Minimum Band gap : ',&
-            & bandgap(is)%cbm-bandgap(is)%vbm, " eV ", "| <- BGa"
-       
-    enddo ! nspins
+       ! Write out the Optical gap indo
+       write(stdout,'(1x,a71)')    '+---------------------------------------------------------------------+'  
+       write(stdout,'(1x,a1,a45,a25)') "|", "Optical Bandgap  ", "|"
+       do is=1,nspins
+          write(stdout,'(1x,a1,a25,1x,i3,1x,a3,1x,f15.10,1x,a3,16x,a8)') "|", " Spin :",is, " : ", optical_bandgap(is),"eV", "| <- OBg"
+       enddo
+       write(stdout, '(1x,1a,a50, 19x, a1)') "|", "Number of kpoints with this gap         ",  "|"
+       ! The multiplicity info here is just for reference.
+       do is=1,nspins
+          write(stdout,'(1x,a1,a25,1x,i3,1x,a3,6x,i5,25x,a1)') "|", " Spin :",is, " : ", optical_multiplicity(is), "|"
+       enddo
+
+       ! Write out the average bandgap
+       write(stdout,'(1x,a71)')    '+---------------------------------------------------------------------+' 
+       write(stdout,'(1x,a1,a45,a25)') "|", "Average Bandgap  ", "|"
+       do is=1,nspins
+          write(stdout,'(1x,a1,a25,1x,i3,1x,a3,1x,f15.10,1x,a3,16x,a8)') "|", " Spin :",is, " : ", average_bandgap(is),"eV", "| <- ABg"
+       enddo
+       ! If we have more then one spin, then we need some way to combine the up and down spin bandgaps
+       ! At Richard Needs' suggestion we use the weighted sum.
+       if(nspins>1) then
+          weighted_average= (average_bandgap(1)*num_electrons(1) +  average_bandgap(2)*num_electrons(2) )/ (num_electrons(1)+num_electrons(2))
+          write(stdout,'(1x,a1,a33,1x,f15.10,1x,a3,16x,a8)') "|", " Weighted Average : ", weighted_average,"eV", "| <- wAB"
+       endif
+    endif
+
+    ! Let not have these other arrays hanging around a moment longer than we need them
+    if(on_root) then
+       deallocate(average_bandgap, stat=ierr)
+       if (ierr/=0) call io_error('Error deallocating average_bandgap in dos_utils: compute_bandgap')
+       deallocate(optical_bandgap, stat=ierr)
+       if (ierr/=0) call io_error('Error deallocating optical_bandgap in dos_utils: compute_bandgap')
+       deallocate(kpoint_bandgap, stat=ierr)
+       if (ierr/=0) call io_error('Error deallocating kpoint_bandgap in dos_utils: compute_bandgap')
+       deallocate(thermal_vbm_multiplicity, stat=ierr)
+       if (ierr/=0) call io_error('Error deallocating thermal_vbm_multiplicity in dos_utils: compute_bandgap')
+       deallocate(thermal_cbm_multiplicity, stat=ierr)
+       if (ierr/=0) call io_error('Error deallocatingthermal_cbm_multiplicity in dos_utils: compute_bandgap')
+       deallocate(optical_multiplicity, stat=ierr)
+       if (ierr/=0) call io_error('Error deallocating optical_multiplicity in dos_utils: compute_bandgap')
+    endif
+    
     if(on_root) write(stdout,'(1x,a71)')    '+---------------------------------------------------------------------+'  
         
-    if(allocated(bandgap)) deallocate(bandgap,stat=ierr)
-    if (ierr/=0) call io_error (" ERROR : dos : compute_bandgap : cannot deallocate bandgap")
-    
+
     time1=io_time()
     if(on_root) write(stdout,'(1x,a40,f11.3,a)') 'Time to calculate Bandgap ',time1-time0,' (sec)'
   end subroutine dos_utils_compute_bandgap
