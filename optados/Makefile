@@ -32,6 +32,7 @@ CURRENT_DIR := $(shell basename ${PWD})
 optados-$(VER).tar.gz: 
 	 cd .. && tar -czf $(CURRENT_DIR)/optados-$(VER).tar.gz \
                 $(CURRENT_DIR)/src/*.?90 \
+		${CURRENT_DIR)/src/Makefile \
                 $(CURRENT_DIR)/examples/*/*.cell \
                 $(CURRENT_DIR)/examples/*/*.param \
                 $(CURRENT_DIR)/examples/*/*.odi \
