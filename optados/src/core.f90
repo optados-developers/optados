@@ -161,7 +161,7 @@ contains
     use od_electronic, only: elnes_mwab,elnes_orbital
     use od_io, only : seedname, io_file_unit,io_error
     use od_dos_utils, only : E
-    use od_cell, only : num_species, atoms_symbol
+    use od_cell, only : num_species, atoms_symbol, atoms_label
     use xmgrace_utils
 
     integer :: N
@@ -186,16 +186,44 @@ contains
 
     dE=E(2)-E(1)
 
+
+    ! This next bit of convoluted code attempts to figure out what order the
+    ! orbitals were in the elnes file. It will be the order castep labels the atoms
+    ! which is not the same as the cell file. Not that any species that are defined
+    ! using labels such as B:ext B:1 etc will appear after the other elements.
+
     counter=1
-    do loop2=1,109
-       do loop=1,num_species
-          if(atoms_symbol(loop)==periodic_table_name(loop2)) then
+    do loop=1,num_species
+       do loop2=1,109
+          if(atoms_label(loop)==periodic_table_name(loop2)) then
              elnes_symbol(counter)=periodic_table_name(loop2)
              counter=counter+1
+             exit
              !check atom count here
           end if
        end do
     end do
+    if(counter<num_species+1) then
+       do loop=1,num_species
+          found=.false.
+          do loop2=1,109
+             if(atoms_label(loop)==periodic_table_name(loop2)) then
+                found=.true.
+                exit
+             end if
+          end do
+          if(found==.false.) then
+             do loop2=1,109
+                if(atoms_symbol(loop)==periodic_table_name(loop2)) then
+                   elnes_symbol(counter)=periodic_table_name(loop2)
+                   counter=counter+1
+                   exit
+                end if
+             enddo
+          endif
+       end do
+    end if
+
 
     ! Open the output file
     core_unit = io_file_unit()
