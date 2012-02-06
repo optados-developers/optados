@@ -1,5 +1,5 @@
 # one of gfortran, g95, ifort, pfg90
-SYSTEM := ifort 
+SYSTEM := g95 
 
 # fast / debug
 BUILD := debug 
