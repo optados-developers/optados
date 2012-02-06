@@ -212,7 +212,7 @@ contains
                 exit
              end if
           end do
-          if(found==.false.) then
+          if(.not.found) then
              do loop2=1,109
                 if(atoms_symbol(loop)==periodic_table_name(loop2)) then
                    elnes_symbol(counter)=periodic_table_name(loop2)

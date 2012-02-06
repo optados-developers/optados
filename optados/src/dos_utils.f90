@@ -688,7 +688,7 @@ contains
           if( (thermal_vbm_multiplicity(is).ne.1) .or. (thermal_cbm_multiplicity(is).ne.1) ) thermal_multiplicity=.true.
        enddo
 
-       if(thermal_multiplicity==.false.) then
+       if(.not.thermal_multiplicity) then
           if(thermal_vbm_k==thermal_cbm_k) then
              write (stdout,'(1x,a71)') '|             ==> Direct Gap                                          |'  
           else
@@ -702,7 +702,8 @@ contains
        write(stdout,'(1x,a71)')    '+---------------------------------------------------------------------+'  
        write(stdout,'(1x,a1,a45,a25)') "|", "Optical Bandgap  ", "|"
        do is=1,nspins
-          write(stdout,'(1x,a1,a25,1x,i3,1x,a3,1x,f15.10,1x,a3,16x,a8)') "|", " Spin :",is, " : ", optical_bandgap(is),"eV", "| <- OBg"
+          write(stdout,'(1x,a1,a25,1x,i3,1x,a3,1x,f15.10,1x,a3,16x,a8)') "|", " Spin :",is, " : ", optical_bandgap(is),&
+               &"eV", "| <- OBg"
        enddo
        write(stdout, '(1x,1a,a50, 19x, a1)') "|", "Number of kpoints with this gap         ",  "|"
        ! The multiplicity info here is just for reference.
@@ -714,12 +715,14 @@ contains
        write(stdout,'(1x,a71)')    '+---------------------------------------------------------------------+' 
        write(stdout,'(1x,a1,a45,a25)') "|", "Average Bandgap  ", "|"
        do is=1,nspins
-          write(stdout,'(1x,a1,a25,1x,i3,1x,a3,1x,f15.10,1x,a3,16x,a8)') "|", " Spin :",is, " : ", average_bandgap(is),"eV", "| <- ABg"
+          write(stdout,'(1x,a1,a25,1x,i3,1x,a3,1x,f15.10,1x,a3,16x,a8)') "|", " Spin :",is, " : ", & 
+               &average_bandgap(is),"eV", "| <- ABg"
        enddo
        ! If we have more then one spin, then we need some way to combine the up and down spin bandgaps
        ! At Richard Needs' suggestion we use the weighted sum.
        if(nspins>1) then
-          weighted_average= (average_bandgap(1)*num_electrons(1) +  average_bandgap(2)*num_electrons(2) )/ (num_electrons(1)+num_electrons(2))
+          weighted_average= (average_bandgap(1)*num_electrons(1) +  average_bandgap(2)*num_electrons(2) ) &
+               & / (num_electrons(1)+num_electrons(2))
           write(stdout,'(1x,a1,a33,1x,f15.10,1x,a3,16x,a8)') "|", " Weighted Average : ", weighted_average,"eV", "| <- wAB"
        endif
     endif
