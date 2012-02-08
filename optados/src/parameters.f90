@@ -277,8 +277,15 @@ contains
     compute_band_energy    = .true.
     call param_get_keyword('compute_band_energy',found,l_value=compute_band_energy)
 
-    set_efermi_zero = .true. 
+    if(jdos.or.optics) then
+       set_efermi_zero = .false.
+    else
+       set_efermi_zero = .true. 
+    endif
     call param_get_keyword('set_efermi_zero',found,l_value=set_efermi_zero)
+    if((jdos.or.optics).and.set_efermi_zero)  call io_error('Not allowed set_efermi_zero=T &
+         & when performing jdos or optics calculations')
+
 
     dos_per_volume = .false.
     call param_get_keyword('dos_per_volume',found,l_value=dos_per_volume)
