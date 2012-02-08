@@ -1,29 +1,31 @@
-VER := 1.0.0
+VER := 1.0.218
 
 default : optados
 
 all : optados docs
 
 optados : 
-	make -C ./src all
+	cd ./src && $(MAKE) all
 
 # Utility targets
 .PHONY: clean veryclean
 
 install:
-	make -C ./src install
+	 cd ./src && $(MAKE) install
 
 docs:
-	make -C ./documents all
+	cd ./documents && $(MAKE) all
 
 clean:
-	make -C ./src clean 
-	make -C ./documents clean
+	cd ./src && $(MAKE) clean 
+	cd ./documents && $(MAKE) clean
 
 
 veryclean:
-	make  -C ./src veryclean
-	make -C ./documents veryclean
+	cd ./src && $(MAKE) veryclean
+	cd ./documents && $(MAKE) veryclean
+
+
 
 dist: optados-$(VER).tar.gz
 
