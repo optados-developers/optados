@@ -477,7 +477,7 @@ contains
     !===============================================================================
     ! Modified from LINDOS -- AJM 3rd June 2011
     ! Rewritten 31/1/12 AJM
-    use od_electronic, only : nspins, nbands, efermi, band_energy, num_electrons &
+    use od_electronic, only : nspins, nbands, efermi, band_energy, num_electrons, &
          &  all_kpoints
     use od_cell,       only : nkpoints,num_kpoints_on_node
     use od_io,         only : stdout, io_time, io_error
@@ -677,14 +677,7 @@ contains
        do is=1,nspins
           if( (thermal_vbm_multiplicity(is).ne.1) .or. (thermal_cbm_multiplicity(is).ne.1) ) thermal_multiplicity=.true.
        enddo
-       
-       ! write(stdout,'(1x,a1,a45,1x,i4,1x,a3,1x,i4,10x,a1)') "|","Between kpoints :",  thermal_vbm_k, "and",  thermal_cbm_k, "|"
-       ! all_kpoints(i,ik)
-       
-       !write(stdout,'(1x,a1,a45,1x,i4,1x,a3,1x,i4,10x,a1)') "|","Between kpoints :",  thermal_vbm_k, "and",  thermal_cbm_k, "|"
-       !write(stdout,'(1x,a1,a45,1x,i4,1x,a3,1x,i4,10x,a1)') "|","Between kpoints :",  thermal_vbm_k, "and",  thermal_cbm_k, "|"
-
-    
+      
           
        ! Report the thermal gap multiplicity
        write(stdout, '(1x,1a,a50, 19x, a1)') "|", "Number of kpoints at       VBM       CBM",  "|"
@@ -694,15 +687,15 @@ contains
        enddo
        
        ! Write out the thermal gap info
-       write(stdout,'(1x,a1,a45,f15.10,1x,a3,5x,a8)') "|", "Thermal Bandgap :", thermal_bandgap,"eV", "| <- TBg"
+       write(stdout,'(1x,a1,a32,f15.10,1x,a3,18x,a8)') "|", "Thermal Bandgap :", thermal_bandgap,"eV", "| <- TBg"
        
        if(.not.thermal_multiplicity) then
           if(thermal_vbm_k==thermal_cbm_k) then
-             write(stdout,'(1x,a1,a45,1x, f10.5, 1x,  f10.5, 1x,  f10.5, 1x,a1)') "|","At kpoint :", all_kpoints(i,thermal_vmb_k)  ,"|"
+             write(stdout,'(1x,a1,a32,1x,f10.5,1x,f10.5,1x,f10.5,4x,a1)') "|","At kpoint :", all_kpoints(1:3,thermal_vbm_k)  ,"|"
              write (stdout,'(1x,a71)') '|             ==> Direct Gap                                          |'  
           else
-             write(stdout,'(1x,a1,a45,1x, f10.5, 1x,  f10.5, 1x,  f10.5, 1x,a6,x,a1)') "|","Between kpoint :",  all_kpoints(i,thermal_vbm_k), " at VBM","|"
-             write(stdout,'(1x,a1,a45,1x, f10.5, 1x,  f10.5, 1x,  f10.5, 1x,a6,x,a1)') "|","and :",  all_kpoints(i,thermal_cbm_k), " at CBM","|"
+             write(stdout,'(1x,a1,a32,1x,f10.5,1x,f10.5,1x,f10.5,4x,a1)') "|","Between VBM kpoint :", all_kpoints(1:3,thermal_vbm_k), "|"
+             write(stdout,'(1x,a1,a32,1x,f10.5,1x,f10.5,1x,f10.5,4x,a1)') "|","and CBM kpoint:", all_kpoints(1:3,thermal_cbm_k),  "|"
              write (stdout,'(1x,a71)') '|             ==> Indirect Gap                                        |'
           endif
        else ! thermal_mutiplicty=.true.
