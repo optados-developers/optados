@@ -477,7 +477,8 @@ contains
     !===============================================================================
     ! Modified from LINDOS -- AJM 3rd June 2011
     ! Rewritten 31/1/12 AJM
-    use od_electronic, only : nspins, nbands, efermi, band_energy, num_electrons
+    use od_electronic, only : nspins, nbands, efermi, band_energy, num_electrons &
+         &  all_kpoints
     use od_cell,       only : nkpoints,num_kpoints_on_node
     use od_io,         only : stdout, io_time, io_error
     use od_parameters, only : iprint
@@ -668,17 +669,6 @@ contains
        deallocate(global_bandgap,stat=ierr)
        if (ierr/=0) call io_error('Error deallocating global_bandgap in dos_utils: compute_bandgap')
 
-       ! Write out the thermal gap info
-       write(stdout,'(1x,a1,a45,f15.10,1x,a3,5x,a8)') "|", "Thermal Bandgap :", thermal_bandgap,"eV", "| <- TBg"
-       write(stdout,'(1x,a1,a45,1x,i4,1x,a3,1x,i4,10x,a1)') "|","Between kpoints :",  thermal_vbm_k, "and",  thermal_cbm_k, "|"
-
-       ! Report the thermal gap multiplicity
-       write(stdout, '(1x,1a,a50, 19x, a1)') "|", "Number of kpoints at       VBM       CBM",  "|"
-       do is=1,nspins
-          write(stdout,'(1x,a1,a25,1x,i3,1x,a3,1x,i5,5x,i5,20x,a1)') "|", " Spin :",is, " : ", &
-               &thermal_vbm_multiplicity(is), thermal_cbm_multiplicity(is),  "|"
-       enddo
-       
        ! If there is more than one VBM and CBM let's flag it up.
        ! We wouldn't like to comment on the nature of the gap at this point
        ! Unless we did some more work. (Which should have been done before we deallocated
@@ -687,16 +677,41 @@ contains
        do is=1,nspins
           if( (thermal_vbm_multiplicity(is).ne.1) .or. (thermal_cbm_multiplicity(is).ne.1) ) thermal_multiplicity=.true.
        enddo
+       
+       ! write(stdout,'(1x,a1,a45,1x,i4,1x,a3,1x,i4,10x,a1)') "|","Between kpoints :",  thermal_vbm_k, "and",  thermal_cbm_k, "|"
+       ! all_kpoints(i,ik)
+       
+       !write(stdout,'(1x,a1,a45,1x,i4,1x,a3,1x,i4,10x,a1)') "|","Between kpoints :",  thermal_vbm_k, "and",  thermal_cbm_k, "|"
+       !write(stdout,'(1x,a1,a45,1x,i4,1x,a3,1x,i4,10x,a1)') "|","Between kpoints :",  thermal_vbm_k, "and",  thermal_cbm_k, "|"
 
+    
+          
+       ! Report the thermal gap multiplicity
+       write(stdout, '(1x,1a,a50, 19x, a1)') "|", "Number of kpoints at       VBM       CBM",  "|"
+       do is=1,nspins
+          write(stdout,'(1x,a1,a25,1x,i3,1x,a3,1x,i5,5x,i5,20x,a1)') "|", " Spin :",is, " : ", &
+               &thermal_vbm_multiplicity(is), thermal_cbm_multiplicity(is),  "|"
+       enddo
+       
+       ! Write out the thermal gap info
+       write(stdout,'(1x,a1,a45,f15.10,1x,a3,5x,a8)') "|", "Thermal Bandgap :", thermal_bandgap,"eV", "| <- TBg"
+       
        if(.not.thermal_multiplicity) then
           if(thermal_vbm_k==thermal_cbm_k) then
+             write(stdout,'(1x,a1,a45,1x, f10.5, 1x,  f10.5, 1x,  f10.5, 1x,a1)') "|","At kpoint :", all_kpoints(i,thermal_vmb_k)  ,"|"
              write (stdout,'(1x,a71)') '|             ==> Direct Gap                                          |'  
           else
+             write(stdout,'(1x,a1,a45,1x, f10.5, 1x,  f10.5, 1x,  f10.5, 1x,a6,x,a1)') "|","Between kpoint :",  all_kpoints(i,thermal_vbm_k), " at VBM","|"
+             write(stdout,'(1x,a1,a45,1x, f10.5, 1x,  f10.5, 1x,  f10.5, 1x,a6,x,a1)') "|","and :",  all_kpoints(i,thermal_cbm_k), " at CBM","|"
              write (stdout,'(1x,a71)') '|             ==> Indirect Gap                                        |'
           endif
        else ! thermal_mutiplicty=.true.
              write (stdout,'(1x,a71)') '|          ==> Multiple Band Minima and Maxima -- Gap unknown         |' 
        endif
+       
+       ! We allocated this in elec_read_band_energy but kept it if compute_band_gap=T
+       deallocate(all_kpoints,stat=ierr) 
+       if (ierr/=0)  call io_error('Error: Problem deallocating all_kpoints in read_band_energy')
 
        ! Write out the Optical gap indo
        write(stdout,'(1x,a71)')    '+---------------------------------------------------------------------+'  

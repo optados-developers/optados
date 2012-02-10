@@ -77,6 +77,8 @@ module od_electronic
 
   type(orbitals), public, save :: elnes_orbital
   type(matrix_weights_array_boundaries), public, save :: elnes_mwab
+  real(kind=dp), public, allocatable, save :: all_kpoints(:,:) ! We need this to be available if we're
+  ! doing bandgap analysis.
 
 
   !-------------------------------------------------------------------------!
@@ -302,11 +304,11 @@ contains
     use od_io,        only : io_file_unit, seedname, filename_len,stdout, io_time,&
          & io_error
     use od_algorithms, only : algor_dist_array
-    use od_parameters, only : iprint
+    use od_parameters, only : iprint, compute_band_gap
 
     implicit none
 
-    real(kind=dp), allocatable :: all_kpoints(:,:)
+    
     integer :: inodes,ik,is,ib,band_unit,iall_kpoints,i
     integer :: dum_i1, ierr, str_pos
     character(filename_len) :: band_filename
@@ -409,10 +411,13 @@ contains
           end do
        end do
 
-       ! Do this here so we can free up the all_kpoints memory
+       ! Do this here so we can free up the all_kpoints memory, unless we need it to calculate
+       ! the kpoints at the band-gap.
        call cell_find_MP_grid(all_kpoints,nkpoints,kpoint_grid_dim)
-       deallocate(all_kpoints,stat=ierr) 
-       if (ierr/=0)  call io_error('Error: Problem deallocating all_kpoints in read_band_energy')
+       if(.not.compute_band_gap) then
+          deallocate(all_kpoints,stat=ierr) 
+          if (ierr/=0)  call io_error('Error: Problem deallocating all_kpoints in read_band_energy')
+       endif
     endif
 
     if(.not. on_root) then
