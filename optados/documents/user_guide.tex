@@ -163,7 +163,7 @@ strings: {\tt T}, {\tt true}, {\tt .true.}.
 
 
 \section{Parameters}
-\subsection[task]{\tt character(lex=20) :: task}
+\subsection[task]{\tt character(len=20) :: task}
 
 Tells the code what to compute. 
 
@@ -236,19 +236,19 @@ Value of the scissor operator.
 
 Default value is 0\,eV (\emph{i.e.} not used)
 
-\subsection[compute\_efermi]{{\tt logical :: compute\_efermi}}
+\subsection[compute\_efermi]{{\tt logical :: efermi\_choice}}
+Choose which Fermi energy to use.
 
-If {\tt compute\_efermi=TRUE}, then \optados\ will use the value of the Fermi
-level computed from the integration of the DOS. If {\tt
-  compute\_efermi=FALSE}, then the value set by {\tt fermi\_energy} will be
-used, if {\tt fermi\_energy} is not set the value from the bands file will be used.
+The valid options for this parameter are:
+\begin{itemize}
+\item[{\bf --}]  \verb#optados# (default) \optados\ recalculates the Fermi energy by performing a DOS calculation. 
+\item[{\bf --}]  \verb#file# Take the value from the output of the \castep\ calculation.
+\item[{\bf --}]  \verb#insulator# Assume that the material is an insulator and count filled bands to find the Fermi energy.
+\item[{\bf --}]  \verb#<real number># User supplied value.
+\end{itemize}
 
-The default value is {\tt FALSE}.
+The default value is {\tt optados}.
 
-\subsection[fermi\_energy]{\tt real(kind=dp) :: fermi\_energy}
-Value of the Fermi energy.
-
-No default value
 
 \subsection[output\_format]{\tt character(len=20) :: output\_format}
 Format in which to output data.
