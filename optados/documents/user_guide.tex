@@ -61,7 +61,7 @@ UK}
 \date{May 2011}
 
 \begin{document}
-\newcommand{\optados}{\texttt{OptaDOS}}
+\newcommand{\optados}{\textsc{OptaDOS}}
 \newcommand{\lindos}{\texttt{LinDOS}}
 \newcommand{\castep}{\textsc{castep}}
 \maketitle
@@ -215,6 +215,7 @@ The valid options for this parameter are:
 make\end{itemize}
 
 \subsection[adaptive\_smearing]{\tt logical :: legacy\_file\_format}
+\label{sect:lff}
 \begin{itemize}
 \item[{\bf --}] \verb#TRUE#  Read \castep\ input compatible with versions $<$ 6.0.
 \item[{\bf --}] \verb#FALSE# (Default) Read \castep\ input compatible for use with \castep\ versions 6.0$+$ and generated with the castep spectral task.
@@ -419,19 +420,188 @@ No default.
 
 \chapter{Examples}
 
-Each example in the \verb#examples/# directory contains example \castep\ input files and a sample \optados\ input file.
-\section{DOS}
-See  \verb#examples/Si2_DOS/#.  This is a simple example of using \optados\ for calculating electronic density of states.  We choose to recalculate the Fermi level using the calculated DOS, rather than use the Fermi level suggested by \castep. The DOS is outputted to {\tt Si2.adaptive.dat}. A file suitable for plotting using {\tt xmgrace} is written to {\tt Si2.adaptive.agr}.  If {\tt TASK : compare\_dos} is used instead, \optados\ will calculate DOS using all the broadening methods, this is good practice to see whether the broadening widths are appropriate before more advanced tasks are carried out, such as JDOS, core and optical calculations.
+Each example in the \verb#examples/# directory contains example \castep\ input files and a sample \optados\ input file. To keep the \optados\ distribution light \castep\ output files for the examples have not been provided. You need to run \castep\ on the \castep\ input files before running \optados\ on the examples.
 
-Linear broadening, although a massive improvement over fixed broadening, sometimes appears noisy if used with very low numbers of k-points. Linear and adaptive DOS should be compared and \verb#ADAPTIVE_SMEARING# may be tuned by eye until the adaptive DOS contains the features of the linear DOS, but with less noise.
+\section{Density of States}
+\begin{itemize}
+\item \emph{Outline} : This is a simple example of using \optados\ for calculating electronic density of states of crystalline silicon in a 2 atom cell.
+\item \emph{Input Files}:
+\begin{itemize}
+\item \verb#examples/Si2_DOS/Si2_dos.cell# - The \castep\ cell file containing information about the simulation cell.
+\item \verb#examples/Si2_DOS/Si2_dos.param# - The \castep\ param file containing information about the parameters for the SCF and spectral calculations.
+\item \verb#examples/Si2_DOS/Si2_dos.odi# - The \optados\ input file, containing the parameters necessary to run \optados.
+\end{itemize}
+\end{itemize}
+
+\begin{enumerate}
+%%%%  Step 1 %%%%%
+\item Perform a \castep\ calculation on the bulk silicon using the  \verb#Si2_dos.cell#  and \verb#Si2_dos.param# input files. 
+
+  \verb#$ castep Si2# 
+
+This should take a couple of seconds to run. More help can be found in  the tutorials  on  the \castep\ website \verb#www.castep.org#.  
+
+%%%%  Step 2 %%%%%
+\item Perform an \optados\ calculation.  Add \verb#LEGACY_FILE_FORMAT : true# in the \verb#Si2_DOS.odi# input file, if the \castep\ version you are using is before 6.0. Then execute:   
+ 
+\verb#$ optados.<SYSTEM>.<BUILD>.<COMMS_ARCH>.x86_64 Si2# 
+
+This generates 3 files:
+\begin{itemize}
+\item \verb#Si2.odo# -- \optados\ general output file.
+\item \verb#Si2.adaptive.dat# -- The adaptive broadened DOS raw output data.
+\item  \verb#Si2.adaptive.agr# -- The adaptive broadened DOS in a file suitable to be plotted by  \verb#xmgrace#.   
+\end{itemize}
+
+%%%%  Step 3 %%%%%
+\item Open the \verb#Si2.odo# file in a text editor (\emph{e.g.} vi or emacs).  \optados\ has performed a Density of States calculation.
+
+\begin{verbatim}
+ +------------------------ Fermi Energy Analysis ----------------------+
+ | From Adaptive broadening                                            |
+ |   Spin Component : 1 occupation between    3.99961 and    4.00003   | <- Oc
+ |   Spin Component : 2 occupation between    3.99961 and    4.00003   | <- Oc
+ |         Fermi energy (Adaptive broadening) :   5.4109 eV            | <- EfA
+ +---------------------------------------------------------------------+
+\end{verbatim}
+It has used the integrated DOS to work out the Fermi level, and has suggested the error in the integration by indicating the number of electrons at the Fermi level. Since we had 4 up electrons and 4 down in the input file this analysis seems satisfactory.
+\begin{verbatim}
+ +----------------------- Electronic Data ------------------------------------+
+ |  Number of Bands                           :            23                 |
+ |  Grid size                                 :       10 x 10 x 10            |
+ |  Number of K-points                        :           110                 |
+ |  Spin-Polarised Calculation                :           True                |
+ |  Number of up-spin electrons               :             4.00              |
+ |  Number of down-spin electrons             :             4.00              |
+ +----------------------------------------------------------------------------+
+\end{verbatim}
+
+Since we had \verb#efermi_choice : optados#, \optados\ sets the internal value of the Fermi level to the one it has derived from the DOS. This is important for subsequent calculations. Other valid options are \verb#file#, where \optados\ uses the value calculated by the electronic structure code that generated the eigenvalues;  \verb#insulator#, where \optados\ uses a value calculated from assuming the system is non-metallic; or a value set by the user.
+
+\optados\ now performs some analysis of the DOS at the Fermi level,
+\begin{verbatim}
++----------------------- DOS at Fermi Energy Analysis ----------------+
+|                          Fermi energy used :   5.4109 eV            |
+| From Adaptive broadening                                            |
+|   Spin Component : 1   DOS at Fermi Energy :   0.0011 eln/cell      | <- DEA
+|   Spin Component : 2   DOS at Fermi Energy :   0.0011 eln/cell      | <- DEA
++---------------------------------------------------------------------+
+\end{verbatim}
+From this we may assume that there is a band gap.
+
+Importantly, then \optados\ calculates the band energy from the DOS is has calculated.
+\begin{verbatim}
+ +--------------------------- Band Energy Analysis --------------------+
+ |          Band energy (Adaptive broadening) :       1.3609 eV        | <- BEA
+ |                  Band energy (From CASTEP) :       1.3622 eV        | <- BEC
+ +---------------------------------------------------------------------+
+\end{verbatim}
+As the quality of the \optados\ calculation is increased these two values should converge to the same answer.
+
+Finally \optados\ shifts the Fermi level to 0\,eV, for the output files.
+
+%%%%  Step 4 %%%%%
+\item  The DOS is outputted to {\tt Si2.adaptive.dat}. This contains 5 columns as described in the header of the file:
+\begin{verbatim}
+ ########################################################################
+ #
+ #                  O p t a D O S   o u t p u t   f i l e 
+ #
+ #    Density of States using adaptive broadening
+ #  Generated on 12 Feb 2012 at 16:50:37 
+ # Column        Data
+ #    1        Energy (eV)
+ #    2        Up-spin DOS (electrons per eV)
+ #    3        Down-spin DOS (electrons per eV)
+ #    4        Up-spin Integrated DOS (electrons)
+ #    5        Down-spin Integrated DOS (electrons)
+ #
+ ########################################################################
+\end{verbatim}
+
+This file can be plotted by your favourite graph-plotting software. However, \optados\ has made things easy and generated a  {\tt Si2.adaptive.agr} file which is directly plottable using \verb#xmgrace# as shown in Fig.\,\ref{fig:Si2_adaptive1}.
+
+\verb#$ xmgrace Si2.adaptive.agr#.
+
+\begin{figure}[h]
+\begin{center}
+\scalebox{0.35}{\includegraphics{./images/Si2.adaptive.eps}}
+\caption{Density of States of Silicon generated by adaptive broadening and a very coarse energy sampling of 0.1 eV.}
+\label{fig:Si2_adaptive1} 
+\end{center}
+\end{figure}
+
+%%%%  Step 5 %%%%%
+\item We now try again with a better sampling of the DOS, by setting \verb#DOS_SPACING : 0.001# and also analyse the band gap, by setting \verb#COMPUTE_BAND_GAP : true#.  You can remove all of the \optados\ output files by using \verb#./tools/optados_clean# in your working directory.  If you have a parallel version of \optados\ compiled, now might be the time to try it out, if not, the serial version will be fine, but just take a bit longer.  You can set \verb#IPRINT : 2# to see a progress report in  \verb#Si2.odo#.  In parallel:
+
+\verb#$ mpirun -np <nprocs> optados.SYSTEM.BUILD.COMMS_ARCH.x86_64 Si2# 
+
+but your MPI implementation may be different.
+
+\item In  \verb#Si2.odo# we now have a new section analysing the band gap in various ways.
+\begin{verbatim}
+ +----------------------------- Bandgap Analysis ----------------------+
+ |          Number of kpoints at       VBM       CBM                   |
+ |                   Spin :   1  :      1         1                    |
+ |                   Spin :   2  :      1         1                    |
+ |               Thermal Bandgap :   0.6676272107  eV                  | <- TBg
+ |            Between VBM kpoint :    0.05000    0.05000    0.05000    |
+ |                 and CBM kpoint:   -0.45000   -0.05000   -0.45000    |
+ |             ==> Indirect Gap                                        |
+ +---------------------------------------------------------------------+
+ |                            Optical Bandgap                          |
+ |                   Spin :   1  :     2.5542517447  eV                | <- OBg
+ |                   Spin :   2  :     2.5542463024  eV                | <- OBg
+ |          Number of kpoints with this gap                            |
+ |                   Spin :   1  :           1                         |
+ |                   Spin :   2  :           1                         |
+ +---------------------------------------------------------------------+
+ |                            Average Bandgap                          |
+ |                   Spin :   1  :     3.8121372691  eV                | <- ABg
+ |                   Spin :   2  :     3.8121342659  eV                | <- ABg
+ |              Weighted Average :     3.8121357675  eV                | <- wAB
+ +---------------------------------------------------------------------+
+\end{verbatim}
+
+\optados\ is very careful in its band gap analysis. It uses the bare eigenvalues (un-broadened) and works out the nature and size of the thermal gap, optical gap and the average gap over all of the Brillouin zone. In cases of multi-valleyed semiconductors \optados\ will report the number of conduction band minima or valence band maxima with identical energies, but will not report the nature of the gap. 
+
+Increasing the number of integration points has improved the band energy of the adaptive smearing:
+\begin{verbatim}
+ |          Band energy (Adaptive broadening) :       1.3623 eV        | <- BEA
+\end{verbatim}
+
+
+%%%%  Step 6 %%%%%
+\item  Now set {\tt TASK : compare\_dos} and re-run \optados. \optados\ will calculate DOS using all the broadening methods, this is good practice to see whether the broadening widths are appropriate before more advanced tasks are carried out, such as Joint-DOS, core and optical calculations.
+
+Plotting the linear broadened DOS over the adaptive we see that the default adaptive broadening is appropriate,
+
+\verb#xmgrace Si2.adaptive.agr -nxy Si2.linear.dat#
+
+Linear broadening, although a massive improvement over fixed broadening, sometimes appears noisy if used with very low numbers of k-points. Linear and adaptive DOS should be compared and \verb#ADAPTIVE_SMEARING# may be tuned by eye until the adaptive DOS contains the features of the linear DOS, but with less noise.  Adding a random shift to a k-point mesh can greatly increase the quality of the DOS, especially if the k-point set contained the $\Gamma$-point. It is generally pays of in computational time to have a coarse mesh at low symmetry points, than a fine mesh centred on high symmetry points. 
 
 Both fixed and adaptive broadening can fail to plot the sharpest features, such as semi-core states, if the bin widths are too broad. These sharp features may be forced to be present using the narrowest Gaussian still reproducible by the chosen bin widths by setting \verb#FINITE_BASIS_SET : true#.  
 
 Linear broadening may also be improved by using \verb#HYBRID_LINEAR : true#. Van Hove singularities and other sharp features are now described at the adaptive broadening level if the bands are flatter than \verb#HYBRID_LINEAR_GRAD_TOL#. Hybrid linear may also take advantage of the finite bin correction if required.
 
+\item Compare the fixed and adaptive DOS and see the advantage of adaptive broadening over standard Gaussian smearing.
+
+\end{enumerate}
 
 
 \section{PDOS}
+We assume the reader is familiar with the previous section on Density of States calculations.
+\begin{itemize}
+\item \emph{Outline} : This is a simple example of using \optados\ for calculating electronic density of states of 2 atoms of crystalline silicon projected onto LCAO basis states.
+\item \emph{Input Files}:
+\begin{itemize}
+\item \verb#examples/Si2_PDOS/Si2_dos.cell# - The \castep\ cell file containing information about the simulation cell.
+\item \verb#examples/Si2_PDOS/Si2_dos.param# - The \castep\ param file containing information about the parameters for the SCF and spectral calculations.
+\item \verb#examples/Si2_PDOS/Si2_dos.odi# - The \optados\ input file, containing the parameters necessary to run \optados.
+\end{itemize}
+\end{itemize}
+
+
 See  \verb#examples/Si2_PDOS/#. This is a simple example of using \optados\ for calculating partial electronic density of states. We choose to decompose the DOS into angular momentum channels ({\tt PDOS : angular}). We choose to recalculate the Fermi level using the calculated DOS, rather than use the Fermi level suggested by \castep.  The output can be found in {\tt Si2.pdos.dat}. Other things to try are:
 \begin{itemize}
 \item[{\bf --}]  \verb#PDOS : Si1;Si2(s)#  -- Output the PDOS on Si atom 1 and the PDOS on the s-channel of Si atom 2. (Resulting in two projectors)
@@ -449,6 +619,28 @@ See  \verb#examples/diamond_CORE/#. This is a simple example of using \optados\ 
 
 \section{OPTICS}
 See  \verb#examples/Al_OPTICS/#. This is a simple example of using \optados\ for calculating optical properties. 
+
+\chapter{Frequently Asked Questions}
+
+\section{\optados\ crashes complaining that it can't read the
+  seed.bands or seed.cst\_ome file.}
+Which version of \castep\ are you using? See Sect.\,\ref{Sect:lff}.
+
+\section{I'd like \optados\ to do X as well}
+Contact the developers we're always interested in discussing new functionality.
+
+\section{I'd like to help, what can I do?}
+Contact the developers, there's always more functionality that we'd
+like to add to the code.  
+
+\section{I think I've found a bug: what should I do?}
+\begin{itemize}
+\item Check and re-check that it is a bug.  
+\item Check the output of the electronic structure code.
+\item Check that you're using the latest version of \optados.
+\item Email the developers the input and output files with
+  \verb#iprint : 3# and as much information about the problem as possible.
+\end{itemize}
 
 \end{document}
 
