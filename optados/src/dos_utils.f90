@@ -439,7 +439,6 @@ contains
           do is=1,nspins
              write(stdout,'(1x,a1,a20,i1,a25,f8.4,a9,6x,a8)') "|","Spin Component : ",is,&
                   &"  DOS at Fermi Energy : ", dos_at_efermi(1,is)," eln/cell","| <- DEF"
-             if(dos_at_efermi(1,is) < dos_zero_tol) compute_band_gap=.true.
           enddo                                                  
           write(stdout,'(1x,a71)')    '+---------------------------------------------------------------------+'
        endif
@@ -449,7 +448,6 @@ contains
           do is=1,nspins
              write(stdout,'(1x,a1,a20,i1,a25,f8.4,a9,6x,a8)') "|","Spin Component : ",is,&
                   &"  DOS at Fermi Energy : ", dos_at_efermi(2,is)," eln/cell","| <- DEA"
-             if(dos_at_efermi(2,is) < dos_zero_tol) compute_band_gap=.true.
           enddo                                                  
           write(stdout,'(1x,a71)')    '+---------------------------------------------------------------------+'
        endif
@@ -459,7 +457,6 @@ contains
           do is=1,nspins
              write(stdout,'(1x,a1,a20,i1,a25,f8.4,a9,6x,a8)') "|","Spin Component : ",is,&
                   &"  DOS at Fermi Energy : ", dos_at_efermi(3,is)," eln/cell","| <- DEL"
-             if(dos_at_efermi(3,is) < dos_zero_tol) compute_band_gap=.true.
           enddo                                                  
           write(stdout,'(1x,a71)')    '+---------------------------------------------------------------------+'
        endif
