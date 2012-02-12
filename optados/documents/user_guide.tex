@@ -589,8 +589,8 @@ Linear broadening may also be improved by using \verb#HYBRID_LINEAR : true#. Van
 \end{enumerate}
 
 
-\section{PDOS}
-We assume the reader is familiar with the previous section on Density of States calculations.
+\section{Projected Density of States}
+We assume the reader is familiar with the previous section on Density of States calculations and is now familiar with choosing broadening widths, and running \optados. 
 \begin{itemize}
 \item \emph{Outline} : This is a simple example of using \optados\ for calculating electronic density of states of 2 atoms of crystalline silicon projected onto LCAO basis states.
 \item \emph{Input Files}:
@@ -601,14 +601,16 @@ We assume the reader is familiar with the previous section on Density of States 
 \end{itemize}
 \end{itemize}
 
+\begin{enumerate}
+\item  We choose to decompose the DOS into angular momentum channels ({\tt PDOS : angular}). We choose to recalculate the Fermi level using the calculated DOS, rather than use the Fermi level suggested by \castep.  The output can be found in {\tt Si2.pdos.dat}. 
 
-See  \verb#examples/Si2_PDOS/#. This is a simple example of using \optados\ for calculating partial electronic density of states. We choose to decompose the DOS into angular momentum channels ({\tt PDOS : angular}). We choose to recalculate the Fermi level using the calculated DOS, rather than use the Fermi level suggested by \castep.  The output can be found in {\tt Si2.pdos.dat}. Other things to try are:
+\item Other things to try are:
 \begin{itemize}
 \item[{\bf --}]  \verb#PDOS : Si1;Si2(s)#  -- Output the PDOS on Si atom 1 and the PDOS on the s-channel of Si atom 2. (Resulting in two projectors)
 \item[{\bf --}]  \verb#PDOS : sum:Si1-2(s)#  --  Output the sum of the s-channels on the two Si atoms. (Resulting in one projector)
 \item[{\bf --}]  \verb#PDOS : Si1(p)# -- Output the p-channel on Si atom 1. (Resulting in one projector)
 \end{itemize}
-
+\end{enumerate}
 
 
 \section{JDOS}
