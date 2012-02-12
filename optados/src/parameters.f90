@@ -258,7 +258,7 @@ contains
     ! this is critical for counting all of the Gaussian DOS peaks. 
     ! When using semi-analytic integration it is desirable to show up very sharp peaks in the 
     ! DOS. However, the intDOS will not be affected.
-    finite_bin_correction = .false.
+    finite_bin_correction = .true.
     call param_get_keyword('finite_bin_correction',found,l_value=finite_bin_correction)
 
     ! Perform fixed and adaptive smearing summing the contribution of each Gaussian
