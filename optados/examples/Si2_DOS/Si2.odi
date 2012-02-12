@@ -7,7 +7,7 @@ TASK              : dos
 
 # Recalculate the Fermi energy using the new DOS 
 # (discasrd the CASTEP efermi)
-COMPUTE_EFERMI    : true
+EFERMI_CHOICE : optados
 
 # Sample the DOS at 0.1 eV intervals
 DOS_SPACING       : 0.1 
@@ -26,7 +26,7 @@ BROADENING        : adaptive # Default
 
 # The broadening parameter, A, when using adaptive smearing, 
 # set by eye to be similar to the linear smearing method
-ADAPTIVE_SMEARING : 1.4      # Default
+ADAPTIVE_SMEARING : 0.4      # Default
 
 # The Gaussian broadening parameter for fixed smearing,
 # in electron Volts
