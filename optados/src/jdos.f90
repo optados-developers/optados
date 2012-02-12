@@ -97,7 +97,7 @@ contains
     write(dos_file,*) "#"
     write(dos_file, *) "#                  O p t a D O S   o u t p u t   f i l e "  
     write(dos_file, '(1x,a1)') "#"
-    write(dos_file,*) "#    Denisty of States using ", trim(dos_name), " broadening"
+    write(dos_file,*) "#    Density of States using ", trim(dos_name), " broadening"
     call io_date(cdate,ctime)
     write(dos_file,*)  '#  Generated on ',cdate,' at ',ctime
     write(dos_file,*) "# Column        Data"
