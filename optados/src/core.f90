@@ -94,17 +94,25 @@ contains
   subroutine core_prepare_matrix_elements
     use od_electronic, only  : elnes_mat,  elnes_mwab, nbands, nspins,num_electrons, electrons_per_state
     use od_comms, only : my_node_id
-    use od_cell, only : num_kpoints_on_node
-    use od_parameters, only : core_geom, core_qdir ! needs changing to elnes
+    use od_cell, only : num_kpoints_on_node, cell_get_symmetry, &
+         num_crystal_symmetry_operations, crystal_symmetry_operations
+
+    use od_parameters, only : core_geom, core_qdir, legacy_file_format
     use od_io, only : io_error
 
     real(kind=dp), dimension(3) :: qdir 
     real(kind=dp) :: q_weight
-    integer :: N, N_spin, n_eigen, orb, ierr
+    integer :: N, N_spin, n_eigen, orb, ierr, num_sym, j, N2, N3, i, N_in
     real(kind=dp), dimension(2) :: num_occ
     complex(kind=dp) :: g
 
     num_occ = 0.0_dp
+
+    num_sym=0
+    if (.not.legacy_file_format) then 
+       call cell_get_symmetry
+       num_sym = num_crystal_symmetry_operations
+    end if
 
     !! THIS NEEDS TO USE EFERMI
 
@@ -120,6 +128,8 @@ contains
     if(ierr/=0) call io_error('Error: core_prepare_matrix_elements - allocation failed for matrix_weights')
     matrix_weights=0.0_dp
 
+    N_in = 1  ! 0 = no inversion, 1 = inversion   
+
     if (index(core_geom,'polar')>0) then 
        qdir=core_qdir            
        q_weight=((qdir(1)**2.0_dp)+(qdir(2)**2.0_dp)+(qdir(3)**2.0_dp))**0.5_dp
@@ -132,15 +142,36 @@ contains
           do n_eigen=(nint(num_occ(N_spin))+1),nbands    ! Loop over unoccupied states
              do orb=1,elnes_mwab%norbitals
                 if(index(core_geom,'polar')>0) then 
-                   g = (((qdir(1)*elnes_mat(orb,n_eigen,1,N,N_spin))+ &
-                        (qdir(2)*elnes_mat(orb,n_eigen,2,N,N_spin))+ &
-                        (qdir(3)*elnes_mat(orb,n_eigen,3,N,N_spin)))/q_weight)
-                   matrix_weights(orb,n_eigen,N,N_spin) = real(g*conjg(g),dp)
-                else
-                   matrix_weights(orb,n_eigen,N,N_spin) = ( &
+                   if (num_sym==0) then 
+                      g = (((qdir(1)*elnes_mat(orb,n_eigen,1,N,N_spin))+ &
+                           (qdir(2)*elnes_mat(orb,n_eigen,2,N,N_spin))+ &
+                           (qdir(3)*elnes_mat(orb,n_eigen,3,N,N_spin)))/q_weight)
+                      matrix_weights(orb,n_eigen,N,N_spin) = real(g*conjg(g),dp)
+                   else
+                      do N2=1,num_sym
+                         do N3=1,1+N_in
+                            do i=1,3
+                               qdir(i)=0.0_dp
+                               do j=1,3
+                                  qdir(i) = qdir(i) + ((-1.0_dp)**(N3+1))*&
+                                       (crystal_symmetry_operations(j,i,N2)*core_qdir(j))
+                               end do
+                            end do
+                            g=0.0_dp
+                            g=(((qdir(1)*elnes_mat(orb,n_eigen,1,N,N_spin))+ &
+                                 (qdir(2)*elnes_mat(orb,n_eigen,2,N,N_spin))+ &
+                                 (qdir(3)*elnes_mat(orb,n_eigen,3,N,N_spin)))/q_weight)
+                            matrix_weights(orb,n_eigen,N,N_spin) =  &
+                                 matrix_weights(orb,n_eigen,N,N_spin) + &
+                                 (1.0_dp/Real((num_sym*(N_in+1)),dp))*real(g*conjg(g),dp)
+                         end do
+                      end do
+                   end if
+                else ! isotropic average
+                   matrix_weights(orb,n_eigen,N,N_spin) = real( &
                         elnes_mat(orb,n_eigen,1,N,N_spin)*conjg(elnes_mat(orb,n_eigen,1,N,N_spin)) + &
                         elnes_mat(orb,n_eigen,2,N,N_spin)*conjg(elnes_mat(orb,n_eigen,2,N,N_spin)) + &
-                        elnes_mat(orb,n_eigen,3,N,N_spin)*conjg(elnes_mat(orb,n_eigen,3,N,N_spin)) ) / 3.0_dp
+                  elnes_mat(orb,n_eigen,3,N,N_spin)*conjg(elnes_mat(orb,n_eigen,3,N,N_spin)),dp) / 3.0_dp
                    !                matrix_weights(orb,n_eigen,N,N_spin) = real(g*conjg(g),dp)
                    !           matrix_weights(n_eigen,n_eigen2,N,N_spin) = 1.0_dp  ! 
                 end if
