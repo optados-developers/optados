@@ -688,11 +688,14 @@ contains
        
        if(.not.thermal_multiplicity) then
           if(thermal_vbm_k==thermal_cbm_k) then
-             write(stdout,'(1x,a1,a32,1x,f10.5,1x,f10.5,1x,f10.5,4x,a1)') "|","At kpoint :", all_kpoints(1:3,thermal_vbm_k)  ,"|"
+             write(stdout,'(1x,a1,a32,1x,f10.5,1x,f10.5,1x,f10.5,4x,a1)') "|","At kpoint :",&
+                  all_kpoints(1:3,thermal_vbm_k)  ,"|"
              write (stdout,'(1x,a71)') '|             ==> Direct Gap                                          |'  
           else
-             write(stdout,'(1x,a1,a32,1x,f10.5,1x,f10.5,1x,f10.5,4x,a1)') "|","Between VBM kpoint :", all_kpoints(1:3,thermal_vbm_k), "|"
-             write(stdout,'(1x,a1,a32,1x,f10.5,1x,f10.5,1x,f10.5,4x,a1)') "|","and CBM kpoint:", all_kpoints(1:3,thermal_cbm_k),  "|"
+             write(stdout,'(1x,a1,a32,1x,f10.5,1x,f10.5,1x,f10.5,4x,a1)') "|","Between VBM kpoint :",&
+                  all_kpoints(1:3,thermal_vbm_k), "|"
+             write(stdout,'(1x,a1,a32,1x,f10.5,1x,f10.5,1x,f10.5,4x,a1)') "|","and CBM kpoint:", &
+                  all_kpoints(1:3,thermal_cbm_k),  "|"
              write (stdout,'(1x,a71)') '|             ==> Indirect Gap                                        |'
           endif
        else ! thermal_mutiplicty=.true.
@@ -960,6 +963,11 @@ contains
     real(kind=dp) :: min_band_energy, max_band_energy 
     integer       :: idos,ierr
 
+    if(allocated(E)) then
+       deallocate(E,stat=ierr)
+       if (ierr/=0) call io_error ("cannot deallocate E in dos_utils setup_energy_scale")
+    endif
+
 
     ! If we do have dos_min_energy and dos_max_energy set, then we'd better
     ! use them. If not, let's set some sensible values.
@@ -991,7 +999,7 @@ contains
     endif
 
     allocate(E(1:dos_nbins),stat=ierr)
-    if (ierr/=0) call io_error ("cannot allocate E")
+    if (ierr/=0) call io_error ("cannot allocate E in dos_utils setup_energy_scale")
 
     delta_bins=(max_band_energy-min_band_energy)/real(dos_nbins-1,dp)
     do idos=1,dos_nbins

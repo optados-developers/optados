@@ -489,7 +489,7 @@ contains
     ! Check that we haven't already read in the energies
     if(allocated(elnes_mat)) return
 
-    !Open the band sfile
+    !Open the elnes sfile
     elnes_unit=io_file_unit()
     elnes_filename=trim(seedname)//".eels_mat"
 
