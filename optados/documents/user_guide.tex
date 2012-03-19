@@ -212,7 +212,7 @@ The valid options for this parameter are:
 \item[{\bf --}]  \verb#eV# (default)
 \item[{\bf --}]  \verb#Ry#
 \item[{\bf --}]  \verb#Ha#
-make\end{itemize}
+\end{itemize}
 
 \subsection[adaptive\_smearing]{\tt logical :: legacy\_file\_format}
 \label{sect:lff}
@@ -236,14 +236,14 @@ Value of the scissor operator.
 
 Default value is 0\,eV (\emph{i.e.} not used)
 
-\subsection[compute\_efermi]{{\tt logical :: efermi\_choice}}
+\subsection[compute\_efermi]{{\tt character(len=20 :: efermi}}
 Choose which Fermi energy to use.
 
 The valid options for this parameter are:
 \begin{itemize}
 \item[{\bf --}]  \verb#optados# (default) \optados\ recalculates the Fermi energy by performing a DOS calculation. 
-\item[{\bf --}]  \verb#file# Take the value from the output of the \castep\ calculation.
-\item[{\bf --}]  \verb#insulator# Assume that the material is an insulator and count filled bands to find the Fermi energy.
+\item[{\bf --}]  \verb#file# Take the value from the output of the ab-initio calculation.
+\item[{\bf --}]  \verb#insulator# Assume that the material is an insulator and counts filled bands to find the Fermi energy.
 \item[{\bf --}]  \verb#<real number># User supplied value.
 \end{itemize}
 
@@ -255,14 +255,14 @@ Format in which to output data.
 
 The valid options for this parameter are:
 \begin{itemize}
-\item[{\bf --}]  \verb#gnuplot# (not implemented yet)
+\item[{\bf --}]  \verb#gnuplot# 
 \item[{\bf --}]  \verb#grace# (default)
 \end{itemize}
 
 \subsection[finite\_bin\_correction]{\tt logical :: finite\_bin\_correction}
 Force each Gaussian to be larger than a single energy bin. (Useful for adaptive smearing and semi-core states when \verb#numerical_intdos=TRUE#). 
 
-Default value \verb#FALSE#.
+Default value \verb#TRUE#.
 
 \subsection[numerical\_intdos]{\tt logical :: numerical\_intdos}
 Calculate the integrated dos by numerical integration instead of semi-analytically. (Useful for comparison with \lindos.)
@@ -285,7 +285,7 @@ The default value is 0.01eV/\AA.
 \subsection[set\_efermi\_zero]{\tt logical :: set\_efermi\_zero}
 Shift energy scales so that the Fermi energy is at 0.
 
-Default value \verb#TRUE#.
+Default value \verb#FALSE#.
 
 \subsection[compute\_band\_energy]{\tt logical :: compute\_band\_energy}
 Compute the band energy by summing bands both using \castep{'s eigenvalue and \optados{'s} density of states.
@@ -375,6 +375,19 @@ Specifies the geometry for the core-spectra calculation.  Possible options:
 \item[{\bf --}]  \verb#polarized#  
 \end{itemize}
 The default is polycrystalline.
+
+\subsection[core\_geom]{\tt character(len=20) :: core\_type}
+
+Determines if we want absorption (transition from core to conduction
+ELNES / XANES)
+or emission (transition from valence to core XAS). It is also possible
+to plot both.
+\begin{itemize}
+\item[{\bf --}]  \verb#absorption# (default)
+\item[{\bf --}]  \verb#emission#
+\item[{\bf --}]  \verb#all#
+\end{itemize}
+
 
 \subsection[core\_qdir]{\tt real(kind=dp) :: core\_qdir(3)}
 Direction of polarisation. Must be specified if \verb#core_geom :polarized#.
@@ -680,7 +693,7 @@ See  \verb#examples/Al_OPTICS/#. This is a simple example of using \optados\ for
 
 \section{\optados\ crashes complaining that it can't read the
   seed.bands or seed.cst\_ome file.}
-Which version of \castep\ are you using? See Sect.\,\ref{Sect:lff}.
+Which version of \castep\ are you using? See Sect.\,\ref{sect:lff}.
 
 \section{I'd like \optados\ to do X as well}
 Contact the developers we're always interested in discussing new functionality.
