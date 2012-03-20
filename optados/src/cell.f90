@@ -263,18 +263,22 @@ contains
     logical :: exists
     character(filename_len)     :: sym_filename
 
+    !check if we already have the symmetries
+    if(allocated(crystal_symmetry_operations)) return
+
     sym_file=io_file_unit()
     sym_filename=trim(seedname)//".sym"
     if(on_root) inquire(file=sym_filename,exist=exists)
     call comms_bcast(exists,1)
 
     if(.not. exists) then
-       write(stdout,*)
-       write(stdout,'(80a)') '!--------------------------------- WARNING ------------------------------------!'
-       write(stdout,'(80a)') '!                Symmetry Operations file (.sym) not found                     !'
-       write(stdout,'(80a)') '!                       Proceeding without symmetry                            !'
-       write(stdout,'(80a)') '!------------------------------------------------------------------------------!'
-       write(stdout,*)
+       if(on_root) then
+          write(stdout,'(1x,78a)') '!--------------------------------- WARNING ----------------------------------!'
+          write(stdout,'(1x,78a)') '!                Symmetry Operations file (.sym) not found                   !'
+          write(stdout,'(1x,78a)') '!                       Proceeding without symmetry                          !'
+          write(stdout,'(1x,78a)') '!----------------------------------------------------------------------------!'
+          write(stdout,'(1x,a78)') '|                                                                            |'
+       end if
        num_crystal_symmetry_operations=0
        return
     end if

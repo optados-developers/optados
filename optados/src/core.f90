@@ -39,20 +39,20 @@ module od_core
 contains
 
   subroutine core_calculate
-    use od_electronic, only  : elec_read_elnes_mat
+    use od_electronic, only  : elec_read_elnes_mat,efermi_set
     use od_dos_utils, only : dos_utils_calculate, dos_utils_set_efermi
     use od_comms, only : on_root
     use od_io, only : stdout
-    use od_parameters, only : core_LAI_broadening, LAI_gaussian, LAI_lorentzian
+    use od_parameters, only : core_LAI_broadening, LAI_gaussian, LAI_lorentzian, set_efermi_zero
 
     implicit none
 
     if(on_root) then
        write(stdout,*)
        write(stdout,'(1x,a78)') '+============================================================================+'
-       write(stdout,'(1x,a78)') '+============================ Core Loss Calculation =========================+'
+       write(stdout,'(1x,a78)') '+                            Core Loss Calculation                           +'
        write(stdout,'(1x,a78)') '+============================================================================+' 
-      write(stdout,*)
+       write(stdout,'(1x,a78)') '|                                                                            |'
     endif
 
 
@@ -60,7 +60,7 @@ contains
     call  elec_read_elnes_mat
     !    (elnes_mat(orb,nb,indx,nk,ns),indx=1,3)
 
-    call dos_utils_set_efermi
+    if(.not.efermi_set) call dos_utils_set_efermi
 
     call core_prepare_matrix_elements
 
@@ -74,30 +74,22 @@ contains
        if(LAI_lorentzian) call core_lorentzian 
     endif
 
+    if(set_efermi_zero .and. .not.efermi_set) call dos_utils_set_efermi
     if (on_root) then
        call write_core
     endif
-
-    if(on_root) then
-       write(stdout,*)
-       write(stdout,'(1x,a78)') '+============================================================================+'
-       write(stdout,'(1x,a78)') '+========================== Core Loss Calculation End =======================+'
-       write(stdout,'(1x,a78)') '+============================================================================+'
-       write(stdout,*)
-    endif
-
 
   end subroutine core_calculate
 
   ! Private routines
 
   subroutine core_prepare_matrix_elements
-    use od_electronic, only  : elnes_mat,  elnes_mwab, nbands, nspins,num_electrons, electrons_per_state
+    use od_electronic, only  : elnes_mat,  elnes_mwab, nbands, nspins,num_electrons, electrons_per_state, &
+         efermi,band_energy
     use od_comms, only : my_node_id
     use od_cell, only : num_kpoints_on_node, cell_get_symmetry, &
          num_crystal_symmetry_operations, crystal_symmetry_operations
-
-    use od_parameters, only : core_geom, core_qdir, legacy_file_format
+    use od_parameters, only : core_geom, core_qdir, core_type, legacy_file_format
     use od_io, only : io_error
 
     real(kind=dp), dimension(3) :: qdir 
@@ -114,16 +106,6 @@ contains
        num_sym = num_crystal_symmetry_operations
     end if
 
-    !! THIS NEEDS TO USE EFERMI
-
-    do N_spin=1,nspins
-       num_occ(N_spin) = num_electrons(N_spin)
-    enddo
-
-    if (electrons_per_state==2) then 
-       num_occ(1) = num_occ(1)/2.0_dp
-    endif
-
     allocate(matrix_weights(elnes_mwab%norbitals,elnes_mwab%nbands,num_kpoints_on_node(my_node_id),nspins),stat=ierr)
     if(ierr/=0) call io_error('Error: core_prepare_matrix_elements - allocation failed for matrix_weights')
     matrix_weights=0.0_dp
@@ -139,7 +121,9 @@ contains
 
     do N=1,num_kpoints_on_node(my_node_id)                      ! Loop over kpoints
        do N_spin=1,nspins                                    ! Loop over spins
-          do n_eigen=(nint(num_occ(N_spin))+1),nbands    ! Loop over unoccupied states
+          do n_eigen=1,nbands                                ! Loop over state 1 
+             if(band_energy(n_eigen,N_spin,N)<efermi.and.core_type=='absorption') cycle ! XAS
+             if(band_energy(n_eigen,N_spin,N)>efermi.and.core_type=='emission') cycle   ! ELNES / XANES
              do orb=1,elnes_mwab%norbitals
                 if(index(core_geom,'polar')>0) then 
                    if (num_sym==0) then 
@@ -188,10 +172,11 @@ contains
 
     use od_constants, only : bohr2ang, periodic_table_name
     use od_parameters, only : dos_nbins, core_LAI_broadening, LAI_gaussian, LAI_gaussian_width, &
-         LAI_lorentzian, LAI_lorentzian_scale,  LAI_lorentzian_width,  LAI_lorentzian_offset, output_format
-    use od_electronic, only: elnes_mwab,elnes_orbital
+         LAI_lorentzian, LAI_lorentzian_scale,  LAI_lorentzian_width,  LAI_lorentzian_offset, output_format, &
+         set_efermi_zero
+    use od_electronic, only: elnes_mwab,elnes_orbital,efermi,efermi_set
     use od_io, only : seedname, io_file_unit,io_error
-    use od_dos_utils, only : E
+    use od_dos_utils, only : E,dos_utils_set_efermi
     use od_cell, only : num_species, atoms_symbol, atoms_label
     use xmgrace_utils
 
@@ -207,6 +192,15 @@ contains
     character(len=40), allocatable :: edge_name(:)
     real(kind=dp), allocatable :: dos_temp(:), dos_temp2(:)
     logical :: found
+    real(kind=dp), allocatable :: E_shift(:)
+
+    allocate(E_shift(dos_nbins),stat=ierr)
+    if (ierr/=0) call io_error('Error allocating E_shift in core_write')
+    if(set_efermi_zero) then
+       E_shift=E-efermi
+    else
+       E_shift=E
+    endif
 
     allocate(dos_temp(dos_nbins),stat=ierr)
     if(ierr/=0) call io_error('Error: core_write - allocation of dos_temp failed')
@@ -216,6 +210,8 @@ contains
     if(ierr/=0) call io_error('Error: core_write - allocation of elnes_symbol failed')
 
     dE=E(2)-E(1)
+
+
 
 
     ! This next bit of convoluted code attempts to figure out what order the
@@ -255,50 +251,50 @@ contains
        end do
     end if
 
-
-    ! Open the output file
-    core_unit = io_file_unit()
-    open(unit=core_unit,action='write',file=trim(seedname)//'_core.dat')
-
-    ! Write into the output file
-    write(core_unit,*)'#*********************************************'
-    write(core_unit,*)'#            Core loss function               '
-    write(core_unit,*)'#*********************************************'
-    write(core_unit,*)'#'
-    if(core_LAI_broadening) then 
-       if(LAI_gaussian) write(core_unit,*)'# Gaussian broadening: FWHM', LAI_gaussian_width
-       if(LAI_lorentzian) then 
-          write(core_unit,*)'# Lorentzian broadening included'
-          write(core_unit,*)'# Lorentzian scale ', LAI_lorentzian_scale
-          write(core_unit,*)'# Lorentzian offset ', LAI_lorentzian_offset
-          write(core_unit,*)'# Lorentzian width ', LAI_lorentzian_width
-       end if
-    end if
-    write(core_unit,*)'#'
-
-    weighted_dos=weighted_dos*bohr2ang**2  ! Converts units, note I don't have to worry about this in optics.f90 at electronic does it 
-    if (core_LAI_broadening) weighted_dos_broadened=weighted_dos_broadened*bohr2ang**2
-
-    do orb=1,elnes_mwab%norbitals   ! writing out doesn't include spin at the moment. 
-
-       write(temp,'(a2,i1,a17)') 'n=',elnes_orbital%shell(orb),' ang= '//trim(elnes_orbital%am_channel_name(orb))
-
-       write(temp2,'(a5,a2,1x,i0,a28)') 'Ion: ',trim(elnes_symbol(elnes_orbital%species_no(orb))),&
-	& elnes_orbital%rank_in_species(orb),' State: '//trim(temp)
-       write(core_unit,*) '# ',trim(temp2)
-
-
-       do N=1,dos_nbins
-          if (core_LAI_broadening) then 
-             write(core_unit,*)E(N),weighted_dos(N,1,orb),weighted_dos_broadened(N,1,orb)
-          else 
-             write(core_unit,*)E(N),weighted_dos(N,1,orb)
-          end if
-       end do
-       write(core_unit,*)''
-    end do
-
-    close(core_unit)
+!!$
+!!$    ! Open the output file
+!!$    core_unit = io_file_unit()
+!!$    open(unit=core_unit,action='write',file=trim(seedname)//'_core.dat')
+!!$
+!!$    ! Write into the output file
+!!$    write(core_unit,*)'#*********************************************'
+!!$    write(core_unit,*)'#            Core loss function               '
+!!$    write(core_unit,*)'#*********************************************'
+!!$    write(core_unit,*)'#'
+!!$    if(core_LAI_broadening) then 
+!!$       if(LAI_gaussian) write(core_unit,*)'# Gaussian broadening: FWHM', LAI_gaussian_width
+!!$       if(LAI_lorentzian) then 
+!!$          write(core_unit,*)'# Lorentzian broadening included'
+!!$          write(core_unit,*)'# Lorentzian scale ', LAI_lorentzian_scale
+!!$          write(core_unit,*)'# Lorentzian offset ', LAI_lorentzian_offset
+!!$          write(core_unit,*)'# Lorentzian width ', LAI_lorentzian_width
+!!$       end if
+!!$    end if
+!!$    write(core_unit,*)'#'
+!!$
+!!$    weighted_dos=weighted_dos*bohr2ang**2  ! Converts units, note I don't have to worry about this in optics.f90 at electronic does it 
+!!$    if (core_LAI_broadening) weighted_dos_broadened=weighted_dos_broadened*bohr2ang**2
+!!$
+!!$    do orb=1,elnes_mwab%norbitals   ! writing out doesn't include spin at the moment. 
+!!$
+!!$       write(temp,'(a2,i1,a17)') 'n=',elnes_orbital%shell(orb),' ang= '//trim(elnes_orbital%am_channel_name(orb))
+!!$
+!!$       write(temp2,'(a5,a2,1x,i0,a28)') 'Ion: ',trim(elnes_symbol(elnes_orbital%species_no(orb))),&
+!!$	& elnes_orbital%rank_in_species(orb),' State: '//trim(temp)
+!!$       write(core_unit,*) '# ',trim(temp2)
+!!$
+!!$
+!!$       do N=1,dos_nbins
+!!$          if (core_LAI_broadening) then 
+!!$             write(core_unit,*)E(N),weighted_dos(N,1,orb),weighted_dos_broadened(N,1,orb)
+!!$          else 
+!!$             write(core_unit,*)E(N),weighted_dos(N,1,orb)
+!!$          end if
+!!$       end do
+!!$       write(core_unit,*)''
+!!$    end do
+!!$
+!!$    close(core_unit)
 
     allocate(ion_species(elnes_mwab%norbitals))
     allocate(ion_num_in_species(elnes_mwab%norbitals))
@@ -468,9 +464,9 @@ contains
 
        do N=1,dos_nbins
           if (core_LAI_broadening) then 
-             write(core_unit,*)E(N),dos_temp(N),dos_temp2(N)
+             write(core_unit,*)E_shift(N),dos_temp(N),dos_temp2(N)
           else 
-             write(core_unit,*)E(N),dos_temp(N)
+             write(core_unit,*)E_shift(N),dos_temp(N)
           end if
        end do
        write(core_unit,*)''
@@ -488,8 +484,8 @@ contains
           open(unit=core_unit,file=trim(seedname)//'_'//'core_edge'//'.agr',iostat=ierr)
           if(ierr.ne.0) call io_error(" ERROR: Cannot open xmgrace batch file in core: write_core_xmgrace")
 
-          min_x=minval(E)
-          max_x=maxval(E)
+          min_x=minval(E_shift)
+          max_x=maxval(E_shift)
 
           min_y=minval(weighted_dos)
           max_y=maxval(weighted_dos)
@@ -514,14 +510,14 @@ contains
              end do
 
              call xmgu_data_header(core_unit,loop,loop,trim(edge_name(loop)))
-             call xmgu_data(core_unit,loop,E(:),dos_temp)
+             call xmgu_data(core_unit,loop,E_shift(:),dos_temp)
           end do
        endif
 
     end if
 
-
-
+    deallocate(E_shift,stat=ierr)
+    if (ierr/=0) call io_error('Error deallocating E_shift in write_core')
 
   end subroutine write_core
 

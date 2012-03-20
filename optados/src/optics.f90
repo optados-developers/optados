@@ -78,7 +78,8 @@ contains
     !
 
     use od_constants, only : dp
-    use od_electronic, only : band_gradient, elec_read_band_gradient, nbands, nspins, efermi
+    use od_electronic, only : band_gradient, elec_read_band_gradient, nbands, nspins, &
+         efermi, efermi_set
     use od_cell, only : cell_volume, num_kpoints_on_node 
     use od_jdos_utils, only : jdos_utils_calculate
     use od_comms, only : on_root, my_node_id
@@ -88,14 +89,13 @@ contains
     use od_io, only : stdout 
 
     if(on_root) then
-       write(stdout,*)
        write(stdout,'(1x,a78)') '+============================================================================+'
-       write(stdout,'(1x,a78)') '+=============================== Optics Calculation =========================+'
+       write(stdout,'(1x,a78)') '+                                Optics Calculation                          +'
        write(stdout,'(1x,a78)') '+============================================================================+'
-       write(stdout,*)
+       write(stdout,'(1x,a78)') '|                                                                            |'
     endif
 
-    call dos_utils_set_efermi
+    if(.not.efermi_set) call dos_utils_set_efermi
 
     ! Get information from .cst_ome file 
     call elec_read_band_gradient
@@ -147,13 +147,6 @@ contains
        end if
     endif
 
-    if(on_root) then
-       write(stdout,*)
-       write(stdout,'(1x,a78)') '+============================================================================+'
-       write(stdout,'(1x,a78)') '+============================== Optics Calculation End ======================+'
-       write(stdout,'(1x,a78)') '+============================================================================+'
-       write(stdout,*)
-    endif
 
   end subroutine optics_calculate
 

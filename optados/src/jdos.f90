@@ -42,10 +42,21 @@ contains
     implicit none
 
     real(kind=dp) :: time0,time1
+
+    if(on_root) then
+       write(stdout,*)
+       write(stdout,'(1x,a78)') '+============================================================================+'
+       write(stdout,'(1x,a78)') '+                           Joint Density of States                          +'
+       write(stdout,'(1x,a78)') '+============================================================================+' 
+       write(stdout,'(1x,a78)') '|                                                                            |'
+    endif
+
+
+
     call jdos_utils_calculate
 
     !-------------------------------------------------------------------------------
-    ! W R I T E   O U T   D O S  
+    ! W R I T E   O U T   J D O S  
 
     time0=io_time()
     ! Otherwise we have written to wdos and dos, so they can be called 
@@ -57,7 +68,6 @@ contains
        !if(quad)    call write_jdos(E, dos_quad, intdos_quad, "quad")
     endif
     time1=io_time()
-    if(on_root) write(stdout,'(1x,a40,f11.3,a)') 'Time to write jdos to disk ',time1-time0,' (sec)'
 
     !-------------------------------------------------------------------------------
 

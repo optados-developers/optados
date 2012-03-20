@@ -113,7 +113,14 @@ program optados
      time0=io_time()
      call pdos_calculate
      time1=io_time()
-     if(on_root) write(stdout,'(1x,a40,f11.3,a)') 'Time to calculate Partical DOS ',time1-time0,' (sec)'
+     if(on_root)then
+       write(stdout,'(1x,a78)') '|                                                                            |'
+       write(stdout,'(1x,a59,f11.3,a8)') &
+            '| Time to calculate Projected Density of States                ',time1-time0,' (sec) |'
+       write(stdout,'(1x,a78)') '+============================================================================+'
+       write(stdout,*) ' '
+       write(stdout,*) ' '
+       end if
   endif
   !-------------------------------------------------------------------------!
 
@@ -124,7 +131,14 @@ program optados
      time0=io_time()
      call core_calculate
      time1=io_time()
-     if(on_root) write(stdout,'(1x,a45,f11.3,a)') 'Time to calculate Core Level Spec. (Total) ',time1-time0,' (sec)'
+     if(on_root)then
+       write(stdout,'(1x,a78)') '|                                                                            |'
+       write(stdout,'(1x,a59,f11.3,a8)') &
+                        '| Time to calculate Core Level Spectra                         ',time1-time0,' (sec) |'
+       write(stdout,'(1x,a78)') '+============================================================================+'
+       write(stdout,*) ' '
+       write(stdout,*) ' '
+       end if
   endif
   !-------------------------------------------------------------------------!
 
@@ -135,7 +149,14 @@ program optados
      time0=io_time()
      call dos_calculate
      time1=io_time()
-     if(on_root) write(stdout,'(1x,a40,f11.3,a)') 'Time to calculate DOS (Total) ',time1-time0,' (sec)'
+     if(on_root)then
+       write(stdout,'(1x,a78)') '|                                                                            |'
+       write(stdout,'(1x,a59,f11.3,a8)') &
+                        '| Time to calculate Density of States                          ',time1-time0,' (sec) |'
+       write(stdout,'(1x,a78)') '+============================================================================+'
+       write(stdout,*) ' '
+       write(stdout,*) ' '
+    end if
   endif
   !-------------------------------------------------------------------------!
 
@@ -146,7 +167,14 @@ program optados
      time0=io_time()
      call optics_calculate
      time1=io_time()
-     if(on_root) write(stdout,'(1x,a50,f11.3,a)') 'Time to calculate Optical properties (Total) ',time1-time0,' (sec)'
+     if(on_root) then
+        write(stdout,'(1x,a78)') '|                                                                            |'
+        write(stdout,'(1x,a59,f11.3,a8)') &
+             '| Time to calculate Optical properties                         ',time1-time0,' (sec) |'
+        write(stdout,'(1x,a78)') '+============================================================================+'
+        write(stdout,*) ' '
+        write(stdout,*) ' '
+     endif
   endif
   !-------------------------------------------------------------------------!
 
@@ -157,7 +185,15 @@ program optados
      time0=io_time()
      call jdos_calculate
      time1=io_time()
-     if(on_root) write(stdout,'(1x,a40,f11.3,a)') 'Time to calculate Joint DOS (Total) ',time1-time0,' (sec)'
+     if(on_root) then
+        write(stdout,'(1x,a78)') '|                                                                            |'
+        write(stdout,'(1x,a59,f11.3,a8)') &
+             '| Time to calculate Joint Density of States                    ',time1-time0,' (sec) |'
+        write(stdout,'(1x,a78)') '+============================================================================+'
+        write(stdout,*) ' '
+        write(stdout,*) ' '
+     endif
+
   endif
   !-------------------------------------------------------------------------!
 

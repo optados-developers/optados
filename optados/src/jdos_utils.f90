@@ -68,7 +68,7 @@ contains
     !=============================================================================== 
     use od_parameters, only : linear, fixed, adaptive, quad, iprint, dos_per_volume
     use od_electronic, only : elec_read_band_gradient,band_gradient,nspins,electrons_per_state,&
-         num_electrons
+         num_electrons,efermi_set
     use od_comms, only      : on_root
     use od_io, only         : stdout,io_error,io_time
     use od_cell, only       : cell_volume
@@ -84,17 +84,9 @@ contains
     calc_weighted_jdos=.false.
     if(present(matrix_weights)) calc_weighted_jdos=.true.
 
-    if(on_root) then
-       write(stdout,*)
-       write(stdout,'(1x,a78)')'  +========================================================================+  '
-       write(stdout,'(1x,a78)')'  +================ Joint Density Of States Calculation ===================+  '
-       write(stdout,'(1x,a78)')'  +========================================================================+  '
-       write(stdout,*)
-    endif
-
     if(calc_weighted_jdos.eqv..false.) then ! We are called just to provide jdos.
        if(allocated(E)) then
-          if(on_root) write(stdout,*) " Already calculated jdos, so returning..."
+          if(on_root.and.iprint>1) write(stdout,*) " Already calculated jdos, so returning..."
           return  ! The jdos has already been calculated previously so just return.       
        endif
     endif
@@ -108,14 +100,7 @@ contains
     endif
     !-------------------------------------------------------------------------------
     
-    call dos_utils_set_efermi
-
-  !  allocate(vb_max(nspins), stat=ierr)
-  !  if (ierr/=0) call io_error ("cannot allocate vb_max")
-
-
-    ! For an insulator
- !   vb_max(:)=num_electrons(:)/electrons_per_state
+    if(.not.efermi_set) call dos_utils_set_efermi
 
     !-------------------------------------------------------------------------------
     ! C A L C U L A T E   J D O S 
@@ -123,8 +108,6 @@ contains
     time0=io_time()
 
     call setup_energy_scale
-
-    if(on_root.and.(iprint>1)) write(stdout,*)
 
     if(fixed)then
        if(calc_weighted_jdos)then
@@ -169,7 +152,7 @@ contains
 !    endif
 
     time1=io_time()
-    if(on_root)  write(stdout,'(1x,a40,f11.3,a)') 'Time to calculate jdos  ',time1-time0,' (sec)'
+    if(on_root.and.iprint>1)  write(stdout,'(1x,a40,f11.3,a)') 'Time to calculate jdos  ',time1-time0,' (sec)'
     !-------------------------------------------------------------------------------
 
 
@@ -189,13 +172,6 @@ contains
        !    intdos_quad=intdos_quad/cell_volume
        ! endif   
     endif
-
-    if (on_root) then
-       write(stdout,'(1x,a78)')    '  +========================================================================+  '
-       write(stdout,'(1x,a78)')    '  +============ Joint Density Of States Calculation End ===================+  '
-       write(stdout,'(1x,a78)')    '  +========================================================================+  '
-       write(stdout,*)
-    end if
 
   end subroutine jdos_utils_calculate
 
@@ -320,7 +296,7 @@ contains
     use od_io, only : io_error,stdout
     use od_electronic, only : band_gradient,nbands,band_energy,nspins,electrons_per_state, &
          & efermi
-    use od_dos_utils, only : doslin, doslin_sub_cell_corners, dos_utils_set_efermi
+    use od_dos_utils, only : doslin, doslin_sub_cell_corners
     use od_algorithms, only : gaussian
     implicit none
 

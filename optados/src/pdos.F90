@@ -64,10 +64,10 @@ contains
 
 
   subroutine pdos_calculate
-    use od_electronic, only :elec_pdos_read
-    use od_dos_utils, only : dos_utils_calculate
+    use od_electronic, only :elec_pdos_read,efermi,efermi_set
+    use od_dos_utils, only : dos_utils_calculate,dos_utils_set_efermi
     use od_comms, only : on_root
-    use od_parameters, only : iprint
+    use od_parameters, only : iprint,set_efermi_zero
     use od_io, only : stdout
 
     implicit none
@@ -75,9 +75,9 @@ contains
     if(on_root) then
        write(stdout,*)
        write(stdout,'(1x,a78)') '+============================================================================+'
-       write(stdout,'(1x,a78)') '+=============== Partial Density Of States Calculation ======================+'
+       write(stdout,'(1x,a78)') '+                 Projected Density Of States Calculation                    +'
        write(stdout,'(1x,a78)') '+============================================================================+'
-       write(stdout,*)
+       write(stdout,'(1x,a78)') '|                                                                            |'
     endif
 
     ! read in the pdos weights
@@ -100,17 +100,11 @@ contains
     call dos_utils_calculate(matrix_weights, dos_partial)
 
     ! and write everything out
+    if(set_efermi_zero .and. .not.efermi_set) call dos_utils_set_efermi
     if (on_root) then
        call pdos_write
     endif
 
-   if(on_root) then
-       write(stdout,*)
-       write(stdout,'(1x,a78)') '+============================================================================+'
-       write(stdout,'(1x,a78)') '+============== Partial Density Of States Calculation End ===================+'
-       write(stdout,'(1x,a78)') '+============================================================================+'
-       write(stdout,*)
-    endif
 
   end subroutine pdos_calculate
 
@@ -626,12 +620,12 @@ contains
     !===============================================================================
     ! Write out projectors, start_proj, stop_proj, to file name
     !===============================================================================
-    use od_dos_utils,       only : E
-    use od_parameters,only : dos_nbins, iprint
+    use od_dos_utils,  only : E,dos_utils_set_efermi
+    use od_parameters, only : dos_nbins, iprint, set_efermi_zero
     use od_algorithms, only : channel_to_am
-    use od_electronic, only         : pdos_mwab
-    use od_cell, only : atoms_species_num, num_species 
-    use od_io, only : io_file_unit, io_error, io_date, stdout
+    use od_electronic, only : pdos_mwab, efermi, efermi_set
+    use od_cell,       only : atoms_species_num, num_species 
+    use od_io,         only : io_file_unit, io_error, io_date, stdout
     
     
     implicit none
@@ -642,7 +636,16 @@ contains
     character(len=20) :: string 
     integer :: iproj, iam, ispecies_num, ispecies
     integer :: idos, i, pdos_file,ierr 
-   
+    real(kind=dp), allocatable :: E_shift(:)
+
+    allocate(E_shift(dos_nbins),stat=ierr)
+    if (ierr/=0) call io_error('Error allocating E_shift in write_proj_to_file')
+    if(set_efermi_zero) then
+       E_shift=E-efermi
+    else
+       E_shift=E
+    endif   
+
     write(string,'(I4,"(x,es14.7)")') (stop_proj-start_proj)+1
 
     pdos_file=io_file_unit()
@@ -717,11 +720,15 @@ contains
        enddo
        
        do idos = 1,dos_nbins
-          write(pdos_file,'(es14.7,'//trim(string)//')') E(idos),(dos_partial(idos,1,i),i=start_proj,stop_proj)
+          write(pdos_file,'(es14.7,'//trim(string)//')') E_shift(idos),(dos_partial(idos,1,i),i=start_proj,stop_proj)
        end do
     endif
     
     close(pdos_file)
+
+    deallocate(E_shift,stat=ierr)
+    if (ierr/=0) call io_error('Error deallocating E_shift in write_proj_to_file')
+
   end subroutine write_proj_to_file
   
   subroutine pdos_report_projectors

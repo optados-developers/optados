@@ -120,7 +120,7 @@ contains
     use od_electronic,only : band_gradient,band_energy, efermi, efermi_castep,nspins, &
          & elec_read_band_gradient, unshifted_efermi
     use od_parameters,only : linear, adaptive, fixed, quad, &
-         & dos_per_volume,iprint,set_efermi_zero,efermi_choice
+         & dos_per_volume,iprint,set_efermi_zero,efermi_choice,iprint
     use od_cell,         only : cell_volume, num_kpoints_on_node
 
     implicit none
@@ -142,7 +142,7 @@ contains
 
     if(calc_weighted_dos.eqv..false.) then ! We are called just to provide dos.
        if(allocated(E)) then
-          if(on_root) write(stdout,*) " Already calculated dos, so returning..."
+          if(on_root.and.iprint>1) write(stdout,*) " Already calculated dos, so returning..."
           return  ! The dos has already been calculated previously so just return.       
        endif
     endif
@@ -154,7 +154,7 @@ contains
        mw%nspins   =size(matrix_weights,4)
     end if
 
-    if(on_root) then
+    if(on_root.and.iprint>1) then
        write(stdout,*)
        if(calc_weighted_dos) then
           write(stdout,'(1x,a78)') '    +====================================================================+    '
@@ -234,7 +234,7 @@ contains
     !    endif
 
     time1=io_time()
-    if(on_root)  write(stdout,'(1x,a40,f11.3,a)') 'Time to calculate dos  ',time1-time0,' (sec)'
+    if(on_root.and.iprint>1)  write(stdout,'(1x,a40,f11.3,a)') 'Time to calculate dos  ',time1-time0,' (sec)'
     !-------------------------------------------------------------------------------
 
 
@@ -303,7 +303,7 @@ contains
        endif
     endif
    
-    if(on_root) then
+    if(on_root.and.iprint>1) then
        write(stdout,*)
        if(calc_weighted_dos) then
           write(stdout,'(1x,a78)') '    +====================================================================+    '
@@ -326,7 +326,7 @@ contains
     use od_parameters, only : efermi_choice, efermi_user, fixed,&
          & linear, adaptive, iprint
     use od_electronic, only : efermi_castep, num_electrons, nspins, efermi, &
-         & electrons_per_state,band_energy, nbands
+         & electrons_per_state,band_energy, nbands, efermi_set
     use od_io, only : io_error, stdout
     use od_comms, only : on_root, my_node_id,  comms_reduce,  comms_bcast
     use od_cell, only :  num_kpoints_on_node
@@ -335,18 +335,21 @@ contains
     integer :: is,ik, top_occ_band
     real(kind=dp) :: vbm, cbm 
     
-    if(on_root) write(stdout,'(1x,a71)')  '+------------------------ Setting Fermi Energy  ----------------------+'
-    if(on_root) write(stdout,'(1x,a1,a46,f8.4,a3,12x,a8)') "|",&
-         &" Fermi energy from file : ",efermi_castep," eV","| <- EfC"
+if(on_root) then
+   write(stdout,'(1x,a78)') '+--------------------------- Setting Fermi Energy  --------------------------+'
+end if
+
+!    if(on_root) write(stdout,'(1x,a1,a46,f8.4,a3,12x,a8)') "|",&
+!         &" Fermi energy from file : ",efermi_castep," eV","| <- EfC"
 
     select case (efermi_choice)
        case("castep")
           if(on_root) write(stdout,'(1x,a1,a46,f8.4,a3,12x,a8)') "|",&
-               &" Set fermi energy from file : ",efermi_castep," eV","| <- EfC"
+               &" Set fermi energy from file : ",efermi_castep," eV","  <- EfC"
           efermi=efermi_castep
        case("user")
           if(on_root) write(stdout,'(1x,a1,a46,f8.4,a3,12x,a8)') "|",&
-               &" Fermi energy from user : ",efermi_user," eV","| <- EfU"
+               &" Fermi energy from user : ",efermi_user," eV","  <- EfU"
           efermi=efermi_user
        case("insulator")
           ! Same fermi level for up and down spins. Different number
@@ -391,7 +394,7 @@ contains
 
           
           if(on_root) write(stdout,'(1x,a1,a46,f8.4,a3,12x,a8)') "|",&
-               &" Fermi energy assuming insulator : ",efermi," eV","| <- EfI"
+               &" Fermi energy assuming insulator : ",efermi," eV","  <- EfI"
         
        case("optados")
           ! So in the case of compare_jdos we pick efermi_adaptive.
@@ -400,11 +403,17 @@ contains
           if(linear) efermi=efermi_linear
           if(adaptive) efermi=efermi_adaptive
           if(on_root) write(stdout,'(1x,a1,a46,f8.4,a3,12x,a8)') "|",&
-               &" Fermi energy from DOS : ",efermi," eV","| <- EfD"
+               &" Fermi energy from DOS : ",efermi," eV","  <- EfD"
        case default
            call io_error('Error in dos_utils_set_efermi: unknown efermi choice this is a bug')
     end select
-    if(on_root) write(stdout,'(1x,a71)')  '+---------------------------------------------------------------------+'
+    if(on_root) then
+       write(stdout,'(1x,a78)') '+----------------------------------------------------------------------------+' 
+       write(stdout,'(1x,a78)') '|                                                                            |'
+    end if
+
+    efermi_set=.true.
+
   endsubroutine dos_utils_set_efermi
 
  !===============================================================================
@@ -430,39 +439,40 @@ contains
     call dos_utils_calculate_at_e(efermi,dos_at_e=dos_at_efermi)
     
     if(on_root) then
-       write(stdout,*)
-       write(stdout,'(1x,a71)')  '+----------------------- DOS at Fermi Energy Analysis ----------------+'
-       write(stdout,'(1x,a1,a46,f8.4,a3,12x,a1)')"|", " Fermi energy used : ", efermi,"eV","|"
+       write(stdout,'(1x,a78)')  '+----------------------- DOS at Fermi Energy Analysis -----------------------+'
+       write(stdout,'(1x,a1,a46,f8.4,a3,12x,a8)')"|", " Fermi energy used : ", efermi,"eV","       |"
        
        if(fixed) then 
-          write(stdout,'(1x,a71)') "| From Fixed broadening                                               |" 
+          write(stdout,'(1x,a78)') "| From Fixed broadening                                                      |" 
           do is=1,nspins
              write(stdout,'(1x,a1,a20,i1,a25,f8.4,a9,6x,a8)') "|","Spin Component : ",is,&
-                  &"  DOS at Fermi Energy : ", dos_at_efermi(1,is)," eln/cell","| <- DEF"
-          enddo                                                  
-          write(stdout,'(1x,a71)')    '+---------------------------------------------------------------------+'
+                  &"  DOS at Fermi Energy : ", dos_at_efermi(1,is)," eln/cell","  <- DEF"
+          enddo     
+          write(stdout,'(1x,a78)')    '+----------------------------------------------------------------------------+'
        endif
            
        if(adaptive) then 
-          write(stdout,'(1x,a71)') "| From Adaptive broadening                                            |" 
+          write(stdout,'(1x,a78)') "| From Adaptive broadening                                                   |" 
           do is=1,nspins
              write(stdout,'(1x,a1,a20,i1,a25,f8.4,a9,6x,a8)') "|","Spin Component : ",is,&
-                  &"  DOS at Fermi Energy : ", dos_at_efermi(2,is)," eln/cell","| <- DEA"
+                  &"  DOS at Fermi Energy : ", dos_at_efermi(2,is)," eln/cell","  <- DEA"
           enddo                                                  
-          write(stdout,'(1x,a71)')    '+---------------------------------------------------------------------+'
+          write(stdout,'(1x,a78)')    '+----------------------------------------------------------------------------+'
        endif
 
        if(linear) then 
-          write(stdout,'(1x,a71)') "| From Linear broadening                                              |" 
+          write(stdout,'(1x,a78)') "| From Linear broadening                                                     |" 
           do is=1,nspins
              write(stdout,'(1x,a1,a20,i1,a25,f8.4,a9,6x,a8)') "|","Spin Component : ",is,&
-                  &"  DOS at Fermi Energy : ", dos_at_efermi(3,is)," eln/cell","| <- DEL"
+                  &"  DOS at Fermi Energy : ", dos_at_efermi(3,is)," eln/cell","  <- DEL"
           enddo                                                  
-          write(stdout,'(1x,a71)')    '+---------------------------------------------------------------------+'
+          write(stdout,'(1x,a78)')    '+----------------------------------------------------------------------------+'
        endif
   
        time1=io_time()
-       write(stdout,'(1x,a40,f11.3,a)') 'Time to calculate DOS at Fermi energy ',time1-time0,' (sec)'
+       if(iprint>1) write(stdout,'(1x,a40,f11.3,a)') 'Time to calculate DOS at Fermi energy ',time1-time0,' (sec)'
+       write(stdout,'(1x,a78)') '|                                                                            |'
+
        !-------------------------------------------------------------------------------
     end if
     call comms_bcast(compute_band_gap,1) 
@@ -522,8 +532,7 @@ contains
           write(stdout,*)
           write(stdout,'(1x,a46)') "Finding an estimate of the maximum bandgap..."
        endif
-       write (stdout,*)
-       write (stdout,'(1x,a71)')  '+----------------------------- Bandgap Analysis ----------------------+'
+       write (stdout,'(1x,a78)')  '+----------------------------- Bandgap Analysis -----------------------------+'
     endif
     
     allocate(bandgap(1:2, 1:nspins, 1:num_kpoints_on_node(my_node_id)), stat=ierr)
@@ -677,29 +686,29 @@ contains
       
           
        ! Report the thermal gap multiplicity
-       write(stdout, '(1x,1a,a50, 19x, a1)') "|", "Number of kpoints at       VBM       CBM",  "|"
+       write(stdout, '(1x,1a,a50, 19x, a8)') "|", "Number of kpoints at       VBM       CBM",  "       |"
        do is=1,nspins
-          write(stdout,'(1x,a1,a25,1x,i3,1x,a3,1x,i5,5x,i5,20x,a1)') "|", " Spin :",is, " : ", &
-               &thermal_vbm_multiplicity(is), thermal_cbm_multiplicity(is),  "|"
+          write(stdout,'(1x,a1,a25,1x,i3,1x,a3,1x,i5,5x,i5,20x,a8)') "|", " Spin :",is, " : ", &
+               &thermal_vbm_multiplicity(is), thermal_cbm_multiplicity(is),  "       |"
        enddo
        
        ! Write out the thermal gap info
-       write(stdout,'(1x,a1,a32,f15.10,1x,a3,18x,a8)') "|", "Thermal Bandgap :", thermal_bandgap,"eV", "| <- TBg"
+       write(stdout,'(1x,a1,a32,f15.10,1x,a3,18x,a8)') "|", "Thermal Bandgap :", thermal_bandgap,"eV", "  <- TBg"
        
        if(.not.thermal_multiplicity) then
           if(thermal_vbm_k==thermal_cbm_k) then
-             write(stdout,'(1x,a1,a32,1x,f10.5,1x,f10.5,1x,f10.5,4x,a1)') "|","At kpoint :",&
-                  all_kpoints(1:3,thermal_vbm_k)  ,"|"
-             write (stdout,'(1x,a71)') '|             ==> Direct Gap                                          |'  
+             write(stdout,'(1x,a1,a32,1x,f10.5,1x,f10.5,1x,f10.5,4x,a8)') "|","At kpoint :",&
+                  all_kpoints(1:3,thermal_vbm_k)  ,"       |"
+             write (stdout,'(1x,a78)') '|             ==> Direct Gap                                                  |'  
           else
-             write(stdout,'(1x,a1,a32,1x,f10.5,1x,f10.5,1x,f10.5,4x,a1)') "|","Between VBM kpoint :",&
-                  all_kpoints(1:3,thermal_vbm_k), "|"
-             write(stdout,'(1x,a1,a32,1x,f10.5,1x,f10.5,1x,f10.5,4x,a1)') "|","and CBM kpoint:", &
-                  all_kpoints(1:3,thermal_cbm_k),  "|"
-             write (stdout,'(1x,a71)') '|             ==> Indirect Gap                                        |'
+             write(stdout,'(1x,a1,a32,1x,f10.5,1x,f10.5,1x,f10.5,4x,a8)') "|","Between VBM kpoint :",&
+                  all_kpoints(1:3,thermal_vbm_k), "       |"
+             write(stdout,'(1x,a1,a32,1x,f10.5,1x,f10.5,1x,f10.5,4x,a8)') "|","and CBM kpoint:", &
+                  all_kpoints(1:3,thermal_cbm_k),  "       |"
+             write (stdout,'(1x,a78)') '|             ==> Indirect Gap                                               |'
           endif
        else ! thermal_mutiplicty=.true.
-             write (stdout,'(1x,a71)') '|          ==> Multiple Band Minima and Maxima -- Gap unknown         |' 
+             write (stdout,'(1x,a78)') '|          ==> Multiple Band Minima and Maxima -- Gap unknown                |' 
        endif
        
        ! We allocated this in elec_read_band_energy but kept it if compute_band_gap=T
@@ -707,31 +716,31 @@ contains
        if (ierr/=0)  call io_error('Error: Problem deallocating all_kpoints in read_band_energy')
 
        ! Write out the Optical gap indo
-       write(stdout,'(1x,a71)')    '+---------------------------------------------------------------------+'  
-       write(stdout,'(1x,a1,a45,a25)') "|", "Optical Bandgap  ", "|"
+       write(stdout,'(1x,a78)')    '+----------------------------------------------------------------------------+'  
+       write(stdout,'(1x,a1,a45,a32)') "|", "Optical Bandgap  ", "|"
        do is=1,nspins
           write(stdout,'(1x,a1,a25,1x,i3,1x,a3,1x,f15.10,1x,a3,16x,a8)') "|", " Spin :",is, " : ", optical_bandgap(is),&
-               &"eV", "| <- OBg"
+               &"eV", "  <- OBg"
        enddo
-       write(stdout, '(1x,1a,a50, 19x, a1)') "|", "Number of kpoints with this gap         ",  "|"
+       write(stdout, '(1x,1a,a50, 19x, a8)') "|", "Number of kpoints with this gap         ",  "       |"
        ! The multiplicity info here is just for reference.
        do is=1,nspins
-          write(stdout,'(1x,a1,a25,1x,i3,1x,a3,6x,i5,25x,a1)') "|", " Spin :",is, " : ", optical_multiplicity(is), "|"
+          write(stdout,'(1x,a1,a25,1x,i3,1x,a3,6x,i5,25x,a8)') "|", " Spin :",is, " : ", optical_multiplicity(is), "       |"
        enddo
 
        ! Write out the average bandgap
-       write(stdout,'(1x,a71)')    '+---------------------------------------------------------------------+' 
-       write(stdout,'(1x,a1,a45,a25)') "|", "Average Bandgap  ", "|"
+       write(stdout,'(1x,a78)')    '+----------------------------------------------------------------------------+' 
+       write(stdout,'(1x,a1,a45,a32)') "|", "Average Bandgap  ", "|"
        do is=1,nspins
           write(stdout,'(1x,a1,a25,1x,i3,1x,a3,1x,f15.10,1x,a3,16x,a8)') "|", " Spin :",is, " : ", & 
-               &average_bandgap(is),"eV", "| <- ABg"
+               &average_bandgap(is),"eV", "  <- ABg"
        enddo
        ! If we have more then one spin, then we need some way to combine the up and down spin bandgaps
        ! At Richard Needs' suggestion we use the weighted sum.
        if(nspins>1) then
           weighted_average= (average_bandgap(1)*num_electrons(1) +  average_bandgap(2)*num_electrons(2) ) &
                & / (num_electrons(1)+num_electrons(2))
-          write(stdout,'(1x,a1,a33,1x,f15.10,1x,a3,16x,a8)') "|", " Weighted Average : ", weighted_average,"eV", "| <- wAB"
+          write(stdout,'(1x,a1,a33,1x,f15.10,1x,a3,16x,a8)') "|", " Weighted Average : ", weighted_average,"eV", "  <- wAB"
        endif
     endif
 
@@ -751,11 +760,13 @@ contains
        if (ierr/=0) call io_error('Error deallocating optical_multiplicity in dos_utils: compute_bandgap')
     endif
     
-    if(on_root) write(stdout,'(1x,a71)')    '+---------------------------------------------------------------------+'  
-        
+    if(on_root) then 
+       write(stdout,'(1x,a78)') '+----------------------------------------------------------------------------+'  
+       write(stdout,'(1x,a78)') '|                                                                            |'
+    end if
 
     time1=io_time()
-    if(on_root) write(stdout,'(1x,a40,f11.3,a)') 'Time to calculate Bandgap ',time1-time0,' (sec)'
+    if(on_root.and.iprint>1) write(stdout,'(1x,a40,f11.3,a)') 'Time to calculate Bandgap ',time1-time0,' (sec)'
   end subroutine dos_utils_compute_bandgap
   !===============================================================================
 
@@ -882,7 +893,7 @@ contains
     !-------------------------------------------------------------------------------
     ! Written by : A J Morris December 2010 
     !=============================================================================== 
-    use od_parameters, only : adaptive, linear, fixed
+    use od_parameters, only : adaptive, linear, fixed, iprint
     use od_electronic, only : electrons_per_state,efermi,nbands,nspins,band_energy
     use od_cell,       only : kpoint_weight,num_kpoints_on_node
     use od_comms,      only : comms_reduce,my_node_id,on_root
@@ -895,20 +906,19 @@ contains
 
     time0=io_time()
     if(on_root) then
-       write(stdout,*)
-       write(stdout,'(1x,a71)')    '+--------------------------- Band Energy Analysis --------------------+'
+       write(stdout,'(1x,a78)') '+--------------------------- Band Energy Analysis ---------------------------+'
 
        if(fixed)then
           write(stdout,'(1x,a1,a46,f12.4,a3,8x,a8)')"|",&
-               " Band energy (Fixed broadening)  : ",calc_band_energies(dos_fixed),"eV","| <- BEF"
+               " Band energy (Fixed broadening)  : ",calc_band_energies(dos_fixed),"eV","  <- BEF"
        endif
        if(adaptive)then
           write(stdout,'(1x,a1,a46,f12.4,a3,8x,a8)')"|",&
-               " Band energy (Adaptive broadening) : ",calc_band_energies(dos_adaptive),"eV","| <- BEA"
+               " Band energy (Adaptive broadening) : ",calc_band_energies(dos_adaptive),"eV","  <- BEA"
        endif
        if(linear)then 
           write(stdout,'(1x,a1,a46,f12.4,a3,8x,a8)')"|", &
-               " Band energy (Linear broadening) : ",calc_band_energies(dos_linear),"eV","| <- BEL"
+               " Band energy (Linear broadening) : ",calc_band_energies(dos_linear),"eV","  <- BEL"
        endif
     endif
 
@@ -922,10 +932,11 @@ contains
     end do
     call comms_reduce(eband,1,'SUM')
     if(on_root) then
-       write(stdout,'(1x,a1,a46,f12.4,a3,8x,a8)')"|", " Band energy (From CASTEP) : ", eband,"eV","| <- BEC"
-       write(stdout,'(1x,a71)')    '+---------------------------------------------------------------------+'
+       write(stdout,'(1x,a1,a46,f12.4,a3,8x,a8)')"|", " Band energy (From CASTEP) : ", eband,"eV","  <- BEC"
+       write(stdout,'(1x,a78)') '+----------------------------------------------------------------------------+'
+       write(stdout,'(1x,a78)') '|                                                                            |'
        time1=io_time()
-       write(stdout,'(1x,a40,f11.3,a)') 'Time to calculate Band energies ',time1-time0,' (sec)'
+       if(iprint>1)write(stdout,'(1x,a40,f11.3,a)') 'Time to calculate Band energies ',time1-time0,' (sec)'
     end if
 
   end subroutine dos_utils_compute_band_energies
@@ -1622,7 +1633,7 @@ contains
 
 
     time1=io_time()
-    if(on_root)  write(stdout,'(1x,a40,f11.3,a)') 'Time to calculate dos at e ',time1-time0,' (sec)'
+    if(on_root.and.iprint>1)  write(stdout,'(1x,a40,f11.3,a)') 'Time to calculate dos at e ',time1-time0,' (sec)'
     !-------------------------------------------------------------------------------
 
   end subroutine dos_utils_calculate_at_e

@@ -72,7 +72,6 @@ module od_parameters
   logical,           public, save :: dos_per_volume
   real(kind=dp),     public, save :: efermi_user     ! If the user has set efermi in the odi file
   character(len=20), public, save :: efermi_choice   ! Where do we want to get the fermi energy from
-!  logical,           public, save :: compute_efermi
   logical,           public, save :: finite_bin_correction
   logical,           public, save :: hybrid_linear
   real(kind=dp),     public, save :: hybrid_linear_grad_tol
@@ -104,7 +103,8 @@ module od_parameters
   ! Core parameters 
   character(len=20), public, save :: core_geom
   real(kind=dp),     public, save :: core_qdir(3) 
-  logical,           public, save :: core_LAI_broadening  
+  logical,           public, save :: core_LAI_broadening
+  character(len=20), public, save :: core_type
   real(kind=dp),     public, save :: LAI_gaussian_width
   logical,           public, save :: LAI_gaussian 
   real(kind=dp),     public, save :: LAI_lorentzian_width
@@ -113,9 +113,6 @@ module od_parameters
   logical,           public, save :: LAI_lorentzian 
 
   real(kind=dp),     public, save :: lenconfac
-
-!  real(kind=dp),     public, save :: fermi_energy
-
 
 
   private
@@ -144,7 +141,7 @@ contains
     !===================================================================  
 
     use od_constants, only : bohr2ang
-    use od_io,        only : io_error
+    use od_io,        only : io_error,seedname,stderr
     use od_cell,      only : cell_get_atoms
 
     implicit none
@@ -167,6 +164,8 @@ contains
 
     energy_unit     =  'ev'          !
     call param_get_keyword('energy_unit',found,c_value=energy_unit)
+    if(index(energy_unit,'ev')==0 .and. index(energy_unit,'ry')==0 .and. index(energy_unit,'ha')==0) &
+         call io_error('Error: value of energy_unit not recognised in param_read')
 
     dos=.false.; pdos=.false.; jdos=.false.; optics=.false.; core=.false.; compare_dos=.false.;compare_jdos=.false.
     call param_get_vector_length('task',found,i_temp)
@@ -252,7 +251,6 @@ contains
     efermi_user        = -990.0_dp
     efermi_choice="optados"
     call param_get_efermi('efermi',found,efermi_choice,efermi_user)
-!    call param_get_keyword('fermi_energy',found,r_value=fermi_energy)
 
     ! Force all Gaussians to be greater than the width of a bin. When using numerical_indos
     ! this is critical for counting all of the Gaussian DOS peaks. 
@@ -277,15 +275,8 @@ contains
     compute_band_energy    = .true.
     call param_get_keyword('compute_band_energy',found,l_value=compute_band_energy)
 
-    if(jdos.or.optics) then
-       set_efermi_zero = .false.
-    else
-       set_efermi_zero = .true. 
-    endif
+    set_efermi_zero = .false.
     call param_get_keyword('set_efermi_zero',found,l_value=set_efermi_zero)
-    if((jdos.or.optics).and.set_efermi_zero)  call io_error('Not allowed set_efermi_zero=T &
-         & when performing jdos or optics calculations')
-
 
     dos_per_volume = .false.
     call param_get_keyword('dos_per_volume',found,l_value=dos_per_volume)
@@ -323,10 +314,12 @@ contains
 
     output_format           = 'xmgrace'
     call param_get_keyword('output_format',found,c_value=output_format)
+    if(index(output_format,'xmgrace')==0 .and. index(output_format,'gnuplot')==0) &
+         call io_error('Error: value of output_format not recognised in param_read')
+    
 
     optics_geom = 'polycrys'
     call param_get_keyword('optics_geom',found,c_value=optics_geom)
-
     if(index(optics_geom,'polar')==0 .and. index(optics_geom,'polycrys')==0 .and. index(optics_geom,'tensor')==0 ) &
          call io_error('Error: value of optics_geom not recognised in param_read')
 
@@ -348,6 +341,13 @@ contains
 
     core_geom = 'polycrys'
     call param_get_keyword('core_geom',found,c_value=core_geom)
+    if (core_geom.ne.'polycrys' .and. core_geom.ne.'polar') &
+         call io_error('Error: value of core_geom not recognised in param_read')
+
+    core_type = 'absorption'
+    call param_get_keyword('core_type',found,c_value=core_type)
+    if (core_type.ne.'absorption' .and. core_type.ne.'emission'.and. core_type.ne.'all') &
+         call io_error('Error: value of core_type not recognised in param_read')
 
     core_qdir = 0.0_dp
     call  param_get_keyword_vector('core_qdir',found,3,r_value=core_qdir)
@@ -380,7 +380,19 @@ contains
     call param_get_keyword('lai_lorentzian_offset',found,r_value=LAI_lorentzian_offset)
     if (LAI_lorentzian_offset.lt.0.0_dp) call io_error('Error: LAI_lorentzian_offset must be positive')
 
+    ! check to see that there are no unrecognised keywords
 
+    if ( any(len_trim(in_data(:))>0 )) then
+       write(stderr,'(1x,a)') 'The following section of file '//trim(seedname)//'.odi contained unrecognised keywords'
+       write(stderr,*) 
+       do loop=1,num_lines
+          if (len_trim(in_data(loop))>0) then
+             write(stderr,'(1x,a)') trim(in_data(loop))
+          end if
+       end do
+       write(stderr,*) 
+       call io_error('Unrecognised keyword(s) in input file')
+    end if
 
     call param_uppercase()
 
@@ -467,7 +479,7 @@ contains
     write(stdout,'(a78)') " |         Andrew J. Morris, Rebecca Nicholls, Chris J. Pickard              | "
     write(stdout,'(a78)') " |                       and Jonathan R. Yates                               | "
     write(stdout,'(a78)') " |                                                                           | "
-    write(stdout,'(a78)') " |                       Copyright (c) 2010-2011                             | "
+    write(stdout,'(a78)') " |                       Copyright (c) 2010-2012                             | "
     write(stdout,'(a78)') " |                                                                           | "
     write(stdout,'(a78)') " |  Please cite:                                                             | "
     write(stdout,'(a78)') " |  Andrew J. Morris, Rebecca Nicholls, Chris J. Pickard and Jonathan Yates  | "
@@ -1434,8 +1446,12 @@ contains
     call comms_bcast(quad,1)
     call comms_bcast(dos_nbins,1)
     call comms_bcast(compute_band_energy,1)
+    call comms_bcast(compute_band_gap,1)
     call comms_bcast(adaptive_smearing,1)
     call comms_bcast(fixed_smearing,1)
+    call comms_bcast(hybrid_linear,1)
+    call comms_bcast(hybrid_linear_grad_tol,1)
+    call comms_bcast(dos_zero_tol,1)
     call comms_bcast(dos_per_volume,1)
     call comms_bcast(efermi_user,1)
     call comms_bcast(efermi_choice,len(efermi_choice))
@@ -1449,6 +1465,7 @@ contains
     call comms_bcast(optics_intraband,1)
     call comms_bcast(optics_drude_broadening,1)
     call comms_bcast(core_geom,len(core_geom))
+    call comms_bcast(core_type,len(core_type))
     call comms_bcast(core_qdir(1),3)
     call comms_bcast(core_LAI_broadening,1)
     call comms_bcast(LAI_gaussian_width,1)
