@@ -162,7 +162,7 @@ strings: {\tt T}, {\tt true}, {\tt .true.}.
 \clearpage
 
 
-\section{Parameters}
+\section{General Parameters}
 \subsection[task]{\tt character(len=20) :: task}
 
 Tells the code what to compute. 
@@ -282,10 +282,16 @@ Tolerance for switching from linear to adaptive broadening when using hybrid\_li
 The default value is 0.01eV/\AA.
 
 
-\subsection[set\_efermi\_zero]{\tt logical :: set\_efermi\_zero}
-Shift energy scales so that the Fermi energy is at 0.
+\subsection[devel\_flag]{\tt character(len=50) :: devel\_flag}
 
-Default value \verb#FALSE#.
+Not a regular keyword. Its purpose is to allow a developer to pass a
+string into the code to be used inside a new routine as it is developed.
+
+No default.
+
+
+
+\section{DOS Parameters}
 
 \subsection[compute\_band\_energy]{\tt logical :: compute\_band\_energy}
 Compute the band energy by summing bands both using \castep{'s eigenvalue and \optados{'s} density of states.
@@ -321,6 +327,15 @@ Resolution at which to compute the DOS and related properties.
 Default value is 0.1eV 
 
 
+\subsection[set\_efermi\_zero]{\tt logical :: set\_efermi\_zero}
+Shift energy scales so that the Fermi energy is at 0.
+
+Default value \verb#FALSE#.
+
+
+
+\section{JDOS Parameters}
+
 \subsection[jdos\_max\_energy]{\tt real(kind=dp) :: jdos\_max\_energy}
 Upper energy range for JDOS and related properties.
 
@@ -330,6 +345,8 @@ Fermi level) and the highest eigenvalue in the bands file.
 \subsection[jdos\_spacing]{\tt real(kind=dp) :: jdos\_spacing} 
 Resolution at which to compute the DOS and related properties.
 Default value is 0.01eV. 
+
+\section{PDOS Parameters}
 
 \subsection[pdos]{\tt character :: pdos}
 Defines which components to include in the pdos analysis:
@@ -347,6 +364,7 @@ Defines which components to include in the pdos analysis:
 
 \end{itemize}
 
+\section{Optics Parameters}
 
 \subsection[optics\_geom]{\tt character(len=20) :: optics\_geom}
 
@@ -371,6 +389,8 @@ The default is FALSE.
 \subsection[optics\_drude\_broadening]{\tt real(kind=dp) :: optics\_drude\_broadening}
 Value of broadening included in the Drude term expressed in $s^{-1}$.  
 The default value is 1E-14.  
+
+\section{Core-hole Parameters}
 
 \subsection[core\_geom]{\tt character(len=20) :: core\_geom}
 
@@ -425,14 +445,6 @@ The default value, if \verb#core_LAI_broadening :true#, is 0.1.
 Energy (in eV) above the edge onset that the energy dependent broadening starts.  
 The default value, if \verb#core_LAI_broadening :true#, is 0.
 
-
-
-\subsection[devel\_flag]{\tt character(len=50) :: devel\_flag}
-
-Not a regular keyword. Its purpose is to allow a developer to pass a
-string into the code to be used inside a new routine as it is developed.
-
-No default.
 
 
 
