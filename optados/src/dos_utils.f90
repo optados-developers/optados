@@ -422,7 +422,7 @@ end if
     use od_io,         only : stdout, io_time
     use od_comms,      only : on_root, comms_bcast
     use od_electronic, only : efermi, nspins
-    use od_parameters, only : fixed, linear, adaptive, iprint,compute_band_gap, dos_zero_tol
+    use od_parameters, only : fixed, linear, adaptive, iprint,compute_band_gap
     implicit none
 
     real(dp) :: time0, time1

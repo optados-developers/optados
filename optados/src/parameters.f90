@@ -77,8 +77,7 @@ module od_parameters
   real(kind=dp),     public, save :: hybrid_linear_grad_tol
   logical,           public, save :: numerical_intdos
   logical,           public, save :: compute_band_gap
-  real(kind=dp),     public, save :: dos_zero_tol ! The DOS is assumed to be zero if less than this
-
+ 
   logical,           public, save :: set_efermi_zero  ! Set fermi level to zero in dos plot default true
   real(kind=dp),     public, save :: dos_min_energy
   real(kind=dp),     public, save :: dos_max_energy
@@ -305,9 +304,6 @@ contains
 
     compute_band_gap        = .false.
     call param_get_keyword('compute_band_gap',found,l_value=compute_band_gap)
-
-    dos_zero_tol          = 0.01_dp !! change
-    call param_get_keyword('dos_zero_tol',found,r_value=dos_zero_tol)
 
     devel_flag=' '
     call param_get_keyword('devel_flag',found,c_value=devel_flag)
@@ -1451,7 +1447,6 @@ contains
     call comms_bcast(fixed_smearing,1)
     call comms_bcast(hybrid_linear,1)
     call comms_bcast(hybrid_linear_grad_tol,1)
-    call comms_bcast(dos_zero_tol,1)
     call comms_bcast(dos_per_volume,1)
     call comms_bcast(efermi_user,1)
     call comms_bcast(efermi_choice,len(efermi_choice))
