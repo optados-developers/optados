@@ -359,7 +359,7 @@ contains
              if(band_energy(ib,is,ik).ge.efermi) cycle occ_states
              unocc_states : do jb=1,nbands
                 if(band_energy(jb,is,ik).lt.efermi) cycle unocc_states
-                if(linear.or.adaptive) grad(:) = real(band_gradient(jb,jb,:,ik,is)-band_gradient(ib,ib,:,ik,is),dp)
+                if(linear.or.adaptive) grad(:) = band_gradient(jb,:,ik,is)-band_gradient(ib,:,ik,is)
                 ! If the band is very flat linear broadening can have problems describing it. In this case, fall back to 
                 ! adaptive smearing (and take advantage of FBCS if required).
                 force_adaptive=.false.

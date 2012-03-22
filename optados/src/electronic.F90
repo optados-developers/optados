@@ -36,7 +36,8 @@ module od_electronic
   !-------------------------------------------------------------------------!
   ! G L O B A L   V A R I A B L E S 
   real(kind=dp), allocatable, public, save  :: band_energy(:,:,:)
-  complex(kind=dp), allocatable, public, save  :: band_gradient(:,:,:,:,:)  !I've changed this from real to complex
+  real(kind=dp), allocatable, public, save  :: band_gradient(:,:,:,:)  
+  complex(kind=dp), allocatable, public, save  :: optical_mat(:,:,:,:,:)  
   complex(kind=dp), allocatable, public, save  :: elnes_mat(:,:,:,:,:)
 
   real(kind=dp), public, save :: efermi ! The fermi energy we finally decide on
@@ -91,11 +92,13 @@ module od_electronic
   public :: elec_report_parameters
   public :: elec_read_band_energy
   public :: elec_read_band_gradient
+  public :: elec_read_optical_mat
   public :: elec_read_elnes_mat
   public :: elec_pdos_read
   public :: elec_dealloc_elnes
   public :: elec_dealloc_pdos
   public :: elec_dealloc_band_gradient
+  public :: elec_dealloc_optical
 
   !-------------------------------------------------------------------------! 
 
@@ -168,6 +171,117 @@ contains
     ! Written by  A J Morris                                         Dec 2010
     !=========================================================================
     use od_comms, only : on_root, my_node_id, num_nodes, root_id,&
+         & comms_recv, comms_send, comms_bcast
+    use od_io,    only : io_time, filename_len, seedname, stdout, io_file_unit,&
+         & io_error  
+    use od_cell,  only : num_kpoints_on_node,nkpoints
+    use od_constants,only : bohr2ang, H2eV
+    use od_parameters, only : legacy_file_format,iprint
+    use od_algorithms, only : algor_dist_array
+    implicit none
+
+    integer :: gradient_unit,i,ib,jb,is,ik,inodes,ierr,loop
+    character(filename_len) :: gradient_filename
+    logical :: exists
+    real(kind=dp) :: time0, time1
+
+    ! Check that we haven't already done this.
+
+    if(allocated(band_gradient)) return 
+
+    ! first try to read a velocity file
+    gradient_filename=trim(seedname)//".cst_vel"
+    if(on_root) inquire(file=gradient_filename,exist=exists)
+    call comms_bcast(exists,1)
+
+    if(exists) then  ! good. We are reading from a velocity file
+
+    time0=io_time()
+    if(on_root) then
+       gradient_unit=io_file_unit()
+       gradient_filename=trim(seedname)//".cst_vel"
+       open(unit=gradient_unit,file=gradient_filename,status="old",form='unformatted',err=101)
+    endif
+
+    ! Figure out how many kpoint should be on each node
+    call algor_dist_array(nkpoints,num_kpoints_on_node)
+    allocate(band_gradient(1:nbands,1:3,1:num_kpoints_on_node(my_node_id),1:nspins),stat=ierr)
+    if (ierr/=0) call io_error('Error: Problem allocating band_gradient in elec_read_band_gradient')
+
+    if(on_root) then
+       do inodes=1,num_nodes-1
+          do ik=1,num_kpoints_on_node(inodes)
+             do is=1,nspins
+                read(gradient_unit) ((band_gradient(ib,i,ik,is),ib=1,nbands),i=1,3)
+             end do
+          end do
+          call comms_send(band_gradient(1,1,1,1),nbands*3*nspins*num_kpoints_on_node(inodes),inodes)
+       end do
+          do ik=1,num_kpoints_on_node(0)
+             do is=1,nspins
+                read(gradient_unit) ((band_gradient(ib,i,ik,is),ib=1,nbands),i=1,3)
+             end do
+          end do
+       end if
+
+       if(.not. on_root) then
+          call comms_recv(band_gradient(1,1,1,1),nbands*3*nspins*num_kpoints_on_node(my_node_id),root_id)
+       end if
+
+       if(on_root) close (unit=gradient_unit)
+
+
+       ! Convert all band gradients to eV Ang
+       band_gradient=band_gradient*bohr2ang*H2eV
+       
+       time1=io_time()
+       if(on_root.and.iprint>1) write(stdout,'(1x,a40,f11.3,a)') 'Time to read band gradients ',time1-time0,' (sec)'
+
+    else ! lets try to get the data from the cst_ome file
+       allocate(band_gradient(1:nbands,1:3,1:num_kpoints_on_node(my_node_id),1:nspins),stat=ierr)
+       if (ierr/=0) call io_error('Error: Problem allocating band_gradient (b) in elec_read_band_gradient')
+
+       if(allocated(optical_mat)) then
+          do loop=1,nbands
+             band_gradient(loop,:,:,:)=real(optical_mat(loop,loop,:,:,:),dp)
+          end do
+       else
+          call elec_read_optical_mat
+          do loop=1,nbands
+             band_gradient(loop,:,:,:)=real(optical_mat(loop,loop,:,:,:),dp)
+          end do
+          call elec_dealloc_optical  ! given that it is a large matrix we'll let it go
+                                     ! potentially that means reading it twice...
+       endif
+    end if
+
+    return
+
+101 call io_error('Error: Problem opening cst_vel file in read_band_gradient')
+
+  end subroutine elec_read_band_gradient
+
+  !=========================================================================
+  subroutine elec_read_optical_mat
+    !=========================================================================
+    ! Read the .cst_ome file in paralell if appropriate. These are the 
+    ! gradients of the bands at each kpoint.
+    !-------------------------------------------------------------------------
+    ! Arguments: None
+    !-------------------------------------------------------------------------
+    ! Parent module variables: band_gradient,nspins,nbands                                       
+    !-------------------------------------------------------------------------
+    ! Modules used:  See below                                                 
+    !-------------------------------------------------------------------------
+    ! Key Internal Variables: None                                                      
+    !-------------------------------------------------------------------------
+    ! Necessary conditions: None     
+    !-------------------------------------------------------------------------
+    ! Known Worries: None                                              
+    !-------------------------------------------------------------------------
+    ! Written by  A J Morris                                         Dec 2010
+    !=========================================================================
+    use od_comms, only : on_root, my_node_id, num_nodes, root_id,&
          & comms_recv, comms_send
     use od_io,    only : io_time, filename_len, seedname, stdout, io_file_unit,&
          & io_error  
@@ -184,7 +298,7 @@ contains
 
     ! Check that we haven't already done this.
 
-    if(allocated(band_gradient)) return 
+    if(allocated(optical_mat)) return 
 
     time0=io_time()
     if(on_root) then
@@ -195,8 +309,8 @@ contains
 
     ! Figure out how many kpoint should be on each node
     call algor_dist_array(nkpoints,num_kpoints_on_node)
-    allocate(band_gradient(1:nbands,1:nbands,1:3,1:num_kpoints_on_node(my_node_id),1:nspins),stat=ierr)
-    if (ierr/=0) call io_error('Error: Problem allocating band_gradient in elec_read_band_gradient')
+    allocate(optical_mat(1:nbands,1:nbands,1:3,1:num_kpoints_on_node(my_node_id),1:nspins),stat=ierr)
+    if (ierr/=0) call io_error('Error: Problem allocating optical_mat in elec_read_band_gradient')
 
     if(legacy_file_format) then
 
@@ -208,13 +322,13 @@ contains
                       do jb=1,nbands
                          do ib=1,nbands
                             ! Read in units of Ha Bohr^2 / Ang
-                            read (gradient_unit) band_gradient(ib,jb,i,ik,is)
+                            read (gradient_unit) optical_mat(ib,jb,i,ik,is)
                          end do
                       end do
                    end do
                 end do
              end do
-             call comms_send(band_gradient(1,1,1,1,1),nbands*nbands*3*nspins*num_kpoints_on_node(inodes),inodes)
+             call comms_send(optical_mat(1,1,1,1,1),nbands*nbands*3*nspins*num_kpoints_on_node(inodes),inodes)
           end do
 
           do ik=1,num_kpoints_on_node(0)
@@ -223,7 +337,7 @@ contains
                    do jb=1,nbands
                       do ib=1,nbands
                          ! Read in units of Ha Bohr^2 / Ang
-                         read (gradient_unit) band_gradient(ib,jb,i,ik,is)
+                         read (gradient_unit) optical_mat(ib,jb,i,ik,is)
                       end do
                    end do
                 end do
@@ -237,15 +351,15 @@ contains
           do inodes=1,num_nodes-1
              do ik=1,num_kpoints_on_node(inodes)
                 do is=1,nspins
-                   read(gradient_unit) (((band_gradient(ib,jb,i,ik,is),ib=1,nbands)&
+                   read(gradient_unit) (((optical_mat(ib,jb,i,ik,is),ib=1,nbands)&
                         ,jb=1,nbands),i=1,3)
                 end do
              end do
-             call comms_send(band_gradient(1,1,1,1,1),nbands*nbands*3*nspins*num_kpoints_on_node(inodes),inodes)
+             call comms_send(optical_mat(1,1,1,1,1),nbands*nbands*3*nspins*num_kpoints_on_node(inodes),inodes)
           end do
           do ik=1,num_kpoints_on_node(0)
              do is=1,nspins
-                read(gradient_unit) (((band_gradient(ib,jb,i,ik,is),ib=1,nbands)&
+                read(gradient_unit) (((optical_mat(ib,jb,i,ik,is),ib=1,nbands)&
                      ,jb=1,nbands),i=1,3)
              end do
           end do
@@ -253,7 +367,7 @@ contains
     end if
 
     if(.not. on_root) then
-       call comms_recv(band_gradient(1,1,1,1,1),nbands*nbands*3*nspins*num_kpoints_on_node(my_node_id),root_id)
+       call comms_recv(optical_mat(1,1,1,1,1),nbands*nbands*3*nspins*num_kpoints_on_node(my_node_id),root_id)
     end if
 
     if(on_root) close (unit=gradient_unit)
@@ -261,19 +375,19 @@ contains
 
     ! Convert all band gradients to eV Ang
     if(legacy_file_format) then
-       band_gradient=band_gradient*bohr2ang*bohr2ang*H2eV
+       optical_mat=optical_mat*bohr2ang*bohr2ang*H2eV
     else
-       band_gradient=band_gradient*bohr2ang*H2eV
+       optical_mat=optical_mat*bohr2ang*H2eV
     end if
 
     time1=io_time()
-    if(on_root.and.iprint>1) write(stdout,'(1x,a40,f11.3,a)') 'Time to read band gradients ',time1-time0,' (sec)'
+    if(on_root.and.iprint>1) write(stdout,'(1x,a40,f11.3,a)') 'Time to read optical matrix elements ',time1-time0,' (sec)'
 
     return
 
-101 call io_error('Error: Problem opening cst_ome file in read_band_gradient')
+101 call io_error('Error: Problem opening cst_ome file in read_band_optical_mat')
 
-  end subroutine elec_read_band_gradient
+  end subroutine elec_read_optical_mat
 
 
   !=========================================================================
@@ -864,6 +978,18 @@ contains
     end if
 
   end subroutine elec_dealloc_band_gradient
+
+  subroutine elec_dealloc_optical
+    use od_io, only : io_error
+    implicit none
+    integer :: ierr
+
+    if(allocated(optical_mat)) then
+       deallocate(optical_mat,stat=ierr)
+       if (ierr/=0) call io_error('Error in deallocating optical_mat in elec_dealloc_optical')
+    end if
+
+  end subroutine elec_dealloc_optical
 
 
 

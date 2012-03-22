@@ -1250,7 +1250,7 @@ end if
        endif
        do is=1,nspins
           do ib=1,nbands
-             if(linear.or.adaptive) grad(:) = real(band_gradient(ib,ib,:,ik,is),dp)
+             if(linear.or.adaptive) grad(:) = band_gradient(ib,:,ik,is)
              ! If the band is very flat linear broadening can have problems describing it. In this case, fall back to 
              ! adaptive smearing (and take advantage of FBCS if required).
              force_adaptive=.false.
@@ -1740,7 +1740,7 @@ end if
   
           do ib=1,nbands
 
-             if(linear.or.adaptive) grad(:) = real(band_gradient(ib,ib,:,ik,is),dp)
+             if(linear.or.adaptive) grad(:) = band_gradient(ib,:,ik,is)
              ! If the band is very flat linear broadening can have problems describing it. In this case, fall back to 
              ! adaptive smearing (and take advantage of FBCS if required).
              force_adaptive=.false.
