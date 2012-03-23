@@ -272,8 +272,6 @@ contains
 !!$    end if
 !!$    write(core_unit,*)'#'
 !!$
-!!$    weighted_dos=weighted_dos*bohr2ang**2  ! Converts units, note I don't have to worry about this in optics.f90 at electronic does it 
-!!$    if (core_LAI_broadening) weighted_dos_broadened=weighted_dos_broadened*bohr2ang**2
 !!$
 !!$    do orb=1,elnes_mwab%norbitals   ! writing out doesn't include spin at the moment. 
 !!$
@@ -295,6 +293,10 @@ contains
 !!$    end do
 !!$
 !!$    close(core_unit)
+
+    ! Converts units, note I don't have to worry about this in optics.f90 at electronic does it 
+    weighted_dos=weighted_dos*bohr2ang**2  
+    if (core_LAI_broadening) weighted_dos_broadened=weighted_dos_broadened*bohr2ang**2
 
     allocate(ion_species(elnes_mwab%norbitals))
     allocate(ion_num_in_species(elnes_mwab%norbitals))
