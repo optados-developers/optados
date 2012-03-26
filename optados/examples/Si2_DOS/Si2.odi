@@ -7,7 +7,7 @@ TASK              : dos
 
 # Recalculate the Fermi energy using the new DOS 
 # (discasrd the CASTEP efermi)
-EFERMI_CHOICE : optados
+EFERMI : optados
 
 # Sample the DOS at 0.1 eV intervals
 DOS_SPACING       : 0.1 
