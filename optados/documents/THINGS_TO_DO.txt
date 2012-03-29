@@ -6,34 +6,17 @@ Things To Do
 Beta 2
 =================
 
-6.0 Spectral Bug [JRY]
-
-Efermi
-------
-
-* compute_dos_at_efermi takes efermi (do it for each l/a/f) [AJM] <-- HAVE WE NOT DECIDED AGAINST THIS NOW?
-
-Optados
--------
-
- Work out logic for computing dos before optics [JRY]
-
-Core-loss
----------
-
- Pretty output [JRY]
-
-
 Pdos
 ----
 
  Project onto individual (real) spherical harmonics [JRY]
- Bug in PDOS parsing [JRY]
 
 File-formats
 ------------
 
  Think about the new file formats and see if they can be made better [JRY]
+
+
 
 ========
 Beta 3
