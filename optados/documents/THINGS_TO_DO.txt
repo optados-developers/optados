@@ -1,7 +1,6 @@
 Things To Do
 ============
 
-
 =================
 Beta 2
 =================
@@ -16,22 +15,39 @@ File-formats
 
  Think about the new file formats and see if they can be made better [JRY]
 
-
-
-========
+=================
 Beta 3
-=======
+=================
+
+Update the output formatting [AJM]
+iprint 0 ? [AJM]
+Redo the tutorials with new output
+ * DOS [AJM]
+ * PDOS [AJM]
+
+Change floor to ceiling for efermi : insulators [AJM]
 
 Check that the parameters are echo'ed in seed.odo file
 
 Examples step by step 
- -- See Wannier90 user guide.
- * PDOS [AJM]
  * JDOS/Optics [RJN]
  * Core [JRY]
 
+================
 Website
-  * Get the style right [AJM]
-  * Charlotte's Graph?
+================
+  * Charlotte's Graph [Only put in the first band] [AJM]
+  * OptaDOS link to CJP's ucl website [AJM]
+  * Add ability to go back to "home" page (BUG) [AJM]
 
+================
+Manual
+================
+Update manual with comments from meeting on 29/III/2012 [AJM]
+
+================
+Paper
+================
+Update paper with comments from meeting on 29/III/2012 [AJM]
+Redo N-defect calculations with same k-point mesh [AJM]
 
