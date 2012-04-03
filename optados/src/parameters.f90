@@ -92,12 +92,18 @@ module od_parameters
   real(kind=dp),     public, save :: jdos_max_energy 
   real(kind=dp),     public, save :: jdos_spacing
   real(kind=dp),     public, save :: scissor_op
+  integer, allocatable, public,save :: exclude_bands(:)
+  
+  integer,           public, save :: num_exclude_bands    ! this is set by param_write
 
   ! Optics parameters
   character(len=20), public, save :: optics_geom
   real(kind=dp),     public, save :: optics_qdir(3)
   logical,           public, save :: optics_intraband 
   real(kind=dp),     public, save :: optics_drude_broadening 
+
+
+
 
   ! Core parameters 
   character(len=20), public, save :: core_geom
@@ -302,6 +308,17 @@ contains
     jdos_spacing          = 0.01_dp !! change
     call param_get_keyword('jdos_spacing',found,r_value=jdos_spacing)
 
+    num_exclude_bands=0
+    call param_get_range_vector('exclude_bands',found,num_exclude_bands,lcount=.true.)
+    if(found) then
+       if(num_exclude_bands<1) call io_error('Error: problem reading exclude_bands')
+       allocate(exclude_bands(num_exclude_bands),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating exclude_bands in param_read')
+       call param_get_range_vector('exclude_bands',found,num_exclude_bands,.false.,exclude_bands)
+       if (any(exclude_bands<1)  ) &
+            call io_error('Error: exclude_bands must contain positive numbers')
+    end if
+
     compute_band_gap        = .false.
     call param_get_keyword('compute_band_gap',found,l_value=compute_band_gap)
 
@@ -337,7 +354,7 @@ contains
 
     core_geom = 'polycrys'
     call param_get_keyword('core_geom',found,c_value=core_geom)
-    if (core_geom.ne.'polycrys' .and. core_geom.ne.'polar') &
+    if ( (index(core_geom,'polycrys')==0) .and. (index(core_geom,'polar')==0)) &
          call io_error('Error: value of core_geom not recognised in param_read')
 
     core_type = 'absorption'
@@ -1420,9 +1437,11 @@ contains
     ! Send the parameters from the root node to all others
     !-----------------------------------------------------
 
-    use od_comms, only : comms_bcast
+    use od_comms, only : comms_bcast,on_root
+    use od_io   , only : io_error
 
     implicit none
+    integer :: ierr
 
     call comms_bcast(output_format,len(output_format))
     call comms_bcast(devel_flag   ,len(devel_flag))
@@ -1476,6 +1495,16 @@ contains
     call comms_bcast(legacy_file_format,1)
     call comms_bcast(pdos_string,len(pdos_string))
     call comms_bcast(set_efermi_zero,1)
+    !
+    call comms_bcast(num_exclude_bands,1)
+    if(num_exclude_bands>1) then
+       if(.not.on_root) then
+          allocate(exclude_bands(num_exclude_bands),stat=ierr)
+          if (ierr/=0) call io_error('Error allocating exclude_bands in param_read')
+       endif
+       call comms_bcast(exclude_bands(1),num_exclude_bands)
+    end if
+
 
   end subroutine param_dist
 
