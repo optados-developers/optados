@@ -364,7 +364,7 @@ end if
           do ik=1,num_kpoints_on_node(my_node_id)
              do is=1,nspins
                 ! Which is the band below the fermi energy at this spin and kpoint
-                top_occ_band=floor(num_electrons(is)/electrons_per_state)
+                top_occ_band=ceiling(num_electrons(is)/electrons_per_state)
 
                 if (band_energy(top_occ_band,is,ik) > vbm) &
                      &vbm=band_energy(top_occ_band,is,ik)
