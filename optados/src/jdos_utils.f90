@@ -292,7 +292,7 @@ contains
     use od_cell, only : num_kpoints_on_node, kpoint_grid_dim,kpoint_weight,&
          &recip_lattice
     use od_parameters, only : adaptive_smearing, fixed_smearing, iprint, &
-         &finite_bin_correction, scissor_op,hybrid_linear_grad_tol,hybrid_linear
+         &finite_bin_correction, scissor_op,hybrid_linear_grad_tol,hybrid_linear, exclude_bands, num_exclude_bands
     use od_io, only : io_error,stdout
     use od_electronic, only : band_gradient,nbands,band_energy,nspins,electrons_per_state, &
          & efermi
@@ -356,6 +356,9 @@ contains
        endif
        do is=1,nspins
           occ_states: do ib=1,nbands
+             if(num_exclude_bands>0) then 
+                if(any(exclude_bands==ib)) cycle
+             endif
              if(band_energy(ib,is,ik).ge.efermi) cycle occ_states
              unocc_states : do jb=1,nbands
                 if(band_energy(jb,is,ik).lt.efermi) cycle unocc_states
