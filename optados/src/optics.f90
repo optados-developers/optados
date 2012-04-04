@@ -84,7 +84,7 @@ contains
     use od_jdos_utils, only : jdos_utils_calculate
     use od_comms, only : on_root, my_node_id
     use od_parameters, only : optics_geom, adaptive, linear, fixed, optics_intraband, &
-         optics_drude_broadening 
+         optics_drude_broadening
     use od_dos_utils, only : dos_utils_calculate_at_e,  dos_utils_set_efermi
     use od_io, only : stdout 
 
@@ -546,11 +546,30 @@ contains
 
     complex(kind=dp) :: g 
     integer :: N_energy
+    integer :: N_energy2
     real(kind=dp) :: x
     real(kind=dp) :: dE
+    real(kind=dp) :: loss_fn_gauss
+    logical :: loss_fn_broadening
 
-    if(.not. optics_intraband) allocate(loss_fn(jdos_nbins,1)) 
-    if(optics_intraband) allocate(loss_fn(jdos_nbins,3)) 
+    loss_fn_broadening = .TRUE.
+    loss_fn_gauss = 1.0_dp 
+
+    if(.not. optics_intraband) then 
+       if(loss_fn_broadening) then 
+          allocate(loss_fn(jdos_nbins,2)) 
+       else 
+          allocate(loss_fn(jdos_nbins,1))
+       endif
+    endif
+    if(optics_intraband) then 
+       if(loss_fn_broadening)  then 
+          allocate(loss_fn(jdos_nbins,4)) 
+       else 
+          allocate(loss_fn(jdos_nbins,3)) 
+       endif
+    endif
+
     loss_fn=0.0_dp
 
     dE=E(2)-E(1)
@@ -571,6 +590,29 @@ contains
           endif
        endif
     end do
+
+    ! Broadening 
+
+    if(loss_fn_broadening) then
+       if(.not. optics_intraband) then
+          do N_energy=1,jdos_nbins       ! Loop over energy 
+             do N_energy2=1,jdos_nbins   ! Turn each energy value into a function 
+                g = (((4.0_dp*log(2.0_dp))/pi)**(0.5_dp))*(1/loss_fn_gauss)*exp(-4.0_dp*(log(2.0_dp))*&
+                     (((E(N_energy2)-E(N_energy))/loss_fn_gauss)**2.0_dp))  ! Gaussian 
+                loss_fn(N_energy2,2)=loss_fn(N_energy2,2) + (g*loss_fn(N_energy,1)*dE)
+             end do
+          end do                        ! End loop over energy 
+       endif
+       if(optics_intraband) then 
+          do N_energy=1,jdos_nbins       ! Loop over energy 
+             do N_energy2=1,jdos_nbins   ! Turn each energy value into a function 
+                g = (((4.0_dp*log(2.0_dp))/pi)**(0.5_dp))*(1/loss_fn_gauss)*exp(-4.0_dp*(log(2.0_dp))*&
+                     (((E(N_energy2)-E(N_energy))/loss_fn_gauss)**2.0_dp))  ! Gaussian 
+                loss_fn(N_energy2,4)=loss_fn(N_energy2,4) + (g*loss_fn(N_energy,3)*dE)
+             end do
+          end do                        ! End loop over energy 
+       endif
+    endif
 
     ! Sum rule 1
     x = 0.0_dp
@@ -887,10 +929,10 @@ contains
     write(loss_fn_unit,*)'#' 
     if(.not. optics_intraband) then 
        do N=1,jdos_nbins
-          write(loss_fn_unit,*)E(N),loss_fn(N,1)
+          write(loss_fn_unit,*)E(N),loss_fn(N,1),loss_fn(N,2)
        end do
     else
-       do N2=1,3
+       do N2=1,4
           do N=1,jdos_nbins 
              write(loss_fn_unit,*)E(N),loss_fn(N,N2)
           enddo
