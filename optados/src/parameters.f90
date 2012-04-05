@@ -101,8 +101,8 @@ module od_parameters
   real(kind=dp),     public, save :: optics_qdir(3)
   logical,           public, save :: optics_intraband 
   real(kind=dp),     public, save :: optics_drude_broadening 
-
-
+  real(kind=dp),     public, save :: optics_lossfn_gaussian
+  logical,           public, save :: optics_lossfn_broadening ! the is set by param_write
 
 
   ! Core parameters 
@@ -351,6 +351,12 @@ contains
 
     optics_drude_broadening          = 1.0e14_dp
     call param_get_keyword('optics_drude_broadening',found,r_value=optics_drude_broadening)
+    
+    optics_lossfn_broadening=.false.
+    optics_lossfn_gaussian=0.0_dp
+    call param_get_keyword('optics_lossfn_broadening',optics_lossfn_broadening,r_value=optics_lossfn_gaussian)
+    if (optics_lossfn_gaussian<0.0_dp) call io_error('Error: optics_lossfn_broadening must be positive')
+
 
     core_geom = 'polycrys'
     call param_get_keyword('core_geom',found,c_value=core_geom)

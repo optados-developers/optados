@@ -542,28 +542,22 @@ contains
     use od_constants, only : dp, cmplx_i, pi
     use od_jdos_utils, only : E, jdos_nbins
     use od_cell, only : cell_volume
-    use od_parameters, only : optics_intraband
+    use od_parameters, only : optics_intraband,optics_lossfn_broadening,optics_lossfn_gaussian
 
     complex(kind=dp) :: g 
     integer :: N_energy
     integer :: N_energy2
     real(kind=dp) :: x
     real(kind=dp) :: dE
-    real(kind=dp) :: loss_fn_gauss
-    logical :: loss_fn_broadening
-
-    loss_fn_broadening = .TRUE.
-    loss_fn_gauss = 1.0_dp 
 
     if(.not. optics_intraband) then 
-       if(loss_fn_broadening) then 
+       if(optics_lossfn_broadening) then 
           allocate(loss_fn(jdos_nbins,2)) 
        else 
           allocate(loss_fn(jdos_nbins,1))
        endif
-    endif
-    if(optics_intraband) then 
-       if(loss_fn_broadening)  then 
+    else
+       if(optics_lossfn_broadening)  then 
           allocate(loss_fn(jdos_nbins,4)) 
        else 
           allocate(loss_fn(jdos_nbins,3)) 
@@ -593,12 +587,12 @@ contains
 
     ! Broadening 
 
-    if(loss_fn_broadening) then
+    if(optics_lossfn_broadening) then
        if(.not. optics_intraband) then
           do N_energy=1,jdos_nbins       ! Loop over energy 
              do N_energy2=1,jdos_nbins   ! Turn each energy value into a function 
-                g = (((4.0_dp*log(2.0_dp))/pi)**(0.5_dp))*(1/loss_fn_gauss)*exp(-4.0_dp*(log(2.0_dp))*&
-                     (((E(N_energy2)-E(N_energy))/loss_fn_gauss)**2.0_dp))  ! Gaussian 
+                g = (((4.0_dp*log(2.0_dp))/pi)**(0.5_dp))*(1.0_dp/optics_lossfn_gaussian)*exp(-4.0_dp*(log(2.0_dp))*&
+                     (((E(N_energy2)-E(N_energy))/optics_lossfn_gaussian)**2.0_dp))  ! Gaussian 
                 loss_fn(N_energy2,2)=loss_fn(N_energy2,2) + (g*loss_fn(N_energy,1)*dE)
              end do
           end do                        ! End loop over energy 
@@ -606,8 +600,8 @@ contains
        if(optics_intraband) then 
           do N_energy=1,jdos_nbins       ! Loop over energy 
              do N_energy2=1,jdos_nbins   ! Turn each energy value into a function 
-                g = (((4.0_dp*log(2.0_dp))/pi)**(0.5_dp))*(1/loss_fn_gauss)*exp(-4.0_dp*(log(2.0_dp))*&
-                     (((E(N_energy2)-E(N_energy))/loss_fn_gauss)**2.0_dp))  ! Gaussian 
+                g = (((4.0_dp*log(2.0_dp))/pi)**(0.5_dp))*(1.0_dp/optics_lossfn_gaussian)*exp(-4.0_dp*(log(2.0_dp))*&
+                     (((E(N_energy2)-E(N_energy))/optics_lossfn_gaussian)**2.0_dp))  ! Gaussian 
                 loss_fn(N_energy2,4)=loss_fn(N_energy2,4) + (g*loss_fn(N_energy,3)*dE)
              end do
           end do                        ! End loop over energy 
