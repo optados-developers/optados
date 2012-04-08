@@ -77,7 +77,7 @@ contains
        write(stdout,'(1x,a78)') '+============================================================================+'
        write(stdout,'(1x,a78)') '+                 Projected Density Of States Calculation                    +'
        write(stdout,'(1x,a78)') '+============================================================================+'
-       write(stdout,'(1x,a78)') '|                                                                            |'
+       write(stdout,'(1x,a78)') 
     endif
 
     ! read in the pdos weights

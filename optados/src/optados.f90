@@ -114,9 +114,9 @@ program optados
      call pdos_calculate
      time1=io_time()
      if(on_root)then
-       write(stdout,'(1x,a78)') '|                                                                            |'
        write(stdout,'(1x,a59,f11.3,a8)') &
-            '| Time to calculate Projected Density of States                ',time1-time0,' (sec) |'
+            '+ Time to calculate Projected Density of States          &
+            &      ',time1-time0,' (sec) +'
        write(stdout,'(1x,a78)') '+============================================================================+'
        write(stdout,*) ' '
        write(stdout,*) ' '
@@ -150,9 +150,9 @@ program optados
      call dos_calculate
      time1=io_time()
      if(on_root)then
-       write(stdout,'(1x,a78)') '|                                                                            |'
        write(stdout,'(1x,a59,f11.3,a8)') &
-                        '| Time to calculate Density of States                          ',time1-time0,' (sec) |'
+                        '+ Time to calculate Density of States        &
+                        &                  ',time1-time0,' (sec) +'
        write(stdout,'(1x,a78)') '+============================================================================+'
        write(stdout,*) ' '
        write(stdout,*) ' '
