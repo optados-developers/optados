@@ -674,7 +674,7 @@ end if
        enddo
        
        ! Write out the thermal gap info
-       write(stdout,'(1x,a1,a32,f15.10,1x,a3,18x,a8)') "|", "Thermal Bandgap :", thermal_bandgap,"eV", "  <- TBg"
+       write(stdout,'(1x,a1,a32,f15.10,1x,a3,18x,a8)') "|", "Thermal Bandgap :", thermal_bandgap,"eV", "<- TBg |"
        
        if(.not.thermal_multiplicity) then
           if(thermal_vbm_k==thermal_cbm_k) then
@@ -701,7 +701,7 @@ end if
        write(stdout,'(1x,a1,a45,a32)') "|", "Optical Bandgap  ", "|"
        do is=1,nspins
           write(stdout,'(1x,a1,a25,1x,i3,1x,a3,1x,f15.10,1x,a3,16x,a8)') "|", " Spin :",is, " : ", optical_bandgap(is),&
-               &"eV", "  <- OBg"
+               &"eV", "<- OBg |"
        enddo
        write(stdout, '(1x,1a,a50, 19x, a8)') "|", "Number of kpoints with this gap         ",  "       |"
        ! The multiplicity info here is just for reference.
@@ -714,14 +714,14 @@ end if
        write(stdout,'(1x,a1,a45,a32)') "|", "Average Bandgap  ", "|"
        do is=1,nspins
           write(stdout,'(1x,a1,a25,1x,i3,1x,a3,1x,f15.10,1x,a3,16x,a8)') "|", " Spin :",is, " : ", & 
-               &average_bandgap(is),"eV", "  <- ABg"
+               &average_bandgap(is),"eV", "<- ABg |"
        enddo
        ! If we have more then one spin, then we need some way to combine the up and down spin bandgaps
        ! At Richard Needs' suggestion we use the weighted sum.
        if(nspins>1) then
           weighted_average= (average_bandgap(1)*num_electrons(1) +  average_bandgap(2)*num_electrons(2) ) &
                & / (num_electrons(1)+num_electrons(2))
-          write(stdout,'(1x,a1,a33,1x,f15.10,1x,a3,16x,a8)') "|", " Weighted Average : ", weighted_average,"eV", "  <- wAB"
+          write(stdout,'(1x,a1,a33,1x,f15.10,1x,a3,16x,a8)') "|", " Weighted Average : ", weighted_average,"eV", "<- wAB |"
        endif
     endif
 
