@@ -142,7 +142,8 @@ contains
 
     if(calc_weighted_dos.eqv..false.) then ! We are called just to provide dos.
        if(allocated(E)) then
-          if(on_root.and.iprint>1) write(stdout,*) " Already calculated dos, so returning..."
+          if(on_root.and.iprint>1) write(stdout,'(1x,a78)') "| Already calculated dos, so returning... &
+               &                                   |"
           return  ! The dos has already been calculated previously so just return.       
        endif
     endif
@@ -153,20 +154,6 @@ contains
        mw%nkpoints =size(matrix_weights,3)
        mw%nspins   =size(matrix_weights,4)
     end if
-
-    if(on_root.and.iprint>1) then
-       write(stdout,*)
-       if(calc_weighted_dos) then
-          write(stdout,'(1x,a78)') '    +====================================================================+    '
-          write(stdout,'(1x,a78)') '    +========== Weighted Density Of States Calculation ==================+    '
-          write(stdout,'(1x,a78)') '    +====================================================================+    '
-       else
-          write(stdout,'(1x,a78)') '    +====================================================================+    '
-          write(stdout,'(1x,a78)') '    +=============== Density Of States Calculation ======================+    '
-          write(stdout,'(1x,a78)') '    +====================================================================+    '
-       endif
-       write(stdout,*)
-    endif
 
     if(calc_weighted_dos) then 
        !       print*,'mw%nkpoints.ne.num_nkpoints_on_node(my_node_id))',mw%nkpoints,nunum_nkpoints_on_node(my_node_id)
@@ -234,8 +221,11 @@ contains
     !    endif
 
     time1=io_time()
-    if(on_root.and.iprint>1)  write(stdout,'(1x,a40,f11.3,a)') 'Time to calculate dos  ',time1-time0,' (sec)'
-    !-------------------------------------------------------------------------------
+    if(on_root.and.iprint>1) then
+       write(stdout,'(1x,a59,f11.3,a8)') '+ Time to calculate DOS                                     ',time1-time0,' (sec) +'
+       write(stdout, '(1x,a78)')
+    endif
+       !-------------------------------------------------------------------------------
 
 
     !-------------------------------------------------------------------------------
@@ -303,19 +293,6 @@ contains
        endif
     endif
    
-    if(on_root.and.iprint>1) then
-       write(stdout,*)
-       if(calc_weighted_dos) then
-          write(stdout,'(1x,a78)') '    +====================================================================+    '
-          write(stdout,'(1x,a78)') '    +=========== Weighted Density Of States Calculation End =============+    '
-          write(stdout,'(1x,a78)') '    +====================================================================+    '
-       else
-          write(stdout,'(1x,a78)') '    +====================================================================+    '
-          write(stdout,'(1x,a78)') '    +=============== Density Of States Calculation End ==================+    '
-          write(stdout,'(1x,a78)') '    +====================================================================+    '
-       endif
-       write(stdout,*)
-    endif
     
     
   end subroutine dos_utils_calculate
@@ -430,14 +407,13 @@ end if
     integer :: is
 
     time0=io_time()
+       
+    call dos_utils_calculate_at_e(efermi,dos_at_e=dos_at_efermi)
     
     if((iprint>1).and.on_root) then
        write(stdout,*)
-       write(stdout,'(1x,a48)') " Calculating DOS at Fermi energy..."
     endif
-    
-    call dos_utils_calculate_at_e(efermi,dos_at_e=dos_at_efermi)
-    
+
     if(on_root) then
        write(stdout,'(1x,a78)')  '+----------------------- DOS at Fermi Energy Analysis -----------------------+'
        write(stdout,'(1x,a1,a46,f8.4,a3,12x,a8)')"|", " Fermi energy used : ", efermi,"eV","       |"
@@ -470,7 +446,12 @@ end if
        endif
   
        time1=io_time()
-       if(iprint>1) write(stdout,'(1x,a40,f11.3,a)') 'Time to calculate DOS at Fermi energy ',time1-time0,' (sec)'
+       if(iprint>1) then
+          write(stdout,'(1x,a59,f11.3,a8)') &
+               '+ Time to calculate DOS at Fermi Energy                  &
+               &      ',time1-time0,' (sec) +'
+          
+       endif
        write(stdout,'(1x,a78)')                                                                             
 
        !-------------------------------------------------------------------------------
@@ -934,9 +915,13 @@ end if
     if(on_root) then
        write(stdout,'(1x,a1,a46,f12.4,a3,8x,a8)')"|", " Band energy (From CASTEP) : ", eband,"eV","<- BEC |"
        write(stdout,'(1x,a78)') '+----------------------------------------------------------------------------+'
-       write(stdout,'(1x,a78)')                                                                            
        time1=io_time()
-       if(iprint>1)write(stdout,'(1x,a40,f11.3,a)') 'Time to calculate Band energies ',time1-time0,' (sec)'
+       if(iprint>1) then
+          write(stdout,'(1x,a59,f11.3,a8)') &
+               '+ Time to calculate Band Energies                        &
+            &      ',time1-time0,' (sec) +'
+       endif
+       write(stdout,'(1x,a78)') 
     end if
 
   end subroutine dos_utils_compute_band_energies
@@ -1004,7 +989,8 @@ end if
        ! Now modify the max_band_energy
        if(on_root.and.(iprint>2)) then
           write(stdout,*)
-          write(stdout,'(1x,a40,f11.3,14x,a13)') 'max_band_energy (before correction) : ', max_band_energy, " <-- DOS Grid"
+          write(stdout,'(1x,a78)') '+----------------------------------------------------------------------------+'
+          write(stdout,'(1x,a40,f11.3,13x,a14)') '| max_band_energy (before correction) : ', max_band_energy, "<-- DOS Grid |"
        endif
        max_band_energy=min_band_energy+dos_nbins*dos_spacing
     endif
@@ -1018,13 +1004,14 @@ end if
     end do
 
     if(on_root.and.(iprint>2))then
-       write(stdout,'(1x,a40,e11.5,14x,a13)') 'dos_min_energy : ', dos_min_energy, " <-- DOS Grid" 
-       write(stdout,'(1x,a40,e11.5,14x,a13)') 'dos_max_energy : ', dos_max_energy, " <-- DOS Grid"
-       write(stdout,'(1x,a40,f11.3,14x,a13)') 'min_band_energy : ', min_band_energy, " <-- DOS Grid"
-       write(stdout,'(1x,a40,f11.3,14x,a13)') 'max_band_energy : ', max_band_energy, " <-- DOS Grid"
-       write(stdout,'(1x,a40,i11,14x,a13)')' dos_nbins : ', dos_nbins, " <-- DOS Grid"
-       write(stdout,'(1x,a40,f11.3,14x,a13)')' dos_spacing : ', dos_spacing, " <-- DOS Grid"
-       write(stdout,'(1x,a40,f11.3,14x,a13)')' delta_bins : ', delta_bins, " <-- DOS Grid"
+       write(stdout,'(1x,1a,a39,e11.5,13x,a14)') '|','dos_min_energy : ', dos_min_energy, "<-- DOS Grid |" 
+       write(stdout,'(1x,1a,a39,e11.5,13x,a14)') '|','dos_max_energy : ', dos_max_energy, "<-- DOS Grid |"
+       write(stdout,'(1x,1a,a39,f11.3,13x,a14)') '|','min_band_energy : ', min_band_energy, "<-- DOS Grid |"
+       write(stdout,'(1x,1a,a39,f11.3,13x,a14)') '|','max_band_energy : ', max_band_energy, "<-- DOS Grid |"
+       write(stdout,'(1x,1a,a39,i11,13x,a14)')'|','dos_nbins : ', dos_nbins, "<-- DOS Grid |"
+       write(stdout,'(1x,1a,a39,f11.3,13x,a14)')'|','dos_spacing : ', dos_spacing, "<-- DOS Grid |"
+       write(stdout,'(1x,1a,a39,f11.3,13x,a14)')'|','delta_bins : ', delta_bins, "<-- DOS Grid |"
+       write(stdout,'(1x,a78)') '+----------------------------------------------------------------------------+'
     endif
 
   end subroutine setup_energy_scale
@@ -1242,11 +1229,13 @@ end if
     else
        call allocate_dos(dos,intdos)
     endif
-
+    if(iprint>1.and.on_root) then ! This is to contain the Calculating k-points block
+       write(stdout,'(1x,a78)') '+------------------------------ Calculate DOS -------------------------------+'
+    endif
     do ik=1,num_kpoints_on_node(my_node_id)
        if(iprint>1.and.on_root) then
-          if (mod(real(ik,dp),10.0_dp) == 0.0_dp) write(stdout,'(a30,i4,a3,i4,a14,7x,a17)') &
-               &"Calculating k-point ", ik, " of", num_kpoints_on_node(my_node_id)," on this node","<-- DOS"
+          if (mod(real(ik,dp),10.0_dp) == 0.0_dp) write(stdout,'(1x,a1,a28,i4,a3,i4,a14,7x,a17)') "|",&
+               &"Calculating k-point ", ik, " of", num_kpoints_on_node(my_node_id)," on this node","<-- DOS |"
        endif
        do is=1,nspins
           do ib=1,nbands
@@ -1297,6 +1286,9 @@ end if
        end do
     end do
 
+    if(iprint>1.and.on_root) then ! This is to contain the Calculating k-points block
+       write(stdout,'(1x,a78)') '+----------------------------------------------------------------------------+'
+    endif
 
     if(.not.linear.and.numerical_intdos) intdos=intdos*delta_bins
 
@@ -1633,7 +1625,12 @@ end if
 
 
     time1=io_time()
-    if(on_root.and.iprint>1)  write(stdout,'(1x,a40,f11.3,a)') 'Time to calculate dos at e ',time1-time0,' (sec)'
+    if(on_root.and.iprint>1) then
+       write(stdout,'(1x,a59,f11.3,a8)') &
+            '+ Time to calculate DOS at certain energy                &
+            &      ',time1-time0,' (sec) +'
+    endif
+
     !-------------------------------------------------------------------------------
 
   end subroutine dos_utils_calculate_at_e
@@ -1729,11 +1726,15 @@ end if
 
     if(have_weighted_dos) weighted_dos_at_e=0.0_dp
 
+   if((iprint>1).and.on_root) then
+       write(stdout,*)
+       write(stdout,'(1x,a78)') "+------------------------- Calculate DOS at energy --------------------------+"
+    endif
 
     do ik=1,num_kpoints_on_node(my_node_id)
       if(iprint>1.and.on_root) then
-          if (mod(real(ik,dp),10.0_dp) == 0.0_dp) write(stdout,'(a30,i4,a3,i4,a14,12x,a12)') &
-               &"Calculating k-point ", ik, " of", num_kpoints_on_node(my_node_id)," on this node","<-- DOS at E"
+          if (mod(real(ik,dp),10.0_dp) == 0.0_dp) write(stdout,'(1x,1a,a28,i4,a3,i4,a14,10x,a14)')'|', &
+               &"Calculating k-point ", ik, " of", num_kpoints_on_node(my_node_id)," on this node","<-- DOS at E |"
        endif
        
        do is=1,nspins
@@ -1782,6 +1783,9 @@ end if
           end do
        end do
     end do
+
+    if((iprint>1).and.on_root) write(stdout,'(1x,a78)') &
+         & "+----------------------------------------------------------------------------+"
 
   end subroutine calculate_dos_at_e
 

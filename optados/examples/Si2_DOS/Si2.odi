@@ -2,13 +2,15 @@
 #       OptaDOS example file -- AJ Morris 18/V/11
 ###########################################################
 
+LEGACY_FILE_FORMAT : true
 # Choose the task to perform
-TASK              : dos
+TASK              : dos, jdos, optics
 
+PDOS : species
 # Recalculate the Fermi energy using the new DOS 
 # (discasrd the CASTEP efermi)
 EFERMI : optados
-
+iprint :  2 
 # Sample the DOS at 0.1 eV intervals
 DOS_SPACING       : 0.1 
 

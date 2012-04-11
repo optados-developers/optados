@@ -1,4 +1,4 @@
-VER := 1.0.246
+VER := 1.0.247
 
 default : optados
 

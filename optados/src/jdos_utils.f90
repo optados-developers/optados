@@ -152,7 +152,11 @@ contains
 !    endif
 
     time1=io_time()
-    if(on_root.and.iprint>1)  write(stdout,'(1x,a40,f11.3,a)') 'Time to calculate jdos  ',time1-time0,' (sec)'
+    if(on_root.and.iprint>1) then
+       write(stdout,'(1x,a59,f11.3,a8)') &
+            '+ Time to calculate Joint Density of States              &
+            &      ',time1-time0,' (sec) +'
+    endif
     !-------------------------------------------------------------------------------
 
 
@@ -205,7 +209,8 @@ contains
 
        if(on_root.and.(iprint>2)) then
           write(stdout,*)
-          write(stdout,'(1x,a40,f11.3,a14)') 'max_band_energy (before correction) : ', max_band_energy, " <-- JDOS Grid"
+          write(stdout,'(1x,a78)') '+----------------------------------------------------------------------------+' 
+          write(stdout,'(1x,a1,a38,f11.3,13x,a15)')'|', 'max_band_energy (before correction) : ', max_band_energy, "<-- JDOS Grid |"
        endif
     endif
 
@@ -224,11 +229,13 @@ contains
     end do
 
   if(on_root.and.(iprint>2))then
-     write(stdout,'(1x,a40,f11.5,a14)')  'efermi : ', efermi,  " <-- JDOS Grid"
-       write(stdout,'(1x,a40,f11.5,a14)') 'jdos_max_energy : ', jdos_max_energy, " <-- JDOS Grid"
-       write(stdout,'(1x,a40,i11,a14)') ' jdos_nbins : ', jdos_nbins, " <-- JDOS Grid"
-       write(stdout,'(1x,a40,f11.3,a14)')' jdos_spacing : ', jdos_spacing, " <-- JDOS Grid"
-       write(stdout,'(1x,a40,f11.3,a14)')' delta_bins : ', delta_bins, " <-- JDOS Grid"
+     write(stdout,'(1x,a1,a38,f11.3,13x,a15)')  '|','efermi : ', efermi,  "<-- JDOS Grid |"
+       write(stdout,'(1x,a1,a38,f11.3,13x,a15)') '|','jdos_max_energy : ', jdos_max_energy, "<-- JDOS Grid |"
+       write(stdout,'(1x,a1,a38,i11,13x,a15)') '|',' jdos_nbins : ', jdos_nbins, "<-- JDOS Grid |"
+       write(stdout,'(1x,a1,a38,f11.3,13x,a15)') '|','jdos_spacing : ', jdos_spacing, "<-- JDOS Grid |"
+       write(stdout,'(1x,a1,a38,f11.3,13x,a15)') '|','delta_bins : ', delta_bins, "<-- JDOS Grid |"
+       write(stdout,'(1x,a78)') '+----------------------------------------------------------------------------+' 
+       write(stdout,*)
     endif
 
   end subroutine setup_energy_scale
@@ -349,10 +356,14 @@ contains
        weighted_jdos=0.0_dp
     endif
 
+    if(iprint>1 .and. on_root) then
+       write(stdout,'(1x,a78)') '+------------------------------ Calculate JDOS ------------------------------+' 
+    endif
+
     do ik=1,num_kpoints_on_node(my_node_id)
        if(iprint>1 .and. on_root) then
-          if (mod(real(ik,dp),10.0_dp) == 0.0_dp) write(stdout,'(a40,i4,a3,i4,1x,a14,5x,a8)') &
-               &"Calculating k-point ", ik, " of", num_kpoints_on_node(my_node_id),'on this node.',"<-- JDOS"
+          if (mod(real(ik,dp),10.0_dp) == 0.0_dp) write(stdout,'(1x,a1,a38,i4,a3,i4,1x,a14,3x,a10)') ',', &
+               &"Calculating k-point ", ik, " of", num_kpoints_on_node(my_node_id),'on this node.',"<-- JDOS |"
        endif
        do is=1,nspins
           occ_states: do ib=1,nbands
@@ -401,6 +412,10 @@ contains
           end do occ_states
        end do
     end do
+    
+    if(iprint>1 .and. on_root) then
+       write(stdout,'(1x,a78)') '+----------------------------------------------------------------------------+' 
+    endif
 
   end subroutine calculate_jdos
 

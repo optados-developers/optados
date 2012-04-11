@@ -1,4 +1,4 @@
-TASK                   : spectral 
+TASK                   : optics
 PDOS_CALCULATE_WEIGHTS : TRUE
 SPIN_POLARIZED : TRUE
 CUT_OFF_ENERGY         : 200

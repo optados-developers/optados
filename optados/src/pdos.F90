@@ -650,7 +650,7 @@ contains
 
     pdos_file=io_file_unit()
     open(unit=pdos_file,file=trim(name),iostat=ierr)
-    if(iprint>2) write(stdout,'(1x,30a,30a)') " Writing PDOS projectors to: ", trim(name)
+    if(iprint>2) write(stdout,'(1x,a30,a30,17x,a1)') "| Writing PDOS projectors to: ", trim(name),"|"
     if(ierr.ne.0) call io_error(" ERROR: Cannot open output file in pdos: pdos_write")
     
     write(pdos_file, *) "##############################################################################"
@@ -660,7 +660,7 @@ contains
     call io_date(cdate,ctime)
     write(pdos_file,*)  '#  Generated on ',cdate,' at ',ctime
     write(pdos_file, '(1x,a78)') "##############################################################################"
-    write(pdos_file,'(1a,a)') '#','*----------------------------------------------------------------------------*'   
+    write(pdos_file,'(1a,a)') '#','+----------------------------------------------------------------------------+'   
     write(pdos_file,'(1a,a)') '#','|                    Partial Density of States -- Projectors                 |'
     write(pdos_file,'(1a,a)') '#','+----------------------------------------------------------------------------+'
     
@@ -740,7 +740,7 @@ contains
     integer :: iproj, iam, ispecies_num, ispecies
 
     write(stdout,*)
-    write(stdout,'(1x,a)') '*----------------------------------------------------------------------------*'   
+    write(stdout,'(1x,a)') '+----------------------------------------------------------------------------+'   
     write(stdout,'(1x,a)') '|                    Partial Density of States -- Projectors                 |'
     write(stdout,'(1x,a)') '+----------------------------------------------------------------------------+'
     do iproj=1,num_proj

@@ -381,7 +381,11 @@ contains
     end if
 
     time1=io_time()
-    if(on_root.and.iprint>1) write(stdout,'(1x,a40,f11.3,a)') 'Time to read optical matrix elements ',time1-time0,' (sec)'
+    if(on_root.and.iprint>1) then
+       write(stdout,'(1x,a59,f11.3,a8)') &
+            '+ Time to read Optical Matrix Elements                   &
+            &      ',time1-time0,' (sec) +'
+    endif
 
     return
 
