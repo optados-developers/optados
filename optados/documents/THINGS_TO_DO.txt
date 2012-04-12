@@ -19,7 +19,6 @@ File-formats
 Beta 3
 =================
 
-iprint 0 ? [AJM]
 Redo the tutorials with new output
  * DOS [AJM]
  * PDOS [AJM]

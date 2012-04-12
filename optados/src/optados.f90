@@ -86,8 +86,8 @@ program optados
      open(unit=stdout,file=trim(seedname)//'.odo',status=trim(stat),position=trim(pos))
      write(stdout,*)  'OptaDOS: Execution started on ',cdate,' at ',ctime
      write(stdout,'(1x,a26,i5,a10)')  'Parallelised over', num_nodes, ' thread(s)'
-     call param_write_header()
-     call param_write()
+     if(iprint>0) call param_write_header()
+     if(iprint>0) call param_write()
      time1=io_time()
      
      if(iprint>1) write(stdout,'(1x,a40,f11.3,a)') 'Time to read parameters ',time1-time0,' (sec)'
@@ -98,9 +98,9 @@ program optados
 
   if(on_root) then
      call cell_calc_lattice
-     call param_write_atomic_coord
-     call cell_report_parameters
-     call elec_report_parameters
+     if(iprint>0) call param_write_atomic_coord
+     if(iprint>0) call cell_report_parameters
+     if(iprint>0) call elec_report_parameters
   end if
   ! now send the data from the parameter file to each node
 

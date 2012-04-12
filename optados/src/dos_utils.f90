@@ -511,7 +511,7 @@ end if
     if(on_root) then 
        if(iprint>2) then
           write(stdout,*)
-          write(stdout,'(1x,a46)') "Finding an estimate of the maximum bandgap..."
+       write(stdout,'(1x,a78)')   "| Finding an estimate of the maximum bandgap...                              |"
        endif
        write (stdout,'(1x,a78)')  '+----------------------------- Bandgap Analysis -----------------------------+'
     endif
