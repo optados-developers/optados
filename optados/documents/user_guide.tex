@@ -487,44 +487,44 @@ This generates 3 files:
 \item Open the \verb#Si2.odo# file in a text editor (\emph{e.g.} vi or emacs).  \optados\ has performed a Density of States calculation.
 
 \begin{verbatim}
- +------------------------ Fermi Energy Analysis ----------------------+
- | From Adaptive broadening                                            |
- |   Spin Component : 1 occupation between    3.99961 and    4.00003   | <- Oc
- |   Spin Component : 2 occupation between    3.99961 and    4.00003   | <- Oc
- |         Fermi energy (Adaptive broadening) :   5.4109 eV            | <- EfA
- +---------------------------------------------------------------------+
++------------------------ Fermi Energy Analysis ------------------------------+
+| From Adaptive broadening                                                    |
+|   Spin Component : 1 occupation between    3.99961 and    4.00003    <- Oc  |
+|   Spin Component : 2 occupation between    3.99961 and    4.00003    <- Oc  | 
+|         Fermi energy (Adaptive broadening) :   5.4109 eV             <- EfA |
++-----------------------------------------------------------------------------+
 \end{verbatim}
 It has used the integrated DOS to work out the Fermi level, and has suggested the error in the integration by indicating the number of electrons at the Fermi level. Since we had 4 up electrons and 4 down in the input file this analysis seems satisfactory.
 \begin{verbatim}
- +----------------------- Electronic Data ------------------------------------+
- |  Number of Bands                           :            23                 |
- |  Grid size                                 :       10 x 10 x 10            |
- |  Number of K-points                        :           110                 |
- |  Spin-Polarised Calculation                :           True                |
- |  Number of up-spin electrons               :             4.00              |
- |  Number of down-spin electrons             :             4.00              |
- +----------------------------------------------------------------------------+
++----------------------- Electronic Data ------------------------------------+
+|  Number of Bands                           :            23                 |
+|  Grid size                                 :       10 x 10 x 10            |
+|  Number of K-points                        :           110                 |
+|  Spin-Polarised Calculation                :           True                |
+|  Number of up-spin electrons               :             4.00              |
+|  Number of down-spin electrons             :             4.00              |
++----------------------------------------------------------------------------+
 \end{verbatim}
 
 Since we had \verb#efermi : optados#, \optados\ sets the internal value of the Fermi level to the one it has derived from the DOS. This is important for subsequent calculations. Other valid options are \verb#file#, where \optados\ uses the value calculated by the electronic structure code that generated the eigenvalues;  \verb#insulator#, where \optados\ uses a value calculated from assuming the system is non-metallic; or a value set by the user.
 
 \optados\ now performs some analysis of the DOS at the Fermi level,
 \begin{verbatim}
-+----------------------- DOS at Fermi Energy Analysis ----------------+
-|                          Fermi energy used :   5.4109 eV            |
-| From Adaptive broadening                                            |
-|   Spin Component : 1   DOS at Fermi Energy :   0.0011 eln/cell      | <- DEA
-|   Spin Component : 2   DOS at Fermi Energy :   0.0011 eln/cell      | <- DEA
-+---------------------------------------------------------------------+
++----------------------- DOS at Fermi Energy Analysis ------------------------+
+|                          Fermi energy used :   5.4109 eV                    |
+| From Adaptive broadening                                                    |
+|   Spin Component : 1   DOS at Fermi Energy :   0.0011 eln/cell       <- DEA |
+|   Spin Component : 2   DOS at Fermi Energy :   0.0011 eln/cell       <- DEA |
++-----------------------------------------------------------------------------+
 \end{verbatim}
 From this we may assume that there is a band gap.
 
 Importantly, then \optados\ calculates the band energy from the DOS is has calculated.
 \begin{verbatim}
- +--------------------------- Band Energy Analysis --------------------+
- |          Band energy (Adaptive broadening) :       1.3609 eV        | <- BEA
- |                  Band energy (From CASTEP) :       1.3622 eV        | <- BEC
- +---------------------------------------------------------------------+
++--------------------------- Band Energy Analysis ----------------------------+
+|          Band energy (Adaptive broadening) :       1.3609 eV         <- BEA |
+|                  Band energy (From CASTEP) :       1.3622 eV         <- BEC |
++-----------------------------------------------------------------------------+
 \end{verbatim}
 As the quality of the \optados\ calculation is increased these two values should converge to the same answer.
 
@@ -533,20 +533,20 @@ Finally \optados\ shifts the Fermi level to 0\,eV, for the output files.
 %%%%  Step 4 %%%%%
 \item  The DOS is outputted to {\tt Si2.adaptive.dat}. This contains 5 columns as described in the header of the file:
 \begin{verbatim}
- ########################################################################
- #
- #                  O p t a D O S   o u t p u t   f i l e 
- #
- #    Density of States using adaptive broadening
- #  Generated on 12 Feb 2012 at 16:50:37 
- # Column        Data
- #    1        Energy (eV)
- #    2        Up-spin DOS (electrons per eV)
- #    3        Down-spin DOS (electrons per eV)
- #    4        Up-spin Integrated DOS (electrons)
- #    5        Down-spin Integrated DOS (electrons)
- #
- ########################################################################
+########################################################################
+#
+#                  O p t a D O S   o u t p u t   f i l e 
+#
+#    Density of States using adaptive broadening
+#  Generated on 12 Feb 2012 at 16:50:37 
+# Column        Data
+#    1        Energy (eV)
+#    2        Up-spin DOS (electrons per eV)
+#    3        Down-spin DOS (electrons per eV)
+#    4        Up-spin Integrated DOS (electrons)
+#    5        Down-spin Integrated DOS (electrons)
+#
+########################################################################
 \end{verbatim}
 
 This file can be plotted by your favourite graph-plotting software. However, \optados\ has made things easy and generated a  {\tt Si2.adaptive.agr} file which is directly plottable using \verb#xmgrace# as shown in Fig.\,\ref{fig:Si2_adaptive1}.
@@ -570,34 +570,34 @@ but your MPI implementation may be different.
 
 \item In  \verb#Si2.odo# we now have a new section analysing the band gap in various ways.
 \begin{verbatim}
- +----------------------------- Bandgap Analysis ----------------------+
- |          Number of kpoints at       VBM       CBM                   |
- |                   Spin :   1  :      1         1                    |
- |                   Spin :   2  :      1         1                    |
- |               Thermal Bandgap :   0.6676272107  eV                  | <- TBg
- |            Between VBM kpoint :    0.05000    0.05000    0.05000    |
- |                 and CBM kpoint:   -0.45000   -0.05000   -0.45000    |
- |             ==> Indirect Gap                                        |
- +---------------------------------------------------------------------+
- |                            Optical Bandgap                          |
- |                   Spin :   1  :     2.5542517447  eV                | <- OBg
- |                   Spin :   2  :     2.5542463024  eV                | <- OBg
- |          Number of kpoints with this gap                            |
- |                   Spin :   1  :           1                         |
- |                   Spin :   2  :           1                         |
- +---------------------------------------------------------------------+
- |                            Average Bandgap                          |
- |                   Spin :   1  :     3.8121372691  eV                | <- ABg
- |                   Spin :   2  :     3.8121342659  eV                | <- ABg
- |              Weighted Average :     3.8121357675  eV                | <- wAB
- +---------------------------------------------------------------------+
++----------------------------- Bandgap Analysis ------------------------------+
+|          Number of kpoints at       VBM       CBM                           |
+|                   Spin :   1  :      1         1                            |
+|                   Spin :   2  :      1         1                            |
+|               Thermal Bandgap :   0.6676272107  eV                   <- TBg |
+|            Between VBM kpoint :    0.05000    0.05000    0.05000            |
+|                 and CBM kpoint:   -0.45000   -0.05000   -0.45000            |
+|             ==> Indirect Gap                                                |
++-----------------------------------------------------------------------------+
+|                            Optical Bandgap                                  |
+|                   Spin :   1  :     2.5542517447  eV                 <- OBg |
+|                   Spin :   2  :     2.5542463024  eV                 <- OBg |
+|          Number of kpoints with this gap                                    |
+|                   Spin :   1  :           1                                 |
+|                   Spin :   2  :           1                                 |
++-----------------------------------------------------------------------------+
+|                            Average Bandgap                                  |
+|                   Spin :   1  :     3.8121372691  eV                 <- ABg |
+|                   Spin :   2  :     3.8121342659  eV                 <- ABg |
+|              Weighted Average :     3.8121357675  eV                 <- wAB |
++-----------------------------------------------------------------------------+
 \end{verbatim}
 
 \optados\ is very careful in its band gap analysis. It uses the bare eigenvalues (un-broadened) and works out the nature and size of the thermal gap, optical gap and the average gap over all of the Brillouin zone. In cases of multi-valleyed semiconductors \optados\ will report the number of conduction band minima or valence band maxima with identical energies, but will not report the nature of the gap. 
 
 Increasing the number of integration points has improved the band energy of the adaptive smearing:
 \begin{verbatim}
- |          Band energy (Adaptive broadening) :       1.3623 eV        | <- BEA
+|          Band energy (Adaptive broadening) :       1.3623 eV         <- BEA |
 \end{verbatim}
 
 
@@ -642,12 +642,12 @@ We assume the reader is familiar with the previous section on Density of States 
 \item  The output can be found in {\tt Si2.pdos.dat}.
 \begin{verbatim}
 ##############################################################################
- #
- #                  O p t a D O S   o u t p u t   f i l e
- #
- #  Generated on 13 Feb 2012 at 10:15:10
- ##############################################################################
-#*----------------------------------------------------------------------------*
+#
+#                  O p t a D O S   o u t p u t   f i l e
+#
+#  Generated on 13 Feb 2012 at 10:15:10
+##############################################################################
+#+----------------------------------------------------------------------------+
 #|                    Partial Density of States -- Projectors                 |
 #+----------------------------------------------------------------------------+
 #| Projector:    1 contains:                                                  |

@@ -19,10 +19,6 @@ File-formats
 Beta 3
 =================
 
-Redo the tutorials with new output
- * DOS [AJM]
- * PDOS [AJM]
-
 Check that the parameters are echo'ed in seed.odo file
 
 Examples step by step 
@@ -32,9 +28,6 @@ Examples step by step
 ================
 Website
 ================
-  * Charlotte's Graph [Only put in the first band] [AJM]
-  * OptaDOS link to CJP's ucl website [AJM]
-  * Add ability to go back to "home" page (BUG) [AJM]
 
 ================
 Manual
