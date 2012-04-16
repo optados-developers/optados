@@ -872,7 +872,7 @@ contains
 
     use od_cell, only : nkpoints, cell_volume
     use od_parameters, only : optics_geom, optics_qdir,jdos_max_energy, scissor_op, output_format, &
-         optics_intraband
+         optics_intraband, optics_lossfn_broadening
     use od_electronic, only: nbands, num_electrons, nspins
     use od_jdos_utils, only : jdos_nbins, E
     use od_io, only: seedname, io_file_unit,stdout
@@ -922,15 +922,29 @@ contains
     write(loss_fn_unit,*)'# Result of second sum rule (pi/2 = 1.570796327):',N_eff3
     write(loss_fn_unit,*)'#' 
     if(.not. optics_intraband) then 
-       do N=1,jdos_nbins
-          write(loss_fn_unit,*)E(N),loss_fn(N,1),loss_fn(N,2)
-       end do
+       if(optics_lossfn_broadening) then 
+          do N=1,jdos_nbins
+             write(loss_fn_unit,*)E(N),loss_fn(N,1),loss_fn(N,2)
+          end do
+       else 
+          do N=1,jdos_nbins
+             write(loss_fn_unit,*)E(N),loss_fn(N,1)
+          end do
+       end if
     else
-       do N2=1,4
-          do N=1,jdos_nbins 
-             write(loss_fn_unit,*)E(N),loss_fn(N,N2)
+       if(optics_lossfn_broadening) then 
+          do N2=1,4
+             do N=1,jdos_nbins 
+                write(loss_fn_unit,*)E(N),loss_fn(N,N2)
+             enddo
           enddo
-       enddo
+       else 
+          do N2=1,3
+             do N=1,jdos_nbins 
+                write(loss_fn_unit,*)E(N),loss_fn(N,N2)
+             enddo
+          enddo
+       endif
     endif
 
 
