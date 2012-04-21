@@ -35,6 +35,7 @@ module od_optics
      character(20) :: legend_a
      character(20) :: legend_b
      character(20) :: legend_c
+     character(20) :: legend_d
   end type graph_labels
 
 
@@ -1249,7 +1250,7 @@ contains
   end subroutine write_reflect
 
   !=============================================================================== 
-  subroutine write_optics_xmgrace(label,E,column1,column2,column3)
+  subroutine write_optics_xmgrace(label,E,column1,column2,column3,column4)
     !=============================================================================== 
     use xmgrace_utils
     use od_io,         only : io_file_unit,io_error,seedname 
@@ -1261,6 +1262,7 @@ contains
     real(dp),  intent(in)  :: column1(:)
     real(dp),  optional, intent(in) :: column2(:)
     real(dp),  optional, intent(in) :: column3(:)
+    real(dp),  optional, intent(in) :: column4(:)
 
     real(dp) :: min_x, max_x, min_y, max_y, range
 
@@ -1273,7 +1275,10 @@ contains
     min_x=minval(E)
     max_x=maxval(E)
 
+
     if(present(column3)) then
+       min_y=min(minval(column1), minval(column2),minval(column3),minval(column4))
+    elseif(present(column3)) then
        min_y=min(minval(column1), minval(column2),minval(column3))
     elseif(present(column2)) then
        min_y=min(minval(column1), minval(column2))
@@ -1281,9 +1286,10 @@ contains
        min_y=minval(column1)
     endif
 
-
-    if(present(column3)) then
-       max_y=max(maxval(column1), maxval(column2),maxval(column2))
+    if(present(column4)) then
+       max_y=max(maxval(column1), maxval(column2),maxval(column3),maxval(column4))
+    elseif(present(column3)) then
+       max_y=max(maxval(column1), maxval(column2),maxval(column3))
     elseif(present(column2)) then
        max_y=max(maxval(column1), maxval(column2))
     else
@@ -1306,7 +1312,16 @@ contains
     call  xmgu_axis(batch_file,"x",trim(label%x_label))
     call  xmgu_axis(batch_file,"y",trim(label%y_label))
 
-    if(present(column3)) then
+    if(present(column4)) then
+       call xmgu_data_header(batch_file,0,1,trim(label%legend_a))
+       call xmgu_data_header(batch_file,1,2,trim(label%legend_b))
+       call xmgu_data_header(batch_file,1,2,trim(label%legend_c))
+       call xmgu_data_header(batch_file,1,2,trim(label%legend_d))
+       call xmgu_data(batch_file,0,E(:),column1(:))
+       call xmgu_data(batch_file,1,E(:),column2(:))
+       call xmgu_data(batch_file,1,E(:),column3(:))
+       call xmgu_data(batch_file,1,E(:),column4(:))
+    elseif(present(column3)) then
        call xmgu_data_header(batch_file,0,1,trim(label%legend_a))
        call xmgu_data_header(batch_file,1,2,trim(label%legend_b))
        call xmgu_data_header(batch_file,1,2,trim(label%legend_c))
