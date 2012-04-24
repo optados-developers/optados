@@ -1276,7 +1276,7 @@ contains
     max_x=maxval(E)
 
 
-    if(present(column3)) then
+    if(present(column4)) then
        min_y=min(minval(column1), minval(column2),minval(column3),minval(column4))
     elseif(present(column3)) then
        min_y=min(minval(column1), minval(column2),minval(column3))
