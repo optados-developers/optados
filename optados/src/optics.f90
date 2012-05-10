@@ -19,7 +19,7 @@
 !
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
-!
+!  
 !=============================================================================== 
 module od_optics
 
@@ -888,10 +888,25 @@ contains
     label%title="Loss Function"  ! Dimensionless 
     label%x_label="Energy (eV)"
     label%y_label=""
-    label%legend_a="Interband"
-    label%legend_b="Intraband"
-    label%legend_c="Total"
-
+    if(.not. optics_intraband)then 
+       if(optics_lossfn_broadening)then 
+          label%legend_a=""
+          label%legend_b="Broadened"
+       else 
+          label%legend_a=""
+       endif
+    else 
+       if(optics_lossfn_broadening)then 
+          label%legend_a="Interband"
+          label%legend_b="Intraband"
+          label%legend_c="Total"
+          label%legend_d="Broadened"
+       else 
+          label%legend_a="Interband"
+          label%legend_b="Intraband"
+          label%legend_c="Total"
+       endif
+    endif
     ! Open the output file
     loss_fn_unit = io_file_unit()
     open(unit=loss_fn_unit,action='write',file=trim(seedname)//'_loss_fn.dat')
@@ -954,9 +969,17 @@ contains
 
     if(trim(output_format)=="xmgrace") then
        if(.not. optics_intraband) then 
-          call write_optics_xmgrace(label,E,loss_fn(:,1)) 
+          if(optics_lossfn_broadening) then 
+             call write_optics_xmgrace(label,E,loss_fn(:,1),loss_fn(:,2)) 
+          else
+             call write_optics_xmgrace(label,E,loss_fn(:,1)) 
+          endif
        else
-          call write_optics_xmgrace(label,E,loss_fn(:,1),loss_fn(:,2),loss_fn(:,3)) 
+          if (optics_lossfn_broadening) then 
+             call write_optics_xmgrace(label,E,loss_fn(:,1),loss_fn(:,2),loss_fn(:,3),loss_fn(:,4)) 
+          else
+             call write_optics_xmgrace(label,E,loss_fn(:,1),loss_fn(:,2),loss_fn(:,3)) 
+          endif
        endif
     elseif(trim(output_format)=="gnuplot") then 
        if(.not. optics_intraband) then 
