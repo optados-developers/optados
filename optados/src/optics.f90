@@ -65,11 +65,11 @@ module od_optics
   integer :: N2
 
 
-  real(kind=dp), parameter :: epsilon_0 = 8.8541878176E-12  ! need to put in correct number
-  real(kind=dp), parameter :: e_charge =  1.60217646E-19 ! need to put in correct number 
-  real(kind=dp), parameter :: e_mass =  9.10938E-31 ! need to put in correct number
-  real(kind=dp), parameter :: hbar =  1.054571628E-34 ! need to put in correct number 
-  real(kind=dp), parameter :: c_speed =  299792458 ! need to put in correct number
+  real(kind=dp), parameter :: epsilon_0 = 8.8541878176E-12_dp  
+  real(kind=dp), parameter :: e_charge =  1.602176487E-19_dp 
+  real(kind=dp), parameter :: e_mass =  9.10938215E-31_dp 
+  real(kind=dp), parameter :: hbar =  1.054571628E-34_dp 
+  real(kind=dp), parameter :: c_speed =  299792458.0_dp 
 
 contains
 
@@ -820,9 +820,9 @@ contains
        endif
 
        if(trim(output_format)=="xmgrace") then
-          call write_optics_xmgrace(label,E,epsilon(:,1,1,1),epsilon(:,2,1,1))
+             call write_optics_xmgrace(label,E,epsilon(:,1,1,1),epsilon(:,2,1,1))
        elseif(trim(output_format)=="gnuplot") then 
-          call write_optics_gnuplot(label,E,epsilon(:,1,1,1),epsilon(:,2,1,1))
+             call write_optics_gnuplot(label,E,epsilon(:,1,1,1),epsilon(:,2,1,1))
        else
           write(stdout,*)  " WARNING: Unknown output format requested, continuing..."
        endif
@@ -849,7 +849,7 @@ contains
              enddo
           end if
 
-! I don't think we want to plot in the tensor case, so this is commented out (it's broke anyhow!) jry
+          ! I don't think we want to plot in the tensor case, so this is commented out (it's broke anyhow!) jry
 !!$          label%name="epsilon"//trim(achar(N2))
 !!$          if(trim(output_format)=="xmgrace") then
 !!$             call write_optics_xmgrace(label,E,epsilon(:,1,N2,1),epsilon(:,2,N2,1))
