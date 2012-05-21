@@ -247,7 +247,7 @@ contains
          call io_error('Error: value of length_unit not recognised in param_read')
     if (length_unit.eq.'bohr') lenconfac=1.0_dp/bohr2ang
 
-    adaptive_smearing           = 1.4_dp ! LinDOS default
+    adaptive_smearing           = 0.4_dp ! LinDOS default
     call param_get_keyword('adaptive_smearing',found,r_value=adaptive_smearing)
 
     fixed_smearing             = 0.3_dp ! LinDOS default
