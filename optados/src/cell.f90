@@ -106,6 +106,7 @@ contains
 
     ! When two numbers are the same
     subtraction_tol=epsilon(subtraction_tol)
+    !write(*,*) "subtraction_tol=", subtraction_tol
     ! When one number is larger than another one
     min_img_tol=0.000001_dp
 
@@ -213,7 +214,7 @@ contains
             
      !  write(*,*) "Images", min_img, min_img2, min_img3, 1.0_dp/min_img
        
-       if(abs( 2.0_dp*min_img-min_img2)<subtraction_tol) then
+       if(abs( 2.0_dp*min_img-min_img2)<min_img_tol) then
           ! If 1stMI==2ndMI then 1/1stMP is the grid density
           if(present(kpoint_offset))  kpoint_offset(idim)=0.0_dp
             kpoint_grid_dim(idim)=int(1.0_dp/min_img)
@@ -226,8 +227,8 @@ contains
             
     enddo over_dim
     
-    !write(*,*) "kpoint_grid_dim= ", kpoint_grid_dim
-    !if(present(kpoint_offset))  write(*,*) "kpoint_offset= ",  kpoint_offset
+   ! write(*,*) "kpoint_grid_dim= ", kpoint_grid_dim
+   ! if(present(kpoint_offset))  write(*,*) "kpoint_offset= ",  kpoint_offset
   end subroutine cell_find_MP_grid
  !=========================================================================!
 
