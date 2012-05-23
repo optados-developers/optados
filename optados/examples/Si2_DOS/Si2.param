@@ -1,5 +1,5 @@
-TASK                   : SPECTRA
+TASK                   : SPECTRAL
 PDOS_CALCULATE_WEIGHTS : TRUE
-SPIN_POLARIZED : TRUE
+SPIN_POLARIZED         : TRUE
 CUT_OFF_ENERGY         : 200
 IPRINT                 : 1
