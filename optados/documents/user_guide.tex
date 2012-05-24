@@ -58,7 +58,7 @@ London, WC1E 6BT\\
 UK}
 
 
-\date{May 2011}
+\date{May 2012}
 
 \begin{document}
 \newcommand{\optados}{\textsc{OptaDOS}}
@@ -75,7 +75,7 @@ UK}
 
 The code is freely available through the GPL licence with the request that the following citation (quoted in full) is required in any publication resulting from the use of \optados.
 
-\emph{Andrew\,J. Morris, R.\,J. Nicholls, C.\,J. Pickard and Jonathan\,R. Yates, The \optados\ code, Comp. Phys. Comm. (2011)}.
+\emph{Andrew\,J. Morris, R.\,J. Nicholls, C.\,J. Pickard and Jonathan\,R. Yates, The \optados\ code, Comp. Phys. Comm. (2012)}.
 
 \begin{center}
 Further information and examples can be found at
@@ -178,12 +178,12 @@ The valid options for this parameter are:
 \item[{\bf --}]  \verb#core#
 \item[{\bf --}]  \verb#all#
 \end{itemize}
-Several tasks can be specified \emph{e.g.} to compute doi and jdos use
+Several tasks can be specified \emph{e.g.} to compute dos and jdos use
 \verb#task : dos jdos#.  
 However, the \verb#compare_dos# and \verb#compare_jdos# tasks can only be combined with each other, and no additional tasks.
 \verb#compare_dos# and \verb#compare_jdos# calculate the DOS and JDOS respectively using all broadening schemes. It is good practice to check the quality of the underlying DOS before other tasks are requested. 
 
-\subsection[broadening]{\tt character(lex=50) :: broadening}
+\subsection[broadening]{\tt character(len=50) :: broadening}
 
 Specified the scheme used to broaden a discrete sampling of the
 Brillouin Zone to a continuous spectral function.
@@ -204,7 +204,7 @@ the bare minimum: 2, with progress reports: to 3, which corresponds to full debu
 The default value is 1.
 
 
-\subsection[energy\_unit]{\tt character(Len=20) :: energy\_unit}
+\subsection[energy\_unit]{\tt character(len=20) :: energy\_unit}
 The energy unit to be used for writing quantities in the output files.
 
 The valid options for this parameter are:
@@ -224,19 +224,14 @@ The valid options for this parameter are:
 \subsection[adaptive\_smearing]{\tt real(kind=dp) :: adaptive\_smearing}
 Set the relative smearing in the adaptive scheme.
 
-Default value is 1.4
+Default value is 0.4
 
 \subsection[fixed\_smearing]{\tt real(kind=dp) :: fixed\_smearing}
 Smearing width for fixed broadening.
 
 If $\verb#spectral_scheme# = \verb#fixed#$ default value is 0.3eV.
 
-\subsection[scissor\_op]{\tt real(kind=dp) :: scissor\_op}
-Value of the scissor operator. 
-
-Default value is 0\,eV (\emph{i.e.} not used)
-
-\subsection[compute\_efermi]{{\tt character(len=20 :: efermi}}
+\subsection[compute\_efermi]{{\tt character(len=20) :: efermi}}
 Choose which Fermi energy to use.
 
 The valid options for this parameter are:
@@ -324,8 +319,8 @@ Instead of setting a Default value \verb#dos_spacing# the total number of DOS bi
 
 \subsection[dos\_spacing]{\tt real(kind=dp) :: dos\_spacing}
 Resolution at which to compute the DOS and related properties.
-Default value is 0.1eV 
 
+Default value is 0.1eV 
 
 \subsection[set\_efermi\_zero]{\tt logical :: set\_efermi\_zero}
 Shift energy scales so that the Fermi energy is at 0.
@@ -344,7 +339,16 @@ Fermi level) and the highest eigenvalue in the bands file.
 
 \subsection[jdos\_spacing]{\tt real(kind=dp) :: jdos\_spacing} 
 Resolution at which to compute the DOS and related properties.
+
 Default value is 0.01eV. 
+
+\subsection[scissor\_op]{\tt real(kind=dp) :: scissor\_op}
+Value of the scissor operator. 
+
+Default value is 0\,eV (\emph{i.e.} not used)
+
+\subsection[exclude\_bands]{\tt real(kind=dp) :: exclude\_bands}
+This allows a list of bands which are NOT to be included in the JDOS or OPTICS calculation to be specified.  The bands 1, 2, 4, 5, 6, for example, can be specified using \verb#exclude_bands = 1,2,4-6#. 
 
 \section{PDOS Parameters}
 
@@ -353,8 +357,8 @@ Defines which components to include in the pdos analysis:
 
 \begin{itemize}
 \item[{\bf --}]  \verb#angular# (decompose as s,p,d \emph{etc.})
-\item[{\bf --}]  \verb#sites#    (decompose onto atomic sites, C, H \emph{etc.})
-\item[{\bf --}]  \verb#species#    (decompose onto atomic species C1, H1, H2 \emph{etc.})
+\item[{\bf --}]  \verb#species#    (decompose onto atomic species C, H \emph{etc.})
+\item[{\bf --}]  \verb#sites#    (decompose onto atomic sites C1, H1, H2 \emph{etc.})
 \item[{\bf --}]  \verb#species_ang#    (decompose onto angular momentum channels and species C1s, C1p \emph{etc.})
 \item[{\bf --}]  \verb#C:H#     (decompose onto Carbon and Hydrogen sites)
 \item[{\bf --}]  \verb#C1:C3:C4-C8#  (decompose onto atoms C1, C2 and C4,C5,C6,C7,C8)
@@ -378,17 +382,26 @@ Specifies the geometry for the optics calculation.  Possible options:
 The default is polycrystalline.
 
 \subsection[optics\_qdir]{\tt real(kind=dp) :: optics\_qdir(3)}
-Direction of polarisation. Must be specified if \verb#optics_geom :polarized#  
-or \verb#optics_geom : unpolarized#.
-No default
+Direction of polarisation. Must be specified if \verb#optics_geom = polarized#  
+or \verb#optics_geom = unpolarized#.
+
+There is no default value
 
 \subsection[optics\_intraband]{\tt logical :: optics\_intraband}
-Calculate the intraband contribution to the dielectric function.  (Important for metals.)    
+If true, the intraband contribution to the dielectric function will be calculated.  (Important for metals.)    
+
 The default is FALSE.
 
 \subsection[optics\_drude\_broadening]{\tt real(kind=dp) :: optics\_drude\_broadening}
 Value of broadening included in the Drude term expressed in $s^{-1}$.  
+
 The default value is 1E-14.  
+
+\subsection[optics\_lossfn\_broadening]{\tt real(kind=dp) :: optics\_lossfn\_broadening}
+FWHM of Gaussian used to broaden the loss function.  
+
+The default value is 0 ($i.e.$ no broadening is used).  
+
 
 \section{Core-hole Parameters}
 
@@ -415,22 +428,24 @@ to plot both.
 
 
 \subsection[core\_qdir]{\tt real(kind=dp) :: core\_qdir(3)}
-Direction of polarisation. Must be specified if \verb#core_geom :polarized#.
-No default
+Direction of polarisation. Must be specified if \verb#core_geom = polarized#.
+
+There is no default value.
 
 \subsection[core\_LAI\_broadening]{\tt logical :: core\_LAI\_broadening}
 Include life-time and instrumentation broadening.  
+
 The default is FALSE.
 
 \subsection[core\_gaussian\_width]{\tt real(kind=dp) :: LAI\_gaussian\_width}
 FWHM of Gaussian function used to broaden spectrum.  
 
-The default value, if \verb#core_LAI_broadening :true#, is 0 (i.e. no Gaussian used).
+The default value, if \verb#core_LAI_broadening = true#, is 0 ($i.e.$ no Gaussian used).
 
 \subsection[core\_lorentzian\_width]{\tt real(kind=dp) :: LAI\_lorentzian\_width}
 FWHM of fixed Lorentzian function used to broaden spectrum.  
 
-The default value, if \verb#core_LAI_broadening :true#, is 0 (i.e. no fixed Lorentzian used).
+The default value, if \verb#core_LAI_broadening = true#, is 0 ($i.e.$ no fixed Lorentzian used).
 
 \subsection[core\_lorentzian\_scale]{\tt real(kind=dp) :: LAI\_lorentzian\_scale}
 Variation of Lorentzian function with energy i.e. the width of the Lorentzian is energy x 
@@ -439,13 +454,12 @@ If \verb#core_lorentzian_scale# and \verb#core_lorentzian_width# are both specif
 total width of the Lorentzian used will be \verb#core_lorentzian_width# + (energy x 
 \verb#core_lorentzian_scale#).
 
-The default value, if \verb#core_LAI_broadening :true#, is 0.1. 
+The default value, if \verb#core_LAI_broadening = true#, is 0.1. 
 
 \subsection[core\_lorentzian\_offset]{\tt real(kind=dp) :: LAI\_lorentzian\_offset}
 Energy (in eV) above the edge onset that the energy dependent broadening starts.  
-The default value, if \verb#core_LAI_broadening :true#, is 0.
 
-
+The default value, if \verb#core_LAI_broadening = true#, is 0.
 
 
 \chapter{Examples}
@@ -698,13 +712,50 @@ The header shows that there are four projectors described below. The first conta
 
 
 \section{JDOS}
-See  \verb#examples/Si2_JDOS/#. This is a simple example of using \optados\ for calculating joint electronic density of states. This is a simple example of using \optados\ for calculating joint electronic density of states.  We choose to recalculate the Fermi level using the calculated DOS, rather than use the Fermi level suggested by \castep.  If {\tt TASK : compare\_jdos} is used instead, \optados\ will calculate the JDOS using all the broadening methods, this is good practice to see whether the broadening widths are appropriate before more advanced tasks are carried out.  The JDOS is outputted to {\tt Si2.jadaptive.dat}. A file suitable for plotting using {\tt xmgrace} is written to {\tt Si2.jadaptive.agr}. 
+See  \verb#examples/Si2_JDOS/#. This is a simple example of using \optados\ for calculating joint electronic density of states.  We choose to recalculate the Fermi level using the calculated DOS, rather than use the Fermi level suggested by \castep.  If {\tt TASK : compare\_jdos} is used instead, \optados\ will calculate the JDOS using all the broadening methods, this is good practice to see whether the broadening widths are appropriate before more advanced tasks are carried out.  The JDOS is outputted to {\tt Si2.jadaptive.dat}. A file suitable for plotting using {\tt xmgrace} is written to {\tt Si2.jadaptive.agr}. 
 
 \section{CORE}
 See  \verb#examples/diamond_CORE/#. This is a simple example of using \optados\ for calculating core level spectra. 
 
 \section{OPTICS}
-See  \verb#examples/Al_OPTICS/#. This is a simple example of using \optados\ for calculating optical properties. 
+Two sets of example files are provided for calculations of optical properties.  For each example, the \castep\ files containing all the cell and simulation parameters are included, along with an \optados\ input file. We assume that the reader is familiar with the previous sections on DOS and JDOS.  
+\begin{itemize}
+\item[{\bf --}]  \verb#examples/Si2_OPTICS/#  This is a simple example of using \optados\ to calculate the optical properties of crystalline silicon, which is an insulator.   
+\item[{\bf --}]\verb#examples/Al_OPTICS/#  This is a simple example of using \optados\ to calculate the optical properties of a metal, aluminium. 
+\end{itemize}
+
+\subsection{Silicon}
+\begin{enumerate}
+\item Choose a broadening scheme for the JDOS as explained in the JDOS example.  Once the JDOS looks suitable, switch the \verb#task# from \verb#JDOS# to \verb#OPTICS# and execute \optados\ to calculate the optical properties.  Several \verb#*.dat# files are produced:
+\begin{itemize}
+\item[{\bf --}] \verb#Si2_OPTICS_absorption.dat# : This file contains the absorption coefficient (second column) as function of energy (first column).
+\item[{\bf --}] \verb#Si2_OPTICS_conductivity.dat# : This file contains the conductivity outputted in SI units (Siemens per metre).  The columns are the energy, real part  and imaginary part of the conductivity respectively.  
+\item[{\bf --}] \verb#Si2_OPTICS_epsilon.dat# : This file contains the dielectric function.  The columns are the energy and real and imaginary parts of the dielectric function respectively. The file header also includes the result of the sum rule $\int_o^{\omega'}Im\epsilon{}(\omega{})d\omega = N_{eff}(\omega')$.  $N_{eff}$ is the effective number of electrons contributing to the absorption process, and is a function of energy.    
+\item[{\bf --}] \verb#Si2_OPTICS_loss_fn.dat# : This file contains the loss function (second column) as a function of energy (first column).  The header of the file shows the results of the two sum rules associated with the loss function $\int_o^{\omega'}Im\Big(\frac{-1}{\epsilon{}(\omega{})}\Big)\,\omega{}\,d\omega = N_{eff}(\omega')$ and $\int_o^{\omega'}Im\Big(\frac{-1}{\epsilon{}(\omega{})}\Big)\,\frac{1}{\omega}\,d\omega = \frac{\pi}{2}$.
+\item[{\bf --}] \verb#Si2_OPTICS_reflection.dat# : This file contains the reflection coefficient (second column) as a function of energy (first column).
+\item[{\bf --}] \verb#Si2_OPTICS_refractive_index.dat# : This file contains the refractive index.  The columns are the energy and real and imaginary parts of the refractive index respectively.  
+\end{itemize}
+Corresponding \verb#*.agr# files are also generated which can be plotted easily using xmgrace.
+
+\item Change parameters \verb#JDOS_SPACING# and \verb#JDOS_MAX# and check the effect on the optical properties.  Note: all of the other optical properties are derived from the dielectric function.  
+
+\item  The \optados\ input file has been set up to calculate the optical properties in the polycrystalline geometry (\verb#optics_geom = polycrystalline#).  It is possible to calculate different either polarised or unpolarised geometries, or to calculate the full dielectric tensor.  To do calculate the full dielectric tensor set \verb#optics_geom = tensor#.  This time only the file \verb#Si2_OPTICS_epsilon.dat# is generated.  The format of this file is the same as before (the columns are the energy and the real and imaginary parts of the dielectric function respectively), but this time the six different components of the tensor are listed sequentially in the order $\epsilon_{xx}$, $\epsilon_{yy}$, $\epsilon_{zz}$, $\epsilon_{xy}$, $\epsilon_{xz}$ and $\epsilon_{yz}$.
+
+\item Additional broadening can be included in the calculation of the loss function.  This is done by including the keywork \verb#optics_lossfn_broadening# in the \optados\ input file.  If you include this keyword and re-run \optados\, you will find that \verb#Si2_OPTICS_loss_fn.dat# now has three columns.  These are the energy, unbroadened spectrum and broadened spectrum respectively.  
+
+\end{enumerate}
+
+\subsection{Aluminium}
+\begin{enumerate}
+\item As for the silicon example, a broadening scheme for the JDOS should first be determined.  
+\item Aluminium is a metal so we need to include both the interband and intraband contributions to the dielectric function.  To include the intraband contribution \verb#intraband = true# must be included in the \optados\ input file.  When you run \optados\, the same files are generated as when only the interband term is included.  
+
+The \verb#Al_OPTICS_epsilon.dat# file has the same format as before, but it now contains sequentially the interband contribution, the intraband contribution and the total dielectric function.  (The file \verb#Al_OPTICS_epsilon.agr# only contains the interband term.)  In the same way, \verb#Al_OPTICS_loss_fn.dat# contains the interband contribution, intraband contribution and total loss function.  All other optical properties are calculated from the total dielectric function and the format of the output files remains the same.
+
+\item In the case where the dielectric tensor is calculated and the intraband term is included, only the \verb#Si2_OPTICS_epsilon.dat#  file is generated.  As before it contains each component, but this time it lists sequentially the interband contribution, intraband contribution and total dielectric function for each component.   
+
+\item This time, if additional broadening for the loss function is included by using the key word \verb#optics_lossfn_broadening#, \verb#AL_OPTICS_loss_fn.dat# will contains four sequential data sets.  These are the interband contribution, the intraband contribution, the total loss function without the additional broadening and the broadened total loss function.  
+\end{enumerate}
 
 \chapter{Frequently Asked Questions}
 
