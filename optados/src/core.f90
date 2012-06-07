@@ -186,6 +186,7 @@ contains
     character(len=20) :: temp
     character(len=40) :: temp2
     character(len=10), allocatable :: elnes_symbol(:)
+    character(len=10), allocatable :: elnes_label(:)
     integer, allocatable :: edge_shell(:), edge_am(:), edge_num_am(:), edge_list(:,:)
     integer, allocatable :: edge_species(:),edge_rank_in_species(:)
     integer, allocatable :: ion_species(:),ion_num_in_species(:)
@@ -208,6 +209,8 @@ contains
     if(ierr/=0) call io_error('Error: core_write - allocation of dos_temp2 failed')
     allocate(elnes_symbol(maxval(elnes_orbital%species_no(:))),stat=ierr)
     if(ierr/=0) call io_error('Error: core_write - allocation of elnes_symbol failed')
+    allocate(elnes_label(maxval(elnes_orbital%species_no(:))),stat=ierr)
+    if(ierr/=0) call io_error('Error: core_write - allocation of elnes_label failed')
 
     dE=E(2)-E(1)
 
@@ -224,6 +227,7 @@ contains
        do loop2=1,109
           if(atoms_label(loop)==periodic_table_name(loop2)) then
              elnes_symbol(counter)=periodic_table_name(loop2)
+             elnes_label(counter)=''
              counter=counter+1
              exit
              !check atom count here
@@ -243,6 +247,7 @@ contains
              do loop2=1,109
                 if(atoms_symbol(loop)==periodic_table_name(loop2)) then
                    elnes_symbol(counter)=periodic_table_name(loop2)
+                   elnes_label(counter)=atoms_label(loop)
                    counter=counter+1
                    exit
                 end if
@@ -425,8 +430,13 @@ contains
              temp='P6,7'
           endif
        endif
-       
-       write(edge_name(loop),'(a2,1x,i0,1x,a5)') trim(elnes_symbol(edge_species(loop))),edge_rank_in_species(loop),trim(temp)
+
+       if(elnes_label(edge_species(loop))=='') then
+          write(edge_name(loop),'(a2,1x,i0,1x,a5)') trim(elnes_symbol(edge_species(loop))),edge_rank_in_species(loop),trim(temp)
+       else
+          write(edge_name(loop),'(a2,1x,i0,1x,a5,a10)') trim(elnes_symbol(edge_species(loop))),&
+               edge_rank_in_species(loop),trim(temp),trim(elnes_label(edge_species(loop)))
+       endif
     end do
 
 
