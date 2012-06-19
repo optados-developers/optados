@@ -43,7 +43,7 @@ contains
     use od_dos_utils, only : dos_utils_calculate, dos_utils_set_efermi
     use od_comms, only : on_root
     use od_io, only : stdout
-    use od_parameters, only : core_LAI_broadening, LAI_gaussian, LAI_lorentzian, set_efermi_zero
+    use od_parameters, only : core_LAI_broadening, LAI_gaussian, LAI_lorentzian, set_efermi_zero, LAI_lorentzian_scale
 
     implicit none
 
@@ -71,7 +71,7 @@ contains
        allocate(weighted_dos_broadened(size(weighted_dos,1),size(weighted_dos,2),size(weighted_dos,3)))
        weighted_dos_broadened=0.0_dp
        if(LAI_gaussian) call core_gaussian 
-       if(LAI_lorentzian) call core_lorentzian 
+       if(LAI_lorentzian .or. (LAI_lorentzian_scale.gt.1E-14)) call core_lorentzian 
     endif
 
     if(set_efermi_zero .and. .not.efermi_set) call dos_utils_set_efermi
@@ -170,14 +170,14 @@ contains
     !***************************************************************
     ! This subroutine writes out the Core loss function
 
-    use od_constants, only : bohr2ang, periodic_table_name
+    use od_constants, only : bohr2ang, periodic_table_name, pi
     use od_parameters, only : dos_nbins, core_LAI_broadening, LAI_gaussian, LAI_gaussian_width, &
          LAI_lorentzian, LAI_lorentzian_scale,  LAI_lorentzian_width,  LAI_lorentzian_offset, output_format, &
          set_efermi_zero
     use od_electronic, only: elnes_mwab,elnes_orbital,efermi,efermi_set
     use od_io, only : seedname, io_file_unit,io_error
     use od_dos_utils, only : E,dos_utils_set_efermi
-    use od_cell, only : num_species, atoms_symbol, atoms_label
+    use od_cell, only : num_species, atoms_symbol, atoms_label, cell_volume
     use xmgrace_utils
 
     integer :: N
@@ -194,6 +194,9 @@ contains
     real(kind=dp), allocatable :: dos_temp(:), dos_temp2(:)
     logical :: found
     real(kind=dp), allocatable :: E_shift(:)
+    real(kind=dp) :: epsilon2_const
+    real(kind=dp), parameter :: epsilon_0 = 8.8541878176E-12_dp  
+    real(kind=dp), parameter :: e_charge =  1.602176487E-19_dp 
 
     allocate(E_shift(dos_nbins),stat=ierr)
     if (ierr/=0) call io_error('Error allocating E_shift in core_write')
@@ -303,6 +306,11 @@ contains
     weighted_dos=weighted_dos*bohr2ang**2  
     if (core_LAI_broadening) weighted_dos_broadened=weighted_dos_broadened*bohr2ang**2
 
+    ! Units are currently (ang^2)(eV^-1) so need to multiply by a factor so we have a dimensionless epsilon_2
+    epsilon2_const = (e_charge*pi*1E-20)/(cell_volume*1E-30*epsilon_0)   
+    weighted_dos=weighted_dos*epsilon2_const
+    if (core_LAI_broadening) weighted_dos_broadened=weighted_dos_broadened*epsilon2_const
+
     allocate(ion_species(elnes_mwab%norbitals))
     allocate(ion_num_in_species(elnes_mwab%norbitals))
     ion_species=0;ion_num_in_species=0
@@ -316,7 +324,7 @@ contains
           found=.false.
           do loop2=1,counter
              if(elnes_orbital%species_no(loop)==ion_species(loop2).and.&
-	& elnes_orbital%rank_in_species(loop)==ion_num_in_species(loop2)) then
+                  & elnes_orbital%rank_in_species(loop)==ion_num_in_species(loop2)) then
                 found=.true.
              end if
           enddo
@@ -359,7 +367,7 @@ contains
           found=.false.
           do loop2=1,counter
              if(edge_species(loop2)==elnes_orbital%species_no(loop).and.&
-	& edge_rank_in_species(loop2)==elnes_orbital%rank_in_species(loop).and.&
+                  & edge_rank_in_species(loop2)==elnes_orbital%rank_in_species(loop).and.&
                   edge_shell(loop2)==elnes_orbital%shell(loop).and.edge_am(loop2)==elnes_orbital%am_channel(loop)) then
                 edge_num_am(counter)=edge_num_am(counter)+1
                 edge_list(counter,edge_num_am(counter))=loop
@@ -491,7 +499,7 @@ contains
     if(num_sites==1) then ! if only one site we write out plot script files
 
        if(trim(output_format)=="xmgrace") then
-       
+
           core_unit=io_file_unit()
           open(unit=core_unit,file=trim(seedname)//'_'//'core_edge'//'.agr',iostat=ierr)
           if(ierr.ne.0) call io_error(" ERROR: Cannot open xmgrace batch file in core: write_core_xmgrace")
@@ -594,8 +602,8 @@ contains
        do N_spin=1,nspins               ! Loop over spins 
           do N_energy=1,dos_nbins       ! Loop over energy 
              if(E(N_energy).ge.(LAI_lorentzian_offset+efermi)) then 
-                L_width = 0.5_dp*LAI_lorentzian_width & ! HWHW of Lorentzian 
-                     + ((E(N_energy)-efermi)*LAI_lorentzian_scale)
+                L_width = 0.5_dp*(LAI_lorentzian_width & ! HWHW of Lorentzian 
+                     + ((E(N_energy)-efermi)*LAI_lorentzian_scale))
              else 
                 L_width = 0.5_dp*LAI_lorentzian_width 
              end if

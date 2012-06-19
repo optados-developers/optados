@@ -1,0 +1,6 @@
+devel_code : bndignore=5 ignore_tol=0.005
+
+TASK                   : SPECTRAL
+CUT_OFF_ENERGY         : 200
+IPRINT                 : 1
+NEXTRA_BANDS           : 15
