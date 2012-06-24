@@ -757,9 +757,9 @@ The \verb#Al_OPTICS_epsilon.dat# file has the same format as before, but it now 
 \section{CORE}
 See  \verb#examples/Si2_CORE/#. This is a simple example of using \optados\ for calculating core level absorption spectra for crystalline silicon.  We assume that the reader is familiar with the previous section on calculating DOS.  
 \begin{enumerate}
-\item Begin by running a \castep\ calculation using the files provided in \verb#examples/Si2_CORE#.  It is worth noticing that we are not specifying pseudopotentials in the \verb#Si2_CORE.cell# file.  This means that we will be using on-the-fly pseudopotentials.  This is important as most pseudopotential formats do not contain enough information for the PAW reconstruction needed for a CORE calculation.  You need to use on-the-fly pseudopotentials for any atom you wish to calculate CORE spectra from.  
+\item We begin by running a \castep\ calculation using the files provided in \verb#examples/Si2_CORE#.  Note that we do not specify pseudopotentials in the \verb#Si2_CORE.cell# file hence require \castep\ to generate on-the-fly pseudopotentials.  This is important as most pseudopotential formats do not contain enough information for the PAW reconstruction needed for a CORE calculation. For any atom a CORE spectra is to be calulcated an On-the-fly pseudopotential must be used.
 
-Execute \optados\ using the \optados\ input file provided and the file \verb#Si2_CORE_core_edge.dat# will be created.  The file contains two columns, the first is the energy and the second is the spectrum.  This file will contain the following edges:
+Execute \optados\ using the \optados\ input file provided and the file \verb#Si2_CORE_core_edge.dat# will be created.  The file contains two columns, the first is the energy and the second is the spectrum.  This file contains the following edges:
 
 \begin{verbatim}
  # Si 1    K1
@@ -771,14 +771,14 @@ Execute \optados\ using the \optados\ input file provided and the file \verb#Si2
 \end{verbatim}
 $i.e.$ all edges from all atoms are produced.    
 
-\item To include a core-hole in the calculation, you will first need to distinguish one atom from the others in the unit cell.  To start with, we will keep the unit cell with two atoms and distinguish one atom by changing the \verb#%BLOCK POSITIONS_FRAC#
+\item To include a core-hole in the calculation, first one atom is chosen to have the excitation.  To begin, we will keep two atoms in the unit cell and distinguish one atom by changing the \verb#%BLOCK POSITIONS_FRAC#
 \begin{verbatim} 
      %BLOCK POSITIONS_FRAC
             Si:exi    0.0000000000    0.0000000000    0.0000000000
             Si        0.2500000000    0.2500000000    0.2500000000
       %ENDBLOCK POSITIONS_FRAC
 \end{verbatim}
-in the \verb#Si2_CORE.cell# file.  The atom \verb#Si:exi# is the one which will have a core-hole.  To create a core-hole, we will remove one of the  1s electron from the electronic configuration used in the generation of the pseudopotential.  We have generated an on-the-fly pseudopotentials as part of the calculation without a core-hole we have already done.  Information about the pseudopotentials is included at the top of the \verb#Si2_CORE.castep# file.  
+in the \verb#Si2_CORE.cell# file.  The atom \verb#Si:exi# is the one to have a core-hole.  To create a core-hole we remove a 1s electrons from the electronic configuration used in the generation of the pseudopotential.  We have already generated an on-the-fly pseudopotential without a core-hole in the previous section.  Information about the pseudopotentials is included at the top of the \verb#Si2_CORE.castep# file.  
 
 \begin{verbatim}
    ============================================================                
@@ -834,7 +834,7 @@ To maintain the neutrality of the cell, we include
 \end{verbatim}
 in the \verb#Si2_CORE.param# file.  Run the calculation.  This time the \verb#Si2_CORE_core_edge.dat# file will contain only the edges from the core-hole atom.  Compare the K-edge from the core-hole calculation with the previous non-core-hole calculation.  
 
-\item The periodic images of the core-hole will interact with one another.  As this is unphysical, we need to increase the distance between the core-holes.  This is done by creating a supercell.  To start with we shall just use a face-centred unit cell rather than the primitive unit cell.  This is done by changing the lattice parameters and fractional co-ordinates to:
+\item The periodic images of the core-hole will interact with one another.  As this is unphysical, we need to increase the distance between the core-holes.  This is done by creating a supercell.  To start with we use a face-centred unit cell rather than the primitive unit cell.  This is done by changing the lattice parameters and fractional co-ordinates to:
 \begin{verbatim} 
      %BLOCK LATTICE_CART 
             5.46  0.00 0.00
