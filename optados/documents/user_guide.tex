@@ -738,7 +738,7 @@ Corresponding \verb#*.agr# files are also generated which can be plotted easily 
 
 \item  The \optados\ input file has been set up to calculate the optical properties in the polycrystalline geometry (\verb#optics_geom = polycrystalline#).  It is possible to calculate either polarised or unpolarised geometries, or to calculate the full dielectric tensor.  To calculate the full dielectric tensor set \verb#optics_geom = tensor#.  This time only the file \verb#Si2_OPTICS_epsilon.dat# is generated.  The format of this file is the same as before (the columns are the energy and the real and imaginary parts of the dielectric function respectively), but this time the six different components of the tensor are listed sequentially in the order $\epsilon_{xx}$, $\epsilon_{yy}$, $\epsilon_{zz}$, $\epsilon_{xy}$, $\epsilon_{xz}$ and $\epsilon_{yz}$.
 
-\item Additional broadening can be included in the calculation of the loss function.  This is done by including the keywork \verb#optics_lossfn_broadening# in the \optados\ input file.  If you include this keyword and re-run \optados, you will find that the file \verb#Si2_OPTICS_loss_fn.dat# now has three columns.  These are the energy, unbroadened spectrum and broadened spectrum respectively.  
+\item Additional broadening can be included in the calculation of the loss function.  This is done by including the keyword \verb#optics_lossfn_broadening# in the \optados\ input file.  If you include this keyword and re-run \optados, you will find that the file \verb#Si2_OPTICS_loss_fn.dat# now has three columns.  These are the energy, unbroadened spectrum and broadened spectrum respectively.  
 
 \end{enumerate}
 
@@ -757,7 +757,7 @@ The \verb#Al_OPTICS_epsilon.dat# file has the same format as before, but it now 
 \section{CORE}
 See  \verb#examples/Si2_CORE/#. This is a simple example of using \optados\ for calculating core level absorption spectra for crystalline silicon.  We assume that the reader is familiar with the previous section on calculating DOS.  
 \begin{enumerate}
-\item We begin by running a \castep\ calculation using the files provided in \verb#examples/Si2_CORE#.  Note that we do not specify pseudopotentials in the \verb#Si2_CORE.cell# file hence require \castep\ to generate on-the-fly pseudopotentials.  This is important as most pseudopotential formats do not contain enough information for the PAW reconstruction needed for a CORE calculation. For any atom a CORE spectra is to be calulcated an On-the-fly pseudopotential must be used.
+\item We begin by running a \castep\ calculation using the files provided in \verb#examples/Si2_CORE#.  Note that we do not specify pseudopotentials in the \verb#Si2_CORE.cell# file hence require \castep\ to generate on-the-fly pseudopotentials.  This is important as most pseudopotential formats do not contain enough information for the PAW reconstruction needed for a CORE calculation. For any atom a CORE spectra is to be calculated an On-the-fly pseudopotential must be used.
 
 Execute \optados\ using the \optados\ input file provided and the file \verb#Si2_CORE_core_edge.dat# will be created.  The file contains two columns, the first is the energy and the second is the spectrum.  This file contains the following edges:
 
