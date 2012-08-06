@@ -21,10 +21,6 @@ Beta 3
 
 Check that the parameters are echo'ed in seed.odo file
 
-Examples step by step 
- * JDOS/Optics [RJN]
- * Core [JRY]
-
 ================
 Website
 ================
@@ -32,11 +28,14 @@ Website
 ================
 Manual
 ================
-Update manual with comments from meeting on 29/III/2012 [AJM]
+Examples step by step
+ * JDOS/Optics [RJN]
 
 ================
 Paper
 ================
-Update paper with comments from meeting on 29/III/2012 [AJM]
-Redo N-defect calculations with same k-point mesh [AJM]
+2.4 Core-hole section [JRY]
+2.5 Spectroscopy Section [RJN]
+6.1 Copper Example [JRY]
+Add a "test run" to Appendix A [AJM]
 
