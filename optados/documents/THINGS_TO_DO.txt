@@ -10,11 +10,6 @@ Pdos
 
  Project onto individual (real) spherical harmonics [JRY]
 
-File-formats
-------------
-
- Think about the new file formats and see if they can be made better [JRY]
-
 =================
 Beta 3
 =================
