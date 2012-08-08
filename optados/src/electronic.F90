@@ -176,71 +176,89 @@ contains
          & io_error  
     use od_cell,  only : num_kpoints_on_node,nkpoints
     use od_constants,only : bohr2ang, H2eV
-    use od_parameters, only : legacy_file_format,iprint
+    use od_parameters, only : legacy_file_format,iprint,devel_flag
     use od_algorithms, only : algor_dist_array
     implicit none
 
     integer :: gradient_unit,i,ib,jb,is,ik,inodes,ierr,loop
     character(filename_len) :: gradient_filename
+    character(len=80)       :: header
     logical :: exists
-    real(kind=dp) :: time0, time1
+    real(kind=dp) :: time0, time1,file_version
+    real(kind=dp), parameter :: file_ver=1.0_dp
 
     ! Check that we haven't already done this.
 
     if(allocated(band_gradient)) return 
 
     ! first try to read a velocity file
-    gradient_filename=trim(seedname)//".cst_vel"
+    if(index(devel_flag,'old_filename')>0) then
+       gradient_filename=trim(seedname)//".cst_vel"
+    else
+       gradient_filename=trim(seedname)//".dome_bin"
+    endif
     if(on_root) inquire(file=gradient_filename,exist=exists)
     call comms_bcast(exists,1)
 
     if(exists) then  ! good. We are reading from a velocity file
 
-    time0=io_time()
-    if(on_root) then
-       gradient_unit=io_file_unit()
-       gradient_filename=trim(seedname)//".cst_vel"
-       open(unit=gradient_unit,file=gradient_filename,status="old",form='unformatted',err=101)
-    endif
+       time0=io_time()
+       if(on_root) then
+          if(iprint>1) write(stdout,'(a)') ' '
+          if(iprint>1) write(stdout,'(a)') ' Reading band gradients from file: '//trim(gradient_filename)
+          gradient_unit=io_file_unit()
+          if(index(devel_flag,'old_filename')>0) then
+             gradient_filename=trim(seedname)//".cst_vel"
+             open(unit=gradient_unit,file=gradient_filename,status="old",form='unformatted',err=101)
+          else
+             gradient_filename=trim(seedname)//".dome_bin"
+             open(unit=gradient_unit,file=gradient_filename,status="old",form='unformatted',err=102)
+             read(gradient_unit) file_version
+             if( (file_version-file_ver)>0.001_dp) call io_error('Error: Trying to read newer version of dome_bin file. Update optados!')
+             read(gradient_unit) header
+             if(iprint>1) write(stdout,*) trim(header)
+          endif
+       end if
 
-    ! Figure out how many kpoint should be on each node
-    call algor_dist_array(nkpoints,num_kpoints_on_node)
-    allocate(band_gradient(1:nbands,1:3,1:num_kpoints_on_node(my_node_id),1:nspins),stat=ierr)
-    if (ierr/=0) call io_error('Error: Problem allocating band_gradient in elec_read_band_gradient')
 
-    if(on_root) then
-       do inodes=1,num_nodes-1
-          do ik=1,num_kpoints_on_node(inodes)
-             do is=1,nspins
-                read(gradient_unit) ((band_gradient(ib,i,ik,is),ib=1,nbands),i=1,3)
+       ! Figure out how many kpoint should be on each node
+       call algor_dist_array(nkpoints,num_kpoints_on_node)
+       allocate(band_gradient(1:nbands,1:3,1:num_kpoints_on_node(my_node_id),1:nspins),stat=ierr)
+       if (ierr/=0) call io_error('Error: Problem allocating band_gradient in elec_read_band_gradient')
+       
+       if(on_root) then
+          do inodes=1,num_nodes-1
+             do ik=1,num_kpoints_on_node(inodes)
+                do is=1,nspins
+                   read(gradient_unit) ((band_gradient(ib,i,ik,is),ib=1,nbands),i=1,3)
+                end do
              end do
+             call comms_send(band_gradient(1,1,1,1),nbands*3*nspins*num_kpoints_on_node(inodes),inodes)
           end do
-          call comms_send(band_gradient(1,1,1,1),nbands*3*nspins*num_kpoints_on_node(inodes),inodes)
-       end do
           do ik=1,num_kpoints_on_node(0)
              do is=1,nspins
                 read(gradient_unit) ((band_gradient(ib,i,ik,is),ib=1,nbands),i=1,3)
              end do
           end do
        end if
-
+       
        if(.not. on_root) then
           call comms_recv(band_gradient(1,1,1,1),nbands*3*nspins*num_kpoints_on_node(my_node_id),root_id)
        end if
-
+       
        if(on_root) close (unit=gradient_unit)
-
-
+       
+       
        ! Convert all band gradients to eV Ang
        band_gradient=band_gradient*bohr2ang*H2eV
        
        time1=io_time()
        if(on_root.and.iprint>1) write(stdout,'(1x,a40,f11.3,a)') 'Time to read band gradients ',time1-time0,' (sec)'
-
+       
     else ! lets try to get the data from the cst_ome file
        allocate(band_gradient(1:nbands,1:3,1:num_kpoints_on_node(my_node_id),1:nspins),stat=ierr)
        if (ierr/=0) call io_error('Error: Problem allocating band_gradient (b) in elec_read_band_gradient')
-
+       
        if(allocated(optical_mat)) then
           do loop=1,nbands
              band_gradient(loop,:,:,:)=real(optical_mat(loop,loop,:,:,:),dp)
@@ -258,6 +276,7 @@ contains
     return
 
 101 call io_error('Error: Problem opening cst_vel file in read_band_gradient')
+102 call io_error('Error: Problem opening dome_bin file in read_band_gradient')
 
   end subroutine elec_read_band_gradient
 
@@ -287,14 +306,16 @@ contains
          & io_error  
     use od_cell,  only : num_kpoints_on_node,nkpoints
     use od_constants,only : bohr2ang, H2eV
-    use od_parameters, only : legacy_file_format,iprint
+    use od_parameters, only : legacy_file_format,iprint,devel_flag
     use od_algorithms, only : algor_dist_array
     implicit none
 
     integer :: gradient_unit,i,ib,jb,is,ik,inodes,ierr 
     character(filename_len) :: gradient_filename
+    character(len=80)       :: header
+    real(kind=dp) :: time0, time1,file_version
+    real(kind=dp), parameter :: file_ver=1.0_dp
 
-    real(kind=dp) :: time0, time1
 
     ! Check that we haven't already done this.
 
@@ -303,14 +324,25 @@ contains
     time0=io_time()
     if(on_root) then
        gradient_unit=io_file_unit()
-       gradient_filename=trim(seedname)//".cst_ome"
-       open(unit=gradient_unit,file=gradient_filename,status="old",form='unformatted',err=101)
+       if(index(devel_flag,'old_filename')>0) then
+          gradient_filename=trim(seedname)//".cst_ome"
+          if(iprint>1) write(stdout,'(1x,a)') 'Reading optical matrix elements from file: '//trim(gradient_filename)
+          open(unit=gradient_unit,file=gradient_filename,status="old",form='unformatted',err=101)
+       else
+          gradient_filename=trim(seedname)//".ome_bin"
+          if(iprint>1) write(stdout,'(1x,a)') 'Reading optical matrix elements from file: '//trim(gradient_filename)
+          open(unit=gradient_unit,file=gradient_filename,status="old",form='unformatted',err=102)
+          read(gradient_unit) file_version
+          if( (file_version-file_ver)>0.001_dp) call io_error('Error: Trying to read newer version of ome_bin file. Update optados!')
+          read(gradient_unit) header
+          if(iprint>1) write(stdout,'(1x,a)') trim(header)
+       endif
     endif
 
-    ! Figure out how many kpoint should be on each node
+    ! Figure out how many kpoints should be on each node
     call algor_dist_array(nkpoints,num_kpoints_on_node)
     allocate(optical_mat(1:nbands,1:nbands,1:3,1:num_kpoints_on_node(my_node_id),1:nspins),stat=ierr)
-    if (ierr/=0) call io_error('Error: Problem allocating optical_mat in elec_read_band_gradient')
+    if (ierr/=0) call io_error('Error: Problem allocating optical_mat in elec_read_optical_mat')
 
     if(legacy_file_format) then
 
@@ -359,8 +391,7 @@ contains
           end do
           do ik=1,num_kpoints_on_node(0)
              do is=1,nspins
-                read(gradient_unit) (((optical_mat(ib,jb,i,ik,is),ib=1,nbands)&
-                     ,jb=1,nbands),i=1,3)
+                read(gradient_unit) (((optical_mat(ib,jb,i,ik,is),ib=1,nbands),jb=1,nbands),i=1,3)
              end do
           end do
        end if
@@ -390,6 +421,7 @@ contains
     return
 
 101 call io_error('Error: Problem opening cst_ome file in read_band_optical_mat')
+102 call io_error('Error: Problem opening ome_bin file in read_band_optical_mat')
 
   end subroutine elec_read_optical_mat
 
@@ -593,15 +625,18 @@ contains
     use od_comms,     only : comms_bcast,comms_send,comms_recv,num_nodes,my_node_id,&
          & on_root,root_id
     use od_io,        only : io_file_unit, seedname, filename_len, io_time,&
-         & io_error
-    use od_parameters, only : legacy_file_format
+         & io_error,stdout
+    use od_parameters, only : legacy_file_format,devel_flag,iprint
 
     implicit none
 
     integer :: inodes,ik,ns,nb,indx
     integer :: ierr,elnes_unit,orb,loop
     character(filename_len) :: elnes_filename
-    real(kind=dp) :: time0
+    character(len=80)       :: header
+    real(kind=dp) :: time0, time1,file_version
+    real(kind=dp), parameter :: file_ver=1.0_dp
+
 
     time0=io_time()
 
@@ -609,12 +644,23 @@ contains
     if(allocated(elnes_mat)) return
 
     !Open the elnes sfile
-    elnes_unit=io_file_unit()
-    elnes_filename=trim(seedname)//".eels_mat"
-
-    ! Read the details of the core orbitals from the elnes file
     if(on_root) then
-       open(unit=elnes_unit,file=elnes_filename,form='unformatted',err=100,status='old')
+       elnes_unit=io_file_unit()
+       if(index(devel_flag,'old_filename')>0) then
+          elnes_filename=trim(seedname)//".eels_mat"
+          if(iprint>1) write(stdout,'(1x,a)') 'Reading elnes matrix elements from file: '//trim(elnes_filename)
+          open(unit=elnes_unit,file=elnes_filename,form='unformatted',err=100,status='old')
+       else
+          elnes_filename=trim(seedname)//".elnes_bin"
+          if(iprint>1) write(stdout,'(1x,a)') 'Reading elnes matrix elements from file: '//trim(elnes_filename)
+          open(unit=elnes_unit,file=elnes_filename,status="old",form='unformatted',err=102)
+          read(elnes_unit) file_version
+          if( (file_version-file_ver)>0.001_dp) &
+               call io_error('Error: Trying to read newer version of elnes_bin file. Update optados!')
+          read(elnes_unit) header
+          if(iprint>1) write(stdout,'(1x,a)') trim(header)
+       endif
+
 
        read(elnes_unit) elnes_mwab%norbitals
        read(elnes_unit) elnes_mwab%nbands   
@@ -782,9 +828,18 @@ contains
        endif
     end do
 
+
+    time1=io_time()
+    if(on_root.and.iprint>1) then
+       write(stdout,'(1x,a59,f11.3,a8)') &
+            '+ Time to read Elnes Matrix Elements                     &
+            &      ',time1-time0,' (sec) +'
+    endif
+
     return
 
 100 call io_error('Error: Problem opening elnes file in elec_read_elnes_mat') 
+102 call io_error('Error: Problem opening elnes_bin file in elec_read_elnes_mat') 
 
 
   end subroutine elec_read_elnes_mat
@@ -812,8 +867,9 @@ contains
     !=========================================================================
     use od_comms,     only : comms_bcast,comms_send,comms_recv,num_nodes,my_node_id,&
         & on_root,root_id
-    use od_io,        only : stdout, io_file_unit, io_error, seedname
+    use od_io,        only : stdout, io_file_unit, io_error, seedname,  filename_len
     use od_cell,      only : num_kpoints_on_node
+    use od_parameters,only : devel_flag, iprint
 
     implicit none
 
@@ -823,18 +879,34 @@ contains
     integer                              :: dummyi,ib,ik,is
     integer                              :: pdos_in_unit,ierr,inodes
     logical                              :: full_debug_pdos_weights=.false.
-    
+    character(filename_len) :: pdos_filename
+    character(len=80)       :: header
+    real(kind=dp) :: time0, time1,file_version
+    real(kind=dp), parameter :: file_ver=1.0_dp
 
     if(allocated(pdos_weights)) return
 
-    pdos_in_unit=io_file_unit()
     
 
     !-------------------------------------------------------------------------!
     ! R E A D   T H E   D A T A   H E A D E R
     if(on_root) then
-       open (unit=pdos_in_unit,err=100, status='old', file=trim(seedname)//".pdos_weights", form='unformatted')
-       
+       pdos_in_unit=io_file_unit()
+       if(index(devel_flag,'old_filename')>0) then
+          pdos_filename=trim(seedname)//".pdos_weights"
+          if(iprint>1) write(stdout,'(1x,a)') 'Reading pdos weights from file: '//trim(pdos_filename)
+          open(unit=pdos_in_unit,file=pdos_filename,form='unformatted',err=100,status='old')
+       else
+          pdos_filename=trim(seedname)//".pdos_bin"
+          if(iprint>1) write(stdout,'(1x,a)') 'Reading pdos weights from file: '//trim(pdos_filename)
+          open(unit=pdos_in_unit,file=pdos_filename,status="old",form='unformatted',err=102)
+          read(pdos_in_unit) file_version
+          if( (file_version-file_ver)>0.001_dp) &
+               call io_error('Error: Trying to read newer version of pdos_bin file. Update optados!')
+          read(pdos_in_unit) header
+          if(iprint>1) write(stdout,'(1x,a)') trim(header)
+       endif
+
        read(pdos_in_unit) pdos_mwab%nkpoints
        read(pdos_in_unit) pdos_mwab%nspins
        read(pdos_in_unit) pdos_mwab%norbitals
@@ -928,6 +1000,7 @@ contains
     return
 
 100 call io_error('Error: Problem opening pdos_weights file in elec_pdos_read') 
+102 call io_error('Error: Problem opening pdos_bin file in elec_pdos_read') 
 
 
 

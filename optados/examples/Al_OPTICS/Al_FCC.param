@@ -1,5 +1,3 @@
-devel_code : bndignore=5 ignore_tol=0.005
-
 TASK                   : SPECTRAL
+SPECTRAL_TASK          : optics
 NEXTRA_BANDS           : 10
-

@@ -3,7 +3,7 @@
 ###########################################################
 
 # Choose the task to perform
-TASK               : optics
+TASK               : optics 
 
 # Sample the JDOS at 0.01 eV intervals
 JDOS_SPACING       : 0.01 

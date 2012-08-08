@@ -89,7 +89,7 @@ contains
     use od_comms, only : my_node_id
     use od_cell, only : num_kpoints_on_node, cell_get_symmetry, &
          num_crystal_symmetry_operations, crystal_symmetry_operations
-    use od_parameters, only : core_geom, core_qdir, core_type, legacy_file_format
+    use od_parameters, only : core_geom, core_qdir, core_type, legacy_file_format,devel_flag
     use od_io, only : io_error
 
     real(kind=dp), dimension(3) :: qdir 
@@ -101,7 +101,7 @@ contains
     num_occ = 0.0_dp
 
     num_sym=0
-    if (.not.legacy_file_format) then 
+    if (.not.legacy_file_format.and.index(devel_flag,'old_filename')>0) then 
        call cell_get_symmetry
        num_sym = num_crystal_symmetry_operations
     end if

@@ -23,6 +23,8 @@
 !=============================================================================== 
 module od_optics
 
+  use od_constants, only : dp
+
   implicit none
   private
   public :: optics_calculate
@@ -39,7 +41,7 @@ module od_optics
   end type graph_labels
 
 
-  integer, parameter :: dp=selected_real_kind(15,300)
+!  integer, parameter :: dp=selected_real_kind(15,300)
 
   real(kind=dp),allocatable, public, dimension(:,:,:,:,:) :: matrix_weights
   real(kind=dp),allocatable, public, dimension(:,:,:,:) :: dos_matrix_weights
@@ -78,7 +80,6 @@ contains
     !  Program to calculate optical properties
     !
 
-    use od_constants, only : dp
     use od_electronic, only : optical_mat, elec_read_optical_mat, nbands, nspins, &
          efermi, efermi_set, elec_dealloc_optical
     use od_cell, only : cell_volume, num_kpoints_on_node 
@@ -163,7 +164,7 @@ contains
          electrons_per_state, band_energy, efermi
     use od_cell, only : nkpoints, cell_volume, num_kpoints_on_node, cell_get_symmetry, &
          num_crystal_symmetry_operations, crystal_symmetry_operations
-    use od_parameters, only : optics_geom, optics_qdir, legacy_file_format, scissor_op
+    use od_parameters, only : optics_geom, optics_qdir, legacy_file_format, scissor_op, devel_flag
     use od_io, only : io_error
     use od_comms, only : my_node_id
 
@@ -183,10 +184,12 @@ contains
     complex(kind=dp), dimension(3) :: g
     real(kind=dp) :: factor
 
-    num_symm=0
-    if (.not.legacy_file_format) then 
+
+    if (.not.legacy_file_format.and.index(devel_flag,'old_filename')>0) then 
+       num_symm=0
        call cell_get_symmetry
-       num_symm = num_crystal_symmetry_operations
+    end if ! otherwise we have already set this
+    num_symm = num_crystal_symmetry_operations
 
        !      Do N=1,num_symm
        !         Do N2=1,3
@@ -194,7 +197,6 @@ contains
        !         end do
        !         print *,'# '
        !      end do
-    end if
 
     num_occ = 0.0_dp
     do N_spin=1,nspins

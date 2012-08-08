@@ -78,6 +78,7 @@ module od_cell
   public :: cell_calc_lattice
   public :: cell_report_parameters
   public :: cell_get_atoms
+  public :: cell_read_cell
   public :: cell_get_symmetry
   public :: cell_dist
   !-------------------------------------------------------------------------!
@@ -316,6 +317,305 @@ contains
 
 
   end subroutine cell_get_symmetry
+
+  subroutine cell_read_cell
+    use od_constants, only : bohr2ang
+    use od_io,        only : io_file_unit, io_error, seedname, maxlen
+    use od_algorithms,only : utility_cart_to_frac, utility_frac_to_cart, utility_lowercase
+
+    implicit none
+
+    real(kind=dp),allocatable     :: atoms_pos_frac_tmp(:,:)
+    real(kind=dp),allocatable    :: atoms_pos_cart_tmp(:,:)
+    character(len=20) :: keyword
+    integer           :: in,in1,in2,ins,ine,loop,i,line_e,line_s,counter,tot_num_lines
+    integer           :: loop2,max_sites,ierr,ic,num_lines,line_counter,in_unit
+    logical           :: found_e,found_s,frac
+    character(len=maxlen) :: dummy
+    character(len=maxlen),allocatable :: ctemp(:)
+    character(len=maxlen),allocatable :: atoms_label_tmp(:)
+    logical           :: lconvert
+
+    character(len=maxlen), allocatable :: in_data(:)
+
+
+    ! read in the cell file
+
+    ! count the lines
+    in_unit=io_file_unit( )
+    open (in_unit, file=trim(seedname)//'-out.cell',form='formatted',status='old',err=101)
+
+    num_lines=0;tot_num_lines=0
+    do
+       read(in_unit, '(a)', iostat = ierr, err= 200, end =210 ) dummy
+       dummy=adjustl(dummy)
+       tot_num_lines=tot_num_lines+1
+       if( .not.dummy(1:1)=='!'  .and. .not. dummy(1:1)=='#' ) then
+          if(len(trim(dummy)) > 0 ) num_lines=num_lines+1
+       endif
+
+    end do
+
+101 call io_error('Error: Problem opening input file '//trim(seedname)//'-out.cell')
+200 call io_error('Error: Problem reading input file '//trim(seedname)//'-out.cell')
+210 continue
+    rewind(in_unit)
+
+    ! now read in for real - ignoring comments
+    allocate(in_data(num_lines),stat=ierr)
+    if (ierr/=0) call io_error('Error allocating in_data in cell_get_atoms')
+
+    line_counter=0
+    do loop=1,tot_num_lines
+       read(in_unit, '(a)', iostat = ierr, err= 200 ) dummy
+       dummy=utility_lowercase(dummy)
+       dummy=adjustl(dummy)
+       if( dummy(1:1)=='!' .or.  dummy(1:1)=='#' ) cycle
+       if(len(trim(dummy)) == 0 ) cycle
+       line_counter=line_counter+1
+       in1=index(dummy,'!')
+       in2=index(dummy,'#')
+       if(in1==0 .and. in2==0)  in_data(line_counter)=dummy
+       if(in1==0 .and. in2>0 )  in_data(line_counter)=dummy(:in2-1)
+       if(in2==0 .and. in1>0 )  in_data(line_counter)=dummy(:in1-1)
+       if(in2>0 .and. in1>0 )   in_data(line_counter)=dummy(:min(in1,in2)-1)
+    end do
+
+    close(in_unit)
+
+    ! let's look for the atoms block (remember everything is lower case)
+    keyword='positions'
+
+    found_s=.false.
+    do loop=1,num_lines
+       ins=index(in_data(loop),trim(keyword))
+       if (ins==0 ) cycle
+       in=index(in_data(loop),'%block')
+       if (in==0 .or. in>1) cycle
+       if(index(in_data(loop),'frac')>0) then
+          frac=.true.
+       elseif(index(in_data(loop),'abs')>0) then
+          frac=.false.
+       else
+          cycle
+       endif
+       line_s=loop
+       if (found_s) then
+          call io_error('Error: Found %block'//trim(keyword)//' more than once in cell file')
+       endif
+       found_s=.true.
+    end do
+
+    if(frac) then
+       keyword='positions_frac'
+    else
+       keyword='positions_abs'
+    end if
+
+    found_e=.false.
+    do loop=1,num_lines
+       ine=index(in_data(loop),trim(keyword))
+       if (ine==0 ) cycle
+       in=index(in_data(loop),'%endblock')
+       if (in==0 .or. in>1) cycle
+       line_e=loop
+       if (found_e) then
+          call io_error('Error: Found %block'//trim(keyword)//' more than once in cell file')
+       endif
+       found_e=.true.
+    end do
+
+    if(.not. found_e) then
+       call io_error('Error: Found %block'//trim(keyword)//' but no %endblock'//trim(keyword)//' in cell file')
+    end if
+
+    if(line_e<=line_s) then
+       call io_error('Error: %endblock'//trim(keyword)//' comes before %block'//trim(keyword)//' in input file')
+    end if
+
+    ! now we know where the atoms block is
+
+    lconvert=.false.
+    dummy=in_data(line_s+1)
+    if ( index(dummy,'ang').ne.0 ) then
+       lconvert=.false.
+       line_s=line_s+1
+    elseif ( index(dummy,'bohr').ne.0 ) then
+       lconvert=.true.
+       line_s=line_s+1
+    endif
+
+    num_atoms=line_e-1-(line_s+1)+1
+    allocate(atoms_pos_frac_tmp(3,num_atoms),stat=ierr)
+    if (ierr/=0) call io_error('Error allocating atoms_pos_frac_tmp in cell_get_atoms')
+    allocate(atoms_pos_cart_tmp(3,num_atoms),stat=ierr)
+    if (ierr/=0) call io_error('Error allocating atoms_pos_cart_tmp in cell_get_atoms')
+    allocate(ctemp(num_atoms),stat=ierr)
+    if (ierr/=0) call io_error('Error allocating ctemp in cell_get_atoms')
+    allocate(atoms_label_tmp(num_atoms),stat=ierr)
+    if (ierr/=0) call io_error('Error allocating atoms_label_tmp in cell_get_atoms')
+
+
+
+    counter=0
+    do loop=line_s+1,line_e-1
+       dummy=in_data(loop)
+       counter=counter+1
+       if(frac) then
+          read(dummy,*,err=240,end=240) atoms_label_tmp(counter),(atoms_pos_frac_tmp(i,counter),i=1,3)
+       else
+          read(dummy,*,err=240,end=240) atoms_label_tmp(counter),(atoms_pos_cart_tmp(i,counter),i=1,3)
+       end if
+    end do
+
+    if (lconvert) then
+       atoms_pos_cart_tmp = atoms_pos_cart_tmp*bohr2ang
+    end if
+
+
+    if(frac) then
+       do loop=1,num_atoms
+          call utility_frac_to_cart (atoms_pos_frac_tmp(:,loop),atoms_pos_cart_tmp(:,loop),real_lattice)
+       end do
+    else
+       do loop=1,num_atoms
+          call utility_cart_to_frac (atoms_pos_cart_tmp(:,loop),atoms_pos_frac_tmp(:,loop),recip_lattice)
+       end do
+    end if
+
+    ! Now we sort the data into the proper structures
+    num_species=1
+    ctemp(1)=atoms_label_tmp(1)
+    do loop=2,num_atoms
+       do loop2=1,loop-1
+          if( trim(atoms_label_tmp(loop))==trim(atoms_label_tmp(loop2) )) exit
+          if (loop2==loop-1) then 
+             num_species=num_species+1
+             ctemp(num_species)=atoms_label_tmp(loop)
+          end if
+       end do
+    end do
+
+    allocate(atoms_species_num(num_species),stat=ierr)
+    if (ierr/=0) call io_error('Error allocating atoms_species_num in cell_get_atoms')
+    allocate(atoms_label(num_species),stat=ierr)
+    if (ierr/=0) call io_error('Error allocating atoms_label in cell_get_atoms')
+    allocate(atoms_symbol(num_species),stat=ierr)
+    if (ierr/=0) call io_error('Error allocating atoms_symbol in cell_get_atoms')
+    atoms_species_num(:)=0
+
+    do loop=1,num_species
+       atoms_label(loop)=ctemp(loop)
+       do loop2=1,num_atoms
+          if( trim(atoms_label(loop))==trim(atoms_label_tmp(loop2) )) then
+             atoms_species_num(loop)=atoms_species_num(loop)+1
+          end if
+       end do
+    end do
+
+    max_sites=maxval(atoms_species_num)
+    allocate(atoms_pos_frac(3,max_sites,num_species),stat=ierr)
+    if (ierr/=0) call io_error('Error allocating atoms_pos_frac in cell_get_atoms')
+    allocate(atoms_pos_cart(3,max_sites,num_species),stat=ierr)
+    if (ierr/=0) call io_error('Error allocating atoms_pos_cart in cell_get_atoms')
+
+    do loop=1,num_species
+       counter=0
+       do loop2=1,num_atoms
+          if( trim(atoms_label(loop))==trim(atoms_label_tmp(loop2) )) then
+             counter=counter+1
+             atoms_pos_frac(:,counter,loop)=atoms_pos_frac_tmp(:,loop2)
+             atoms_pos_cart(:,counter,loop)=atoms_pos_cart_tmp(:,loop2)
+          end if
+       end do
+    end do
+
+    ! Strip any numeric characters from atoms_label to get atoms_symbol
+    do loop=1,num_species    
+       atoms_symbol(loop)(1:2)=atoms_label(loop)(1:2)
+       ic=ichar(atoms_symbol(loop)(2:2))
+       if ((ic.lt.ichar('a')).or.(ic.gt.ichar('z'))) &
+            atoms_symbol(loop)(2:2)=' '
+    end do
+
+
+    ! let's look for the symmetry_ops block
+    keyword='symmetry_ops'
+    num_crystal_symmetry_operations=0
+    found_s=.false.
+    do loop=1,num_lines
+       ins=index(in_data(loop),trim(keyword))
+       if (ins==0 ) cycle
+       in=index(in_data(loop),'%block')
+       if (in==0 .or. in>1) cycle
+       line_s=loop
+       if (found_s) then
+          call io_error('Error: Found %block'//trim(keyword)//' more than once in out.cell file')
+       endif
+       found_s=.true.
+    end do
+
+    if(found_s==.true.) then
+
+       found_e=.false.
+       do loop=1,num_lines
+          ine=index(in_data(loop),trim(keyword))
+          if (ine==0 ) cycle
+          in=index(in_data(loop),'%endblock')
+          if (in==0 .or. in>1) cycle
+          line_e=loop
+          if (found_e) then
+             call io_error('Error: Found %block'//trim(keyword)//' more than once in out.cell file')
+          endif
+          found_e=.true.
+       end do
+       
+       if(.not. found_e) then
+          call io_error('Error: Found %block'//trim(keyword)//' but no %endblock'//trim(keyword)//' in out.cell file')
+       end if
+       
+       if(line_e<=line_s) then
+          call io_error('Error: %endblock'//trim(keyword)//' comes before %block'//trim(keyword)//' in input file')
+       end if
+       
+       ! now we know where the block is
+       num_crystal_symmetry_operations=(line_e-line_s-1)/4
+       if((4*num_crystal_symmetry_operations)/=(line_e-line_s-1)) &
+            call io_error('Error: Something wrong with symmetry_ops block in -out.cell file')
+       if(num_crystal_symmetry_operations > 0)then
+          allocate(crystal_symmetry_operations(3,3,num_crystal_symmetry_operations),stat=ierr)
+          if(ierr/=0) call io_error(" Error : cannot allocate crystal_symmetry_operations in cell_read_cell")
+          allocate(crystal_symmetry_disps(3,num_crystal_symmetry_operations),stat=ierr)
+          if(ierr/=0) call io_error(" Error : cannot allocate crystal_symmetry_disps in cell_read_cell")
+          counter=0
+          do loop=line_s+1,line_e-1,4
+             dummy=in_data(loop)
+             counter=counter+1
+             dummy=in_data(loop)
+             read(dummy,*,err=240,end=240) crystal_symmetry_operations(1,1,counter),&
+                  crystal_symmetry_operations(2,1,counter),crystal_symmetry_operations(3,1,counter)
+             dummy=in_data(loop+1)
+             read(dummy,*,err=240,end=240) crystal_symmetry_operations(1,2,counter),&
+                  crystal_symmetry_operations(2,2,counter),crystal_symmetry_operations(3,2,counter)
+             dummy=in_data(loop+2)
+             read(dummy,*,err=240,end=240) crystal_symmetry_operations(1,3,counter),&
+                  crystal_symmetry_operations(2,3,counter),crystal_symmetry_operations(3,3,counter)
+             dummy=in_data(loop+3)
+             read(dummy,*,err=240,end=240) crystal_symmetry_disps(1,counter),&
+                  crystal_symmetry_disps(2,counter),crystal_symmetry_disps(3,counter)
+          end do
+       end if
+    endif
+
+
+    return
+
+240 call io_error('Error: Problem reading block keyword '//trim(keyword))
+
+
+
+
+  end subroutine cell_read_cell
 
   subroutine cell_get_atoms
     use od_constants, only : bohr2ang
@@ -710,6 +1010,18 @@ contains
        call comms_bcast(atoms_label(1),len(atoms_label(1))*num_species)
        call comms_bcast(atoms_symbol(1),len(atoms_symbol(1))*num_species)
     endif
+    call comms_bcast(num_crystal_symmetry_operations,1)
+    if(num_crystal_symmetry_operations>0) then
+       if(.not. on_root) then
+          allocate(crystal_symmetry_operations(3,3,num_crystal_symmetry_operations),stat=ierr)
+          if(ierr/=0) call io_error(" Error : cannot allocate crystal_symmetry_operations in cell_dist")
+          allocate(crystal_symmetry_disps(3,num_crystal_symmetry_operations),stat=ierr)
+          if(ierr/=0) call io_error(" Error : cannot allocate crystal_symmetry_disps in cell_dist")
+       endif
+       call comms_bcast(crystal_symmetry_operations(1,1,1),3*3*num_crystal_symmetry_operations)
+       call comms_bcast(crystal_symmetry_disps(1,1),3*num_crystal_symmetry_operations)
+    end if
+
 
   end subroutine cell_dist
 

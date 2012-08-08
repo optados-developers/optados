@@ -264,7 +264,6 @@ contains
        endif
     endif
     
-    write(stdout,*)
     call comms_bcast(efermi_fixed,1)
     call comms_bcast(efermi_linear,1)
     call comms_bcast(efermi_adaptive,1)

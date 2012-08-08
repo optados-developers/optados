@@ -37,7 +37,7 @@ module od_parameters
   use od_constants, only : dp
   use od_io,        only : stdout,maxlen
   use od_cell, only : atoms_label, num_atoms, num_species, atoms_symbol, &
-       & atoms_species_num, atoms_pos_frac, atoms_pos_cart
+       & atoms_species_num, atoms_pos_frac, atoms_pos_cart, num_crystal_symmetry_operations
 
   implicit none
 
@@ -147,7 +147,7 @@ contains
 
     use od_constants, only : bohr2ang
     use od_io,        only : io_error,seedname,stderr
-    use od_cell,      only : cell_get_atoms
+    use od_cell,      only : cell_get_atoms,cell_read_cell
 
     implicit none
 
@@ -206,14 +206,6 @@ contains
     end if
     if( (compare_dos.or.compare_jdos) .and. (pdos.or.core.or.optics)) &
          call io_error('Error: compare_dos/compare_jdos are not comptable with pdos, core or optics tasks') 
-
-    num_atoms=0
-    num_species=0
-    if(pdos.or.core) then
-       ! try to read in the atoms from the cell file.
-       ! We don't need them otherwise, so let's not bother
-       call cell_get_atoms
-    end if
 
     i_temp=0
     fixed=.false.; adaptive=.false.; linear=.false.; quad=.false. 
@@ -356,6 +348,7 @@ contains
     optics_lossfn_gaussian=0.0_dp
     call param_get_keyword('optics_lossfn_broadening',optics_lossfn_broadening,r_value=optics_lossfn_gaussian)
     if (optics_lossfn_gaussian<0.0_dp) call io_error('Error: optics_lossfn_broadening must be positive')
+    if(abs(optics_lossfn_gaussian)<1.0e-6_dp)  optics_lossfn_broadening=.false. ! trap too small values
 
 
     core_geom = 'polycrys'
@@ -398,6 +391,20 @@ contains
     LAI_lorentzian_offset    = 0.0_dp
     call param_get_keyword('lai_lorentzian_offset',found,r_value=LAI_lorentzian_offset)
     if (LAI_lorentzian_offset.lt.0.0_dp) call io_error('Error: LAI_lorentzian_offset must be positive')
+
+    num_atoms=0
+    num_species=0
+    num_crystal_symmetry_operations=0
+    if(pdos.or.core.or.optics) then
+       ! try to read in the atoms from the cell file.
+       ! We don't need them otherwise, so let's not bother
+       if(index(devel_flag,'old_filename')>0) then
+          call cell_get_atoms
+       else
+          call cell_read_cell
+       end if
+    end if
+
 
     ! check to see that there are no unrecognised keywords
 
