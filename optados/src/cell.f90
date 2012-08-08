@@ -555,7 +555,7 @@ contains
        found_s=.true.
     end do
 
-    if(found_s==.true.) then
+    if(found_s) then
 
        found_e=.false.
        do loop=1,num_lines

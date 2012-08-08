@@ -214,7 +214,8 @@ contains
              gradient_filename=trim(seedname)//".dome_bin"
              open(unit=gradient_unit,file=gradient_filename,status="old",form='unformatted',err=102)
              read(gradient_unit) file_version
-             if( (file_version-file_ver)>0.001_dp) call io_error('Error: Trying to read newer version of dome_bin file. Update optados!')
+             if( (file_version-file_ver)>0.001_dp) &
+                   call io_error('Error: Trying to read newer version of dome_bin file. Update optados!')
              read(gradient_unit) header
              if(iprint>1) write(stdout,*) trim(header)
           endif
@@ -333,7 +334,8 @@ contains
           if(iprint>1) write(stdout,'(1x,a)') 'Reading optical matrix elements from file: '//trim(gradient_filename)
           open(unit=gradient_unit,file=gradient_filename,status="old",form='unformatted',err=102)
           read(gradient_unit) file_version
-          if( (file_version-file_ver)>0.001_dp) call io_error('Error: Trying to read newer version of ome_bin file. Update optados!')
+          if( (file_version-file_ver)>0.001_dp) & 
+                           call io_error('Error: Trying to read newer version of ome_bin file. Update optados!')
           read(gradient_unit) header
           if(iprint>1) write(stdout,'(1x,a)') trim(header)
        endif
