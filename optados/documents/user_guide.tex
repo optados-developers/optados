@@ -711,8 +711,12 @@ The header shows that there are four projectors described below. The first conta
 
 
 \section{JDOS}
-See  \verb#examples/Si2_JDOS/#. This is a simple example of using \optados\ for calculating joint electronic density of states.  We choose to recalculate the Fermi level using the calculated DOS, rather than use the Fermi level suggested by \castep.  If {\tt TASK : compare\_jdos} is used instead, \optados\ will calculate the JDOS using all the broadening methods.  This is good practice to see whether the broadening widths are appropriate before more advanced tasks are carried out.  The JDOS is outputted to {\tt Si2.jadaptive.dat}. A file suitable for plotting using {\tt xmgrace} is written to {\tt Si2.jadaptive.agr}. 
-
+See  \verb#examples/Si2_JDOS/#. This is a simple example of using \optados\ for calculating joint electronic density of states.  We choose to recalculate the Fermi level using the calculated DOS, rather than use the Fermi level suggested by \castep\, and so \verb#EFERMI: OPTADOS# is included in the \verb#Si2.odi# file.  
+\begin{enumerate}
+\item Execute \optados\ using the example files.  The JDOS is outputted to {\tt Si2.jadaptive.dat}. A file suitable for plotting using {\tt xmgrace} is written to {\tt Si2.jadaptive.agr}.
+\item Check the effect of changing the sampling by increasing and decreasing the value of \verb#JDOS_SPACING# in the \verb#Si2.odi# file. 
+\item If {\tt TASK : compare\_jdos} is used instead, \optados\ will calculate the JDOS using all the broadening methods.  This is good practice to see whether the broadening widths are appropriate before more advanced tasks are carried out.  
+\end{enumerate}
 
 \section{OPTICS}
 Two sets of example files are provided for calculations of optical properties.  For each example, the \castep\ files containing all the cell and simulation parameters are included, along with an \optados\ input file. We assume that the reader is familiar with the previous sections on DOS and JDOS.  
