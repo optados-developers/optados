@@ -1,36 +1,43 @@
 Things To Do
 ============
 
-=================
-Beta 2
-=================
+=================================
+Version 1.0 before 17th September
+=================================
 
-Pdos
-----
-
- Project onto individual (real) spherical harmonics [JRY]
-
-=================
-Beta 3
-=================
-
-Check that the parameters are echo'ed in seed.odo file
-
-================
-Website
-================
-
-================
-Manual
-================
-Examples step by step
- * JDOS/Optics [RJN]
+[AJM] Check that an explanation of how to test adaptive_smearing_width is documented in the manual
+[JRY] Bullet proof legacy_file_format and out.cell 
+[AJM] Check that it writes out keywords for DOS and PDOS
+[JRY/RJN] Check that it write out keywords for JDOS, Optics and Core
 
 ================
 Paper
 ================
-2.4 Core-hole section [JRY]
-2.5 Spectroscopy Section [RJN]
-6.1 Copper Example [JRY]
-Add a "test run" to Appendix A [AJM]
+[???] Do the introduction last
+[JRY/RJN] End of Chapter 2.0
+[AJM] Chapter 4: (Copy from Manual)
+[AJM] Chapter 5: (Copy from Examples)
+[JRY] Chapter 6: §1 (Copper)
+[AJM] Appendix A.
+
+
+=======
+Manual
+=======
+
+[AJM] Move stuff from Paper to Manual
+
+=================================
+Future Versions
+=================================
+Project onto individual (real) spherical harmonics [JRY]
+
+================
+Website
+================
+[AJM] Add tarball to [DOWNLOAD]
+[AJM] Add PDF userguide [EXAMPLES]
+[AJM] Add examples [EXAMPLES]
+[AJM] Add Comp. Phys. Comm [PUBLICATIONS]
+[AJM] Move AJM to TCM.
 
