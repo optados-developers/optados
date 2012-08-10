@@ -6,7 +6,6 @@ Version 1.0 before 17th September
 =================================
 
 [JRY] Bullet proof legacy_file_format and out.cell 
-[AJM] Check that it writes out keywords for DOS and PDOS
 [JRY/RJN] Check that it write out keywords for JDOS, Optics and Core
 
 ================

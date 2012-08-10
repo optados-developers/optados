@@ -656,6 +656,12 @@ contains
     else
        write(stdout,'(1x,a78)') '|  Output Core-level Spectra                 :  False                        |'
     endif
+    write(stdout,'(1x,a46,2x,i3,26x,a1)')'|  iprint level                              :',iprint,'|'     
+    if(legacy_file_format) then
+       write(stdout,'(1x,a78)') '|  Use CASTEP < 6.0 file format              :  True                         |'
+    else
+       write(stdout,'(1x,a78)') '|  Use CASTEP < 6.0 file format              :  False                        |'
+    endif
     write(stdout,'(1x,a78)')    '+-------------------------------- UNITS -------------------------------------+'
     write(stdout,'(1x,a46,2x,a4,25x,a1)') '|  Length Unit                               :',trim(length_unit),'|'  
 
@@ -696,9 +702,29 @@ contains
       else
          write(stdout,'(1x,a78)') '|  Shift energy scale so fermi_energy=0      :  False                        |'        
       end if
-    if(compute_band_energy) &
-         write(stdout,'(1x,a78)') '|  Compute the band energy                   :  True                         |'        
+      if(efermi_user==-999.0_dp) then ! efermi_user not set
+         if(index(efermi_choice,'optados')) then
+            write(stdout,'(1x,a78)') '|  Fermi energy                              :  Calculated by OptaDOS        |'
+         elseif(index(efermi_choice,'file')) then
+            write(stdout,'(1x,a78)') '|  Fermi energy                              :  Read from file               |'
+         elseif(index(efermi_choice,'insulator')) then
+            write(stdout,'(1x,a78)') '|  Fermi energy                              :  Assume insulator (n_elec/2)  |'
+         endif
+      else ! It is set
+           write(stdout,'(1x,a46,1x,1F10.5,20x,a1)') '|  Fermi energy                              :', efermi_user,'|'
+      endif
 
+    if(compute_band_energy) then 
+         write(stdout,'(1x,a78)') '|  Compute the band energy                   :  True                         |'        
+    else
+         write(stdout,'(1x,a78)') '|  Compute the band energy                   :  False                        |'
+    endif
+
+    if(compute_band_gap) then 
+         write(stdout,'(1x,a78)') '|  Compute the band gap                      :  True                         |'        
+    else
+         write(stdout,'(1x,a78)') '|  Compute the band gap                      :  False                        |'
+    endif
 
     if(optics) then
        write(stdout,'(1x,a78)')    '+-------------------------------- OPTICS ------------------------------------+'
