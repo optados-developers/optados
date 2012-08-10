@@ -5,7 +5,6 @@ Things To Do
 Version 1.0 before 17th September
 =================================
 
-[AJM] Check that an explanation of how to test adaptive_smearing_width is documented in the manual
 [JRY] Bullet proof legacy_file_format and out.cell 
 [AJM] Check that it writes out keywords for DOS and PDOS
 [JRY/RJN] Check that it write out keywords for JDOS, Optics and Core
@@ -41,3 +40,7 @@ Website
 [AJM] Add Comp. Phys. Comm [PUBLICATIONS]
 [AJM] Move AJM to TCM.
 
+===============
+Version 2.0
+===============
+Full gnuplot 
