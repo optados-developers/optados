@@ -726,6 +726,7 @@ contains
          write(stdout,'(1x,a78)') '|  Compute the band gap                      :  False                        |'
     endif
 
+
     if(optics) then
        write(stdout,'(1x,a78)')    '+-------------------------------- OPTICS ------------------------------------+'
        if(index(optics_geom,'polycrys')>0) then
@@ -744,10 +745,18 @@ contains
        if(optics_intraband) then
           write(stdout,'(1x,a78)') '|  Include Intraband Contribution            :  True                         |'        
           write(stdout,'(1x,a46,1x,1E10.3,20x,a1)') '|  Drude Broadening                          :',&
-	& optics_drude_broadening,'|'        
+            & optics_drude_broadening,'|'        
        else
           write(stdout,'(1x,a78)') '|  Include Intraband Contribution            :  False                        |'        
        endif
+       if(optics_lossfn_broadening) then
+         write(stdout,'(1x,a78)') '|  Include Loss Function Broadening          :  True                         |'   
+         write(stdout,'(1x,a46,1x,1f10.4,20x,a1)') '|  Gaussian Width                            :',optics_lossfn_gaussian,'|' 
+       else
+        write(stdout,'(1x,a78)') '|  Include Loss Function Broadening          :  False                        |'
+       endif
+       if(scissor_op>1.0e-10_dp) & 
+         write(stdout,'(1x,a46,1x,1f10.4,20x,a1)') '|  Scissor Operator (eV)                     :',scissor_op,'|'
     end if
     if(core) then
        write(stdout,'(1x,a78)')    '+--------------------------------- CORE -------------------------------------+'
@@ -757,6 +766,13 @@ contains
           write(stdout,'(1x,a78)') '|  Geometry for Core Calculation             :  Polarised                    |'        
           write(stdout,'(1x,a47,2x,f6.2,2x,f6.2,2x,f6.2,3x,a4)') '|  Direction of q-vector (un-normalised)     : ' &
                ,core_qdir(1:3),'   |'        
+       endif
+       if(index(core_type,'absorption')>0) then
+           write(stdout,'(1x,a78)') '|  Absorption or Emission Spectrum           :  Absorption                   |'
+       elseif(index(core_type,'emission')>0) then
+           write(stdout,'(1x,a78)') '|  Absorption or Emission Spectrum           :  Emission                     |'
+       else
+           write(stdout,'(1x,a78)') '|  Absorption or Emission Spectrum           :  Both                         |'
        endif
        if(core_LAI_broadening) then
           write(stdout,'(1x,a78)') '|  Include lifetime and Instrument Broadening:  True                         |'        
