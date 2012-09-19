@@ -703,11 +703,11 @@ contains
          write(stdout,'(1x,a78)') '|  Shift energy scale so fermi_energy=0      :  False                        |'        
       end if
       if(efermi_user==-999.0_dp) then ! efermi_user not set
-         if(index(efermi_choice,'optados')) then
+         if(index(efermi_choice,'optados') .gt. 0 ) then
             write(stdout,'(1x,a78)') '|  Fermi energy                              :  Calculated by OptaDOS        |'
-         elseif(index(efermi_choice,'file')) then
+         elseif(index(efermi_choice,'file')  .gt. 0 ) then
             write(stdout,'(1x,a78)') '|  Fermi energy                              :  Read from file               |'
-         elseif(index(efermi_choice,'insulator')) then
+         elseif(index(efermi_choice,'insulator')  .gt. 0 ) then
             write(stdout,'(1x,a78)') '|  Fermi energy                              :  Assume insulator (n_elec/2)  |'
          endif
       else ! It is set
