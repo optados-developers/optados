@@ -71,7 +71,7 @@ contains
        allocate(weighted_dos_broadened(size(weighted_dos,1),size(weighted_dos,2),size(weighted_dos,3)))
        weighted_dos_broadened=0.0_dp
        if(LAI_gaussian) call core_gaussian 
-       if(LAI_lorentzian .or. (LAI_lorentzian_scale.gt.1E-14)) call core_lorentzian 
+       if(LAI_lorentzian) call core_lorentzian 
     endif
 
     if(set_efermi_zero .and. .not.efermi_set) call dos_utils_set_efermi
@@ -532,9 +532,48 @@ contains
              call xmgu_data_header(core_unit,loop,loop,trim(edge_name(loop)))
              call xmgu_data(core_unit,loop,E_shift(:),dos_temp)
           end do
+
+          if(core_LAI_broadening) then 
+
+             core_unit=io_file_unit()
+             open(unit=core_unit,file=trim(seedname)//'_'//'core_edge_broad'//'.agr',iostat=ierr)
+             if(ierr.ne.0) call io_error(" ERROR: Cannot open xmgrace batch file in core: write_core_xmgrace")
+             
+             min_x=minval(E_shift)
+             max_x=maxval(E_shift)
+             
+             min_y=minval(weighted_dos)
+             max_y=maxval(weighted_dos)
+             
+             
+             ! For aesthetic reasons we make the axis range 1% larger than the data range
+             range=abs(max_y-min_y)
+             max_y=max_y+0.01_dp*range
+             min_y=0.0_dp!min_y-0.01_dp*range
+             
+             call  xmgu_setup(core_unit)
+             call  xmgu_legend(core_unit)
+             call  xmgu_title(core_unit, min_x, max_x, min_y, max_y, 'Core-loss Spectrum')
+             
+             call  xmgu_axis(core_unit,"y",'Units')
+             call  xmgu_axis(core_unit,"x",'Energy (eV)')
+             
+             do loop=1,num_edge
+                dos_temp=0.0_dp;dos_temp2=0.0_dp
+                do loop2=1,edge_num_am(loop)
+                   dos_temp=dos_temp+weighted_dos_broadened(:,1,edge_list(loop,loop2))/real(edge_num_am(loop),dp)
+             end do
+
+             call xmgu_data_header(core_unit,loop,loop,trim(edge_name(loop)))
+             call xmgu_data(core_unit,loop,E_shift(:),dos_temp)
+          end do
+
        endif
 
-    end if
+
+    endif
+
+ end if
 
     deallocate(E_shift,stat=ierr)
     if (ierr/=0) call io_error('Error deallocating E_shift in write_core')
