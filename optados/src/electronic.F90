@@ -192,7 +192,7 @@ contains
     if(allocated(band_gradient)) return 
 
     ! first try to read a velocity file
-    if(index(devel_flag,'old_filename')>0) then
+    if(index(devel_flag,'old_filename')>0.or.legacy_file_format) then
        gradient_filename=trim(seedname)//".cst_vel"
     else
        gradient_filename=trim(seedname)//".dome_bin"
@@ -207,7 +207,7 @@ contains
           if(iprint>1) write(stdout,'(a)') ' '
           if(iprint>1) write(stdout,'(a)') ' Reading band gradients from file: '//trim(gradient_filename)
           gradient_unit=io_file_unit()
-          if(index(devel_flag,'old_filename')>0) then
+          if(index(devel_flag,'old_filename')>0.or.legacy_file_format) then
              gradient_filename=trim(seedname)//".cst_vel"
              open(unit=gradient_unit,file=gradient_filename,status="old",form='unformatted',err=101)
           else
@@ -325,7 +325,7 @@ contains
     time0=io_time()
     if(on_root) then
        gradient_unit=io_file_unit()
-       if(index(devel_flag,'old_filename')>0) then
+       if(index(devel_flag,'old_filename')>0.or.legacy_file_format) then
           gradient_filename=trim(seedname)//".cst_ome"
           if(iprint>1) write(stdout,'(1x,a)') 'Reading optical matrix elements from file: '//trim(gradient_filename)
           open(unit=gradient_unit,file=gradient_filename,status="old",form='unformatted',err=101)
@@ -648,7 +648,7 @@ contains
     !Open the elnes sfile
     if(on_root) then
        elnes_unit=io_file_unit()
-       if(index(devel_flag,'old_filename')>0) then
+       if(index(devel_flag,'old_filename')>0.or.legacy_file_format) then
           elnes_filename=trim(seedname)//".eels_mat"
           if(iprint>1) write(stdout,'(1x,a)') 'Reading elnes matrix elements from file: '//trim(elnes_filename)
           open(unit=elnes_unit,file=elnes_filename,form='unformatted',err=100,status='old')
@@ -871,7 +871,7 @@ contains
         & on_root,root_id
     use od_io,        only : stdout, io_file_unit, io_error, seedname,  filename_len
     use od_cell,      only : num_kpoints_on_node
-    use od_parameters,only : devel_flag, iprint
+    use od_parameters,only : legacy_file_format,devel_flag, iprint
 
     implicit none
 
@@ -894,7 +894,7 @@ contains
     ! R E A D   T H E   D A T A   H E A D E R
     if(on_root) then
        pdos_in_unit=io_file_unit()
-       if(index(devel_flag,'old_filename')>0) then
+       if(index(devel_flag,'old_filename')>0.or.legacy_file_format) then
           pdos_filename=trim(seedname)//".pdos_weights"
           if(iprint>1) write(stdout,'(1x,a)') 'Reading pdos weights from file: '//trim(pdos_filename)
           open(unit=pdos_in_unit,file=pdos_filename,form='unformatted',err=100,status='old')
