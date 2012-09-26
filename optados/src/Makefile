@@ -35,7 +35,7 @@ OBJS=algorithms.o cell.o comms.o constants.o core.o dos.o dos_utils.o electronic
 all : optados
 
 optados : optados.f90 $(OBJS)
-	$(F90) $(FFLAGS)   optados.f90 $(OBJS) -o optados$(EXTENSION) 
+	$(F90) $(FFLAGS)   optados.f90 $(OBJS) -o $(PREFIX)/optados$(EXTENSION) 
 
 algorithms.o : algorithms.f90 io.o constants.o
 	$(F90) -c $(FFLAGS) algorithms.f90

@@ -1,4 +1,4 @@
-VER := 1.0.277
+VER := 1.0.290
 
 default : optados
 
@@ -40,8 +40,8 @@ optados-$(VER).tar.gz:
                 $(CURRENT_DIR)/examples/*/*.odi \
                 $(CURRENT_DIR)/documents/*.tex \
                 $(CURRENT_DIR)/documents/*.pdf \
+		$(CURRENT_DIR)/documents/images/*.eps \
 		$(CURRENT_DIR)/documents/Makefile \
-		$(CURRENT_DIR)/documents/THINGS_TO_DO.txt \
                 $(CURRENT_DIR)/Makefile \
 		$(CURRENT_DIR)/make.system \
 		$(CURRENT_DIR)/COPYING  
