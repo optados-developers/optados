@@ -15,13 +15,13 @@ BUILD  := $(strip $(BUILD))
 COMMS_ARCH := $(strip $(COMMS_ARCH))
 PREFIX := $(strip $(PREFIX))
 
-
+EXE_SUFFIX := .x86_64
 #-------------------------------------------
 # T H I N G S   Y O U   M I G H T  W A N T  
 # T O   F I D D L E   W I T H
 ifeq ($(SYSTEM), g95)
    F90_SERIAL= g95
-   F90_PARALLEL= openmpif90
+   F90_PARALLEL= mpif90
    FFLAGS= -fendian=big
    FFLAGS_PARALLEL= -DMPI
    FFLAGS_FAST= -O3
@@ -31,7 +31,7 @@ endif
 
 ifeq ($(SYSTEM), gfortran)
    F90_SERIAL= gfortran
-   F90_PARALLEL= openmpif90 
+   F90_PARALLEL= mpif90 
    FFLAGS= -fconvert=big-endian
    FFLAGS_PARALLEL=  -DMPI
    FFLAGS_FAST= -O3
@@ -61,7 +61,7 @@ endif
 
 ifeq ($(SYSTEM), pathscale)
    F90_SERIAL= pathf95
-   F90_PARALLEL= mppathf90 
+   F90_PARALLEL= mpif90 
    FFLAGS= -byteswapio
    FFLAGS_PARALLEL=  -DMPI
    FFLAGS_FAST= -O3 -OPT:Ofast -ffast-math -OPT:recip=ON -OPT:malloc_algorithm=1
@@ -89,4 +89,7 @@ ifeq ($(SYSTEM), sun)
    EXTENSION=.sunf95
 endif
 
-
+export OMPI_FC   := $(F90_SERIAL)
+export MPICH_F90 := $(F90_SERIAL)
+export I_MPI_F90 := $(F90_SERIAL)
+export MPI_F90   := $(F90_SERIAL)

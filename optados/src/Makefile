@@ -10,7 +10,7 @@ include ../make.system
 
 ifeq ($(BUILD), debug)
   FFLAGS+=$(FFLAGS_DEBUG)
-  EXTENSION:=$(EXTENSION).debug
+  EXTENSION:=.debug
 else
   FFLAGS+=$(FFLAGS_FAST)
 endif
@@ -18,16 +18,13 @@ endif
 
 ifeq ($(COMMS_ARCH), mpi)
    FFLAGS+=$(FFLAGS_PARALLEL)
-   F90=$(F90_PARALLEL)
-   EXTENSION:=$(EXTENSION).mpi
+   F90:=$(F90_PARALLEL)
+   EXTENSION:=.mpi
 else
-   F90=$(F90_SERIAL)
+   F90:=$(F90_SERIAL)
 endif
 
-
-EXE_SUFFIX=x86_64
-EXTENSION:=$(EXTENSION).$(EXE_SUFFIX)
-
+EXTENSION:=$(EXTENSION)$(EXE_SUFFIX)
 
 # Put object names here
 OBJS=algorithms.o cell.o comms.o constants.o core.o dos.o dos_utils.o electronic.o io.o jdos.o jdos_utils.o optics.o parameters.o pdos.o xmgrace_utils.o
@@ -35,7 +32,7 @@ OBJS=algorithms.o cell.o comms.o constants.o core.o dos.o dos_utils.o electronic
 all : optados
 
 optados : optados.f90 $(OBJS)
-	$(F90) $(FFLAGS)   optados.f90 $(OBJS) -o $(PREFIX)/optados$(EXTENSION) 
+	$(F90) $(FFLAGS)   optados.f90 $(OBJS) -o optados$(EXTENSION) 
 
 algorithms.o : algorithms.f90 io.o constants.o
 	$(F90) -c $(FFLAGS) algorithms.f90
@@ -93,7 +90,7 @@ clean:
 
 veryclean:
 	make  clean
-	rm -f *.$(EXE_SUFFIX)
+	rm -f optados$(EXTENSION) optados$(EXTENSION).debug optados$(EXTENSION).mpi
 
 install: 
-	cp optados$(EXTENSION) $(PREFIX)
+	cp optados$(EXTENSION) $(INSTALL_DIR)
