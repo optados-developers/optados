@@ -32,52 +32,52 @@ OBJS=algorithms.o cell.o comms.o constants.o core.o dos.o dos_utils.o electronic
 all : optados
 
 optados : optados.f90 $(OBJS)
-	$(F90) $(FFLAGS)   optados.f90 $(OBJS) -o optados$(EXTENSION) 
+	$(F90) $(FFLAGS) $< $(OBJS) -o optados$(EXTENSION) 
 
 algorithms.o : algorithms.f90 io.o constants.o
-	$(F90) -c $(FFLAGS) algorithms.f90
+	$(F90) -c $(FFLAGS) $<
 
 cell.o : cell.f90 comms.o constants.o io.o algorithms.o
-	$(F90) -c $(FFLAGS) cell.f90
+	$(F90) -c $(FFLAGS) $<
 
 constants.o : constants.f90
-	$(F90) -c $(FFLAGS) constants.f90
+	$(F90) -c $(FFLAGS) $<
 
 core.o : core.f90 parameters.o electronic.o dos_utils.o constants.o io.o xmgrace_utils.o
-	$(F90) -c $(FFLAGS) core.f90
+	$(F90) -c $(FFLAGS) $<
 
 comms.o : comms.F90 constants.o 
-	$(F90) -c $(FFLAGS) comms.F90
+	$(F90) -c $(FFLAGS) $<
 
 dos.o : dos.f90 dos_utils.o xmgrace_utils.o electronic.o parameters.o io.o
-	$(F90) -c $(FFLAGS) dos.f90
+	$(F90) -c $(FFLAGS) $<
 
 dos_utils.o : dos_utils.f90 algorithms.o cell.o constants.o comms.o electronic.o io.o parameters.o
-	$(F90) -c $(FFLAGS) dos_utils.f90
+	$(F90) -c $(FFLAGS) $<
 
 electronic.o : electronic.F90 comms.o parameters.o constants.o 
-	$(F90) -c $(FFLAGS) electronic.F90
+	$(F90) -c $(FFLAGS) $<
 
 io.o : io.F90 constants.o comms.o
-	$(F90) -c $(FFLAGS) io.F90
+	$(F90) -c $(FFLAGS) $<
 
 jdos.o : jdos.f90 jdos_utils.o xmgrace_utils.o electronic.o parameters.o io.o
-	$(F90) -c $(FFLAGS) jdos.f90
+	$(F90) -c $(FFLAGS) $<
 
 jdos_utils.o : jdos_utils.f90 algorithms.o cell.o constants.o comms.o electronic.o io.o parameters.o dos_utils.o
-	$(F90) -c $(FFLAGS) jdos_utils.f90
+	$(F90) -c $(FFLAGS) $<
 
 optics.o : optics.f90 constants.o io.o electronic.o jdos_utils.o cell.o parameters.o xmgrace_utils.o
-	$(F90) -c $(FFLAGS) optics.f90
+	$(F90) -c $(FFLAGS) $<
 
 parameters.o : parameters.f90  cell.o constants.o io.o comms.o
-	$(F90) -c $(FFLAGS) parameters.f90
+	$(F90) -c $(FFLAGS) $<
 
 pdos.o : pdos.F90  cell.o comms.o constants.o io.o dos.o electronic.o
-	$(F90) -c $(FFLAGS) pdos.F90
+	$(F90) -c $(FFLAGS) $<
 
 xmgrace_utils.o : xmgrace_utils.f90 io.o constants.o
-	$(F90) -c $(FFLAGS) xmgrace_utils.f90
+	$(F90) -c $(FFLAGS) $<
 
 
 # Utility targets
@@ -88,8 +88,7 @@ clean:
 	rm -f *.o *.mod *.MOD
 
 
-veryclean:
-	make  clean
+veryclean: clean
 	rm -f optados$(EXTENSION) optados$(EXTENSION).debug optados$(EXTENSION).mpi
 
 install: 
