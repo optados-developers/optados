@@ -872,6 +872,18 @@ Run \optados\ and compare the spectrum from the face-centred unit cell with that
   seed.bands or seed.cst\_ome file.}
 Which version of \castep\ are you using? See Sect.\,\ref{sect:lff}.
 
+\section{The examples do not work and I'm using \castep\ version 6.0}
+\castep\ version 6.0 was released during the transition of the spectral module and features. The easiest way to solve this is to obtian a  copy of \castep\ $>6.0$, where \optados\ will work ``out of the box''.  However, to make the examples work with \castep\ 6.0 the \optados\ examples require a few tweaks outlined below.
+\begin{itemize}
+\item Repalce \verb#SPECTRAL_KPOINTS_MP_GRID# in the cell file with \verb#BS_KPOINTS_MP_GRID# and \verb#OPTICS_KPOINTS_MP_GRID#.
+\item Remove \verb#SPECRAL_TASK : DOS# from the param file.
+\item Add \verb#DEVEL_FLAG:old_filename# to the odi file.
+\item Read Section\,\ref{pdos_castep_6.0} if you are planning to do a partial density of states calculation.
+\end{itemize}
+
+\section{I'm getting odd results for my PDOS calculation when using \castep\ version 6.0} \label{pdos_castep_6.0}
+The spectral module in \castep\ 6.0 generates the pdos weights comensurate with the optics grid you have chosen. However this gets overwritten by the main routines. Hence to get the right PDOS weights you must set \verb#PDOS_CALCULATE_WEIGHTS : FALSE# in the param file.
+
 \section{I'd like \optados\ to do X as well}
 Contact the developers we're always interested in discussing new functionality.
 
