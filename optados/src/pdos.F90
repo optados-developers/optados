@@ -380,6 +380,7 @@ contains
          ctemp=ctemp(3:)
       else
          c_symbol(1:1)=char(ic1+idiff)
+         c_symbol(2:2)=""
          ctemp=ctemp(2:)
       end if
       species=0
