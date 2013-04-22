@@ -42,3 +42,63 @@ Website
 Version 2.0
 ===============
 Full gnuplot 
+
+=== CJP Coments == 
+1. In the agr file, most of the labels are Helvetica (nice), but the axis labels (numbers) are times (?). Helvetica throughout would be better.
+AJM -- Agreed
+
+2. It would be nice to have a vertical dashed (red?) line for E_fermi
+AJM -- This could be done.
+
+3. Would it be better to move the box labeling the line (ie. [ -- Total Dos]) to the left hand side to reduce the change of overlap with the data?
+AJM -- Unclear. Could get in the way with semicores then...
+
+4. I may have missed how to do this - for spin polarised calculations you will want the total DOS, and spin DOS, as well as alpha, beta.
+AJM -- This is a good point. Trivial to implement.
+
+5. Following on from 4. - the total, spin and alpha, beta DOSes at Ef will want to be grep-able from the odo file.
+AJM -- Also good idea.
+
+6) Calling optados without an odi file should execute default behaviour. I suggest, calculating the DOS with our recommended settings. 
+AJM -- Not sure about this -- how does it know which seed file to open?  I'd rather have it fail safe than do something that's not 100% clear.
+
+7) Can you add a gaussian smearing to the linear extrapolation with the current code? I didn't figure out how to do this. If not, it needs to be added.
+AJM -- Have discussed this with CJP. Important to do, must be done semi-analytically.
+
+8) I suggest we make the linear broadening the default - it does not require a parameter to be set smearing for reasonable results.
+(This suggestion follows after calculating the DOS for the Al example supplied using the following odi:
+TASK : dos
+#BROADENING : linear
+COMPUTE_BAND_GAP : true
+try it yourself to see what I mean - the linear makes a much better impression. Can you suggest counter examples?).
+AJM: I'm coming round to the idea that linear is better -- once we've addressed point 7, linear should be made default. (unless there are good counter examples.)
+
+9) Can we make COMPUTE_BAND_GAP : true the default? It costs nothing to calculate, so see no reason not to supply it. You might even consider removing the parameter altogether.
+AJM: Both good points.
+
+10) TASK : dos should be the default (currently the default task it to do nothing).
+AJM: Unclear. I think "all" is probably a better default.
+
+11) I am not convinced about the naming strategy of the output. I don't think I user really cares about whether the results are adaptive/linear, but rather about the physics quantity. So we should stick to: .dos.agr, .jdos.agr, .core.agr etc.
+AJM: Not if we continue with TASK: compare_dos . There needs to be a way to differentiate. 
+
+12) The .dat files should only be generated if requested through the OUTPUT_FORMAT parameter. Could we allow the request of multiple formats?
+AJM: I'm divided over this. It would be cleaner not to have them, if the user requests a graphical format. But they're essentially free, and I find them useful.
+
+13) Calculating the band gaps seems to rely on the supplied kpoint grid only. It would be good to make an attempt based on the extrapolation - certainly we can do this for the thermal gap, from the DOS (i.e. how many bins are exactly zero in the gap region).
+AJM: I don't understand this. I don't think many bins turn out to be exactly zero. This may get better with CJP's band kissing tweaks.
+
+14) Exectuting: "optados" produces (in a err file)
+
+ OptaDOS: Execution started on 14 Apr 2013 at 10:04:38 
+ Exiting.......
+ Error: Problem opening input file optados.odi
+
+I suggest sending error information to STDERR.
+(a) AJM: This is not the CASTEP way, nor the usual way to deal with errors in a parallel code. Of course, I think there is a case to think about how optados behaves when called argumentless. Other errors shouldn't exist!
+
+People can then choose to take not, or send to /dev/null. I would also prefer if the output is sent to STDOUT, but feel less strongly about this.
+(b) AJM: Again not the CASTEP way. I find the output file useful.
+
+Also - in this case optados should simply report how to use the program. It take quite a bit of digging at the moment to find out what it wants the user to do.
+AJM: I think there is a strong case to have optados write out a brief "help message" to STDERR if called argumentless. I prefer this to comment (6).
