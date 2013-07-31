@@ -282,6 +282,7 @@ contains
    write(unit,*)'@    '//trim(axis_name)//' tick minor size 0.500000'
    write(unit,*)'@    '//trim(axis_name)//' ticklabel on'
    write(unit,*)'@    '//trim(axis_name)//' ticklabel format general'
+   write(unit,*)'@    '//trim(axis_name)//' ticklabel font 4'
   ! write(unit,*)'@    '//trim(axis_name)//' ticklabel prec 5'
   ! write(unit,*)'@    '//trim(axis_name)//' ticklabel formula ""'
   ! write(unit,*)'@    '//trim(axis_name)//' ticklabel append ""'
@@ -297,11 +298,9 @@ contains
   ! write(unit,*)'@    '//trim(axis_name)//' ticklabel stop type auto'
   ! 1write(unit,*)'@    '//trim(axis_name)//' ticklabel stop 0.000000'
   ! write(unit,*)'@    '//trim(axis_name)//' ticklabel char size 1.000000'
-  ! write(unit,*)'@    '//trim(axis_name)//' ticklabel font 4'
   ! write(unit,*)'@    '//trim(axis_name)//' ticklabel color 1'
   ! write(unit,*)'@    '//trim(axis_name)//' tick place both'
   ! write(unit,*)'@    '//trim(axis_name)//' tick spec type none'
- 
 !    write(unit,*) trim(axis_name)//" type zero true"
 !    write(unit,*) trim(axis_name)//" bar on"   
 !    write(unit,*) trim(axis_name)//" bar color 1"
