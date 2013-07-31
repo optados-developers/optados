@@ -60,6 +60,9 @@ program optados
 
   if (on_root) then
      call io_get_seedname()
+     ! If blank set to seedname='--help'
+     if(trim(seedname)=='-h'.or.trim(seedname)=='--help') call help_output
+
      !-------------------------------------------------------------------------!
      ! O R G A N I S E   T H E   E R R O R   F I L E 
      stderr=io_file_unit()
@@ -215,4 +218,17 @@ program optados
   call comms_end
 
   !-------------------------------------------------------------------------!
+contains
+  subroutine help_output
+    use od_constants, only :  optados_version, copyright
+    implicit none
+    write(*,*)
+    write(*,*) " OptaDOS ver.", trim(optados_version)
+    write(*,*)
+    write(*,*) " Andrew J. Morris, R. J. Nicholls, C. J. Pickard and J. R. Yates", trim(copyright)
+    write(*,*) " Usage: optados <seedname>"
+    write(*,*)
+    stop
+  end subroutine help_output
+
 end program optados

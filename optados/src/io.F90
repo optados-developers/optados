@@ -79,7 +79,7 @@ subroutine io_get_seedname (  )
 
          num_arg=iargc()
          if (num_arg==0) then
-            seedname='optados'
+            seedname='--help'
          elseif (num_arg==1) then
             call getarg(1,seedname)
          else

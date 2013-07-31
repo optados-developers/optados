@@ -486,7 +486,7 @@ contains
 
   !===================================================================
   subroutine param_write_header
-    use od_constants, only :  optados_version
+    use od_constants, only :  optados_version,copyright
     implicit none
     write(stdout,*)
     write(stdout,'(a78)') " +===========================================================================+"
@@ -505,7 +505,8 @@ contains
     write(stdout,'(a78)') " |         Andrew J. Morris, Rebecca Nicholls, Chris J. Pickard              | "
     write(stdout,'(a78)') " |                       and Jonathan R. Yates                               | "
     write(stdout,'(a78)') " |                                                                           | "
-    write(stdout,'(a78)') " |                       Copyright (c) 2010-2012                             | "
+    write(stdout,'(a34,a14,a30)') " |                       Copyright",trim(copyright),&
+         &"                             | "
     write(stdout,'(a78)') " |                                                                           | "
     write(stdout,'(a78)') " |  Please cite:                                                             | "
     write(stdout,'(a78)') " |  Andrew J. Morris, Rebecca Nicholls, Chris J. Pickard and Jonathan Yates  | "
