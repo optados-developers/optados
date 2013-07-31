@@ -261,8 +261,8 @@ contains
   subroutine write_dos_xmgrace(dos_name,E,dos)
     !=============================================================================== 
     use xmgrace_utils
-    use od_parameters, only : dos_nbins
-    use od_electronic, only : nspins
+    use od_parameters, only : dos_nbins, set_efermi_zero
+    use od_electronic, only : nspins, efermi,efermi_set
     use od_io,         only : io_file_unit,io_error,seedname 
     implicit none 
 
@@ -295,6 +295,17 @@ contains
 
     call  xmgu_axis(batch_file,"x","Energy eV")
     call  xmgu_axis(batch_file,"y","eDOS")
+
+
+   
+
+   if(set_efermi_zero) then
+      call xmgu_vertical_line(batch_file, 0.0_dp,max_y,min_y)
+    else
+       if(efermi_set) call xmgu_vertical_line(batch_file, efermi,max_y,min_y)
+    endif
+
+ 
 
     if(nspins>1) then
        call xmgu_data_header(batch_file,0,1,"up-spin channel")

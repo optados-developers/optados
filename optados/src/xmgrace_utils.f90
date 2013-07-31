@@ -32,6 +32,7 @@ module xmgrace_utils
   public :: xmgu_axis
   public :: xmgu_data
   public :: xmgu_data_header
+  public :: xmgu_vertical_line  !(unit,x_coord,y_max,y_min)
 
   
   private
@@ -159,7 +160,8 @@ contains
 
   end subroutine xmgu_legend  
    !==================================================================!
-   
+
+ 
 
   !==================================================================!
   subroutine xmgu_title(unit,min_x, max_x, min_y, max_y,title)
@@ -466,7 +468,41 @@ contains
 !s0 avalue offset 0.000000 , 0.01000
   end subroutine xmgu_data_header
 
+ !==================================================================!
+  subroutine xmgu_vertical_line(unit,x_coord,y_max,y_min)
+     !==================================================================!
+    use od_constants, only : dp
+    implicit none
+    integer, intent(in)      :: unit
 
+    real(dp), intent(in) :: x_coord,y_max,y_min
+    
+    character(20) ::  x_coord_char,y_max_char,y_min_char 
+
+    write (x_coord_char, '(F20.6)')  x_coord
+    write (y_max_char, '(F20.6)') y_max
+    write (y_min_char, '(F20.6)') y_min
+    
+    x_coord_char=trim(adjustl((x_coord_char)))
+    y_max_char=trim(adjustl((y_max_char)))
+    y_min_char=trim(adjustl((y_min_char)))
+
+    write(unit,*) '@with line'
+    write(unit,*) '@    line on'
+    write(unit,*) '@    line loctype world'
+    write(unit,*) '@    line g0'
+    write(unit,*) '@    line '//trim(x_coord_char)//', '//trim(y_min_char)&
+     &//', '//trim(x_coord_char)//', '//trim(y_max_char)
+    write(unit,*) '@    line linewidth 1.5'
+    write(unit,*) '@    line linestyle 3'
+    write(unit,*) '@    line color 2'
+    write(unit,*) '@    line arrow 0'
+    write(unit,*) '@    line arrow type 0'
+    write(unit,*) '@    line arrow length 1.000000'
+    write(unit,*) '@    line arrow layout 1.000000, 1.000000'
+    write(unit,*)'@line def'
+
+  end subroutine xmgu_vertical_line
 
 
   	
