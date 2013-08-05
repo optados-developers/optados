@@ -69,6 +69,7 @@ module od_parameters
   logical, public, save :: compute_band_energy
   real(kind=dp),     public, save :: adaptive_smearing
   real(kind=dp),     public, save :: fixed_smearing
+  real(kind=dp),     public, save :: linear_smearing
   logical,           public, save :: dos_per_volume
   real(kind=dp),     public, save :: efermi_user     ! If the user has set efermi in the odi file
   character(len=20), public, save :: efermi_choice   ! Where do we want to get the fermi energy from
@@ -244,6 +245,9 @@ contains
 
     fixed_smearing             = 0.3_dp ! LinDOS default
     call param_get_keyword('fixed_smearing',found,r_value=fixed_smearing)
+
+    linear_smearing            = 0.0_dp
+    call param_get_keyword('linear_smearing',found,r_value=linear_smearing)
 
     efermi_user        = -990.0_dp
     efermi_choice="optados"

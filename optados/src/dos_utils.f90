@@ -1176,16 +1176,18 @@ end if
     use od_cell,       only : kpoint_grid_dim,kpoint_weight,num_kpoints_on_node,recip_lattice
     use od_electronic, only : band_gradient, electrons_per_state, nbands,nspins,band_energy
     use od_parameters, only : adaptive_smearing,fixed_smearing,hybrid_linear &
-         &,finite_bin_correction,iprint,dos_nbins,numerical_intdos,hybrid_linear_grad_tol 
+         &,finite_bin_correction,iprint,dos_nbins,numerical_intdos,hybrid_linear_grad_tol&
+         &,linear_smearing 
     use od_io,         only : stdout,io_error
     use od_comms,      only : my_node_id,on_root
 
     implicit none
 
-    integer :: ik,is,ib,idos,iorb,i
+    integer :: ik,is,ib,idos,iorb,i, ierr
     real(kind=dp) :: adaptive_smearing_temp,dos_temp, cuml, intdos_accum, width
     real(kind=dp) :: grad(1:3), step(1:3), EV(0:4)
     real(kind=dp) :: sub_cell_length(1:3)
+    real(kind=dp) :: temp_debug
 
     character(len=1), intent(in)                    :: dos_type
 
@@ -1193,6 +1195,7 @@ end if
     real(kind=dp),intent(in),              optional :: matrix_weights(:,:,:,:)
 
     real(kind=dp),intent(out),allocatable :: dos(:,:), intdos(:,:)
+    real(kind=dp),allocatable :: dos_smear(:,:)
 
     logical :: linear,fixed,adaptive,force_adaptive
 
@@ -1235,7 +1238,7 @@ end if
        if(iprint>1.and.on_root) then
           if (mod(real(ik,dp),10.0_dp) == 0.0_dp) write(stdout,'(1x,a1,a28,i4,a3,i4,a14,7x,a17)') "|",&
                &"Calculating k-point ", ik, " of", num_kpoints_on_node(my_node_id)," on this node","<-- DOS |"
-       endif
+       Endif
        do is=1,nspins
           do ib=1,nbands
              if(linear.or.adaptive) grad(:) = band_gradient(ib,:,ik,is)
@@ -1284,6 +1287,37 @@ end if
           end do
        end do
     end do
+
+    if(linear.and.(linear_smearing.gt.0.0_dp)) then
+       if(iprint>1.and.on_root) then ! This is to contain the Calculating k-points block
+          write(stdout,'(1x,a78)') '+-------------------------------- Smear DOS ---------------------------------+'
+       endif
+       ! Post smear the dos with a Guassian
+       ! allocate a temporary array
+       allocate(dos_smear(dos_nbins,nspins), stat=ierr)
+       if(ierr/=0) call io_error("error in allocating dos_smear")
+       dos_smear=0.0_dp
+       ! loop over spins
+       ! loop over temporary array
+       ! loop over dos array
+       do is=1,nspins
+          do idos=1,dos_nbins
+             if(iprint>1.and.on_root) then
+                if (mod(real(idos,dp),1000.0_dp) == 0.0_dp) write(stdout,'(1x,a1,a25,i14,a3,i10,a14,1x,a10)') "|",&
+               &"Calculating bin ", idos, " of", dos_nbins," on this node","<--sDOS |"
+             endif
+             do i=1,dos_nbins
+                dos_smear(idos,is)=dos_smear(idos,is)+dos(i,is)*gaussian(E(idos),linear_smearing,E(i))*delta_bins
+             enddo
+          enddo
+       enddo
+       ! copy array back
+       dos=dos_smear
+       ! deallocate array
+       deallocate(dos_smear)
+    endif
+    
+
 
     if(iprint>1.and.on_root) then ! This is to contain the Calculating k-points block
        write(stdout,'(1x,a78)') '+----------------------------------------------------------------------------+'
