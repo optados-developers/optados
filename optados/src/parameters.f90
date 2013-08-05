@@ -311,7 +311,7 @@ contains
             call io_error('Error: exclude_bands must contain positive numbers')
     end if
 
-    compute_band_gap        = .false.
+    compute_band_gap        = .true.
     call param_get_keyword('compute_band_gap',found,l_value=compute_band_gap)
 
     devel_flag=' '
