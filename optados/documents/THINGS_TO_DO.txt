@@ -57,9 +57,6 @@ AJM -- Also good idea.
 6) Calling optados without an odi file should execute default behaviour. I suggest, calculating the DOS with our recommended settings. 
 AJM -- I agree. We need to check that the defaults are sensible. 
 
-7) Can you add a gaussian smearing to the linear extrapolation with the current code? I didn't figure out how to do this. If not, it needs to be added.
-AJM -- Have discussed this with CJP. Important to do, must be done semi-analytically.
-
 8) I suggest we make the linear broadening the default - it does not require a parameter to be set smearing for reasonable results.
 (This suggestion follows after calculating the DOS for the Al example supplied using the following odi:
 TASK : dos
