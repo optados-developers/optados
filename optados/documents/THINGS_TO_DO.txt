@@ -5,7 +5,9 @@ Things To Do
 Version 1.0 before 17th September
 =================================
 
-[JRY] Bullet proof legacy_file_format and out.cell 
+[JRY] Bullet proof legacy_file_format and out.cell. Symmetries in out.cell? 
+-- Edit the code to warn
+-- Edit the manual to explain what to do (cp .cell out.cell) 
 
 ================
 Paper
