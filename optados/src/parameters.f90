@@ -690,6 +690,7 @@ contains
     endif
     if(linear) &
          write(stdout,'(1x,a78)') '|  Linear Extrapolation                      :  True                         |'
+    write(stdout,'(1x,a46,1x,1F10.5,20x,a1)') '|  Smearing Width                            :', linear_smearing,'|'
     if(quad) &
          write(stdout,'(1x,a78)') '|  Quadratic Extrapolation                   :  True                         |'
     if(finite_bin_correction) &
@@ -1524,6 +1525,7 @@ contains
     call comms_bcast(compute_band_gap,1)
     call comms_bcast(adaptive_smearing,1)
     call comms_bcast(fixed_smearing,1)
+    call comms_bcast(linear_smearing,1)
     call comms_bcast(hybrid_linear,1)
     call comms_bcast(hybrid_linear_grad_tol,1)
     call comms_bcast(dos_per_volume,1)
