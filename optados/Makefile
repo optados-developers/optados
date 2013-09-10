@@ -1,4 +1,4 @@
-VER := 1.0.290
+VER := 1.0.346
 
 default : optados
 
@@ -37,12 +37,14 @@ optados-$(VER).tar.gz:
                 $(CURRENT_DIR)/src/Makefile \
                 $(CURRENT_DIR)/examples/*/*.cell \
                 $(CURRENT_DIR)/examples/*/*.param \
-                $(CURRENT_DIR)/examples/*/*.odi \
+                $(CURRENT_DIR)/examples/*/*.recpot \
+		$(CURRENT_DIR)/examples/*/*.odi \
                 $(CURRENT_DIR)/documents/*.tex \
                 $(CURRENT_DIR)/documents/*.pdf \
 		$(CURRENT_DIR)/documents/images/*.eps \
 		$(CURRENT_DIR)/documents/Makefile \
-                $(CURRENT_DIR)/Makefile \
+		$(CURRENT_DIR)/README.INSTALL \
+		$(CURRENT_DIR)/Makefile \
 		$(CURRENT_DIR)/make.system \
 		$(CURRENT_DIR)/COPYING  
 
