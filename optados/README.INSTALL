@@ -1,0 +1,63 @@
++============================================================================+
+|                                                                            |
+|                O p t a D O S   I n s t a l l a t i o n   N o t e s         |
+|                                   version 1.0                              |
+|                                                                            |
++============================================================================+
+ 
+N.B. The full user guide is obtainable in ./documents
+
+Optados is usually obtained in a gzipped tarball, optados-X.X.tar.gz. Extract 
+this (tar -xzf optados-X.X.tar.gz# in the desired directory. Inside the 
+optados directory are a number of sub directories, documents/, examples/. The 
+code may be compiled using the Makefile in the optados/ directory.  The SYSTEM
+BUILD, COMMS_ARCH and PREFIX flags must be set, either in the makefile.system, 
+or from the command line (for example "make BUILD=fast").  
+
+SYSTEM
+Choose which compiler to use to make optados. The valid values are:
+
+g95 (default)
+gfortran
+ifort
+nag
+pathscale
+pgf90
+sun
+
+BUILD
+Choose the level of optimisations required when making optados.  The valid values are:
+
+fast#(default) All optimisations
+debug No optimisations, full debug information
+
+COMMS_ARCH
+Whether to compile for serial or parallel execution. The valid values are:
+
+serial (default) 
+mpi
+
+PREFIX
+Choose where to place the optados binary. The default is the optados/src directory.
+
+
+C O M P I L E R S
+OptaDOS has been tested to compile in series and parallel
+1/11/11
+
+GFOTRAN
+gfortran (4.4) and gfortran (4.4)+OpenMPI (1.5.3)
+
+INTEL
+ifort (12.0) and ifort (12.0) +OpenMPI (1.4.2)
+
+PATHSCALE
+pathscale(4.0.9) and pathscale (4.0.9) +OpenMPI(1.5.4)
+
+PORTLAND GROUP
+pgf90 11.8
+
+K N O W N   I S S U S E S
+pgf90 10.4 + OpenMPI (1.4.3) cause OptaDOS to seg. fault.  Unclear of the cause yet.
+pgf90 10.4 + OpenMPI (1.5.3) won't compile. "/usr/local/pgi/linux86-64/10.4/libso/libpgmp.so: undefined reference to `mp_setaffinity'"
+pgf90 11.8 + OpenMPI (1.4.3 and 1.5.3) and MPICH both cause OptaDOS to seg. fault.  Unclear of the cause yet.
