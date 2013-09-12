@@ -46,6 +46,7 @@ OptaDOS has been tested to compile in series and parallel
 1/11/11
 
 GFOTRAN
+gfortran (4.1) Will not compile as it requires F2003 extensions.
 gfortran (4.4) and gfortran (4.4)+OpenMPI (1.5.3)
 
 INTEL
