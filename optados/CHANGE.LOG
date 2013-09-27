@@ -1,0 +1,60 @@
+OptaDOS Version 1.0.346
+
+optados-1.0.346.tar.gz [NEW -- 10 Sept 2013]
+Moved and updated README install.
+Now /all/ MPI threads do linear smearing with Gaussian.
+Fix bug in user_guide describing projection onto AM channels. It had square brackets not parentheses.
+added functionality to smear the linear dos.
+Made compute_band_gap = .true. the default.
+Added a Free Electron Gas for testing purposes.
+Added a dashed vertical line for e_fermi in plots
+Added a copyright variable. One place for updating "(c) 2010-20now".
+OptaDOS now responds to "optados -h" or "optados --help". It will also give a help message if no seedname is specified.
+Changed the ticklables in the agr file to Helvetica. This was commented out so printed them in Times.
+
+OptaDOS Version 1.0.296
+
+optados-1.0.296.tar.gz
+Bug fix of uninitialised variable in pdos.F90 causing a one-letter atomic species to have the second letter of a previously found two-letter atomic species
+Added another tweak to the src/makefile and removed a bug from the user_gudie -- patch submitted by K. Refson
+Modifications for compatibility with CASTEP's make system
+Fix for legacy format
+
+OptaDOS Version 1.0.290
+
+optados-1.0.290.tar.gz
+fix lorentz broadening and write out broadened agr
+test logicals correctly
+echo core optics keywords
+Modified parameters.f90 so that it writes out all of the keywords. N.B. dos_nbins, dos_max_energy etc will only be written out if iprint>1.
+fix overlong lines
+Added new spectral file formats
+label core hole edges correctly
+parameters.f90 - change default adaptive smearing parameter from 1.4 to 0.4
+add Examples
+The cell_find_MP_grid was a bit too accurate, and I've had to open up some of it's tolerances. It now sucessfully finds the 24x24x24 grid
+optics.f90 - small changes to constants
+Changed the fields and colours in write_optics_xmgrace
+Removed seg fault bug
+Now writes out 4 column data
+Added iprint 0 for really minimal poutput
+Beautified the output for when compute band gap is true
+Changes to output format iprint 1 good, iprint 2 is fine, iprint 3 is acceptable
+Modified output of DOS and PDOS to new style
+add keywords for loss function broadening
+optics.f90 - loss fn broadening added
+jdos_utils.f90 - exclude bands added
+Changed floor to ceiling in efermi insulator routines (BUG)
+add exclude_bands keyword
+Changed efermi_choice to efermi
+make band_gradient a real quantity and add optical_mat
+Removed dos_zero_tol from code, since it is no longer required
+Several things inc consistent treatment of Fermi level
+Added core_type
+Added symmetry for reduced BZ and polar geom
+Finite bin correction default set to true.
+Fixed a typo in writing out the .dat file in both dos.f90 and jdos.f90
+dos_utils.f90 -- Removed the decision to force compute_band_gap, since all_kpoints would have already been deallocated, causing a set fault in later routines.
+Now got the bandgap solver right.
+First attempt at getting compute_band_gap to report the actualy kpoint's fractional positions
+OptaDOS Version 1.0.221
