@@ -319,7 +319,7 @@ end if
 !         &" Fermi energy from file : ",efermi_castep," eV","| <- EfC"
 
     select case (efermi_choice)
-       case("castep")
+       case("file")
           if(on_root) write(stdout,'(1x,a1,a46,f8.4,a3,12x,a8)') "|",&
                &" Set fermi energy from file : ",efermi_castep," eV","  <- EfC"
           efermi=efermi_castep
