@@ -1,3 +1,8 @@
+OptaDOS Version 1.0.357 30th October 2013
+
+* Fixed bug: Where dos_utils was still looking for 'castep' as a valid keyword for efermi. When it should have been looking for 'file'.
+* Minor code tweaks for compatibility with the CASTEP version
+
 OptaDOS Version 1.0.346
 
 optados-1.0.346.tar.gz [NEW -- 10 Sept 2013]
