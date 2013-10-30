@@ -55,10 +55,10 @@ dos.o : dos.f90 dos_utils.o xmgrace_utils.o electronic.o parameters.o io.o
 dos_utils.o : dos_utils.f90 algorithms.o cell.o constants.o comms.o electronic.o io.o parameters.o
 	$(F90) -c $(FFLAGS) $<
 
-electronic.o : electronic.F90 comms.o parameters.o constants.o 
+electronic.o : electronic.f90 comms.o parameters.o constants.o 
 	$(F90) -c $(FFLAGS) $<
 
-io.o : io.F90 constants.o comms.o
+io.o : io.f90 constants.o comms.o
 	$(F90) -c $(FFLAGS) $<
 
 jdos.o : jdos.f90 jdos_utils.o xmgrace_utils.o electronic.o parameters.o io.o
