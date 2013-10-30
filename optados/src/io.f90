@@ -66,24 +66,17 @@ subroutine io_get_seedname (  )
     !===================================================================  
 
 
-#ifdef NAG
-    USE F90_UNIX_ENV, ONLY : IARGC,GETARG
-#endif
-
          implicit none
 
          integer :: num_arg
-#ifndef NAG
-    integer :: iargc
-#endif
 
-         num_arg=iargc()
+         num_arg=command_argument_count()
          if (num_arg==0) then
             seedname='--help'
          elseif (num_arg==1) then
-            call getarg(1,seedname)
+            call get_command_argument(1,seedname)
          else
-            call getarg(1,seedname)
+            call get_command_argument(1,seedname)
             !do something else
          end if
 
