@@ -44,6 +44,7 @@ optados-$(VER).tar.gz:
 		$(CURRENT_DIR)/documents/images/*.eps \
 		$(CURRENT_DIR)/documents/Makefile \
 		$(CURRENT_DIR)/README.INSTALL \
+		$(CURRENT_DIR)/CHANGE.LOG \
 		$(CURRENT_DIR)/Makefile \
 		$(CURRENT_DIR)/make.system \
 		$(CURRENT_DIR)/COPYING  
