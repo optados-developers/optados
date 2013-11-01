@@ -210,9 +210,9 @@ contains
     if(ierr/=0) call io_error('Error: core_write - allocation of dos_temp failed')
     allocate(dos_temp2(dos_nbins),stat=ierr)
     if(ierr/=0) call io_error('Error: core_write - allocation of dos_temp2 failed')
-    allocate(elnes_symbol(maxval(elnes_orbital%species_no(:))),stat=ierr)
+    allocate(elnes_symbol(num_species),stat=ierr)
     if(ierr/=0) call io_error('Error: core_write - allocation of elnes_symbol failed')
-    allocate(elnes_label(maxval(elnes_orbital%species_no(:))),stat=ierr)
+    allocate(elnes_label(num_species),stat=ierr)
     if(ierr/=0) call io_error('Error: core_write - allocation of elnes_label failed')
 
     dE=E(2)-E(1)
