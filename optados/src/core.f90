@@ -100,11 +100,11 @@ contains
 
     num_occ = 0.0_dp
 
-    num_sym=0
     if (.not.legacy_file_format.and.index(devel_flag,'old_filename')>0) then 
        call cell_get_symmetry
-       num_sym = num_crystal_symmetry_operations
     end if
+    num_sym = num_crystal_symmetry_operations
+
 
     allocate(matrix_weights(elnes_mwab%norbitals,elnes_mwab%nbands,num_kpoints_on_node(my_node_id),nspins),stat=ierr)
     if(ierr/=0) call io_error('Error: core_prepare_matrix_elements - allocation failed for matrix_weights')
