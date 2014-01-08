@@ -1,4 +1,4 @@
-VER := 1.0.361
+VER := 1.0.364
 
 default : optados
 
@@ -48,5 +48,5 @@ optados-$(VER).tar.gz:
 		$(CURRENT_DIR)/Makefile \
 		$(CURRENT_DIR)/make.system \
 		$(CURRENT_DIR)/COPYING \
-                $(CURRENT_DIR)/tools/*.f90 \ 
+                $(CURRENT_DIR)/tools/*.f90 
 
