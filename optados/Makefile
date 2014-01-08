@@ -47,5 +47,6 @@ optados-$(VER).tar.gz:
 		$(CURRENT_DIR)/CHANGE.LOG \
 		$(CURRENT_DIR)/Makefile \
 		$(CURRENT_DIR)/make.system \
-		$(CURRENT_DIR)/COPYING  
+		$(CURRENT_DIR)/COPYING \
+                $(CURRENT_DIR)/tools/*.f90 \ 
 
