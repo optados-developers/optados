@@ -1,7 +1,13 @@
+OptaDOS Version 1.0.370 9th January 2013
+	
+* Minor Buxfix to Makefile. Thanks to Michael Rutter.
+* Added tools/ direcotry containing code snippets for interfacing to other codes to generate the bands, ome_bin, pdos_bin and elnes_bin files. 
+* Updates to User Guide -- containing code snippets for interfacing to other codes to generate the bands, ome_bin, pdos_bin and elnes_bin files. 
+
 OptaDOS Version 1.0.361 12th Novemeber 2013
+	
 * Fix a serious bug in which symmetry was not treated correctly for polarised core-loss
 * Fix to elnes labelling
-
 
 OptaDOS Version 1.0.357 30th October 2013
 
