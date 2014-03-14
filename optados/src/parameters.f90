@@ -514,7 +514,7 @@ contains
     write(stdout,'(a78)') " |                                                                           | "
     write(stdout,'(a78)') " |  Please cite:                                                             | "
     write(stdout,'(a78)') " |  Andrew J. Morris, Rebecca Nicholls, Chris J. Pickard and Jonathan Yates  | "
-    write(stdout,'(a78)') " |    OptaDOS User Manual, Univ. of Oxford and Univ. College London, (2010)  | "
+    write(stdout,'(a78)') " |              Comp. Phys. Comm. 185, 5, 1477 (2014)                        | "
     write(stdout,'(a78)') " |                                                                           | "
     write(stdout,'(a78)') " |  Additionally when using the linear broadening:                           | "
     write(stdout,'(a78)') " | C.J. Pickard and M.C. Payne, Phys. Rev. B, 59, 7, 4685 (1999)             | "

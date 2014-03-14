@@ -34,7 +34,7 @@ module od_constants
   
   private ! unless otherise stated
 
- character(len=6), parameter, public :: optados_version=" 1.0  "
+ character(len=6), parameter, public :: optados_version=" 1.1  "
  character(len=14), parameter, public :: copyright=" (c) 2010-2013"
 
  integer, parameter, public :: dp=selected_real_kind(15,300)
