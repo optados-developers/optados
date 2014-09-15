@@ -92,7 +92,7 @@ contains
     ! do some more work to find out its sign
     ! A J Morris 29th September 2011
  !=========================================================================!
-    use od_io, only: io_error
+    use od_io, only: io_error,stdout
     implicit none
     integer,      intent(out):: kpoint_grid_dim(1:3)
     integer,      intent(in) :: num_kpts
@@ -105,11 +105,68 @@ contains
     real(kind=dp)    :: subtraction_tol, min_img, min_img2
     real(kind=dp)    :: min_img3,image, min_img_tol
 
+    integer :: iprint=1 ! We can't use the global iprint as it's higher that this
+                        ! in the module heirarchy.
+
+    ! Before time reversal symmetry we could any combintaion of kpoints
+    !--------------------X-------------
+    !                  0.25
+
+    ! We apply TR to make we have a complete set (and add periodic images)
+    !------X------X------X------X------
+    !    -0.75  -0.25   0.25  0.75
+    !
+    ! In this case the answer is easy. The minimim image is 0.5. Hence the grid is
+    ! 1/0.5 = 2x MP.
+     
+    ! However the fun comes when shifts are applied. In this case applying TR makes
+    ! things more complicated. Consider the same grid with a +ve 0.05 shift.
+    !
+    ! Now CASTEP had to give us more kpoints
+    !------------------X------X------
+    !                0.20   0.70
+    ! 
+    ! We couldn't know that an offset had been applied so we appy TR and get
+    !   -0.70     -0.20  0.30    0.80
+    !----X-X-----X-X----X-X----X-X----
+    !  -0.80  -0.30  0.20   0.70
+    !
+    ! Hence now the 1st minimum image is 0.10, double the offset
+    !           the 2nd    "      "   is 0.40
+    !           the 3rd    "      "   is 0.50  the reciprocal of the MP grid
+
+    ! One can now image the case where the offset is 3/(4n) where n is the MP grid number.
+    ! in this case 3/8=0.375
+    !                 (shifted -0.75)  (shifted -0.25)
+    !------------------------X-------------X-------------------------
+    !                     -0.375        0.125        
+    !
+    ! After TR
+    !                           -0.125        0.375
+    !------------------------X-----X------X-----X--------------------
+    !                     -0.375        0.125      
+    !
+    ! So these are all equally spaced so algorithm sees this like the first example, easy, 0.25. Hence
+    ! grid is 1/0.25 = 4x MP. Wrong!
+    !
+    ! This is a known bug -- and without having the symmetry ops, we can't build the shifted 2xMP grid to 
+    ! show that it is not a 4x MP.  AJM 15/9/2014
+
     ! When two numbers are the same
     subtraction_tol=epsilon(subtraction_tol)
     !write(*,*) "subtraction_tol=", subtraction_tol
     ! When one number is larger than another one
     min_img_tol=0.000001_dp
+
+     if(iprint>3) then
+        write(stdout,*)
+        write(stdout,*) "+----------------------------------------------------------------------------+"
+        write(stdout,*) "                              MP grid finder "
+        write(stdout,*)
+        write(stdout,*) " Kpoints found:", num_kpts 
+     endif
+
+     
 
     ! Add time reversal
     kpoint_TR(1:3,1:num_kpts)           = kpoints(1:3,1:num_kpts)
@@ -127,6 +184,8 @@ contains
 
     over_dim: do idim=1,3
        ! Make unique
+       if(iprint>3) write(stdout,*) " ----- Dimension ", idim," -----"
+
        nunique_kpoints=1
        unique_kpoints(idim,1)=kpoint_TR(idim,1)
 
@@ -139,17 +198,21 @@ contains
           enddo
           ! If we ended up here then, this is new
           nunique_kpoints=nunique_kpoints+1
-        !  write(*,*) "ikpt= ",ikpt, "nunique_kpoints= ", nunique_kpoints
+           if(iprint>3)  write(stdout,*) " ikpt= ",ikpt, "nunique_kpoints= ", nunique_kpoints
           unique_kpoints(idim,nunique_kpoints)=kpoint_TR(idim,ikpt)
        end do over_kpts
+
+       if(iprint>3) write(stdout,*) " Number of unique kpoints:", nunique_kpoints
 
       ! write(*,*) "------------------------ KPOINTS IN+TR+FOLDING+UNIQUE -----------"
       ! do i=1,nunique_kpoints
       !    write(*,*) i, idim, unique_kpoints(idim,i)
       ! enddo
       ! write(*,*) "-----------------------------------------------------------"
-       
-       ! Look at special cases
+       if(iprint>3) write(stdout,*) " Looking for special cases for dimension:", idim
+
+       ! Look at special cases. These are largely necessary because the general finder needs to get to 
+       ! second nearest neighbour before it can work correctly. Except in the case of 
        if(nunique_kpoints==1) then
           ! There is only 1 k-point
           ! The shift is it's position (either 0 or 0.5)
@@ -173,11 +236,16 @@ contains
           endif
        elseif(nunique_kpoints==3) then
           ! This is the case of a MP3 grid with a point at Gamma
-          if(present(kpoint_offset)) kpoint_offset(idim)=0.0_dp
-          kpoint_grid_dim(idim)=3
-          cycle over_dim
-       endif
+  !! AJM COMMENTED OUT AS A TEST AGAINST
+  !! HEXAGONAL CELLS
+    !      if(present(kpoint_offset)) kpoint_offset(idim)=0.0_dp
+    !      kpoint_grid_dim(idim)=3
+    !      cycle over_dim
+        continue 
+      endif
        
+       if(iprint>3) write(stdout,*) " Left the special-case kpoint finder for dimension:", idim
+       if(iprint>3) write(stdout,*) " Now trying to use the general solver..."
        
        ! Get 1st, 2nd and 3rd minimum images  
        ! Get 1st min image
@@ -210,26 +278,49 @@ contains
              if((image<min_img3).and. image>min_img2+  min_img_tol) min_img3=image
           enddo
        enddo
-       if(abs(min_img3-huge(min_img3)).le.subtraction_tol) &
-            & call io_error('cell_find_MP_grid: Failed to find a 3rd min image')
+       if(abs(min_img3-huge(min_img3)).le.subtraction_tol) then 
+          ! It's possible in CASTEP 6 and 7 to have 3 kpoints only for a 5 MP grid
+          ! the specieal case solver then got confused. 
+          if(abs( 2.0_dp*min_img-min_img2)<min_img_tol) then
+             ! If 1stMI==2ndMI then 1/1stMP is the grid density and we're still ok. Carry on. 
+             ! we'll catch this scenario further down the code.
+             if(iprint>3) write(stdout,*) " Couldn't find a third minimum image, but since we don't think"
+             if(iprint>3) write(stdout,*) " there's an offset, it looks like a" , 1.0_dp/min_img, " kpoint grid"
+             continue
+          else
+             call io_error('cell_find_MP_grid: Failed to find a 3rd min image')
+          endif
+       endif
+
             
-     !  write(*,*) "Images", min_img, min_img2, min_img3, 1.0_dp/min_img
+       if(iprint>3) then
+          write(stdout,*) " Min images for dimension:", idim
+          write(stdout,*) " 1st:", min_img
+          write(stdout,*) " 2nd:", min_img2
+          write(stdout,*) " 3rd:", min_img3
+          write(stdout,*) " 1st^-1:", 1.0_dp/min_img
+       endif
        
        if(abs( 2.0_dp*min_img-min_img2)<min_img_tol) then
           ! If 1stMI==2ndMI then 1/1stMP is the grid density
           if(present(kpoint_offset))  kpoint_offset(idim)=0.0_dp
-            kpoint_grid_dim(idim)=int(1.0_dp/min_img)
+          kpoint_grid_dim(idim)=int(1.0_dp/min_img)
+          ! WARNING could also have a shifted grid with a perfect shift 3/(4n) 
+          ! this would be a known bug
        else
           ! If 1stMI.ne.2ndMI then 1/3rdMP is the grid density
           ! and 1stMI/2 is the shift
             if(present(kpoint_offset))  kpoint_offset(idim)=min_img/2.0_dp
             kpoint_grid_dim(idim)=int(1.0_dp/min_img3)
-       endif
-            
+         endif
+         
     enddo over_dim
     
-   ! write(*,*) "kpoint_grid_dim= ", kpoint_grid_dim
+    if(iprint>3) write(stdout,*) " Conclusion = kpoint_grid_dim: ", kpoint_grid_dim
    ! if(present(kpoint_offset))  write(*,*) "kpoint_offset= ",  kpoint_offset
+
+    if(iprint>3) &
+         & write(stdout,*) "+----------------------------------------------------------------------------+"
   end subroutine cell_find_MP_grid
  !=========================================================================!
 
