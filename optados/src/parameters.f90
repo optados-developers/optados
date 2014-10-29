@@ -402,11 +402,12 @@ contains
     if(pdos.or.core.or.optics) then
        ! try to read in the atoms from the cell file.
        ! We don't need them otherwise, so let's not bother
-       if(index(devel_flag,'old_filename')>0) then
-          call cell_get_atoms
-       else
+     !  if(index(devel_flag,'old_filename')>0) then
+       ! No longer need to call get_atoms as we're forcing people who use the legacy code to make an -out.cell
+       !     call cell_get_atoms
+     !  else
           call cell_read_cell
-       end if
+     !  end if
     end if
 
 

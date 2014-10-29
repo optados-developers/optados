@@ -1214,6 +1214,7 @@ Which version of \castep\ are you using? See Sect.\,\ref{sect:lff}.
 \item Replace \verb#SPECTRAL_KPOINTS_MP_GRID# in the cell file with \verb#BS_KPOINTS_MP_GRID# and \verb#OPTICS_KPOINTS_MP_GRID#.
 \item Remove \verb#SPECTRAL_TASK : DOS# from the param file.
 \item Add \verb#DEVEL_FLAG:old_filename# to the odi file.
+\item Add \verb# WRITE_CELL_STRUCTURE : true# to your \castep\ cell file to generate the symmetries of the cell if you are doing pdos, core or optics calculations.
 \item Read Section\,\ref{pdos_castep_6.0} if you are planning to do a partial density of states calculation.
 \end{itemize}
 

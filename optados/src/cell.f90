@@ -406,10 +406,12 @@ contains
 
 100 call io_error('Error: Problem opening sym file in cell_get_symmetry') 
 
-
   end subroutine cell_get_symmetry
+  !=========================================================================!
 
+  !=========================================================================!
   subroutine cell_read_cell
+  !=========================================================================!
     use od_constants, only : bohr2ang
     use od_io,        only : io_file_unit, io_error, seedname, maxlen
     use od_algorithms,only : utility_cart_to_frac, utility_frac_to_cart, utility_lowercase
@@ -696,6 +698,8 @@ contains
                   crystal_symmetry_disps(2,counter),crystal_symmetry_disps(3,counter)
           end do
        end if
+    else
+        call io_error('Error: Cannot find %block '//trim(keyword)//' in '//trim(seedname)//'-out.cell')
     endif
 
 
@@ -707,8 +711,11 @@ contains
 
 
   end subroutine cell_read_cell
+  !=========================================================================!
 
+  !=========================================================================!
   subroutine cell_get_atoms
+  !=========================================================================!
     use od_constants, only : bohr2ang
     use od_io,        only : io_file_unit, io_error, seedname, maxlen
     use od_algorithms,only : utility_cart_to_frac, utility_frac_to_cart, utility_lowercase
