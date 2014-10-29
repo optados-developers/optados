@@ -48,6 +48,7 @@ module od_parameters
   character(len=20), public, save :: energy_unit
   character(len=20), public, save :: length_unit ! not exposed - but useful for BZ plots?
   logical,           public, save :: legacy_file_format
+  integer,           public, save :: kpoint_mp_grid(3) 
 
 
   !Task parameters
@@ -232,6 +233,9 @@ contains
     if(.not.(fixed.or.adaptive.or.linear.or.quad)) then ! Pick a default
        adaptive=.true.
     endif
+
+    kpoint_mp_grid = -999
+    call  param_get_keyword_vector('kpoint_mp_grid',found,3,i_value=kpoint_mp_grid)
 
     length_unit     =  'ang'         !
     lenconfac=1.0_dp

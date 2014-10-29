@@ -457,7 +457,7 @@ contains
     use od_io,        only : io_file_unit, seedname, filename_len,stdout, io_time,&
          & io_error
     use od_algorithms, only : algor_dist_array
-    use od_parameters, only : iprint, compute_band_gap
+    use od_parameters, only : iprint, compute_band_gap,kpoint_mp_grid
 
     implicit none
 
@@ -566,8 +566,13 @@ contains
 
        ! Do this here so we can free up the all_kpoints memory, unless we need it to calculate
        ! the kpoints at the band-gap.
-       call cell_find_MP_grid(all_kpoints,nkpoints,kpoint_grid_dim)
-       if(.not.compute_band_gap) then
+       if(kpoint_mp_grid(1)>0) then
+          ! we must have set this manually
+          kpoint_grid_dim=kpoint_mp_grid
+       else
+          call cell_find_MP_grid(all_kpoints,nkpoints,kpoint_grid_dim)
+       endif
+          if(.not.compute_band_gap) then
           deallocate(all_kpoints,stat=ierr) 
           if (ierr/=0)  call io_error('Error: Problem deallocating all_kpoints in read_band_energy')
        endif

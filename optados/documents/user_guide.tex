@@ -1221,6 +1221,9 @@ Which version of \castep\ are you using? See Sect.\,\ref{sect:lff}.
 \section{I'm getting odd results for my PDOS calculation when using \castep\ version 6.0} \label{pdos_castep_6.0}
 The spectral module in \castep\ 6.0 generates the pdos weights commensurate with the optics grid you have chosen. However this gets overwritten by the main routines. Hence to get the right PDOS weights you must set \verb#PDOS_CALCULATE_WEIGHTS : FALSE# in the param file.
 
+\section{\optados\ is reporting the wrong number of kpoints}
+This is a rare bug that can happen if you have picked the magic k-point offset for your grid, that is a $3/(4n)$ offset where $n$ is the number of MP grid points in that direction. It is a very difficult edge-case to catch. Until a permanent workaround is found you can tell \optados\ the right number using the \verb#KPOINT_MP_GRID nx ny nz# in the odi file. 
+
 \section{I'd like \optados\ to do X as well}
 Contact the developers we're always interested in discussing new functionality.
 
