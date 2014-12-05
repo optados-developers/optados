@@ -71,8 +71,8 @@ contains
        allocate(weighted_dos_broadened(size(weighted_dos,1),size(weighted_dos,2),size(weighted_dos,3)))
        weighted_dos_broadened=0.0_dp
        if(LAI_gaussian) call core_gaussian 
-       if(LAI_lorentzian) call core_lorentzian 
-    endif
+       if(LAI_lorentzian.or.(LAI_lorentzian_scale.gt.0.0_dp)) call core_lorentzian 
+     endif
 
     if(set_efermi_zero .and. .not.efermi_set) call dos_utils_set_efermi
     if (on_root) then
@@ -174,7 +174,7 @@ contains
     use od_parameters, only : dos_nbins, core_LAI_broadening, LAI_gaussian, LAI_gaussian_width, &
          LAI_lorentzian, LAI_lorentzian_scale,  LAI_lorentzian_width,  LAI_lorentzian_offset, output_format, &
          set_efermi_zero
-    use od_electronic, only: elnes_mwab,elnes_orbital,efermi,efermi_set
+    use od_electronic, only: elnes_mwab,elnes_orbital,efermi,efermi_set,nspins
     use od_io, only : seedname, io_file_unit,io_error
     use od_dos_utils, only : E,dos_utils_set_efermi
     use od_cell, only : num_species, atoms_symbol, atoms_label, cell_volume
@@ -191,12 +191,13 @@ contains
     integer, allocatable :: edge_species(:),edge_rank_in_species(:)
     integer, allocatable :: ion_species(:),ion_num_in_species(:)
     character(len=40), allocatable :: edge_name(:)
-    real(kind=dp), allocatable :: dos_temp(:), dos_temp2(:)
     logical :: found
+    real(kind=dp), allocatable :: dos_temp(:,:), dos_temp2(:,:)
     real(kind=dp), allocatable :: E_shift(:)
     real(kind=dp) :: epsilon2_const
     real(kind=dp), parameter :: epsilon_0 = 8.8541878176E-12_dp  
     real(kind=dp), parameter :: e_charge =  1.602176487E-19_dp 
+
 
     allocate(E_shift(dos_nbins),stat=ierr)
     if (ierr/=0) call io_error('Error allocating E_shift in core_write')
@@ -206,10 +207,20 @@ contains
        E_shift=E
     endif
 
-    allocate(dos_temp(dos_nbins),stat=ierr)
+    if(nspins==1) then     
+       allocate(dos_temp(dos_nbins,1),stat=ierr)
+    else 
+       allocate(dos_temp(dos_nbins,3),stat=ierr)
+    endif 
     if(ierr/=0) call io_error('Error: core_write - allocation of dos_temp failed')
-    allocate(dos_temp2(dos_nbins),stat=ierr)
+    
+    if(nspins==1) then   
+       allocate(dos_temp2(dos_nbins,1),stat=ierr)
+    else 
+       allocate(dos_temp2(dos_nbins,3),stat=ierr)
+    endif
     if(ierr/=0) call io_error('Error: core_write - allocation of dos_temp2 failed')
+ 
     allocate(elnes_symbol(num_species),stat=ierr)
     if(ierr/=0) call io_error('Error: core_write - allocation of elnes_symbol failed')
     allocate(elnes_label(num_species),stat=ierr)
@@ -475,21 +486,44 @@ contains
        write(core_unit,*) '# ',trim(edge_name(loop))
 
        dos_temp=0.0_dp;dos_temp2=0.0_dp
-       do loop2=1,edge_num_am(loop)
-          dos_temp=dos_temp+weighted_dos(:,1,edge_list(loop,loop2))/real(edge_num_am(loop),dp)
-          if (core_LAI_broadening) then 
-             dos_temp2=dos_temp2+weighted_dos_broadened(:,1,edge_list(loop,loop2))/real(edge_num_am(loop),dp)
-          end if
-       end do
+       
+       if(nspins==1) then 
+          do loop2=1,edge_num_am(loop)
+             dos_temp(:,1)=dos_temp(:,1)+weighted_dos(:,1,edge_list(loop,loop2))/real(edge_num_am(loop),dp)
+             if (core_LAI_broadening) then 
+                dos_temp2(:,1)=dos_temp2(:,1)+weighted_dos_broadened(:,1,edge_list(loop,loop2))/real(edge_num_am(loop),dp)
+             end if
+          end do
+       else 
+          do loop2=1,edge_num_am(loop)
+             dos_temp(:,1)=dos_temp(:,1)+weighted_dos(:,1,edge_list(loop,loop2))/real(edge_num_am(loop),dp)
+             dos_temp(:,2)=dos_temp(:,2)+weighted_dos(:,2,edge_list(loop,loop2))/real(edge_num_am(loop),dp)
+             dos_temp(:,3)=dos_temp(:,3)+dos_temp(:,1)+dos_temp(:,2)
+             if (core_LAI_broadening) then 
+                dos_temp2(:,1)=dos_temp2(:,1)+weighted_dos_broadened(:,1,edge_list(loop,loop2))/real(edge_num_am(loop),dp)
+                dos_temp2(:,2)=dos_temp2(:,2)+weighted_dos_broadened(:,2,edge_list(loop,loop2))/real(edge_num_am(loop),dp)
+                dos_temp2(:,3)=dos_temp2(:,3)+dos_temp2(:,1)+dos_temp2(:,2)
+              end if
+          end do
+       end if
 
        do N=1,dos_nbins
-          if (core_LAI_broadening) then 
-             write(core_unit,*)E_shift(N),dos_temp(N),dos_temp2(N)
+          if(nspins==1) then 
+             if (core_LAI_broadening) then 
+                write(core_unit,*)E_shift(N),dos_temp(N,1),dos_temp2(N,1)
+             else 
+                write(core_unit,*)E_shift(N),dos_temp(N,1)
+             end if
           else 
-             write(core_unit,*)E_shift(N),dos_temp(N)
-          end if
+             if (core_LAI_broadening) then 
+                write(core_unit, '(7(E21.13,2x))')E_shift(N),dos_temp(N,1),dos_temp(N,2),dos_temp(N,3),dos_temp2(N,1),dos_temp2(N,2),dos_temp2(N,3)
+             else 
+                write(core_unit, '(4(E21.13,2x))')E_shift(N),dos_temp(N,1),dos_temp(N,2),dos_temp(N,3)
+             end if
+          endif
        end do
-       write(core_unit,*)''
+ 
+      write(core_unit,*)''
     end do
 
     close(core_unit)
@@ -526,11 +560,17 @@ contains
           do loop=1,num_edge
              dos_temp=0.0_dp;dos_temp2=0.0_dp
              do loop2=1,edge_num_am(loop)
-                dos_temp=dos_temp+weighted_dos(:,1,edge_list(loop,loop2))/real(edge_num_am(loop),dp)
+                if(nspins==1) then 
+                   dos_temp(:,1)=dos_temp(:,1)+weighted_dos(:,1,edge_list(loop,loop2))/real(edge_num_am(loop),dp)
+                else
+                   dos_temp(:,1)=dos_temp(:,1)+weighted_dos(:,1,edge_list(loop,loop2))/real(edge_num_am(loop),dp)
+                   dos_temp(:,2)=dos_temp(:,2)+weighted_dos(:,2,edge_list(loop,loop2))/real(edge_num_am(loop),dp)
+                   dos_temp(:,3)=dos_temp(:,1)+dos_temp(:,1)+dos_temp(:,2)
+               endif
              end do
 
              call xmgu_data_header(core_unit,loop,loop,trim(edge_name(loop)))
-             call xmgu_data(core_unit,loop,E_shift(:),dos_temp)
+             call xmgu_data(core_unit,loop,E_shift(:),dos_temp(:,1)) ! only 1 element at the moment RJN 28Aug14
           end do
 
           if(core_LAI_broadening) then 
@@ -561,11 +601,17 @@ contains
              do loop=1,num_edge
                 dos_temp=0.0_dp;dos_temp2=0.0_dp
                 do loop2=1,edge_num_am(loop)
-                   dos_temp=dos_temp+weighted_dos_broadened(:,1,edge_list(loop,loop2))/real(edge_num_am(loop),dp)
+                   if(nspins==1) then
+                      dos_temp(:,1)=dos_temp(:,1)+weighted_dos_broadened(:,1,edge_list(loop,loop2))/real(edge_num_am(loop),dp)
+                   else 
+                      dos_temp(:,1)=dos_temp(:,1)+weighted_dos_broadened(:,1,edge_list(loop,loop2))/real(edge_num_am(loop),dp)
+                      dos_temp(:,2)=dos_temp(:,2)+weighted_dos_broadened(:,2,edge_list(loop,loop2))/real(edge_num_am(loop),dp)      
+                      dos_temp(:,3)=dos_temp(:,1)+dos_temp(:,1)+dos_temp(:,2)
+                   endif
              end do
 
              call xmgu_data_header(core_unit,loop,loop,trim(edge_name(loop)))
-             call xmgu_data(core_unit,loop,E_shift(:),dos_temp)
+             call xmgu_data(core_unit,loop,E_shift(:),dos_temp(:,1))   ! Only 1 part for now RJN 28Aug14
           end do
 
        endif
@@ -642,15 +688,19 @@ contains
           do N_energy=1,dos_nbins       ! Loop over energy 
              if(E(N_energy).ge.(LAI_lorentzian_offset+efermi)) then 
                 L_width = 0.5_dp*(LAI_lorentzian_width & ! HWHW of Lorentzian 
-                     + ((E(N_energy)-efermi)*LAI_lorentzian_scale))
+                     + ((E(N_energy)-efermi-LAI_lorentzian_offset)*LAI_lorentzian_scale))
              else 
                 L_width = 0.5_dp*LAI_lorentzian_width 
              end if
+             if((L_width*3.142_dp).lt.dE) then
+                L_width=0.0_dp
+             endif ! to get rid of spikes caused by L_width too small
              if (L_width.eq.0.0_dp) then ! if there is no broadening ie width=0 and below offset
                 weighted_dos_broadened(N_energy,N_spin,N)=weighted_dos_temp(N_energy,N_spin,N) 
              else                        ! there is broadening 
                 do N_energy2=1,dos_nbins ! Turn each energy value into a function 
-                   l = weighted_dos_temp(N_energy,N_spin,N)*L_width/(pi*(((E(N_energy2)-E(N_energy))**2)+(L_width**2)))  ! Lorentzian 
+                   l = weighted_dos_temp(N_energy,N_spin,N)*L_width/(pi*(((E(N_energy2)-E(N_energy))**2)+(L_width**2)))  ! Lorentzian
+!print *,L_width, l, weighted_dos_temp(N_energy,N_spin,N), E(N_energy2), E(N_energy)  
                    weighted_dos_broadened(N_energy2,N_spin,N)=weighted_dos_broadened(N_energy2,N_spin,N)+(l*dE) 
                 end do
              end if
