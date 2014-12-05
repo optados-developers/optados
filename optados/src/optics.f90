@@ -525,7 +525,11 @@ contains
                 endif
              end if
           end do
-          epsilon(N_energy,1,N2,1)=((2.0_dp/pi)*q(1))+1.0_dp
+          if(N2.le.3)then 
+             epsilon(N_energy,1,N2,1)=((2.0_dp/pi)*q(1))+1.0_dp
+          else
+             epsilon(N_energy,1,N2,1)=((2.0_dp/pi)*q(1))
+          endif
           if(optics_intraband) then 
              !             epsilon(N_energy,1,N2,2)=((2.0_dp/pi)*q(2))+1.0_dp  !! old KK method 
              epsilon(N_energy,1,N2,2)=1.0_dp-(intra(N2)/((E(N_energy)**2)+(((optics_drude_broadening*hbar)/e_charge)**2)))
@@ -812,19 +816,24 @@ contains
              write(epsilon_unit,*)E(N),epsilon(N,1,1,1),epsilon(N,2,1,1)
           enddo
        else 
-          do N2=1,3
+          write(epsilon_unit,*)''
+          write(epsilon_unit,*)'' 
+          do N=1,jdos_nbins
+             write(epsilon_unit,*)E(N),epsilon(N,1,1,1),epsilon(N,2,1,1)
+          enddo
+          do N2=2,3
              write(epsilon_unit,*)''
              write(epsilon_unit,*)''         
              do N=1,jdos_nbins
-                write(epsilon_unit,*)E(N),epsilon(N,1,1,N2),epsilon(N,2,1,N2)
+                write(epsilon_unit,*)E(N),epsilon(N,1,1,N2),epsilon(N,2,1,N2)/(E(N)*e_charge)
              enddo
           enddo
        endif
 
        if(trim(output_format)=="xmgrace") then
-             call write_optics_xmgrace(label,E,epsilon(:,1,1,1),epsilon(:,2,1,1))
+          call write_optics_xmgrace(label,E,epsilon(:,1,1,1),epsilon(:,2,1,1))
        elseif(trim(output_format)=="gnuplot") then 
-             call write_optics_gnuplot(label,E,epsilon(:,1,1,1),epsilon(:,2,1,1))
+          call write_optics_gnuplot(label,E,epsilon(:,1,1,1),epsilon(:,2,1,1))
        else
           write(stdout,*)  " WARNING: Unknown output format requested, continuing..."
        endif
