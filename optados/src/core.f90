@@ -70,8 +70,8 @@ contains
     if(core_LAI_broadening.eqv..true.) then 
        allocate(weighted_dos_broadened(size(weighted_dos,1),size(weighted_dos,2),size(weighted_dos,3)))
        weighted_dos_broadened=0.0_dp
+       if(LAI_lorentzian.or.(LAI_lorentzian_scale.gt.0.00001_dp)) call core_lorentzian 
        if(LAI_gaussian) call core_gaussian 
-       if(LAI_lorentzian.or.(LAI_lorentzian_scale.gt.0.0_dp)) call core_lorentzian 
      endif
 
     if(set_efermi_zero .and. .not.efermi_set) call dos_utils_set_efermi
@@ -631,15 +631,25 @@ contains
     ! This subroutine adds in instrumental (Gaussian) broadening  
 
     use od_constants, only : pi, dp, bohr2ang 
-    use od_parameters, only : LAI_gaussian_width, dos_nbins
+    use od_parameters, only : LAI_gaussian_width, dos_nbins, LAI_lorentzian, LAI_lorentzian_scale
     use od_dos_utils, only : E
     use od_electronic, only : nspins, elnes_mwab, band_energy
 
     integer :: N, N_spin, N_energy, N_energy2 
     real(kind=dp) :: G_width, g, dE
+    real(kind=dp),allocatable, dimension(:,:,:) :: weighted_dos_temp
 
     G_width = LAI_gaussian_width          ! FWHM of Gaussian 
     dE = E(2)-E(1)
+    allocate(weighted_dos_temp(size(weighted_dos,1),size(weighted_dos,2),size(weighted_dos,3)))
+    weighted_dos_temp=0.0_dp
+
+    if(LAI_lorentzian.or.(LAI_lorentzian_scale.gt.0.00001_dp)) then 
+       weighted_dos_temp = weighted_dos_broadened           ! In case we've already done Lorentzian broadening 
+       weighted_dos_broadened = 0.0_dp
+    else 
+       weighted_dos_temp = weighted_dos
+    end if
 
     do N=1,elnes_mwab%norbitals         ! Loop over orbitals 
        do N_spin=1,nspins               ! Loop over spins 
@@ -648,7 +658,7 @@ contains
                 g = (((4.0_dp*log(2.0_dp))/pi)**(0.5_dp))*(1/G_width)*exp(-4.0_dp*(log(2.0_dp))*&
                      (((E(N_energy2)-E(N_energy))/G_width)**2.0_dp))  ! Gaussian 
                 weighted_dos_broadened(N_energy2,N_spin,N)=weighted_dos_broadened(N_energy2,N_spin,N) &
-                     + (g*weighted_dos(N_energy,N_spin,N)*dE)
+                     + (g*weighted_dos_temp(N_energy,N_spin,N)*dE)
              end do
           end do                        ! End loop over energy 
        end do                           ! End loop over spins  
@@ -669,19 +679,8 @@ contains
 
     integer :: N, N_spin, N_energy, N_energy2 
     real(kind=dp) :: L_width, l, dE
-    real(kind=dp),allocatable, dimension(:,:,:) :: weighted_dos_temp
 
     dE = E(2)-E(1)   
-    allocate(weighted_dos_temp(size(weighted_dos,1),size(weighted_dos,2),size(weighted_dos,3)))
-    weighted_dos_temp=0.0_dp
-
-    if(LAI_gaussian) then 
-       weighted_dos_temp = weighted_dos_broadened
-       weighted_dos_broadened = 0.0_dp
-    else 
-       weighted_dos_temp = weighted_dos
-    end if
-
 
     do N=1,elnes_mwab%norbitals         ! Loop over orbitals 
        do N_spin=1,nspins               ! Loop over spins 
@@ -692,18 +691,14 @@ contains
              else 
                 L_width = 0.5_dp*LAI_lorentzian_width 
              end if
-             if((L_width*3.142_dp).lt.dE) then
-                L_width=0.0_dp
-             endif ! to get rid of spikes caused by L_width too small
-             if (L_width.eq.0.0_dp) then ! if there is no broadening ie width=0 and below offset
-                weighted_dos_broadened(N_energy,N_spin,N)=weighted_dos_temp(N_energy,N_spin,N) 
-             else                        ! there is broadening 
+             if((L_width*pi).lt.dE) then  ! to get rid of spikes caused by L_width too small
+                L_width=dE/pi
+             endif 
                 do N_energy2=1,dos_nbins ! Turn each energy value into a function 
-                   l = weighted_dos_temp(N_energy,N_spin,N)*L_width/(pi*(((E(N_energy2)-E(N_energy))**2)+(L_width**2)))  ! Lorentzian
-!print *,L_width, l, weighted_dos_temp(N_energy,N_spin,N), E(N_energy2), E(N_energy)  
+                   l = weighted_dos(N_energy,N_spin,N)*L_width/(pi*(((E(N_energy2)-E(N_energy))**2)+(L_width**2)))  ! Lorentzian
                    weighted_dos_broadened(N_energy2,N_spin,N)=weighted_dos_broadened(N_energy2,N_spin,N)+(l*dE) 
                 end do
-             end if
+           !  end if
           end do                        ! End look over energy 
        end do                           ! End loop over spins  
     end do                              ! End loop over orbitals  
