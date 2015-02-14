@@ -40,6 +40,7 @@ optados-$(VER).tar.gz:
                 $(CURRENT_DIR)/examples/*/*.recpot \
 		$(CURRENT_DIR)/examples/*/*.odi \
                 $(CURRENT_DIR)/documents/*.tex \
+                $(CURRENT_DIR)/documents/*.bib \
                 $(CURRENT_DIR)/documents/*.pdf \
 		$(CURRENT_DIR)/documents/images/*.eps \
 		$(CURRENT_DIR)/documents/Makefile \
