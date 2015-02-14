@@ -1,3 +1,4 @@
+
 TASK                   : SPECTRAL
 NELECTRONS : 1
 NEXTRA_BANDS : 4
@@ -5,4 +6,4 @@ SPIN_POLARIZED : FALSE
 SPECTRAL_TASK          : DOS
 PDOS_CALCULATE_WEIGHTS : TRUE
 CUT_OFF_ENERGY         : 200
-IPRINT                 : 1
+!!IPRINT                 : 4

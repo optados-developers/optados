@@ -1,4 +1,8 @@
 TASK                   : SPECTRAL
+%BLOCK devel_code
+spectral: check_output: true :endspectral
+%ENDBLOCK devel_code
+
 SPECTRAL_TASK          : DOS
 PDOS_CALCULATE_WEIGHTS : TRUE
 CUT_OFF_ENERGY         : 200
