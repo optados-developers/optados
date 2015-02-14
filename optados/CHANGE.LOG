@@ -1,3 +1,11 @@
+OptaDOS Version 1.2.380 14th February 2015
+
+* In optics: Off-diagonal tensor terms have been corrected and intraband epsilon_2 terms are outputted as epsilon_2 rather than epsilon2xenergy
+* For core loss calculations:: spin is included properly, broadening has been updated but spikes have not been completely eliminated
+* Added a KPOINT_MP_GRID keyword. So that a user can tell OptaDOS the right grid, in the case that it got it wrong. Put this into the FAQ explaining when this rare even happens.
+* Forced OptaDOS to exit if it cannot find symmetries in the seedname-out.cell. They should always be there, even if it's just the identiy. When doing lagacy file format, forced the user to provide a seedname-out.cell file.
+* Corrected a bug that misrreported a kpoint grid as 3x MP not 5x MP when CASTTEP 6 and 7 generated a hexagonal cell. OptaDOS worked ok using CASTEP 8. Thanks to Nicholas McDougall.
+
 OptaDOS Version 1.0.370 9th January 2013
 	
 * Minor Buxfix to Makefile. Thanks to Michael Rutter.
