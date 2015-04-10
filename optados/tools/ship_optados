@@ -69,6 +69,8 @@ done
 if [ ${VERSION_MAJ_MIN} == "-1" ]; then
   echo " No Version set."
   echo " Use the --version option to say what the new version of OptaDOS is."
+  echo " +=============================================================+"
+  echo 
   exit 1
 fi
 
@@ -93,9 +95,10 @@ fi
 echo " +=============================================================+"
 echo
 
-#
-# Stage 1 -- Tidy up the Repository
-# 
+echo " +=============================================================+"
+echo " |            Stage 1 -- Tidy up the Repository                |"
+echo " +=============================================================+"
+echo
 
 echo " Tidy up examples "
 cd ./examples
@@ -111,9 +114,13 @@ ${SVN} --version > /dev/null
 echo " svn update"
 ${SVN}  update
 
-#
-# Stage 2 -- Look for Uncommitted Changes
-#
+
+echo " +=============================================================+"
+echo " |            Stage 2 -- Look for uncommited Changes           |"
+echo " +=============================================================+"
+echo
+
+
 if ${SVN} status | grep -q "^M" ; then
    echo " +=============================================================+"
    svn status
@@ -125,9 +132,13 @@ else
    echo " No uncommitted modifications as far as we can see."
 fi
 
-#
-# Stages 3 --  User Guide
-#
+
+echo " +=============================================================+"
+echo " |            Stage 3 -- Update User Guide                     |"
+echo " +=============================================================+"
+echo
+
+
 # Best to check if it exists before we try to sed it!
 if [ -a ${USER_GUIDE} ]; then
   echo " Found ${USER_GUIDE}"
@@ -150,10 +161,11 @@ else
  echo " Skipping recomping the documents (-q)"
 fi;
 
+echo " +=============================================================+"
+echo " |            Stage 4 -- Update Source Code                    |"
+echo " +=============================================================+"
+echo
 
-#
-# Stage 4 -- Source Code
-#
 
 # Check that we can find it.
 if [ -a ${CONSTANTS_SOURCE} ]; then
@@ -175,9 +187,10 @@ if [ ${UPDATE_ONLY} == "T" ]; then
    exit 0
 fi
 
-#
-# Stage 5 -- Other DOCS
-#
+echo " +=============================================================+"
+echo " |            Stage 5 -- Update Other Docs                     |"
+echo " +=============================================================+"
+echo
 
 # Add new stuff to change_log
 cp ${CHANGELOG} ${CHANGELOG}.bak
@@ -211,18 +224,18 @@ fi
 # fi;
 
 
-#
-# Stage 6
-#
+
 
 # Increase version number in make sys. 
 # 
+echo " Increse version number in Makefile"
 sed -i.bak "s/VER :=.*/VER :=${VERSION}/" Makefile 
 
-#
-# Stage 7 Submit Stuff
+echo " +=============================================================+"
+echo " |            Stage 6 -- Sumbit Changes to Repo                |"
+echo " +=============================================================+"
+echo
 
-# These are the following changes, really commit? 
 
 if [ ${DRYRUN} = "F" ]; then
   echo " These files have been modified"
@@ -233,9 +246,12 @@ if [ ${DRYRUN} = "F" ]; then
 fi;
 
 
-#
-# Stage 8 Snippet for Website.
-# 
+echo " +=============================================================+"
+echo " |            Stage 7 -- Make a Snippet for Website            |"
+echo " +=============================================================+"
+echo
+
+
 echo "<!-- AUTOMATIC ADD CHANGELOG -- LEAVE -->" > snippet.html
 echo "<h3 align="left">OptaDOS Version ${VERSION}</h3>" >> snippet.html
 echo "<a href="./files/optados-${VERSION}.tar.gz">optados-${VERSION}.tar.gz</a> [${DAY_MONTH_YEAR}]" >> snippet.html
@@ -243,9 +259,10 @@ echo "<ul>" >> snippet.html
 grep '*' CHANGES.${VERSION}.LOG | sed "s/^\*/<li>/" >> snippet.html
 echo "</ul>"  >> snippet.html
 
-#
-# Stage 9 Email for mailing list.
-#
+echo " +=============================================================+"
+echo " |            Stage 8 -- Write an Email for mailing list       |"
+echo " +=============================================================+"
+echo
 
 echo "OptaDOS Version ${VERSION} released" > snippet.email
 echo " " >> snippet.email
@@ -269,9 +286,11 @@ else
 fi
 
 
-#
-# Stage X -- Tag Branch
-#
+echo " +=============================================================+"
+echo " |            Stage 9 -- Tag Branch                            |"
+echo " +=============================================================+"
+echo
+echo " NOT YET IMPLEMENTED"
 #svn copy http://svn.example.com/repos/calc/trunk \
 #           http://svn.example.com/repos/calc/tags/release-1.0 \
 #           -m "Tagging the 1.0 release of the 'calc' project."
@@ -279,16 +298,20 @@ fi
 # Presuably called release-${VERSION_MAJ_MIN}
 
 #
-# Stage XI -- Make Distro
+echo " +=============================================================+"
+echo " |            Stage 10 -- Make Distro                          |"
+echo " +=============================================================+"
+echo
 
 if [ ${DRYRUN} = "F" ]; then
   echo " Make the distribution tarball"
   make dist
 fi;
 
-#
-# Stage XII -- Update Website
-#
+echo " +=============================================================+"
+echo " |            Stage 11 -- Update Website                       |"
+echo " +=============================================================+"
+echo
 
 ${WGET} -V > /dev/null
 ([ $? -eq 0 ] && echo " Found wget") || (echo " Failed to find wget" && exit 1)
