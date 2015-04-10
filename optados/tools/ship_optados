@@ -1,0 +1,319 @@
+#!/bin/bash
+echo 
+echo " +=============================================================+"
+echo " |                     OptaDOS Shipper                         |"
+echo " |              Making rolling out OptaDOS easy                |"
+echo " |                  A J Morris April 2015                      |"
+echo " +=============================================================+"
+echo 
+ 
+#
+# Setup
+#
+# OptaDOS files
+USER_GUIDE="documents/user_guide.tex"
+CONSTANTS_SOURCE="src/constants.f90"
+CHANGELOG="CHANGE.LOG"
+
+# Webserver files
+FILESERVER="ajm255@pc7.tcm.phy.cam.ac.uk"
+# Where the page is to download
+DOWNLOAD_WEB="http://www.tcm.phy.cam.ac.uk/~ajm255/optados/download.html" 
+# Name of directory on filesever for html pages
+UPLOAD_SCP="~/public_html/optados" 
+# Name of directory on fileserver for files.
+FILES_DIR="./files"
+
+WGET=wget
+SVN=svn
+EDITOR=vi
+SPELLCHECK=ispell
+
+VERSION_MAJ_MIN=-1
+UPDATE_ONLY="F"
+QUICK="F"
+DRYRUN="F"
+while [ "$1" != "" ]; do
+ case $1 in
+   -d | --dryrun)
+      DRYRUN="T" # Don't commit changes to repository, or push data to webserver.
+                 # it should make all the files for you to look at though.
+      ;; 
+   -v | --version)  
+      shift 
+      VERSION_MAJ_MIN=$1
+      ;;
+   -u | --update_only)
+      UPDATE_ONLY="T" # Update only Version Numbers in Code
+      ;;   
+   -q | --quick)   
+      QUICK="T" # Don't do things that take a long time.
+                # DEBUG ONLY.
+      ;;
+    -h | --help)
+      echo " OptaDOS Shipper -- for turning an OptaDOS repository into a release"  
+      echo "    --version     -v  the major.minor version number to release"
+      echo "    --dryrun      -d  update the manual etc. But don't commit files or update webpage"
+      echo "    --update_only -u  only update the code and manual with new version and current date"
+      echo "    --quick       -q  for testing purposes, miss out some steps -- DON'T USE THIS"  
+      exit 0
+      ;;
+    * )                     
+      echo "Unknown command $1"
+      exit 1
+     ;;
+ esac
+ shift
+done
+
+if [ ${VERSION_MAJ_MIN} == "-1" ]; then
+  echo " No Version set."
+  echo " Use the --version option to say what the new version of OptaDOS is."
+  exit 1
+fi
+
+DAY_MONTH_YEAR=`date +"%d %B %Y"`
+MONTH_YEAR=`date +"%B %Y"`
+YEAR=`date +"%Y"`
+REPO_VERSION=`svn status -u | tail -1 | awk '{print $4}'`
+# We add one to the repo version as that's what it'll be after
+# the commit.
+VERSION=${VERSION_MAJ_MIN}.$(($REPO_VERSION+1))
+
+echo " +=============================================================+"
+echo "  Month Year for User Guide:" ${MONTH_YEAR}
+echo "        Year for User Guide:" ${YEAR}
+echo "                    Version:" ${VERSION}  
+echo "        (from Command Line) "
+echo "      Current Repository No: ${REPO_VERSION}"
+
+if [ ${DRYRUN} == "T" ]; then
+echo "      THIS IS A DRY RUN. NOTHING WILL GET COMMITTED"
+fi
+echo " +=============================================================+"
+echo
+
+#
+# Stage 1 -- Tidy up the Repository
+# 
+
+echo " Tidy up examples "
+cd ./examples
+rm */*.fixed.* */*.adaptive.* */*.linear.* */*.castep */*.check */*.usp > /dev/null 2>&1
+rm */*.err */*.bands */*bin */*.cst_esp */*.odo */*-out.cell */*.bib > /dev/null 2>&1
+cd ..
+echo " make veryclean"
+make veryclean > /dev/null
+
+${SVN} --version > /dev/null
+([ $? -eq 0 ] && echo " Found svn") || (echo " Failed to find svn" && exit 1)
+
+echo " svn update"
+${SVN}  update
+
+#
+# Stage 2 -- Look for Uncommitted Changes
+#
+if ${SVN} status | grep -q "^M" ; then
+   echo " +=============================================================+"
+   svn status
+   echo " | Uncomitted Modifications: please sort out and rerun         |"
+   echo " | this programme                                              |"   
+   echo " +=============================================================+"
+   exit 1
+else
+   echo " No uncommitted modifications as far as we can see."
+fi
+
+#
+# Stages 3 --  User Guide
+#
+# Best to check if it exists before we try to sed it!
+if [ -a ${USER_GUIDE} ]; then
+  echo " Found ${USER_GUIDE}"
+else
+  echo " Cannot find ${USER_GUIDE}"
+  exit 1
+fi;
+
+# Put the new info ino the User_Guide
+sed -i.bak "s/\date{.*}/\date{${MONTH_YEAR}}/" ${USER_GUIDE} 
+sed -i.bak "s/Version.*}/Version ${VERSION}}}/" ${USER_GUIDE} 
+sed -i.bak "s/2013-..../2013-${YEAR}/" ${USER_GUIDE} 
+sed -i.bak "s/This edition...../This edition ${YEAR}/" ${USER_GUIDE} 
+
+# Recompile the documents
+if [ ${QUICK} = "F" ]; then
+  make docs > /dev/null
+  ([ $? -eq 0 ] && echo " Made successfully") || (echo " Failed to make" && exit 1)
+else
+ echo " Skipping recomping the documents (-q)"
+fi;
+
+
+#
+# Stage 4 -- Source Code
+#
+
+# Check that we can find it.
+if [ -a ${CONSTANTS_SOURCE} ]; then
+  echo " Found ${CONSTANTS_SOURCE}"
+else
+  echo " Cannot find ${CONSTANTS_SOURCE}"
+  exit 1
+fi;
+
+cp ${CONSTANTS_SOURCE} ${CONSTANTS_SOURCE}.bak
+#grep "optados_version=" ./src/constants.f90
+#grep "copyright=" ./src/constants.f90
+# sed 's/optados_version="....."/optados_version="'" moo "'"'/ src/constants.f90
+# sed 's/2010-..../2010-mooo/' src/constants.f90
+
+if [ ${UPDATE_ONLY} == "T" ]; then
+   echo " Only requested to update version numbers in documentation and code"
+   echo " Exiting"
+   exit 0
+fi
+
+#
+# Stage 5 -- Other DOCS
+#
+
+# Add new stuff to change_log
+cp ${CHANGELOG} ${CHANGELOG}.bak
+LAST_RELEASE=`grep Version ${CHANGELOG} | perl -ne '/\d*\.\d*\.(\d*)/ && print "$1\n";'| head -n 1`
+
+echo OptaDOS Version ${VERSION} ${DAY_MONTH_YEAR} > TEMP1.LOG
+
+# Look for all logs since last release. Remove lines containing ---s, 
+# and beginning and remove all whitespace beginning of lines, replacing with
+# a star
+${SVN} log -r ${LAST_RELEASE}:head | grep -v -- '-----' | grep -v -- '^r' >> TEMP2.LOG
+
+# Remove blank lines
+sed -i.bak '/^[[:space:]]*$/d' TEMP2.LOG
+# Remove whitespace from beginning of lines
+sed -i.bak "s/^[ \t]*/\*/" TEMP2.LOG
+cat TEMP1.LOG TEMP2.LOG > CHANGES.${VERSION}.LOG
+rm TEMP1.LOG TEMP2.LOG
+
+if [ ${QUICK} == "F" ]; then
+ ${EDITOR}     CHANGES.${VERSION}.LOG
+ ${SPELLCHECK} CHANGES.${VERSION}.LOG
+else
+ echo " Skipping the modification and spellchecking of CHANGE.LOG (-q)"
+fi
+
+# Add to change log	
+
+# if [ ${DRYRUN} == "F"]; then
+# cat CHANGES.${VERSION}.LOG ${CHANGELOG}.bak > CHANGE.LOG
+# fi;
+
+
+#
+# Stage 6
+#
+
+# Increase version number in make sys. 
+# 
+sed -i.bak "s/VER :=.*/VER :=${VERSION}/" Makefile 
+
+#
+# Stage 7 Submit Stuff
+
+# These are the following changes, really commit? 
+
+if [ ${DRYRUN} = "F" ]; then
+  echo " These files have been modified"
+  ${SVN} status -u
+  echo " Really commit? <Press ctrl-C to abort>"
+  read -n 1 -s
+ # ${SVN} commit -m "Automated script submitting all changes for release ${VERSION}"
+fi;
+
+
+#
+# Stage 8 Snippet for Website.
+# 
+echo "<!-- AUTOMATIC ADD CHANGELOG -- LEAVE -->" > snippet.html
+echo "<h3 align="left">OptaDOS Version ${VERSION}</h3>" >> snippet.html
+echo "<a href="./files/optados-${VERSION}.tar.gz">optados-${VERSION}.tar.gz</a> [${DAY_MONTH_YEAR}]" >> snippet.html
+echo "<ul>" >> snippet.html
+grep '*' CHANGES.${VERSION}.LOG | sed "s/^\*/<li>/" >> snippet.html
+echo "</ul>"  >> snippet.html
+
+#
+# Stage 9 Email for mailing list.
+#
+
+echo "OptaDOS Version ${VERSION} released" > snippet.email
+echo " " >> snippet.email
+echo "Dear OptaDOS users," >> snippet.email
+echo " " >> snippet.email
+echo " OptaDOS Version ${VERSION} has been released on ${DAY_MONTH_YEAR}." >> snippet.email
+echo " It can be downloaded from www.optados.org/downloads" >> snippet.email
+echo " As always we would appreciate bug reports and comments.">> snippet.email
+echo " " >> snippet.email
+echo " Have fun,">> snippet.email
+echo " Andrew Morris, Rebecca Nicholls, Chris Pickard and Jonathan Yates">> snippet.email
+echo " OptaDOS Developers Group">> snippet.email
+echo " " >> snippet.email
+cat CHANGES.${VERSION}.LOG >> snippet.email
+
+if [ ${QUICK} == "F" ]; then
+ ${EDITOR}     snippet.email
+ ${SPELLCHECK} snippet.email
+else
+ echo " Skipping the modification and spellchecking of snippet.html (-q)"
+fi
+
+
+#
+# Stage X -- Tag Branch
+#
+#svn copy http://svn.example.com/repos/calc/trunk \
+#           http://svn.example.com/repos/calc/tags/release-1.0 \
+#           -m "Tagging the 1.0 release of the 'calc' project."
+#
+# Presuably called release-${VERSION_MAJ_MIN}
+
+#
+# Stage XI -- Make Distro
+
+if [ ${DRYRUN} = "F" ]; then
+  echo " Make the distribution tarball"
+  make dist
+fi;
+
+#
+# Stage XII -- Update Website
+#
+
+${WGET} -V > /dev/null
+([ $? -eq 0 ] && echo " Found wget") || (echo " Failed to find wget" && exit 1)
+
+IFS=  # Needed to prevent the shell from interpreting the newlines
+f1=$(< snippet.html)
+#f2=$(< /path/to/file2.txt)
+
+echo " " > download_${VERSION_MAJ_MIN}.html
+
+while read line; do 
+  if [[ "$line" == '<!-- AUTOMATIC ADD CHANGELOG -- LEAVE -->' ]]; then
+     echo "$f1" >> download_${VERSION}.html
+  else
+     echo "$line" >> download_${VERSION}.html
+  fi
+done < download.html
+
+if [ ${DRYRUN} = "F" ]; then
+  echo " Password to write  download_${VERSION}.html to ${FILESERVER}:${UPLOAD_SCP}/download.html"
+  echo " Really commit? <Press ctrl-C to abort>"
+  read -n 1 -s
+  scp download_${VERSION}.html ${FILESERVER}:${UPLOAD_SCP}/download.html
+  echo " Password to write optados-${VERSION}.tar.gz to ${FILESERVER}:${UPLOAD_SCP}/${FILES_DIR}"
+  echo " Really commit? <Press ctrl-C to abort> "
+  read -n 1 -s
+  scp optados-${VERSION}.tar.gz ${FILESERVER}:${UPLOAD_SCP}/${FILES_DIR}
+fi;
