@@ -1396,7 +1396,7 @@ integer:: species(1:tot_core_projectors) ! Atomic species associated with each p
 integer:: ion(1:tot_core_projectors)     ! Ion associated with each projector
 integer:: n(1:tot_core_projectors)       ! Principal quantum number associated with each projector
 integer:: lm(1:tot_core_projectors)      ! Angular momentum quantum number associated with each projector
-real(dp):: elnes_mat(tot_core_projectors,max_eigenvalues,3,num_kpoints,num_spins) ! matrix elements
+complex(dp):: elnes_mat(tot_core_projectors,max_eigenvalues,3,num_kpoints,num_spins) ! matrix elements
 
 write(elnes_file) tot_core_projectors
 write(elnes_file) max_eigenvalues
