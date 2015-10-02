@@ -1542,7 +1542,7 @@ end if
   end function doslin
 
   !=============================================================================== 
-  subroutine dos_utils_calculate_at_e(energy, matrix_weights, weighted_dos_at_e, dos_at_e)
+  subroutine dos_utils_calculate_at_e(energy, dos_at_e, matrix_weights, weighted_dos_at_e)
     !===============================================================================  
     ! Main routine in dos module, drives the calculation of density of states for
     ! both task : dos and also if it is required elsewhere.

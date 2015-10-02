@@ -119,7 +119,7 @@ contains
              dos_matrix_weights(N,N2,:,:) = matrix_weights(N2,N2,:,:,N)  
           enddo
        enddo
-       call dos_utils_calculate_at_e(efermi,dos_matrix_weights,weighted_dos_at_e,dos_at_e) 
+       call dos_utils_calculate_at_e(efermi,dos_at_e,dos_matrix_weights,weighted_dos_at_e) 
     endif
 
     call elec_dealloc_optical ! don't need this large array anymore
