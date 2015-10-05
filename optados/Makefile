@@ -5,7 +5,7 @@ default : optados
 all : optados docs
 
 optados : 
-	cd ./src && $(MAKE) all
+	cd ./src && $(MAKE) optados
 
 # Utility targets
 .PHONY: clean veryclean
@@ -19,12 +19,15 @@ docs:
 clean:
 	cd ./src && $(MAKE) clean 
 	cd ./documents && $(MAKE) clean
+	cd ./python  && $(MAKE) clean
 
+python: optados
+	cd ./python && $(MAKE) python
 
 veryclean:
 	cd ./src && $(MAKE) veryclean
 	cd ./documents && $(MAKE) veryclean
-
+	cd ./python &&  $(MAKE) veryclean
 
 
 dist: optados-$(VER).tar.gz

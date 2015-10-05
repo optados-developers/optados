@@ -32,7 +32,7 @@ endif
 ifeq ($(SYSTEM), gfortran)
    F90_SERIAL= gfortran
    F90_PARALLEL= mpif90 
-   FFLAGS= -fconvert=big-endian
+   FFLAGS= -fconvert=big-endian -fPIC
    FFLAGS_PARALLEL=  -DMPI
    FFLAGS_FAST= -O3
    FFLAGS_DEBUG= -O0 -pg -g 
