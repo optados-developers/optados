@@ -49,14 +49,14 @@ module od_optics
   real(kind=dp),allocatable, public, dimension(:,:) :: weighted_dos_at_e
   real(kind=dp),allocatable, public, dimension(:,:) :: dos_at_e
 
-  real(kind=dp),allocatable, dimension(:,:,:,:) :: epsilon
-  real(kind=dp),allocatable, dimension(:,:) :: conduct
-  real(kind=dp),allocatable, dimension(:,:) :: refract
-  real(kind=dp),allocatable, dimension(:,:) :: loss_fn
-  real(kind=dp),allocatable, dimension(:) :: absorp
-  real(kind=dp),allocatable, dimension(:) :: reflect
+  real(kind=dp),allocatable, public, dimension(:,:,:,:) :: epsilon
+  real(kind=dp),allocatable, public, dimension(:,:) :: conduct
+  real(kind=dp),allocatable, public, dimension(:,:) :: refract
+  real(kind=dp),allocatable, public, dimension(:,:) :: loss_fn
+  real(kind=dp),allocatable, public, dimension(:) :: absorp
+  real(kind=dp),allocatable, public, dimension(:) :: reflect
 
-  real(kind=dp),allocatable, dimension(:) :: intra
+  real(kind=dp),allocatable, public, dimension(:) :: intra
   real(kind=dp) :: q_weight 
   real(kind=dp) :: N_eff
   real(kind=dp) :: N_eff2
