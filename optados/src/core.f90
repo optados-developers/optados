@@ -516,7 +516,8 @@ contains
              end if
           else 
              if (core_LAI_broadening) then 
-                write(core_unit, '(7(E21.13,2x))')E_shift(N),dos_temp(N,1),dos_temp(N,2),dos_temp(N,3),dos_temp2(N,1),dos_temp2(N,2),dos_temp2(N,3)
+                write(core_unit, '(7(E21.13,2x))')E_shift(N),dos_temp(N,1),dos_temp(N,2),&
+		& dos_temp(N,3),dos_temp2(N,1),dos_temp2(N,2),dos_temp2(N,3)
              else 
                 write(core_unit, '(4(E21.13,2x))')E_shift(N),dos_temp(N,1),dos_temp(N,2),dos_temp(N,3)
              end if
