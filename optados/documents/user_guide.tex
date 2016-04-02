@@ -799,7 +799,7 @@ Energy (in eV) above the Fermi level that the energy dependent broadening starts
 The default value, if \verb#core_LAI_broadening = true#, is 0.
 
 
-\chapter{Examples}
+\chapter{CASTEP Examples}
 
 Each example in the \verb#examples/# directory contains example \castep\ input files and a sample \optados\ input file. To keep the \optados\ distribution light \castep\ output files for the examples have not been provided. You need to run \castep\ on the \castep\ input files before running \optados\ on the examples.
 
@@ -1203,6 +1203,51 @@ Run \optados\ and compare the spectrum from the face-centred unit cell with that
 \item[{\bf --}] Including life-time and instrumentation broadening
 \end{itemize}
 \end{enumerate}
+
+\chapter{ONETEP Examples}
+\section{(L)PDOS}
+\onetep\ outputs an \optados\ compatible \verb@seedname_prefix.bands@ file, and from version 4.2 onwards, a \verb@seedname_prefix.pdos_bin@, \verb@seedname_prefix.dome_bin@ and a \verb@seedname-out.cell@ file. Where \verb@prefix@ may be one of \verb@val@, \verb@cond@ or \verb@joint@. 
+%
+A normal \onetep\  run will only output the valence files (\verb@val@), if conduction states are required, a \onetep\  conduction calculation should be run, in which case the \verb@cond@ and \verb@joint@ files will also be written to disk. 
+%
+For a full DOS (conduction and valence), the \verb@joint@ files should be used with \optados.
+
+When running \onetep\ , in order to output \optados\ compatible files, \verb@DO_PROPERTIES@ must be set in the input file or a properties calculation must be run in continuation of a prior, converged calculation.
+
+\verb@PDOS_OPTADOS_OUTPUT@ should be set to \verb@TRUE@,  this is the default value.
+
+\verb@PDOS_MAX_L=integer@, where \verb@integer@ specifies the maximum angular momentum spherical wave to project onto, i.e. s=0, p=1, d=2, etc.
+
+\verb@DOS_SMEAR@ should be set to a value greater than 0.0.
+%
+When \verb@DOS_SMEAR>0.0@, then the \verb@seedname_prefix.bands@ file will be written to disk, if \verb@PDOS_MAX_L>=0@, then a PDOS calculation will be performed and the associated files (mentioned above) will also be written to disk.
+
+When outputting the PDOS weights in \verb@seedname_prefix.pdos_bin@, \onetep\  will also output a text file called \verb@pdos_weights.dat@ which is not associated with \optados\, but meant for manual inspection of the PDOS weights.
+
+\onetep\  does not produce an \optados\ input file, this should be the only additional file (besides an \optados\ binary) required to perform a \onetep\ +\optados\ (L)PDOS calculation.
+
+All of the DOS functionality in \onetep\  is also PAW compatible, though it is not mandatory.
+
+
+\section{EELS/ELNES}
+
+\onetep\  can also produce \optados\ compatible \verb@seedname.elnes_bin@ files by asking for an EELS\cite{tait:JPCM:2016} (conduction calculation) properties post-processing calculation. This is done by specifying \verb@COND_CALC_EELS=TRUE@ in the \onetep\ input file.
+
+To perform an EELS calculation, the PAW method must be used (\verb@PAW=TRUE@ specified in the input file and PAW datafiles for each species). For those species which the user wishes to probe core to conduction transitions, core wavefunction data must also be supplied.
+
+Finally, for EELS calculations, a conduction calculation must be performed, so \verb@COND_ENERGY_RANGE@, which specifies the energy window above the HOMO in which conduction states will be optimised and \verb@COND_ENERGY_GAP@, which specifies the energy gap between the highest optimised state and the lowest un-optimised state must be set in the \onetep\ input file.
+
+
+More can be found on EELS/ELNES here: \footnote{http://www2.tcm.phy.cam.ac.uk/onetep/pmwiki/uploads/Main/Documentation/eels\_in\_onetep.pdf}
+
+%And more can be found on \onetep\  Conduction calculations here: http://www2.tcm.phy.cam.ac.uk/onetep/pmwiki/uploads/Main/Documentation/conduction.pdf
+
+%The \onetep\  Conduction paper is: L. E. Ratcliff, N. D. M. Hine, and P. D. Haynes Phys. Rev. B. 84, 165131 (2011).
+
+%A paper on EELS in \onetep\  is in press: E. W. Tait, L. E. Ratcliff, M. C. Payne, P. D. Haynes and N. D. M. Hine, J. Phys: Condens Matter, (2016).
+
+%A paper on PDOS in \onetep\  is in preparation.
+
 
 \chapter{Frequently Asked Questions}
 
