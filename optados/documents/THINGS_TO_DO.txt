@@ -45,6 +45,10 @@ Version 2.0
 ===============
 Full gnuplot 
 
+=== MIJP === 5/3/2017
+
+*   Can you please add electron effective mass to the feature request list for next version of OptaDOS?
+
 === CJP Coments == 
 
 3. Would it be better to move the box labeling the line (ie. [ -- Total Dos]) to the left hand side to reduce the change of overlap with the data?
