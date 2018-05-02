@@ -6,3 +6,5 @@ I would be happy to have a Skype meeting if you think that would help.
 
 Best wishes,
 Tomeu
+
+http://iopscience.iop.org/article/10.1143/JJAP.35.L599/pdf

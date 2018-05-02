@@ -82,7 +82,7 @@ contains
 
     use od_electronic, only : optical_mat, elec_read_optical_mat, nbands, nspins, &
          efermi, efermi_set, elec_dealloc_optical
-    use od_cell, only : cell_volume, num_kpoints_on_node 
+    use od_cell, only : cell_volume, num_kpoints_on_node, kpoint_r 
     use od_jdos_utils, only : jdos_utils_calculate
     use od_comms, only : on_root, my_node_id
     use od_parameters, only : optics_geom, adaptive, linear, fixed, optics_intraband, &
@@ -115,7 +115,7 @@ contains
        allocate(weighted_dos_at_e(nspins,size(matrix_weights,5)))
        weighted_dos_at_e = 0.0_dp
        do N=1,size(matrix_weights,5)
-          do N2=1,nbands    
+         do N2=1,nbands    
              dos_matrix_weights(N,N2,:,:) = matrix_weights(N2,N2,:,:,N)  
           enddo
        enddo
@@ -163,7 +163,7 @@ contains
     use od_electronic, only : nbands, nspins, optical_mat, num_electrons, &
          electrons_per_state, band_energy, efermi
     use od_cell, only : nkpoints, cell_volume, num_kpoints_on_node, cell_get_symmetry, &
-         num_crystal_symmetry_operations, crystal_symmetry_operations
+         num_crystal_symmetry_operations, crystal_symmetry_operations, kpoint_r
     use od_parameters, only : optics_geom, optics_qdir, legacy_file_format, scissor_op, devel_flag
     use od_io, only : io_error
     use od_comms, only : my_node_id
@@ -173,7 +173,7 @@ contains
     real(kind=dp), dimension(3) :: qdir2
     real(kind=dp) :: q_weight1 
     real(kind=dp) :: q_weight2 
-    integer :: N, i, j
+    integer :: N, i, j,k
     integer :: N_in
     integer :: N_spin
     integer :: N2, N3
@@ -183,8 +183,10 @@ contains
     real(kind=dp), dimension(2) :: num_occ
     complex(kind=dp), dimension(3) :: g
     real(kind=dp) :: factor
+	integer	 :: gamma_is
+character(len=30) :: rowfmt
 
-
+gamma_is =-1
     if (.not.legacy_file_format.and.index(devel_flag,'old_filename')>0) then 
        num_symm=0
        call cell_get_symmetry
@@ -243,7 +245,13 @@ contains
     N_in = 1  ! 0 = no inversion, 1 = inversion   
     g = 0.0_dp
 
+ write(*,*) "WARNING: factor set to 1"
     do N=1,num_kpoints_on_node(my_node_id)                   ! Loop over kpoints
+     if((kpoint_r(1,N)**2+kpoint_r(2,N)**2+kpoint_r(3,N)**2)<0.1) then
+          write(*,*) kpoint_r(1,N)**2+kpoint_r(2,N)**2+kpoint_r(3,N)**2, " = kpoint norm "
+          write(*,*) " N= ", N
+	  gamma_is=N
+       endif
        do N_spin=1,nspins                                    ! Loop over spins
           do n_eigen=1,nbands                                ! Loop over state 1 
              do n_eigen2=n_eigen,nbands                      ! Loop over state 2  
@@ -256,6 +264,7 @@ contains
                    factor = 1.0_dp/((band_energy(n_eigen2,N_spin,N)-band_energy(n_eigen,N_spin,N)&
                         +scissor_op)**2)  
                 endif
+                factor = 1.0_dp
                 if(index(optics_geom,'unpolar')>0)then
                    if (num_symm==0) then 
                       g(1) = (((qdir1(1)*optical_mat(n_eigen,n_eigen2,1,N,N_spin))+ &
@@ -341,7 +350,8 @@ contains
                       end do
                       matrix_weights(n_eigen,n_eigen2,N,N_spin,N_geom) = (factor/3.0_dp)*&
                            (real(g(1)*conjg(g(1)),dp)+ real(g(2)*conjg(g(2)),dp) + real(g(3)*conjg(g(3)),dp))
-                      !                 print *, n_eigen, n_eigen2, N, matrix_weights(n_eigen,n_eigen2,N,N_spin,N_geom)
+                  write(*,*) matrix_weights(n_eigen,n_eigen2,N,N_spin,N_geom)
+			    !                 print *, n_eigen, n_eigen2, N, matrix_weights(n_eigen,n_eigen2,N,N_spin,N_geom)
                       !                 print *, band_energy(n_eigen2,N_spin,N), band_energy(n_eigen,N_spin,N)
                    else
                       do N2=1,num_symm
@@ -368,7 +378,8 @@ contains
                                  matrix_weights(n_eigen,n_eigen2,N,N_spin,N_geom) + &
                                  (1.0_dp/Real((num_symm*(N_in+1)),dp))*factor*((real(g(1)*conjg(g(1)),dp) + &
                                  real(g(2)*conjg(g(2)),dp) + real(g(3)*conjg(g(3)),dp))/3.0_dp)
-                         end do
+               		!	write(*,*) "mw =", matrix_weights
+		          end do
                       end do
                    end if
                 elseif(index(optics_geom,'tensor')>0)then
@@ -413,6 +424,23 @@ contains
           end do
        end do
     end do
+
+!!FLAG
+ WRITE(rowfmt,'(A,I4,A)') '(8x,',nbands,'(1X,f8.3))'
+write(*,*) "==================================="
+write(*,*) rowfmt
+write(*,*) kpoint_r(:,:)
+write(*,*) "==================================="
+do k=1,nspins
+write(*,*) "==================================="
+write(*,FMT=rowfmt) (band_energy(i,k,gamma_is)-efermi, i=1,nbands)
+ WRITE(rowfmt,'(A,I4,A)') '(f8.3,',nbands,'(3X,f6.3))'
+do i=1,nbands
+ !  do j=i,nbands
+	write(*,FMT=rowfmt) band_energy(i,k,gamma_is)-efermi, (matrix_weights(i,j,gamma_is,k,:), j=1,nbands)
+!enddo	
+  enddo
+enddo
   end subroutine make_weights
 
   !***************************************************************
