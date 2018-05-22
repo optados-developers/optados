@@ -165,7 +165,7 @@ contains
     use od_cell, only : nkpoints, cell_volume, num_kpoints_on_node, cell_get_symmetry, &
          num_crystal_symmetry_operations, crystal_symmetry_operations, kpoint_r
     use od_parameters, only : optics_geom, optics_qdir, legacy_file_format, scissor_op, devel_flag
-    use od_io, only : io_error
+    use od_io, only : io_error, stdout
     use od_comms, only : my_node_id
 
     real(kind=dp), dimension(3) :: qdir 
@@ -183,11 +183,14 @@ contains
     real(kind=dp), dimension(2) :: num_occ
     complex(kind=dp), dimension(3) :: g
     real(kind=dp) :: factor
-	integer	 :: gamma_is, top_filled_band, upper_window, lower_window
-character(len=30) :: rowfmt
+    integer	 :: gamma_is, top_filled_band, upper_window, lower_window
+    character(len=30) :: rowfmt
+    logical :: print_omes
 
-top_filled_band=0
-gamma_is =-1
+    print_omes=.false. ! Only set to true if you want the experiemental OME writing
+    top_filled_band=0
+    gamma_is =-1
+
     if (.not.legacy_file_format.and.index(devel_flag,'old_filename')>0) then 
        num_symm=0
        call cell_get_symmetry
@@ -247,10 +250,13 @@ gamma_is =-1
     g = 0.0_dp
 
     do N=1,num_kpoints_on_node(my_node_id)                   ! Loop over kpoints
-     if((kpoint_r(1,N)**2+kpoint_r(2,N)**2+kpoint_r(3,N)**2)<0.01) then
-          write(*,*) kpoint_r(1,N)**2+kpoint_r(2,N)**2+kpoint_r(3,N)**2, " = kpoint norm "
-          write(*,*) " N= ", N
+       if(print_omes) then ! If .not. then hopefully the compiler will get rid of this at
+	                   ! compile time, and there's no 'if' overhead. AJM May 2018
+       if((kpoint_r(1,N)**2+kpoint_r(2,N)**2+kpoint_r(3,N)**2)<0.01) then
+          write(stdout,*) kpoint_r(1,N)**2+kpoint_r(2,N)**2+kpoint_r(3,N)**2, " = kpoint norm "
+          write(stdout,*) " N= ", N
 	  gamma_is=N
+       endif
        endif
        do N_spin=1,nspins                                    ! Loop over spins
           do n_eigen=1,nbands                                ! Loop over state 1 
@@ -424,35 +430,61 @@ gamma_is =-1
        end do
     end do
 
-!!FLAG
-if(gamma_is<0) stop "Couldnt find the gamma point"
-do i=1,nbands
-	if(band_energy(i,1,gamma_is).ge.efermi) then
-		exit
-	else
-		top_filled_band=i
-	endif	
-enddo
+  if(print_omes) then
+! This seems to be a rare thing to want to be able to do. So at the moment, I've made it a hard
+! coded decision.  If you want the OMEs you probably know what you're doing enough to set this
+! I haven't thought about spin or MPI. I think it behaves ok with symmetry.
+! The results I wanted were polycrystalline.
+  ! AJM May 2018
 
-upper_window = top_filled_band + 2
-lower_window = top_filled_band - 16
+  ! Above, we have already looked to label the gamma point. That is,
+  ! the kpoint number at gamma. The variable was set to -1. So if it
+  ! hasn't been set -- we didn't find the gamma point. 
+  ! If we didn't find it -- then we're not going to get the OMEs
+  ! at the Gamma point. It's a critical stop. 
+  if(gamma_is<0) stop "Couldnt find the gamma point"
 
-write(*,*) "Top filled band is", top_filled_band
-write(rowfmt,'(A,I4,A)') '(8x,',upper_window-lower_window,'(3X,f8.5))'
-write(*,*) " ==================================="
-write(*,*) rowfmt
-write(*,*) kpoint_r(:,:)
-write(*,*) " ==================================="
-do k=1,nspins
-write(*,*) " ==================================="
-write(*,FMT=rowfmt) (band_energy(i,k,gamma_is)-band_energy(top_filled_band,k,gamma_is), &
-	& i=lower_window,upper_window)
-write(rowfmt,'(A,I4,A)') '(f8.5,',upper_window-lower_window,'(3X,f8.5))'
-    do i=lower_window,upper_window
-    	write(*,FMT=rowfmt) band_energy(i,k,gamma_is)-band_energy(top_filled_band,k,gamma_is), &
-	& (matrix_weights(i,j,gamma_is,k,:), j=lower_window,upper_window)
+  ! Run through all the bands and find the last one that isn't above the Fermi level.
+  ! This is inventivly called the "top filled band"
+    do i=1,nbands
+      if(band_energy(i,1,gamma_is).ge.efermi) then
+        exit
+      else
+        top_filled_band=i 
+      endif	
     enddo
-enddo
+
+! Set these for the number of bands either side of the Fermi energy that you want the
+! OMES for.  
+    upper_window = top_filled_band + 2
+    lower_window = top_filled_band - 25
+! 
+    write(stdout,'(1x,a78)') '+============================================================================+'
+    write(stdout, *) 	    ' + PRINT OUT SOME OPTICAL MATRIX ELEMENTS -- EASTER EGG CODE                  +'
+    write(stdout, *)        ' + Note that I wrote this for a specific purpose. I have documented it as best+'
+    write(stdout, *)        " + I can, but you should fully understand what's happening before you use it  +"
+    write(stdout, *)        " + AJM May 2018 B'ham                                                         +"
+    write(stdout, *) " + Top filled band is", top_filled_band
+    write(rowfmt,'(A,I4,A)') '(8x,',upper_window-lower_window+1,'(3X,f8.5))'
+! write(*,*) rowfmt ! For debugging
+    write(stdout,*) kpoint_r(gamma_is,:)
+    write(stdout,'(1x,a78)') '+============================================================================+'
+        ! I haven't really thought about spins. So if you have a spin system, you get both an up and down spin
+        ! OME
+    do k=1,nspins
+      write(stdout,*) '+ For spin channel', k
+      write(stdout,'(1x,a78)') '+============================================================================+'
+      write(stdout,FMT=rowfmt) (band_energy(i,k,gamma_is)-band_energy(top_filled_band,k,gamma_is), &
+   		& i=lower_window,upper_window)
+      write(rowfmt,'(A,I4,A)') '(f8.5,',upper_window-lower_window+1,'(3X,f8.5))'
+      do i=lower_window,upper_window
+        write(stdout,FMT=rowfmt) band_energy(i,k,gamma_is)-band_energy(top_filled_band,k,gamma_is), &
+		& (matrix_weights(i,j,gamma_is,k,:), j=lower_window,upper_window)
+      enddo
+    enddo
+    write(stdout,'(1x,a78)') '+============================================================================+'
+    stop " Completed generating the OMEs -- see the odo file"
+  endif
   end subroutine make_weights
 
   !***************************************************************
