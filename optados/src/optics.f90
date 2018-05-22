@@ -183,9 +183,10 @@ contains
     real(kind=dp), dimension(2) :: num_occ
     complex(kind=dp), dimension(3) :: g
     real(kind=dp) :: factor
-	integer	 :: gamma_is
+	integer	 :: gamma_is, top_filled_band, upper_window, lower_window
 character(len=30) :: rowfmt
 
+top_filled_band=0
 gamma_is =-1
     if (.not.legacy_file_format.and.index(devel_flag,'old_filename')>0) then 
        num_symm=0
@@ -245,9 +246,8 @@ gamma_is =-1
     N_in = 1  ! 0 = no inversion, 1 = inversion   
     g = 0.0_dp
 
- write(*,*) "WARNING: factor set to 1"
     do N=1,num_kpoints_on_node(my_node_id)                   ! Loop over kpoints
-     if((kpoint_r(1,N)**2+kpoint_r(2,N)**2+kpoint_r(3,N)**2)<0.1) then
+     if((kpoint_r(1,N)**2+kpoint_r(2,N)**2+kpoint_r(3,N)**2)<0.01) then
           write(*,*) kpoint_r(1,N)**2+kpoint_r(2,N)**2+kpoint_r(3,N)**2, " = kpoint norm "
           write(*,*) " N= ", N
 	  gamma_is=N
@@ -264,7 +264,6 @@ gamma_is =-1
                    factor = 1.0_dp/((band_energy(n_eigen2,N_spin,N)-band_energy(n_eigen,N_spin,N)&
                         +scissor_op)**2)  
                 endif
-                factor = 1.0_dp
                 if(index(optics_geom,'unpolar')>0)then
                    if (num_symm==0) then 
                       g(1) = (((qdir1(1)*optical_mat(n_eigen,n_eigen2,1,N,N_spin))+ &
@@ -426,20 +425,33 @@ gamma_is =-1
     end do
 
 !!FLAG
- WRITE(rowfmt,'(A,I4,A)') '(8x,',nbands,'(1X,f8.3))'
-write(*,*) "==================================="
+if(gamma_is<0) stop "Couldnt find the gamma point"
+do i=1,nbands
+	if(band_energy(i,1,gamma_is).ge.efermi) then
+		exit
+	else
+		top_filled_band=i
+	endif	
+enddo
+
+upper_window = top_filled_band + 2
+lower_window = top_filled_band - 16
+
+write(*,*) "Top filled band is", top_filled_band
+write(rowfmt,'(A,I4,A)') '(8x,',upper_window-lower_window,'(3X,f8.5))'
+write(*,*) " ==================================="
 write(*,*) rowfmt
 write(*,*) kpoint_r(:,:)
-write(*,*) "==================================="
+write(*,*) " ==================================="
 do k=1,nspins
-write(*,*) "==================================="
-write(*,FMT=rowfmt) (band_energy(i,k,gamma_is)-efermi, i=1,nbands)
- WRITE(rowfmt,'(A,I4,A)') '(f8.3,',nbands,'(3X,f6.3))'
-do i=1,nbands
- !  do j=i,nbands
-	write(*,FMT=rowfmt) band_energy(i,k,gamma_is)-efermi, (matrix_weights(i,j,gamma_is,k,:), j=1,nbands)
-!enddo	
-  enddo
+write(*,*) " ==================================="
+write(*,FMT=rowfmt) (band_energy(i,k,gamma_is)-band_energy(top_filled_band,k,gamma_is), &
+	& i=lower_window,upper_window)
+write(rowfmt,'(A,I4,A)') '(f8.5,',upper_window-lower_window,'(3X,f8.5))'
+    do i=lower_window,upper_window
+    	write(*,FMT=rowfmt) band_energy(i,k,gamma_is)-band_energy(top_filled_band,k,gamma_is), &
+	& (matrix_weights(i,j,gamma_is,k,:), j=lower_window,upper_window)
+    enddo
 enddo
   end subroutine make_weights
 
