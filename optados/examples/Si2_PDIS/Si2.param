@@ -1,0 +1,5 @@
+TASK                   : SPECTRAL
+SPECTRAL_TASK          : BANDSTRUCTURE
+PDOS_CALCULATE_WEIGHTS : TRUE
+CUT_OFF_ENERGY         : 200
+IPRINT                 : 1
