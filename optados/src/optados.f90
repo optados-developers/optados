@@ -38,13 +38,14 @@ program optados
   use od_io, only     : io_get_seedname, io_time, io_date, io_file_unit,&! Functions
        & stdout, stderr, seedname                                            ! Variables
   use od_parameters, only : param_read, param_write_header,param_Dist,param_write, &
-       param_dealloc,pdos,dos,jdos,core,optics,iprint,param_write_atomic_coord
+       param_dealloc,pdos,pdis,dos,jdos,core,optics,iprint,param_write_atomic_coord
   use od_cell, only : cell_calc_lattice, cell_report_parameters,cell_dist
   use od_electronic,only : elec_read_band_energy,elec_report_parameters
   use od_dos,  only : dos_calculate
   use od_jdos,  only: jdos_calculate
   use od_core, only : core_calculate
   use od_pdos, only : pdos_calculate
+  use od_pdis, only : pdis_calculate
   use od_optics, only : optics_calculate
   implicit none
 
@@ -119,6 +120,23 @@ program optados
      if(on_root)then
        write(stdout,'(1x,a59,f11.3,a8)') &
             '+ Time to calculate Projected Density of States          &
+            &      ',time1-time0,' (sec) +'
+       write(stdout,'(1x,a78)') '+============================================================================+'
+       write(stdout,*) ' '
+       write(stdout,*) ' '
+       end if
+  endif
+  !-------------------------------------------------------------------------!
+
+  !-------------------------------------------------------------------------!
+  ! C A L L   P D I S   R O U T I N E S
+  if(pdis) then
+     time0=io_time()
+     call pdis_calculate
+     time1=io_time()
+     if(on_root)then
+       write(stdout,'(1x,a59,f11.3,a8)') &
+            '+ Time to calculate Projected Dispersion &
             &      ',time1-time0,' (sec) +'
        write(stdout,'(1x,a78)') '+============================================================================+'
        write(stdout,*) ' '
