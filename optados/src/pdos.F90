@@ -576,7 +576,7 @@ contains
    
     character(len=20) :: start_iproj_name, end_iproj_name 
     integer            ::  ifile, nfile, start_iproj, end_iproj 
-    character(len=30)  :: name
+    character(len=512) :: name
     
 
    ! write(*,*) "======================================================================================"
@@ -631,7 +631,7 @@ contains
     
     implicit none
     integer, intent(in) :: start_proj, stop_proj
-    character(len=30), intent(in) :: name
+    character(len=512), intent(in) :: name
     character(len=11) :: cdate
     character(len=9) :: ctime
     character(len=20) :: string 
