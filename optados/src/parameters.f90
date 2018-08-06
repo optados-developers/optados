@@ -88,8 +88,7 @@ module od_parameters
   integer,           public, save :: dos_nbins
 
   ! pdos & pdis
-  character(len=maxlen), public, save :: pdos_string
-  character(len=maxlen), public, save :: pdis_string
+  character(len=maxlen), public, save :: projectors_string
 
   ! Belonging to the jdos module
   real(kind=dp),     public, save :: jdos_max_energy 
@@ -304,13 +303,12 @@ contains
     dos_nbins               = -1 ! 10001 LinDOS default
     call param_get_keyword('dos_nbins',found,i_value=dos_nbins)
 
-    pdos_string =''
-    call param_get_keyword('pdos',found,c_value=pdos_string)
-    if(pdos.and. (len_trim(pdos_string)==0)) call io_error('pdos requested but pdos is not specified')
+    projectors_string = ''
+    if(pdos) call param_get_keyword('pdos',found,c_value=projectors_string)
+    if(pdos.and. (len_trim(projectors_string)==0)) call io_error('pdos requested but pdos is not specified')
 
-    pdis_string =''
-    call param_get_keyword('pdis',found,c_value=pdis_string)
-    if(pdis.and. (len_trim(pdis_string)==0)) call io_error('pdis requested but pdis keyword is not specified')
+    if(pdis) call param_get_keyword('pdis',found,c_value=projectors_string)
+    if(pdis.and. (len_trim(projectors_string)==0)) call io_error('pdis requested but pdis keyword is not specified')
 
     jdos_max_energy        = -1.0_dp !! change
     call param_get_keyword('jdos_max_energy',found,r_value=jdos_max_energy)
@@ -1575,8 +1573,7 @@ contains
     call comms_bcast(dos_max_energy,1)
     call comms_bcast(dos_spacing,1)
     call comms_bcast(legacy_file_format,1)
-    call comms_bcast(pdos_string,len(pdos_string))
-    call comms_bcast(pdis_string,len(pdis_string))
+    call comms_bcast(projectors_string,len(projectors_string))
     call comms_bcast(set_efermi_zero,1)
     !
     call comms_bcast(num_exclude_bands,1)

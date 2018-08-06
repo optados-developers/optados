@@ -125,6 +125,7 @@ contains
     !=========================================================================
     use od_io,   only : stdout 
     use od_cell, only : kpoint_grid_dim, nkpoints
+    use od_parameters, only : pdis
     implicit none
 
     write (stdout,*)
@@ -132,8 +133,10 @@ contains
     write(stdout,'(1x,a78)')    '+----------------------- Electronic Data ------------------------------------+'
 
     write(stdout,'(1x,a46,i14,a18)')   '|  Number of Bands                           :',nbands,"|"
-    write(stdout,'(1x,a46,6x,i3,1x,a1,i3,1x,a1,i3,12x,a1)') '|  Grid size                                 :'&
-         ,kpoint_grid_dim(1),'x',kpoint_grid_dim(2),'x',kpoint_grid_dim(3),'|'
+    if(.not.pdis) then
+      write(stdout,'(1x,a46,6x,i3,1x,a1,i3,1x,a1,i3,12x,a1)') '|  Grid size                                 :'&
+            ,kpoint_grid_dim(1),'x',kpoint_grid_dim(2),'x',kpoint_grid_dim(3),'|'
+    endif
     write(stdout,'(1x,a46,i14,a18)')   '|  Number of K-points                        :',nkpoints,"|"
 
     if (nspins > 1) then
