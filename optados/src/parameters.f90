@@ -191,7 +191,7 @@ contains
              jdos=.true.
           elseif(index(task_string(loop),'pdos')>0) then
              pdos=.true.
-          elseif(index(task_string(loop),'pdis')>0) then
+          elseif(index(task_string(loop),'pdispersion')>0) then
              pdis=.true.
           elseif(index(task_string(loop),'compare_dos')>0) then
              dos=.true.; compare_dos=.true.
@@ -235,7 +235,7 @@ contains
        fixed=.true.;adaptive=.true.;linear=.true.
     end if
 
-    if(.not.(fixed.or.adaptive.or.linear.or.quad)) then ! Pick a default
+    if(.not.pdis.and..not.(fixed.or.adaptive.or.linear.or.quad)) then ! Pick a default
        adaptive=.true.
     endif
 
@@ -259,7 +259,11 @@ contains
     call param_get_keyword('linear_smearing',found,r_value=linear_smearing)
 
     efermi_user        = -990.0_dp
+    if(.not.pdis) then
     efermi_choice="optados"
+    else
+        efermi_choice="file"
+    endif
     call param_get_efermi('efermi',found,efermi_choice,efermi_user)
 
     ! Force all Gaussians to be greater than the width of a bin. When using numerical_indos
@@ -307,8 +311,8 @@ contains
     if(pdos) call param_get_keyword('pdos',found,c_value=projectors_string)
     if(pdos.and. (len_trim(projectors_string)==0)) call io_error('pdos requested but pdos is not specified')
 
-    if(pdis) call param_get_keyword('pdis',found,c_value=projectors_string)
-    if(pdis.and. (len_trim(projectors_string)==0)) call io_error('pdis requested but pdis keyword is not specified')
+    if(pdis) call param_get_keyword('pdispersion',found,c_value=projectors_string)
+    if(pdis.and. (len_trim(projectors_string)==0)) call io_error('pdispersion requested but pdispersion keyword is not specified')
 
     jdos_max_energy        = -1.0_dp !! change
     call param_get_keyword('jdos_max_energy',found,r_value=jdos_max_energy)
