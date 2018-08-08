@@ -460,13 +460,13 @@ contains
     use od_io,        only : io_file_unit, seedname, filename_len,stdout, io_time,&
          & io_error
     use od_algorithms, only : algor_dist_array
-    use od_parameters, only : iprint, compute_band_gap,kpoint_mp_grid
+    use od_parameters, only : iprint, compute_band_gap,kpoint_mp_grid, pdis
 
     implicit none
 
     
     integer :: inodes,ik,is,ib,band_unit,iall_kpoints,i
-    integer :: dum_i1, ierr, str_pos
+    integer :: ik_bandfile, ierr, str_pos
     character(filename_len) :: band_filename
     character(len=80) :: dummy
     real(kind=dp) :: time0, time1
@@ -534,15 +534,15 @@ contains
           do ik=1,num_kpoints_on_node(inodes)
              read (band_unit,'(a)') dummy
              str_pos=index(dummy,'K-point')
-             read (dummy(str_pos+7:),*) dum_i1, kpoint_r(1,ik), kpoint_r(2,ik), kpoint_r(3,ik), kpoint_weight(ik)
+             read (dummy(str_pos+7:),*) ik_bandfile, kpoint_r(1,ik), kpoint_r(2,ik), kpoint_r(3,ik), kpoint_weight(ik)
              do i=1,3
-                all_kpoints(i,iall_kpoints)=kpoint_r(i,ik)
+                all_kpoints(i,ik_bandfile)=kpoint_r(i,ik)
              end do
              iall_kpoints=iall_kpoints+1
              do is=1,nspins
                 read (band_unit,*) dummy
                 do ib=1,nbands
-                   read (band_unit,*) band_energy(ib,is,ik) !NB spin <-> kpt swapped
+                   read (band_unit,*) band_energy(ib,is,ik_bandfile) !NB spin <-> kpt swapped
                 end do
              end do
           end do
@@ -554,31 +554,34 @@ contains
        do ik=1,num_kpoints_on_node(0)
           read (band_unit,'(a)') dummy
           str_pos=index(dummy,'K-point')
-          read (dummy(str_pos+7:),*) dum_i1,kpoint_r(1,ik), kpoint_r(2,ik), kpoint_r(3,ik), kpoint_weight(ik)
+          ! ik_bandfile reads the kpoint index from the bands file so that optados can get the right order
+          read (dummy(str_pos+7:),*) ik_bandfile, kpoint_r(1,ik), kpoint_r(2,ik), kpoint_r(3,ik), kpoint_weight(ik)
           do i=1,3
-             all_kpoints(i,iall_kpoints)=kpoint_r(i,ik)
+             all_kpoints(i,ik_bandfile)=kpoint_r(i,ik)
           enddo
           iall_kpoints=iall_kpoints+1
           do is=1,nspins
              read (band_unit,*) dummy
              do ib=1,nbands
-                read (band_unit,*) band_energy(ib,is,ik) !NB spin <-> kpt swapped
+                read (band_unit,*) band_energy(ib,is,ik_bandfile) !NB spin <-> kpt swapped
              end do
           end do
        end do
 
        ! Do this here so we can free up the all_kpoints memory, unless we need it to calculate
-       ! the kpoints at the band-gap.
+       ! the kpoints at the band-gap or do a pdispersion
        if(kpoint_mp_grid(1)>0) then
           ! we must have set this manually
           kpoint_grid_dim=kpoint_mp_grid
        else
           call cell_find_MP_grid(all_kpoints,nkpoints,kpoint_grid_dim)
        endif
-          if(.not.compute_band_gap) then
+
+       if((.not.compute_band_gap).and.(.not.pdis)) then
           deallocate(all_kpoints,stat=ierr) 
           if (ierr/=0)  call io_error('Error: Problem deallocating all_kpoints in read_band_energy')
        endif
+
     endif
 
     if(.not. on_root) then
