@@ -104,9 +104,9 @@ module od_pdis
     !===============================================================================
     ! Write out projectors, start_proj, stop_proj, to file name, one kpoint at a time
     !===============================================================================
-    use od_parameters, only : iprint
+    use od_parameters, only : iprint, set_efermi_zero
     use od_algorithms, only : channel_to_am
-    use od_electronic, only : pdos_mwab, all_kpoints, band_energy
+    use od_electronic, only : pdos_mwab, all_kpoints, band_energy, efermi
     use od_cell,       only : atoms_species_num, num_species, nkpoints
     use od_io,         only : io_file_unit, io_error, io_date, stdout
 
@@ -119,6 +119,10 @@ module od_pdis
     integer :: iproj, iam, ispecies_num, ispecies
     integer :: i, pdis_file,ierr
     integer :: N, n_eigen
+
+    if(set_efermi_zero) then
+       band_energy = band_energy - efermi
+    endif
 
     write(string,'(I4,"(x,es14.7)")') (stop_proj-start_proj)+1
 
@@ -159,7 +163,7 @@ module od_pdis
        enddo
 
        do N=1,nkpoints
-          write(pdis_file, '(a10, i4, es14.7, es14.7, es14.7)') 'K-point   ', N, (all_kpoints(i, N), i=1,3)
+          write(pdis_file, '(a10, i4, a10, es14.7, es14.7, es14.7)') 'K-point   ', N, '     ', (all_kpoints(i, N), i=1,3)
           do n_eigen=1,pdos_mwab%nbands
              write(pdis_file, '(es20.7,'//trim(string)//')') band_energy(n_eigen, 1, N), &
                 (matrix_weights(i, n_eigen, N, 1), i=start_proj,stop_proj)
