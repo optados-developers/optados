@@ -163,7 +163,7 @@ module od_pdis
        enddo
 
        do N=1,nkpoints
-          write(pdis_file, '(a10, i4, a10, es14.7, es14.7, es14.7)') 'K-point   ', N, '     ', (all_kpoints(i, N), i=1,3)
+          write(pdis_file, '(a10, i4, a10, es18.7, es18.7, es18.7)') 'K-point   ', N, '     ', (all_kpoints(i, N), i=1,3)
           do n_eigen=1,pdos_mwab%nbands
              write(pdis_file, '(es20.7,'//trim(string)//')') band_energy(n_eigen, 1, N), &
                 (matrix_weights(i, n_eigen, N, 1), i=start_proj,stop_proj)
