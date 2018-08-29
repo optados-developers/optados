@@ -260,9 +260,9 @@ contains
 
     efermi_user        = -990.0_dp
     if(.not.pdis) then
-    efermi_choice="optados"
+       efermi_choice="optados"
     else
-        efermi_choice="file"
+       efermi_choice="file"
     endif
     call param_get_efermi('efermi',found,efermi_choice,efermi_user)
 
@@ -290,6 +290,7 @@ contains
     call param_get_keyword('compute_band_energy',found,l_value=compute_band_energy)
 
     set_efermi_zero = .false.
+    if(pdis) set_efermi_zero = .true.
     call param_get_keyword('set_efermi_zero',found,l_value=set_efermi_zero)
 
     dos_per_volume = .false.
