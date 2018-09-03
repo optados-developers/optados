@@ -40,7 +40,7 @@ program optados
   use od_parameters, only : param_read, param_write_header,param_Dist,param_write, &
        param_dealloc,pdos,pdis,dos,jdos,core,optics,iprint,param_write_atomic_coord
   use od_cell, only : cell_calc_lattice, cell_report_parameters,cell_dist
-  use od_electronic,only : elec_read_band_energy,elec_report_parameters
+  use od_electronic,only : elec_read_band_energy,elec_read_band_energy_ordered,elec_report_parameters
   use od_dos,  only : dos_calculate
   use od_jdos,  only: jdos_calculate
   use od_core, only : core_calculate
@@ -98,7 +98,11 @@ program optados
      !-------------------------------------------------------------------------!
   end if
 
-  call elec_read_band_energy
+  if(pdis) then 
+      call elec_read_band_energy_ordered
+  else
+      call elec_read_band_energy
+  end if
 
   if(on_root) then
      call cell_calc_lattice

@@ -41,7 +41,7 @@ module od_pdis
   contains
 
   subroutine pdis_calculate
-    use od_electronic, only : elec_pdos_read,efermi_set
+    use od_electronic, only : elec_pdis_read,efermi_set
     use od_dos_utils, only : dos_utils_calculate,dos_utils_set_efermi
     use od_projection_utils, only : projection_merge, projection_get_string, projection_analyse_orbitals
     use od_comms, only : on_root
@@ -59,7 +59,7 @@ module od_pdis
     endif
 
     ! read in the pdos weights
-    call elec_pdos_read
+    call elec_pdis_read
 
     ! look at the orbitals and figure out which atoms / states we have
     call projection_analyse_orbitals
