@@ -1241,7 +1241,7 @@ contains
     ! Band indices used in the read-in of the pdos 
     integer, allocatable, dimension(:,:) :: all_nbands_occ
     real(kind=dp)                        :: dummyr1,dummyr2,dummyr3
-    integer                              :: dummyk,cachek,dummyi,ib,ik,is,stride
+    integer                              :: dummyk,cachek,dummyi,ib,ik,is,stride,iorb
     integer                              :: pdos_in_unit,ierr,inodes,iall_kpoints
     logical                              :: full_debug_pdos_weights=.false.
     character(filename_len) :: pdos_filename
@@ -1362,8 +1362,10 @@ contains
           do ik=1,num_kpoints_on_node(inodes)
              do is=1, pdos_mwab%nspins
                 do ib=1, all_nbands_occ(ik+iall_kpoints,is)
-                   pdos_weights(1:pdos_mwab%norbitals, ib, ik, is) = all_pdos_weights(1:pdos_mwab%norbitals, ib, ik+iall_kpoints, is)
-                   end do
+                    do iorb=1, pdos_mwab%norbitals
+                       pdos_weights(iorb, ib, ik, is) = all_pdos_weights(iorb, ib, ik+iall_kpoints, is)
+                    end do
+                end do
              end do
           end do
           iall_kpoints = iall_kpoints + num_kpoints_on_node(inodes)
