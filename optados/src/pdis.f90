@@ -41,8 +41,7 @@ module od_pdis
   contains
 
   subroutine pdis_calculate
-    use od_electronic, only : elec_pdis_read,efermi_set
-    use od_dos_utils, only : dos_utils_calculate,dos_utils_set_efermi
+    use od_electronic, only : elec_pdis_read,efermi_castep,efermi
     use od_projection_utils, only : projection_merge, projection_get_string, projection_analyse_orbitals
     use od_comms, only : on_root
     use od_parameters, only : set_efermi_zero, iprint
@@ -70,9 +69,12 @@ module od_pdis
     ! form the right matrix elements
     call projection_merge
 
-    ! and write everything out
-    if(set_efermi_zero .and. .not.efermi_set) call dos_utils_set_efermi
+    ! set efermi
+    if(on_root) write(stdout,'(1x,a1,a46,f8.4,a3,12x,a8)') "|",&
+                          &" Set fermi energy from file : ",efermi_castep," eV","  <- EfC"
+    efermi=efermi_castep
 
+    ! write everything out
     if(on_root.and.(iprint>2)) then
        call pdis_report_projectors
     endif
