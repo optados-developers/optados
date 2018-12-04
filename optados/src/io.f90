@@ -98,7 +98,7 @@ subroutine io_get_seedname (  )
          write(stderr, '(1x,a)') trim(error_msg)
          close(stderr)
 
-         stop "Optados error: examine the output/error file for details" 
+         error stop "Optados error: examine the output/error file for details" 
          
        end subroutine io_error
        
