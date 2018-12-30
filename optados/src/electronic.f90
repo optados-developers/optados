@@ -1297,11 +1297,11 @@ contains
        read(pdos_in_unit) pdos_orbital%rank_in_species(1:pdos_mwab%norbitals)
        read(pdos_in_unit) pdos_orbital%am_channel(1:pdos_mwab%norbitals)
        !-------------------------------------------------------------------------!
+       call comms_bcast(pdos_mwab%norbitals,1)
+       call comms_bcast(pdos_mwab%nbands,1)
+       call comms_bcast(pdos_mwab%nkpoints,1)
+       call comms_bcast(pdos_mwab%nspins,1)
     end if
-    call comms_bcast(pdos_mwab%norbitals,1)
-    call comms_bcast(pdos_mwab%nbands,1)
-    call comms_bcast(pdos_mwab%nkpoints,1)
-    call comms_bcast(pdos_mwab%nspins,1)
     if(.not. on_root) then
        allocate(pdos_orbital%species_no(pdos_mwab%norbitals),stat=ierr)
        if(ierr/=0) call io_error(" Error : cannot allocate pdos_orbital")
@@ -1326,6 +1326,7 @@ contains
     if(ierr/=0) stop " Error : cannot allocate all_pdos_weights"
 
     if(on_root) then
+       ! Read in the k-points in the correct path ordering, not the file ordering
        cachek = 0
        stride = 1
        do ik=1,nkpoints
@@ -1348,40 +1349,32 @@ contains
              read(pdos_in_unit) dummyi ! this is the spin number
              read(pdos_in_unit) all_nbands_occ(dummyk, is)
              do ib=1,all_nbands_occ(dummyk,is)
-                if(full_debug_pdos_weights) then
-                   write(stdout,*) " ***** F U L L _ D E B U G _ P D O S _ W E I G H T S ***** "
-                   write(stdout,*) ib, ik, is, dummyk, stride, cachek
-                   write(stdout,*) "   **** ***** *****  ***** ***** *****  ***** ***** *****  "
-                endif
                 read(pdos_in_unit) all_pdos_weights(1:pdos_mwab%norbitals,ib,dummyk,is)
              enddo
           enddo
        enddo
-       iall_kpoints = 0
-       do inodes=0,num_nodes-1
-          do ik=1,num_kpoints_on_node(inodes)
-             do is=1, pdos_mwab%nspins
-                do ib=1, all_nbands_occ(ik+iall_kpoints,is)
-                    do iorb=1, pdos_mwab%norbitals
-                       pdos_weights(iorb, ib, ik, is) = all_pdos_weights(iorb, ib, ik+iall_kpoints, is)
-                    end do
-                end do
-             end do
-          end do
-          iall_kpoints = iall_kpoints + num_kpoints_on_node(inodes)
-          if (inodes /= 0) then
-              call comms_send(pdos_weights(1,1,1,1),pdos_mwab%norbitals*pdos_mwab%nbands*&
-                              nspins*num_kpoints_on_node(inodes),inodes)
-          endif
-       end do
-    end if
 
-    if(.not. on_root) then
-       call comms_recv(pdos_weights(1,1,1,1),pdos_mwab%norbitals*pdos_mwab%nbands*&
-                  nspins*num_kpoints_on_node(my_node_id),root_id)
-    end if
-    
-    if(on_root) close(pdos_in_unit)
+       close(pdos_in_unit)
+
+    endif
+
+    call comms_bcast(all_pdos_weights(1,1,1,1), size(all_pdos_weights))
+
+    iall_kpoints = 0
+    do inodes=0,my_node_id-1
+       iall_kpoints = iall_kpoints + inodes * num_kpoints_on_node(inodes)
+    end do
+
+    do ik=1,num_kpoints_on_node(my_node_id)
+       do is=1, pdos_mwab%nspins
+          do ib=1, all_nbands_occ(ik+iall_kpoints,is)
+             do iorb=1, pdos_mwab%norbitals
+                pdos_weights(iorb, ib, ik, is) = all_pdos_weights(iorb, ib, ik+iall_kpoints, is)
+             end do
+         end do
+       end do
+    end do
+    deallocate(all_pdos_weights)
 
     return
 
