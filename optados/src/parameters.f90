@@ -55,6 +55,7 @@ module od_parameters
   logical, public, save :: dos
   logical, public, save :: compare_dos
   logical, public, save :: pdos
+  logical, public, save :: pdis
   logical, public, save :: jdos
   logical, public, save :: compare_jdos
   logical, public, save :: optics
@@ -86,9 +87,8 @@ module od_parameters
   real(kind=dp),     public, save :: dos_spacing
   integer,           public, save :: dos_nbins
 
-  ! pdos
-  character(len=maxlen), public, save :: pdos_string
-
+  ! pdos & pdis
+  character(len=maxlen), public, save :: projectors_string
 
   ! Belonging to the jdos module
   real(kind=dp),     public, save :: jdos_max_energy 
@@ -174,7 +174,7 @@ contains
     if(index(energy_unit,'ev')==0 .and. index(energy_unit,'ry')==0 .and. index(energy_unit,'ha')==0) &
          call io_error('Error: value of energy_unit not recognised in param_read')
 
-    dos=.false.; pdos=.false.; jdos=.false.; optics=.false.; core=.false.; compare_dos=.false.;compare_jdos=.false.
+    dos=.false.; pdos=.false.; pdis=.false.; jdos=.false.; optics=.false.; core=.false.; compare_dos=.false.;compare_jdos=.false.
     call param_get_vector_length('task',found,i_temp)
     if(found .and. i_temp>0) then
        allocate(task_string(i_temp),stat=ierr)
@@ -191,6 +191,8 @@ contains
              jdos=.true.
           elseif(index(task_string(loop),'pdos')>0) then
              pdos=.true.
+          elseif(index(task_string(loop),'pdispersion')>0) then
+             pdis=.true.
           elseif(index(task_string(loop),'compare_dos')>0) then
              dos=.true.; compare_dos=.true.
           elseif(index(task_string(loop),'dos')>0) then
@@ -208,6 +210,9 @@ contains
     end if
     if( (compare_dos.or.compare_jdos) .and. (pdos.or.core.or.optics)) &
          call io_error('Error: compare_dos/compare_jdos are not comptable with pdos, core or optics tasks') 
+
+    if(pdis.and.(optics.or.core.or.jdos.or.pdos.or.dos.or.compare_dos.or.compare_jdos)) &
+         call io_error('Error: projected bandstructure not compatible with any other tasks')
 
     i_temp=0
     fixed=.false.; adaptive=.false.; linear=.false.; quad=.false. 
@@ -230,7 +235,7 @@ contains
        fixed=.true.;adaptive=.true.;linear=.true.
     end if
 
-    if(.not.(fixed.or.adaptive.or.linear.or.quad)) then ! Pick a default
+    if(.not.pdis.and..not.(fixed.or.adaptive.or.linear.or.quad)) then ! Pick a default
        adaptive=.true.
     endif
 
@@ -254,7 +259,11 @@ contains
     call param_get_keyword('linear_smearing',found,r_value=linear_smearing)
 
     efermi_user        = -990.0_dp
-    efermi_choice="optados"
+    if(.not.pdis) then
+       efermi_choice="optados"
+    else
+       efermi_choice="file"
+    endif
     call param_get_efermi('efermi',found,efermi_choice,efermi_user)
 
     ! Force all Gaussians to be greater than the width of a bin. When using numerical_indos
@@ -281,6 +290,7 @@ contains
     call param_get_keyword('compute_band_energy',found,l_value=compute_band_energy)
 
     set_efermi_zero = .false.
+    if(pdis) set_efermi_zero = .true.
     call param_get_keyword('set_efermi_zero',found,l_value=set_efermi_zero)
 
     dos_per_volume = .false.
@@ -298,9 +308,12 @@ contains
     dos_nbins               = -1 ! 10001 LinDOS default
     call param_get_keyword('dos_nbins',found,i_value=dos_nbins)
 
-    pdos_string =''
-    call param_get_keyword('pdos',found,c_value=pdos_string)
-    if(pdos.and. (len_trim(pdos_string)==0)) call io_error('pdos requested but pdos is not specified')
+    projectors_string = ''
+    if(pdos) call param_get_keyword('pdos',found,c_value=projectors_string)
+    if(pdos.and. (len_trim(projectors_string)==0)) call io_error('pdos requested but pdos is not specified')
+
+    if(pdis) call param_get_keyword('pdispersion',found,c_value=projectors_string)
+    if(pdis.and. (len_trim(projectors_string)==0)) call io_error('pdispersion requested but pdispersion keyword is not specified')
 
     jdos_max_energy        = -1.0_dp !! change
     call param_get_keyword('jdos_max_energy',found,r_value=jdos_max_energy)
@@ -403,7 +416,7 @@ contains
     num_atoms=0
     num_species=0
     num_crystal_symmetry_operations=0
-    if(pdos.or.core.or.optics) then
+    if(pdos.or.pdis.or.core.or.optics) then
        ! try to read in the atoms from the cell file.
        ! We don't need them otherwise, so let's not bother
      !  if(index(devel_flag,'old_filename')>0) then
@@ -650,6 +663,11 @@ contains
        write(stdout,'(1x,a78)') '|  Output Partial Density of States          :  True                         |'
     else
        write(stdout,'(1x,a78)') '|  Output Partial Density of States          :  False                        |'
+    endif
+    if(pdis) then
+       write(stdout,'(1x,a78)') '|  Output Projected Bandstructure            :  True                         |'
+    else
+       write(stdout,'(1x,a78)') '|  Output Projected Bandstructure            :  False                        |'
     endif
     if(jdos) then
        write(stdout,'(1x,a78)') '|  Output Joint Density of States            :  True                         |'
@@ -1560,7 +1578,7 @@ contains
     call comms_bcast(dos_max_energy,1)
     call comms_bcast(dos_spacing,1)
     call comms_bcast(legacy_file_format,1)
-    call comms_bcast(pdos_string,len(pdos_string))
+    call comms_bcast(projectors_string,len(projectors_string))
     call comms_bcast(set_efermi_zero,1)
     !
     call comms_bcast(num_exclude_bands,1)

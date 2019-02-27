@@ -27,7 +27,7 @@ endif
 EXTENSION:=$(EXTENSION)$(EXE_SUFFIX)
 
 # Put object names here
-OBJS=algorithms.o cell.o comms.o constants.o core.o dos.o dos_utils.o electronic.o io.o jdos.o jdos_utils.o optics.o parameters.o pdos.o xmgrace_utils.o
+OBJS=algorithms.o cell.o comms.o constants.o core.o dos.o dos_utils.o electronic.o io.o jdos.o jdos_utils.o optics.o parameters.o pdos.o pdis.o projection_utils.o xmgrace_utils.o
 
 all : optados
 
@@ -73,7 +73,13 @@ optics.o : optics.f90 constants.o io.o electronic.o jdos_utils.o cell.o paramete
 parameters.o : parameters.f90  cell.o constants.o io.o comms.o ../make.system
 	$(F90) -c $(FFLAGS) $<
 
-pdos.o : pdos.F90  cell.o comms.o constants.o io.o dos.o electronic.o ../make.system
+pdos.o : pdos.F90 projection_utils.o cell.o comms.o constants.o io.o dos.o electronic.o ../make.system
+	$(F90) -c $(FFLAGS) $<
+
+pdis.o : pdis.f90 projection_utils.o cell.o comms.o constants.o io.o dos.o electronic.o ../make.system
+	$(F90) -c $(FFLAGS) $<
+
+projection_utils.o : projection_utils.f90 cell.o comms.o constants.o cell.o electronic.o io.o parameters.o ../make.system
 	$(F90) -c $(FFLAGS) $<
 
 xmgrace_utils.o : xmgrace_utils.f90 io.o constants.o ../make.system

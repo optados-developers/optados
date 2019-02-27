@@ -82,7 +82,7 @@ UK\\
 }
 
 
-\date{May 2018}
+\date{February 2019}
 
 \begin{document}
 \newcommand{\optados}{\textsc{OptaDOS}}
@@ -98,10 +98,10 @@ UK\\
 \vspace*{40mm}
 University of Cambridge, University of Oxford and University College London\\
 \vspace{5mm}
-\copyright\ 2013-2018 A.~J. Morris, R.~J. Nicholls, C.~J. Pickard and J.~R. Yates.\\
+\copyright\ 2013-2019 A.~J. Morris, R.~J. Nicholls, C.~J. Pickard and J.~R. Yates.\\
 \vspace{5mm}
 First published 2010\\
-This edition 2018\\
+This edition 2019\\
 \vspace{5mm}
 10 9 8 7 6 5 4 3 2 1
 \vspace{5mm}
@@ -138,8 +138,13 @@ the Winton programme for the physics of sustainability and RJN the ERC
 AJM, RJN, CJP and JRY\\
 September 2013
 \end{flushright}
-\newpage
 
+\chapter*{Contributors}
+ \thispagestyle{empty}
+
+\begin{itemize} 
+\item Matthew L. Evans, University of Cambridge: projected bandstructures and bug fixes.
+\end{itemize}
 
 \chapter{Introduction}\label{chap:introduction}
 \section{Background}
@@ -486,6 +491,8 @@ A description of the purpose of each module is given below.
 \item \texttt{optics}: calculate dielectric function then generate optical properties
 \item \texttt{parameters}: read, store and check input file parameters
 \item \texttt{pdos}: perform PDOS calculation
+\item \texttt{pdis}: perform a projected dispersion calculation
+\item \texttt{projection\_utils}: routines for reading and writing projectors
 \item \texttt{xmgrace\_utils}: routines to write out data in xmgr format
 \end{itemize}
 
@@ -534,6 +541,7 @@ The valid options for this parameter are:
 \item[{\bf --}]  \verb#compare_jdos#
 \item[{\bf --}]  \verb#jdos#
 \item[{\bf --}]  \verb#pdos#
+\item[{\bf --}]  \verb#pdispersion#
 \item[{\bf --}]  \verb#optics#
 \item[{\bf --}]  \verb#core#
 \item[{\bf --}]  \verb#all#
@@ -733,6 +741,14 @@ Defines which components to include in the pdos analysis:
 \item[{\bf --}]  \verb#sum:C1:C3:C4-C8#  (decompose onto atoms C1, C2 and C4,C5,C6,C7,C8 and combine into the single projection)
 
 \end{itemize}
+
+\section{Projected Dispersion Parameters}
+
+\subsection[pdispersion]{\tt character :: pdispersion}
+Follows \verb#pdos# in specifying which projectors are included in the projected
+dispersion calculation. Note that this task is not compatible with any options
+other than \verb#EFERMI: FILE# (which is the default when \verb#pdispersion# has
+been requested).
 
 \section{Optics Parameters}
 
@@ -1077,6 +1093,24 @@ The header shows that there are four projectors described below. The first conta
 \end{itemize}
 \end{enumerate}
 
+\section{Projected Bandstructure}
+
+\begin{itemize}
+\item \emph{Outline} : This is a simple example of using \optados\ to calculate the electronc bandstructure of 2 atoms of crystalline silicon projected onto LCAO basis states. The process is almost identical to the PDOS example above, but requires performs the projections on a continuous k-point path rather than a grid.
+
+\item \emph{Input Files}:
+\begin{itemize}
+\item \verb#examples/Si2_PDIS/Si2_pdis.cell# - The \castep\ cell file containing information about the simulation cell.
+\item \verb#examples/Si2_PDIS/Si2_pdis.param# - The \castep\ param file containing information about the parameters for the SCF and spectral calculations.
+\item \verb#examples/Si2_PDOS/Si2_pdis.odi# - The \optados\ input file, containing the parameters necessary to run \optados.
+\end{itemize}
+\end{itemize}
+
+\begin{enumerate}
+\item Run \castep\ in the same way as previous examples, ensuring that \verb#PDOS_CALCULATE_WEIGHTS: TRUE# is set in the CASTEP parameter file.
+\item Run \optados\ with the desired projections, following the same format as \verb#PDOS# in \verb#Si2_pdis.odi#.
+\item The output can be found in \verb#Si2_pdis.dat#, which contains the weight of each projector at each eigenvalue, for each k-point. Plotting this data in an attractive way is tricky; you might consider trying the Python package \verb#matador# (www.matador.science).
+\end{enumerate}
 
 \section{JDOS}
 See  \verb#examples/Si2_JDOS/#. This is a simple example of using \optados\ for calculating joint electronic density of states.  We choose to recalculate the Fermi level using the calculated DOS, rather than use the Fermi level suggested by \castep\, and so \verb#EFERMI: OPTADOS# is included in the \verb#Si2.odi# file.  
