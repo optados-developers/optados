@@ -742,11 +742,13 @@ Defines which components to include in the pdos analysis:
 
 \end{itemize}
 
-\subsection{Projected Dispersion Parameters}
+\section{Projected Dispersion Parameters}
 
 \subsection[pdispersion]{\tt character :: pdispersion}
 Follows \verb#pdos# in specifying which projectors are included in the projected
-dispersion calculation.
+dispersion calculation. Note that this task is not compatible with any options
+other than \verb#EFERMI: FILE# (which is the default when \verb#pdispersion# has
+been requested).
 
 \section{Optics Parameters}
 
