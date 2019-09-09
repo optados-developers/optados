@@ -14,9 +14,9 @@ env:
 ## Use these two lines instead of the other two if you want increased output
 #   - RUNTESTS=true W90BINARYPARALLEL=false W90VERBOSETESTS=true
 #   - RUNTESTS=true W90BINARYPARALLEL=true W90VERBOSETESTS=true
-#   - RUNTESTS=true  OPTBINARYPARALLEL=false
+   - RUNTESTS=true  OPTBINARYPARALLEL=false
 #   - RUNTESTS=true  OPTBINARYPARALLEL=true
-    - RUNTESTS=false
+#    - RUNTESTS=false
 install:
 # Install Wannier
 #    - if [ "$RUNPRECOMMIT" == "true" ] ; then ./test-suite/install_precommit.sh ; fi
