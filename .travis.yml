@@ -25,7 +25,7 @@ install:
     - if [ "$RUNTESTS" == "true" ] ; then make -j default  ; fi
 script:
 #    - if [ "$RUNPRECOMMIT" == "true" ] ; then ./test-suite/tools/run_precommit.sh ; fi
-    - if [ "$RUNTESTS" == "true" ] ; then ./optados/test-suite/tools/run_tests_travis.sh ; fi
+    - if [ "$RUNTESTS" == "true" ] ; then ./test-suite/tools/run_tests_travis.sh ; fi
 git:
   depth: 3
 after_success:
