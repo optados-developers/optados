@@ -19,7 +19,7 @@ env:
     - RUNTESTS=false
 install:
 # Install Wannier
-    - if [ "$RUNPRECOMMIT" == "true" ] ; then ./test-suite/install_precommit.sh ; fi
+#    - if [ "$RUNPRECOMMIT" == "true" ] ; then ./test-suite/install_precommit.sh ; fi
     - if [ "$RUNTESTS" == "true" ] ; then ./optados/test-suite/tools/configure_travis_compilation.sh ; fi
 #    - if [ "$RUNTESTS" == "true" ] ; then make -j default w90chk2chk libs ; fi
 script:
