@@ -24,7 +24,8 @@ else
    F90:=$(F90_SERIAL)
 endif
 
-EXTENSION:=$(EXTENSION)$(EXE_SUFFIX)
+#EXTENSION:=$(EXTENSION)$(EXE_SUFFIX)
+EXTENSION:=.x
 
 # Put object names here
 OBJS=algorithms.o cell.o comms.o constants.o core.o dos.o dos_utils.o electronic.o io.o jdos.o jdos_utils.o optics.o parameters.o pdos.o pdis.o projection_utils.o xmgrace_utils.o
@@ -32,7 +33,7 @@ OBJS=algorithms.o cell.o comms.o constants.o core.o dos.o dos_utils.o electronic
 all : optados
 
 optados : optados.f90 $(OBJS) ../make.system
-	$(F90) $(FFLAGS) $< $(OBJS) -o optados$(EXTENSION) 
+	$(F90) $(FFLAGS) $< $(OBJS) -o ../optados$(EXTENSION) 
 
 algorithms.o : algorithms.f90 io.o constants.o ../make.system
 	$(F90) -c $(FFLAGS) $<
