@@ -1,0 +1,11 @@
+# Gallium Arsenide, valence bands
+[testopt_example01]
+program = OPTADOS_ODO_OK
+inputs_args = ('Si2.odi', '')
+output = Si2.odo
+
+
+[categories]
+optados_only = testopt_*
+all = optados_only
+default =  all

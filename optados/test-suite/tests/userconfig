@@ -1,0 +1,19 @@
+# Define here the codes, one per pair (input, output)
+# Note that you are not obliged to specify tolerances. If a tolerance
+# is not specified, then the default one is used.
+# Still, specifying it helps understanding what the test will compare.
+
+[OPTADOS_ODO_OK]
+exe = ../../optados.x
+extract_fn = tools parsers.parse_odo.parse
+#tolerance = ( 1.0e-3, 1.0e-3, 'fermi_fb'))
+
+
+[user]
+# This is the string (or list of strings) that identifies sets of tests
+# to be run - one could have multiple ones
+benchmark = default
+date_fmt = %d%m%Y
+vcs = git
+
+              
