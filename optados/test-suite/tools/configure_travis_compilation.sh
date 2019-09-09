@@ -10,7 +10,7 @@ cd "$TESTDIR"
 # Move the correct make.inc to prepare compilation
 if [ "$OPTADOSBINARYPARALLEL" == "true" ]
 then
-    cp config/TravisCI/make.inc.gfort+openmpi ../make.system
+    cp config/TravisCI/make.system.gfort+openmpi ../make.system
 else
-    cp config/TravisCI/make.inc.gfort ../make.system
+    cp config/TravisCI/make.system.gfort ../make.system
 fi
