@@ -80,6 +80,16 @@ subroutine io_get_seedname (  )
             !do something else
          end if
 
+        ! If on the command line the whole seedname.odi was passed, I strip the last ".win"
+        if (len(trim(seedname)) .ge. 5) then
+           if (seedname(len(trim(seedname)) - 4 + 1:) .eq. ".odi") then
+              seedname = seedname(:len(trim(seedname)) - 4)
+           end if
+        end if
+
+
+
+
        end subroutine io_get_seedname
 
 
