@@ -30,7 +30,12 @@ EXTENSION:=.x
 # Put object names here
 OBJS=algorithms.o cell.o comms.o constants.o core.o dos.o dos_utils.o electronic.o io.o jdos.o jdos_utils.o optics.o parameters.o pdos.o pdis.o projection_utils.o xmgrace_utils.o
 
-all : optados
+all : optados tools
+
+tools : od_fmt2bin
+
+od_fmt2bin : od_fmt2bin.f90 $(OBJS) ../make.system
+	$(F90) $(FFLAGS) $< $(OBJS) -o od_fmt2bin
 
 optados : optados.f90 $(OBJS) ../make.system
 	$(F90) $(FFLAGS) $< $(OBJS) -o ../optados$(EXTENSION) 
