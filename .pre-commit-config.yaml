@@ -1,0 +1,7 @@
+- repo: git://github.com/pseewald/fprettify
+  sha: v0.3.3
+  hooks:
+  - id: fprettify
+    args: ['--indent', '2']
+    verbose: true
+    entry: ./optados/test-suite/tools/fprettify-wrapper.py
