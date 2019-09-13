@@ -32,10 +32,10 @@ OBJS=algorithms.o cell.o comms.o constants.o core.o dos.o dos_utils.o electronic
 
 all : optados tools
 
-tools : od_fmt2bin
+tools : od2od
 
-od_fmt2bin : od_fmt2bin.f90 $(OBJS) ../make.system
-	$(F90) $(FFLAGS) $< $(OBJS) -o od_fmt2bin
+od2od : od_fmt2bin.f90 $(OBJS) ../make.system
+	$(F90) $(FFLAGS) $< $(OBJS) -o od2od
 
 optados : optados.f90 $(OBJS) ../make.system
 	$(F90) $(FFLAGS) $< $(OBJS) -o ../optados$(EXTENSION) 
