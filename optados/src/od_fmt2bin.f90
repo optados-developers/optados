@@ -164,9 +164,8 @@ module  od_conv
   subroutine read_ome_bin()
     !=========================================================================
     implicit none
-    write(*,*) " Read a binary ome file..."
     call elec_read_optical_mat()
-    write(*,*) " Sucessfully read ome file..."
+    write(0,*) trim(seedname)//".ome_bin"//"--> Unformatted ome sucessfully read. "
   end subroutine read_ome_bin
   
   !=========================================================================
@@ -202,7 +201,8 @@ module  od_conv
                &jb=1,nbands),i=1,3)
        end do
     end do
-   
+
+     write(0,*) " Sucesfully written an unformatted ome file --> "//trim(outseedname)//".ome_bin"
   end subroutine write_ome_bin
   
   !=========================================================================
@@ -393,7 +393,7 @@ module  od_conv
     integer :: nk,ns,nb,i,jb, elnes_file=6, orb,indx
     open(unit=elnes_file, form='unformatted', file="elnes.out")
     
-    write(*,*) "Write a binary elnes file"
+    write(*,*) " Write a binary elnes file"
     
     write(elnes_file) tot_core_projectors
     write(elnes_file) max_eigenvalues
@@ -431,10 +431,9 @@ program od2od
   use od_comms, only: num_nodes, comms_setup, comms_end
   implicit none
 
-  ! Export mode:
-  !  TRUE:  create formatted .chk.fmt from unformatted .chk ('-export')
-  !  FALSE: create unformatted .chk from formatted .chk.fmt ('-import')
   logical :: file_found
+  logical ::   ome_conv, dome_conv, pdos_conv, elnes_conv ! Flags to stop people trying
+  ! to read in a pdos and write out an elnes.  That's not going to end well.
   integer :: file_unit
 
   call comms_setup
@@ -443,36 +442,73 @@ program od2od
   open (unit=stdout, file='od_fmt2bin.log')
 
 
-  write(*,*) "Num_nodes :", num_nodes
+  write(0,*)
+  write(0,*) " +=======================================================================+ "
+  write(0,*) " |                                                                       | "
+  write(0,*) " |                      OO   DDD   222    OO   DDD                       | "
+  write(0,*) " |                     O  O  D  D     2  O  O  D  D                      | "
+  write(0,*) " |                     O  O  D  D   22   O  O  D  D                      | "
+  write(0,*) " |                     O  O  D  D  2     O  O  D  D                      | "
+  write(0,*) " |                      OO   DDD   2222   OO   DDD                       | "
+  write(0,*) " |                                                                       | "
+  write(0,*) " |                For doing the odd thing to an OptaDOS file             | "
+  write(0,*) " |                                                                       | "
+  write(0,*) " |                   OptaDOS Developers Group 2019 (C)                   | "                                  
+  write(0,*) " |                                                                       | "
+  write(0,*) " +=======================================================================+ "
+
   if (num_nodes /= 1) then
     call io_error('od2od can only be used in serial...')
   endif
 
   call conv_get_seedname
+
+  write(0,*) 
+  write(0,*) "                    Num_nodes : ",num_nodes
+  write(0,*) "                 Convert from : "//infile
+  write(0,*) "                   Convert to : "//outfile
+  write(0,*) "                     Seedname : "//seedname
+  write(0,*) "              Output Seedname : "//outseedname
+  write(0,*) 
+
+
+  ome_conv=.false.
+  dome_conv=.false.
+  pdos_conv=.false.
+  elnes_conv=.false.
+  
   
   read_input: select case(trim(infile))
   case("ome_fmt")
+     ome_conv=.true.
      call elec_read_band_energy()
      call read_ome_fmt()
   case("ome_bin")
+     ome_conv=.true.
      call elec_read_band_energy()
      call read_ome_bin()
   case ("dome_fmt")
+     dome_conv=.true.
      call elec_read_band_energy()
      call read_dome_fmt()
   case("dome_bin")
+     dome_conv=.true.
      call elec_read_band_energy()
      call read_dome_bin()
   case ("pdos_fmt")
+     pdos_conv=.true.
      call elec_read_band_energy()
      call read_pdos_fmt()
   case("pdos_bin")
+      pdos_conv=.true.
      call elec_read_band_energy()
      call read_pdos_bin()
   case ("elnes_fmt")
+      elnes_conv=.true.
      call elec_read_band_energy()
      call read_elnes_fmt()
   case("elnes_bin")
+      elnes_conv=.true.
      call elec_read_band_energy()
      call read_elnes_bin()
   case default
@@ -481,21 +517,29 @@ program od2od
  
   write_output: select case(trim(outfile))
   case("ome_fmt")
-     call write_ome_fmt()
+     if(.not. ome_conv) call io_error(' Input format '//trim(infile)//'not compatible with output format '//trim(outfile))
+     call write_ome_fmt() 
   case("ome_bin")
-     call write_ome_bin()
+     if(.not. ome_conv) call io_error(' Input format '//trim(infile)//'not compatible with output format '//trim(outfile))
+     call write_ome_bin() 
   case ("dome_fmt")
-     call write_dome_fmt()
+     if(.not. dome_conv) call io_error(' Input format '//trim(infile)//'not compatible with output format '//trim(outfile))
+     call write_dome_fmt() 
   case("dome_bin")
-     call write_dome_bin()
+      if(.not. dome_conv) call io_error(' Input format '//trim(infile)//'not compatible with output format '//trim(outfile))
+     call write_dome_bin() 
   case ("pdos_fmt")
-     call write_pdos_fmt()
+      if(.not. pdos_conv) call io_error(' Input format '//trim(infile)//'not compatible with output format '//trim(outfile))
+     call write_pdos_fmt() 
   case("pdos_bin")
-     call write_pdos_bin()
+     if(.not. pdos_conv) call io_error(' Input format '//trim(infile)//'not compatible with output format '//trim(outfile))
+     call write_pdos_bin()  
   case ("elnes_fmt")
-     call write_elnes_fmt()
+     if(.not. elnes_conv) call io_error(' Input format '//trim(infile)//'not compatible with output format '//trim(outfile))
+     call write_elnes_fmt()  
   case("elnes_bin")
-     call write_elnes_bin()
+     if(.not. elnes_conv) call io_error(' Input format '//trim(infile)//'not compatible with output format '//trim(outfile))
+     call write_elnes_bin()  
   case default
      call io_error('Unknown Output File format speccified')
   end select write_output
