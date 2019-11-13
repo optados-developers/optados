@@ -1,5 +1,5 @@
 !-*- mode: F90; mode: font-lock; column-number-mode: true -*-!
-!        
+!
 ! This module contains GPL routines from Wannier90           !
 ! Copyright (C) 2007 Jonathan Yates, Arash Mostofi,          !
 !  Young-Su Lee, Nicola Marzari, Ivo Souza, David Vanderbilt !
@@ -15,9 +15,9 @@
 !
 ! This file is part of OptaDOS
 !
-! OptaDOS - For obtaining electronic structure properties based on 
+! OptaDOS - For obtaining electronic structure properties based on
 !             integrations over the Brillouin zone
-! Copyright (C) 2011  Andrew J. Morris,  R. J. Nicholls, C. J. Pickard 
+! Copyright (C) 2011  Andrew J. Morris,  R. J. Nicholls, C. J. Pickard
 !                         and J. R. Yates
 !
 ! This program is free software: you can redistribute it and/or modify
@@ -35,7 +35,7 @@
 !
 module od_io
 
-  use od_constants, only : dp
+  use od_constants, only: dp
 
   implicit none
 
@@ -45,7 +45,7 @@ module od_io
   integer, public, save           :: stderr
   character(len=50), public, save :: seedname
   integer, parameter, public :: maxlen = 120  ! Max column width of input file
-  integer, parameter, public :: filename_len=80
+  integer, parameter, public :: filename_len = 80
 
   public :: io_get_seedname
   public :: io_time
@@ -55,99 +55,89 @@ module od_io
 
 contains
 
-
-subroutine io_get_seedname (  )
+  subroutine io_get_seedname()
     !==================================================================!
     !                                                                  !
     ! Get the seedname from the commandline                            !
     ! Note iargc and getarg are not standard                           !
     ! Some platforms require them to be external or provide            !
     ! equivalent routines. Not a problem in f2003!                     !
-    !===================================================================  
+    !===================================================================
 
+    implicit none
 
-         implicit none
+    integer :: num_arg
 
-         integer :: num_arg
+    num_arg = command_argument_count()
+    if (num_arg == 0) then
+      seedname = '--help'
+    elseif (num_arg == 1) then
+      call get_command_argument(1, seedname)
+    else
+      call get_command_argument(1, seedname)
+      !do something else
+    end if
 
-         num_arg=command_argument_count()
-         if (num_arg==0) then
-            seedname='--help'
-         elseif (num_arg==1) then
-            call get_command_argument(1,seedname)
-         else
-            call get_command_argument(1,seedname)
-            !do something else
-         end if
+    ! If on the command line the whole seedname.odi was passed, I strip the last ".win"
+    if (len(trim(seedname)) .ge. 5) then
+      if (seedname(len(trim(seedname)) - 4 + 1:) .eq. ".odi") then
+        seedname = seedname(:len(trim(seedname)) - 4)
+      end if
+    end if
 
-        ! If on the command line the whole seedname.odi was passed, I strip the last ".win"
-        if (len(trim(seedname)) .ge. 5) then
-           if (seedname(len(trim(seedname)) - 4 + 1:) .eq. ".odi") then
-              seedname = seedname(:len(trim(seedname)) - 4)
-           end if
-        end if
+  end subroutine io_get_seedname
 
-
-
-
-       end subroutine io_get_seedname
-
-
-
-    !==================================================================!
-       subroutine io_error ( error_msg )
+  !==================================================================!
+  subroutine io_error(error_msg)
     !==================================================================!
     !                                                                  !
     ! Aborts giving error message                                      !
     !                                                                  !
-    !===================================================================  
+    !===================================================================
 
-         implicit none
-         character(len=*), intent(in) :: error_msg
-         write(stderr,*)  'Exiting.......' 
-         write(stderr, '(1x,a)') trim(error_msg)
-         close(stderr)
+    implicit none
+    character(len=*), intent(in) :: error_msg
+    write (stderr, *) 'Exiting.......'
+    write (stderr, '(1x,a)') trim(error_msg)
+    close (stderr)
 
-         error stop "Optados error: examine the output/error file for details" 
-         
-       end subroutine io_error
-       
-       
-  
-    !==================================================================!
-      subroutine io_date(cdate, ctime)
+    error stop "Optados error: examine the output/error file for details"
+
+  end subroutine io_error
+
+  !==================================================================!
+  subroutine io_date(cdate, ctime)
     !==================================================================!
     !                                                                  !
     !     Returns two strings containing the date and the time         !
     !     in human-readable format. Uses a standard f90 call.          !
     !                                                                  !
-    !===================================================================  
+    !===================================================================
     implicit none
-    character (len=11), intent(out) :: cdate
-    character (len=9), intent(out) :: ctime
+    character(len=11), intent(out) :: cdate
+    character(len=9), intent(out) :: ctime
 
     character(len=3), dimension(12) :: months
-    data months /'Jan','Feb','Mar','Apr','May','Jun',   &
-         'Jul','Aug','Sep','Oct','Nov','Dec'/
+    data months/'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', &
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'/
     integer date_time(8)
     !
     call date_and_time(values=date_time)
     !
-    write (cdate,'(i2,1x,a3,1x,i4)') date_time(3), months(date_time(2)), date_time(1)
-    write (ctime,'(i2.2,":",i2.2,":",i2.2)') date_time(5), date_time(6), date_time(7)
+    write (cdate, '(i2,1x,a3,1x,i4)') date_time(3), months(date_time(2)), date_time(1)
+    write (ctime, '(i2.2,":",i2.2,":",i2.2)') date_time(5), date_time(6), date_time(7)
 
   end subroutine io_date
 
-
-    !==================================================================!
-      function io_time()
+  !==================================================================!
+  function io_time()
     !==================================================================!
     !                                                                  !
     ! Returns elapsed CPU time in seconds since its first call         !
     ! uses standard f90 call                                           !
     !                                                                  !
-    !===================================================================  
-    use od_constants, only : dp
+    !===================================================================
+    use od_constants, only: dp
     implicit none
 
     real(kind=dp) :: io_time
@@ -155,45 +145,44 @@ subroutine io_get_seedname (  )
     ! t0 contains the time of the first call
     ! t1 contains the present time
     real(kind=dp) :: t0, t1
-    logical :: first=.true.
+    logical :: first = .true.
     save first, t0
     !
     call cpu_time(t1)
     !
     if (first) then
-       t0 = t1
-       io_time = 0.0_dp
-       first = .false.
+      t0 = t1
+      io_time = 0.0_dp
+      first = .false.
     else
-       io_time = t1 - t0
+      io_time = t1 - t0
     endif
     return
   end function io_time
 
   !==================================================================!
   function io_file_unit()
-  !==================================================================!
-  !                                                                  !
-  ! Returns an unused unit number                                    !
-  ! (so we can open a file on that unit                              !
-  !                                                                  !
-  !=================================================================== 
-  implicit none
+    !==================================================================!
+    !                                                                  !
+    ! Returns an unused unit number                                    !
+    ! (so we can open a file on that unit                              !
+    !                                                                  !
+    !===================================================================
+    implicit none
 
-  integer :: io_file_unit,unit
-  logical :: file_open
+    integer :: io_file_unit, unit
+    logical :: file_open
 
-  unit = 9
-  file_open = .true.
-  do while ( file_open )
-     unit = unit + 1
-     inquire( unit, OPENED = file_open )
-  end do
+    unit = 9
+    file_open = .true.
+    do while (file_open)
+      unit = unit + 1
+      inquire (unit, OPENED=file_open)
+    end do
 
-  io_file_unit = unit
+    io_file_unit = unit
 
-  return
-end function io_file_unit
-
+    return
+  end function io_file_unit
 
 end module od_io
