@@ -53,15 +53,12 @@ module od_electronic
   ! 1 for spin-P
   logical, public, save       :: spin_polarised
 
-
-
   type, public ::  matrix_weights_array_boundaries
      integer :: norbitals
      integer :: nbands
      integer :: nkpoints
      integer :: nspins
   end type matrix_weights_array_boundaries
-
 
   type, public :: orbitals
      integer,allocatable  :: ion_no(:)          ! Unique ion number
@@ -72,7 +69,20 @@ module od_electronic
      character(len=10),allocatable :: am_channel_name(:) ! Name of angular momentum channel s,p,d, etc
   end type orbitals
 
-
+  ! On writing the od2od it became necessary to have some variables moved from
+  ! the individual routines into the module. 
+  integer, allocatable, public, save :: nbands_occ(:,:)
+  ! All these are len=80 to be consistent with CASTEP.
+  character(len=80), public, save :: omefile_header
+  character(len=80), public, save :: domefile_header
+  character(len=80), public, save :: pdosfile_header
+  character(len=80), public, save :: elnesfile_header
+  integer, public, save :: omefile_version
+  integer, public, save :: domefile_version
+  integer, public, save :: pdosfile_version
+  integer, public, save :: elnesfile_version
+  
+  
   type(orbitals), public, save :: pdos_orbital
   real(kind=dp), public, allocatable, save  :: pdos_weights(:,:,:,:)
   real(kind=dp), allocatable :: all_pdos_weights(:,:,:,:)
@@ -189,7 +199,6 @@ contains
 
     integer :: gradient_unit,i,ib,jb,is,ik,inodes,ierr,loop
     character(filename_len) :: gradient_filename
-    character(len=80)       :: header
     logical :: exists
     real(kind=dp) :: time0, time1,file_version
     real(kind=dp), parameter :: file_ver=1.0_dp
@@ -223,8 +232,8 @@ contains
              read(gradient_unit) file_version
              if( (file_version-file_ver)>0.001_dp) &
                    call io_error('Error: Trying to read newer version of dome_bin file. Update optados!')
-             read(gradient_unit) header
-             if(iprint>1) write(stdout,*) trim(header)
+             read(gradient_unit) domefile_header
+             if(iprint>1) write(stdout,*) trim(domefile_header)
           endif
        end if
 
@@ -320,8 +329,7 @@ contains
 
     integer :: gradient_unit,i,ib,jb,is,ik,inodes,ierr 
     character(filename_len) :: gradient_filename
-    character(len=80)       :: header
-    real(kind=dp) :: time0, time1,file_version
+    real(kind=dp) :: time0, time1, file_version
     real(kind=dp), parameter :: file_ver=1.0_dp
 
 
@@ -343,8 +351,8 @@ contains
           read(gradient_unit) file_version
           if( (file_version-file_ver)>0.001_dp) & 
                            call io_error('Error: Trying to read newer version of ome_bin file. Update optados!')
-          read(gradient_unit) header
-          if(iprint>1) write(stdout,'(1x,a)') trim(header)
+          read(gradient_unit) omefile_header
+          if(iprint>1) write(stdout,'(1x,a)') trim(omefile_header)
        endif
     endif
 
@@ -839,7 +847,6 @@ contains
     integer :: inodes,ik,ns,nb,indx
     integer :: ierr,elnes_unit,orb,loop
     character(filename_len) :: elnes_filename
-    character(len=80)       :: header
     real(kind=dp) :: time0, time1,file_version
     real(kind=dp), parameter :: file_ver=1.0_dp
 
@@ -863,8 +870,8 @@ contains
           read(elnes_unit) file_version
           if( (file_version-file_ver)>0.001_dp) &
                call io_error('Error: Trying to read newer version of elnes_bin file. Update optados!')
-          read(elnes_unit) header
-          if(iprint>1) write(stdout,'(1x,a)') trim(header)
+          read(elnes_unit) elnesfile_header
+          if(iprint>1) write(stdout,'(1x,a)') trim(elnesfile_header)
        endif
 
 
@@ -1080,13 +1087,11 @@ contains
     implicit none
 
     ! Band indices used in the read-in of the pdos 
-    integer, allocatable, dimension(:,:) :: nbands_occ
     real(kind=dp)                        :: dummyr1,dummyr2,dummyr3
     integer                              :: dummyi,ib,ik,is
     integer                              :: pdos_in_unit,ierr,inodes
     logical                              :: full_debug_pdos_weights=.false.
     character(filename_len) :: pdos_filename
-    character(len=80)       :: header
     real(kind=dp) :: time0, time1,file_version
     real(kind=dp), parameter :: file_ver=1.0_dp
 
@@ -1108,8 +1113,8 @@ contains
           read(pdos_in_unit) file_version
           if( (file_version-file_ver)>0.001_dp) &
                call io_error('Error: Trying to read newer version of pdos_bin file. Update optados!')
-          read(pdos_in_unit) header
-          if(iprint>1) write(stdout,'(1x,a)') trim(header)
+          read(pdos_in_unit) pdosfile_header
+          if(iprint>1) write(stdout,'(1x,a)') trim(pdosfile_header)
        endif
 
        read(pdos_in_unit) pdos_mwab%nkpoints
