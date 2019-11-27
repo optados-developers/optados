@@ -224,7 +224,7 @@ contains
       end do
     else
       do iproj = start_proj, stop_proj
-        write (pdos_file, '(1a,a1,a12,i4,a10,50x,a1)') '#', '|', ' Projector: ', iproj, ' contains:', '|'
+        write (pdos_file, '(1a,a1,a12,i4,a10,50x,a1)') '#', '|', ' Column: ', iproj, ' contains:', '|'
         write (pdos_file, '(1a,a1,a16,10x,a14,36x,a1)') '#', '|', ' Atom ', ' AngM Channel ', '|'
         do ispecies = 1, num_species
           do ispecies_num = 1, atoms_species_num(ispecies)
@@ -264,7 +264,7 @@ contains
     write (stdout, '(1x,a)') '|                    Partial Density of States -- Projectors                 |'
     write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
     do iproj = 1, num_proj
-      write (stdout, '(1x,a1,a12,i4,a10,50x,a1)') '|', ' Projector: ', iproj, ' contains:', '|'
+      write (stdout, '(1x,a1,a12,i4,a10,50x,a1)') '|', ' Column: ', iproj, ' contains:', '|'
       write (stdout, '(1x,a1,a16,10x,a14,36x,a1)') '|', ' Atom ', ' AngM Channel ', '|'
 
       do ispecies = 1, num_species
