@@ -219,8 +219,8 @@ contains
 
       dos_partial(:, 2, :) = -dos_partial(:, 2, :)
       do idos = 1, dos_nbins
-        write (pdos_file, '(es14.7,'//trim(string)//trim(string)//')') E(idos), (dos_partial(idos, 1, i), i=start_proj, stop_proj) &
-             & , (dos_partial(idos, 2, i), i=start_proj, stop_proj)
+        write (pdos_file, '(es14.7,'//trim(string)//trim(string)//')') E_shift(idos), (dos_partial(idos, 1, i), &
+             &i=start_proj, stop_proj), (dos_partial(idos, 2, i), i=start_proj, stop_proj)
       end do
     else
       do iproj = start_proj, stop_proj
