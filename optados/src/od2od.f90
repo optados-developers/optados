@@ -109,7 +109,7 @@ module  od_conv
 
     ! Total number of elements of ome
     write(string,'(I0,"(x,",a,")")') 3*nbands*nbands, trim(format_precision)
-    write(stdout,*) string
+   ! write(stdout,*) string
 
    ! write(string,'(a)') trim(format_precision)
     
@@ -155,7 +155,7 @@ module  od_conv
     open(unit=ome_unit, form='formatted', file=trim(outseedname)//".ome_fmt")
 
     write(string,'(I0,"(x,",a,")")') 3*nbands*nbands, trim(format_precision)
-    write(stdout,*) string
+ !   write(stdout,*) string
 
     write(stdout,'(a80)') omefile_header
     write(stdout,'(a80)') adjustl(omefile_header)
@@ -361,29 +361,31 @@ module  od_conv
 
     integer :: ik,is,ib
     integer :: pdos_in_unit
-    character(len=80) :: string
+    character(len=80) :: string, string2
     real(dp) :: file_version=1.0_dp
-    
+
+
+    write(stdout,*) " Write a formatted pdos file..."
     !-------------------------------------------------------------------------!
     ! W R I T E   T H E   D A T A   H E A D E R
 
    
     pdos_in_unit=io_file_unit()
 
-    open(unit=pdos_in_unit,file=trim(seedname)//".pdos_fmt",form='formatted')
+    open(unit=pdos_in_unit,file=trim(outseedname)//".pdos_fmt",form='formatted')
     write(pdos_in_unit,'('//trim(format_precision)//')') file_version
     write(pdos_in_unit,'(a80)') trim(pdosfile_header)
     
-    write(pdos_in_unit,'(i6)') pdos_mwab%nkpoints
-    write(pdos_in_unit,'(i6)') pdos_mwab%nspins
-    write(pdos_in_unit,'(i6)') pdos_mwab%norbitals
-    write(pdos_in_unit,'(i6)') pdos_mwab%nbands
+    write(pdos_in_unit,'(a10, i6)') "Kpoints", pdos_mwab%nkpoints
+    write(pdos_in_unit,'(a10, i6)') "Spins", pdos_mwab%nspins
+    write(pdos_in_unit,'(a10, i6)') "Orbials", pdos_mwab%norbitals
+    write(pdos_in_unit,'(a10, i6)') "Bands", pdos_mwab%nbands
    
  
-    write(stdout,'(i6)') "DEBUG: pdos_mwab%nkpoints= ",pdos_mwab%nkpoints
-    write(stdout,'(i6)') "DEBUG: pdos_mwab%nspins= ",pdos_mwab%nspins
-    write(stdout,'(i6)') "DEBUG: pdos_mwab%norbitals= ",pdos_mwab%norbitals
-    write(stdout,'(i6)') "DEBUG: pdos_mwab%nbands= ",pdos_mwab%nbands
+    !write(stdout,'(a30,i6)') "DEBUG: pdos_mwab%nkpoints= ",pdos_mwab%nkpoints
+    !write(stdout,'(a30,i6)') "DEBUG: pdos_mwab%nspins= ",pdos_mwab%nspins
+    !write(stdout,'(a30,i6)') "DEBUG: pdos_mwab%norbitals= ",pdos_mwab%norbitals
+    !write(stdout,'(a30,i6)') "DEBUG: pdos_mwab%nbands= ",pdos_mwab%nbands
 
 
     ! These should all be allocated!
@@ -394,12 +396,19 @@ module  od_conv
     !allocate(pdos_orbital%am_channel(pdos_mwab%norbitals),stat=ierr)
     !if(ierr/=0) call io_error(" Error : cannot allocate pdos_orbital")
 
-    write(string,'(i7,"(x,"a")")') pdos_mwab%norbitals, trim(format_precision)
+    write(string,'(i7,"(x,",a,")")') pdos_mwab%norbitals, "i5"
+
+    write(string2,'(i7,"(x,",a,")")') pdos_mwab%norbitals, trim(format_precision)
+
+    write(pdos_in_unit,'(a60)') " Species number for each orbital"
+    write(pdos_in_unit,'('//trim(string)//')') pdos_orbital%species_no(1:pdos_mwab%norbitals)
+    write(pdos_in_unit,'(a60)') " Species rank for each orbital"
+    write(pdos_in_unit,'('//trim(string)//')') pdos_orbital%rank_in_species(1:pdos_mwab%norbitals)
+    write(pdos_in_unit,'(a60)') " AM channel for each orbital"
+    write(pdos_in_unit,'('//trim(string)//')') pdos_orbital%am_channel(1:pdos_mwab%norbitals)
+
    
     
-    write(pdos_in_unit,'('//trim(string)//')') pdos_orbital%species_no(1:pdos_mwab%norbitals)
-    write(pdos_in_unit,'('//trim(string)//')') pdos_orbital%rank_in_species(1:pdos_mwab%norbitals)
-    write(pdos_in_unit,'('//trim(string)//')') pdos_orbital%am_channel(1:pdos_mwab%norbitals)
     !-------------------------------------------------------------------------!
 
     !-------------------------------------------------------------------------!
@@ -424,7 +433,7 @@ module  od_conv
        !      write(stdout,*) " DEBUG:", ib, ik, is
        !      write(stdout,*) "   **** ***** *****  ***** ***** *****  ***** ***** *****  "
              
-             write(pdos_in_unit,'('//trim(string)//')') pdos_weights(1:pdos_mwab%norbitals,ib,ik,is)
+             write(pdos_in_unit,'('//trim(string2)//')') pdos_weights(1:pdos_mwab%norbitals,ib,ik,is)
           enddo
        enddo
     enddo
@@ -436,16 +445,19 @@ module  od_conv
   !=========================================================================
   subroutine  read_pdos_fmt()
     !=========================================================================
-    use od_electronic, only : pdos_mwab, nbands_occ, pdos_orbital, nspins, pdos_weights 
-    use od_cell, only : nkpoints, kpoint_r
+    use od_electronic, only : pdos_mwab, nbands_occ, pdos_orbital, nspins, pdos_weights
+    use od_cell, only : nkpoints, kpoint_r,   num_kpoints_on_node
     use od_io,only : stdout, seedname, io_file_unit
+    use od_comms,only : my_node_id
     implicit none
 
-    integer :: ik,is,ib, idummy, ierr
+    integer :: ik,is,ib, idummy, ierr,io
     integer :: pdos_in_unit
-    character(len=80) :: string
+    character(len=80) :: string, dummy, string2
     real(dp) :: file_version
-    
+
+
+     write(stdout,*) " Read a formatted pdos file..."
     !-------------------------------------------------------------------------!
     ! R E A D   T H E   D A T A   H E A D E R
 
@@ -457,19 +469,21 @@ module  od_conv
     read(pdos_in_unit,'('//trim(format_precision)//')') file_version
     read(pdos_in_unit,'(a80)') pdosfile_header
     
-    read(pdos_in_unit,'(i6)') pdos_mwab%nkpoints
-    read(pdos_in_unit,'(i6)') pdos_mwab%nspins
-    read(pdos_in_unit,'(i6)') pdos_mwab%norbitals
-    read(pdos_in_unit,'(i6)') pdos_mwab%nbands
+    read(pdos_in_unit,'(a10, i6)') dummy, pdos_mwab%nkpoints
+    read(pdos_in_unit,'(a10, i6)') dummy, pdos_mwab%nspins
+    read(pdos_in_unit,'(a10, i6)') dummy, pdos_mwab%norbitals
+    read(pdos_in_unit,'(a10, i6)') dummy, pdos_mwab%nbands
    
  
-    write(stdout,'(i6)') "DEBUG: pdos_mwab%nkpoints= ",pdos_mwab%nkpoints
-    write(stdout,'(i6)') "DEBUG: pdos_mwab%nspins= ",pdos_mwab%nspins
-    write(stdout,'(i6)') "DEBUG: pdos_mwab%norbitals= ",pdos_mwab%norbitals
-    write(stdout,'(i6)') "DEBUG: pdos_mwab%nbands= ",pdos_mwab%nbands
+    !write(stdout,'(a, i6)') "DEBUG: pdos_mwab%nkpoints= ",pdos_mwab%nkpoints
+    !write(stdout,'(a, i6)') "DEBUG: pdos_mwab%nspins= ",pdos_mwab%nspins
+    !write(stdout,'(a, i6)') "DEBUG: pdos_mwab%norbitals= ",pdos_mwab%norbitals
+    !write(stdout,'(a, i6)') "DEBUG: pdos_mwab%nbands= ",pdos_mwab%nbands
 
 
-    write(string,'(i7,"(x,",a,")")') pdos_mwab%norbitals, trim(format_precision)
+    write(string,'(i7,"(x,",a,")")') pdos_mwab%norbitals,"i5"
+
+    write(string2,'(i7,"(x,",a,")")') pdos_mwab%norbitals, trim(format_precision)
     
     ! These should all be allocated!
     allocate(pdos_orbital%species_no(pdos_mwab%norbitals),stat=ierr)
@@ -478,12 +492,20 @@ module  od_conv
     if(ierr/=0) call io_error(" Error : cannot allocate pdos_orbital")
     allocate(pdos_orbital%am_channel(pdos_mwab%norbitals),stat=ierr)
     if(ierr/=0) call io_error(" Error : cannot allocate pdos_orbital")
-
-
-   
     
+    allocate (nbands_occ(1:num_kpoints_on_node(my_node_id), 1:pdos_mwab%nspins), stat=ierr)
+    if (ierr /= 0) stop " Error : cannot allocate nbands_occ"
+
+    allocate (pdos_weights(1:pdos_mwab%norbitals, 1:pdos_mwab%nbands, &
+         1:num_kpoints_on_node(my_node_id), 1:pdos_mwab%nspins), stat=ierr)
+    if (ierr /= 0) stop " Error : cannot allocate pdos_weights"
+    
+   
+    read(pdos_in_unit,'(a60)') dummy
     read(pdos_in_unit,'('//trim(string)//')') pdos_orbital%species_no(1:pdos_mwab%norbitals)
-    read(pdos_in_unit,'('//trim(string)//')') pdos_orbital%rank_in_species(1:pdos_mwab%norbitals)
+     read(pdos_in_unit,'(a60)') dummy
+     read(pdos_in_unit,'('//trim(string)//')') pdos_orbital%rank_in_species(1:pdos_mwab%norbitals)
+      read(pdos_in_unit,'(a60)') dummy
     read(pdos_in_unit,'('//trim(string)//')') pdos_orbital%am_channel(1:pdos_mwab%norbitals)
     !-------------------------------------------------------------------------!
 
@@ -509,7 +531,7 @@ module  od_conv
        !      write(stdout,*) " DEBUG:", ib, ik, is
        !      write(stdout,*) "   **** ***** *****  ***** ***** *****  ***** ***** *****  "
              
-             read(pdos_in_unit,'('//trim(string)//')') pdos_weights(1:pdos_mwab%norbitals,ib,ik,is)
+             read(pdos_in_unit,'('//trim(string2)//')') (pdos_weights(io,ib,ik,is), io=1,pdos_mwab%norbitals)
           enddo
        enddo
     enddo
@@ -522,7 +544,7 @@ module  od_conv
   subroutine  read_pdos_bin()
     !=========================================================================
     implicit none
-    write(stdout,*) "Read a binary pdos file"
+    write(stdout,*) " Read a binary pdos file..."
     call elec_pdos_read()
   end subroutine read_pdos_bin
   
@@ -532,7 +554,7 @@ module  od_conv
     use od_constants, only : dp
     use od_electronic, only : pdos_mwab, nbands_occ, pdos_orbital, nspins, pdos_weights 
     use od_cell, only : nkpoints, kpoint_r
-    use od_io, only : seedname
+    use od_io, only : io_file_unit
     
     implicit none
     
@@ -547,11 +569,13 @@ module  od_conv
    ! real(dp):: pdos_weights(1:num_popn_orb,max_eigenv,num_kpoints,num_spins)!Matrix elements
     !character(len=80):: file_header ! File header comment
     
-    integer :: ik,is,ib, pdos_file=6
+    integer :: ik,is,ib, pdos_file,io
     
-    open(unit=pdos_file, form='unformatted', file="pdos.out")
+    pdos_file=io_file_unit()
+
+    open(unit=pdos_file,file=trim(outseedname)//".pdos_bin",form='unformatted')
     
-    write(stdout,*) " Write a binary pdos file"
+    write(stdout,*) " Write a binary pdos file..."
     
     write(pdos_file) file_version
     write(pdos_file) trim(pdosfile_header)
@@ -562,14 +586,25 @@ module  od_conv
     write(pdos_file) pdos_orbital%species_no(1:pdos_mwab%norbitals)
     write(pdos_file) pdos_orbital%rank_in_species(1:pdos_mwab%norbitals)
     write(pdos_file) pdos_orbital%am_channel(1:pdos_mwab%norbitals)
+
+   ! write(stdout,*) pdos_mwab%nkpoints
+   ! write(stdout,*) pdos_mwab%nspins
+   ! write(stdout,*) pdos_mwab%norbitals
+   ! write(stdout,*) pdos_mwab%nbands
+   ! write(stdout,*) pdos_orbital%species_no(1:pdos_mwab%norbitals)
+   ! write(stdout,*) pdos_orbital%rank_in_species(1:pdos_mwab%norbitals)
+   ! ,*) pdos_orbital%am_channel(1:pdos_mwab%norbitals)
+
+    
     
     do ik=1,pdos_mwab%nkpoints
+        ! write(stdout, *) "loop", ik
        write(pdos_file) ik, kpoint_r(ik,:)
        do is = 1,pdos_mwab%nspins
           write(pdos_file) is
           write(pdos_file) nbands_occ(ik,is)
           do ib = 1,nbands_occ(ik,is)
-             write(pdos_file) real(pdos_weights(pdos_mwab%norbitals,ib,ik,is))
+             write(pdos_file) (pdos_weights(io,ib,ik,is), io=1,pdos_mwab%norbitals)
           end do
        end do
     end do
@@ -822,16 +857,18 @@ program od2od
      call report_arraysize()
      call read_pdos_fmt()
   case("pdos_bin")
-      pdos_conv=.true.
+     pdos_conv=.true.
       call elec_read_band_energy()
       call report_arraysize()
      call read_pdos_bin()
   case ("elnes_fmt")
+     stop "Not implemented yet"
       elnes_conv=.true.
       call elec_read_band_energy()
       call report_arraysize()
      call read_elnes_fmt()
   case("elnes_bin")
+     stop "Not implemented yet"
       elnes_conv=.true.
       call elec_read_band_energy()
       call report_arraysize()
@@ -869,9 +906,11 @@ program od2od
      if(.not. pdos_conv) call io_error(' Input format '//trim(infile)//'not compatible with output format '//trim(outfile))
      call write_pdos_bin()  
   case ("elnes_fmt")
+     stop "Not implemented yet"
      if(.not. elnes_conv) call io_error(' Input format '//trim(infile)//'not compatible with output format '//trim(outfile))
      call write_elnes_fmt()  
   case("elnes_bin")
+     stop "Not implemented yet"
      if(.not. elnes_conv) call io_error(' Input format '//trim(infile)//'not compatible with output format '//trim(outfile))
      call write_elnes_bin()  
   case default
