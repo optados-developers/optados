@@ -374,7 +374,7 @@ module  od_conv
 
     open(unit=pdos_in_unit,file=trim(outseedname)//".pdos_fmt",form='formatted')
     write(pdos_in_unit,'('//trim(format_precision)//')') file_version
-    write(pdos_in_unit,'(a80)') trim(pdosfile_header)
+    write(pdos_in_unit,'(a80)') adjustl(pdosfile_header)
     
     write(pdos_in_unit,'(a10, i6)') "Kpoints", pdos_mwab%nkpoints
     write(pdos_in_unit,'(a10, i6)') "Spins", pdos_mwab%nspins
@@ -570,6 +570,7 @@ module  od_conv
     !character(len=80):: file_header ! File header comment
     
     integer :: ik,is,ib, pdos_file,io
+
     
     pdos_file=io_file_unit()
 
@@ -578,7 +579,7 @@ module  od_conv
     write(stdout,*) " Write a binary pdos file..."
     
     write(pdos_file) file_version
-    write(pdos_file) trim(pdosfile_header)
+    write(pdos_file) adjustl(pdosfile_header)
     write(pdos_file) pdos_mwab%nkpoints
     write(pdos_file) pdos_mwab%nspins
     write(pdos_file) pdos_mwab%norbitals
@@ -619,17 +620,117 @@ module  od_conv
   !=========================================================================
   subroutine  read_elnes_fmt()
     !=========================================================================
+    use od_electronic, only : elec_elnes_find_channel_names,elnes_orbital, &
+         & elnes_mwab, elnes_mat
+    use od_io, only : io_file_unit, seedname
+    use od_cell, only : num_kpoints_on_node
     implicit none
+
+    character(len=20) :: dummy20, dummy10
+
+    real(dp) :: file_version
+    integer :: elnes_unit, ik, is, iorb, ib, indx, ierr
+    character(len=80) :: string, string2
+     
     write(stdout,*) "Read a formatted elnes file"
-    write(stdout,*) "Not implemented"
+
+    elnes_unit=io_file_unit()
+    
+    open(unit=elnes_unit,file=trim(seedname)//".elnes_fmt",form='formatted')
+
+    read(elnes_unit,'('//trim(format_precision)//')') file_version
+    read(elnes_unit,'(a80)') elnesfile_header
+
+    read(elnes_unit,'(a20,x,i5)') dummy20, elnes_mwab%norbitals
+    read(elnes_unit,'(a20,x,i5)') dummy20, elnes_mwab%nbands
+    read(elnes_unit,'(a20,x,i5)') dummy20, elnes_mwab%nkpoints
+    read(elnes_unit,'(a20,x,i5)') dummy20, elnes_mwab%nspins
+
+    write(string,'(i7,"(x,",a,")")') elnes_mwab%norbitals,"i5"
+    write(string2,'(i7,"(x,",a,")")') elnes_mwab%norbitals*elnes_mwab%nbands*3, trim(format_precision)
+
+    allocate (elnes_orbital%ion_no(elnes_mwab%norbitals), stat=ierr)
+    if (ierr /= 0) call io_error(' Error : read_elnes_fmt cannot allocate elnes_orbital%ion_no')
+    allocate (elnes_orbital%species_no(elnes_mwab%norbitals), stat=ierr)
+    if (ierr /= 0) call io_error(' Error : read_elnes_fmt cannot allocate elnes_orbital%species_no')
+    allocate (elnes_orbital%rank_in_species(elnes_mwab%norbitals), stat=ierr)
+    if (ierr /= 0) call io_error(' Error : read_elnes_fmt cannot allocate elnes_orbitall%rank_in_species')
+    allocate (elnes_orbital%shell(elnes_mwab%norbitals), stat=ierr)
+    if (ierr /= 0) call io_error(' Error : read_elnes_fmt cannot allocate elnes_orbitall%shell')
+    allocate (elnes_orbital%am_channel(elnes_mwab%norbitals), stat=ierr)
+    if (ierr /= 0) call io_error(' Error : read_elnes_fmt cannot allocate elnes_orbital%am_channel')
+    allocate (elnes_orbital%am_channel_name(elnes_mwab%norbitals), stat=ierr)
+    if (ierr /= 0) call io_error(' Error : read_elnes_fmt cannot allocate elnes_orbital%am_channel_name')
+
+    read (elnes_unit,'(a10,'//trim(string)//')') dummy10, elnes_orbital%species_no(1:elnes_mwab%norbitals)
+    read (elnes_unit,'(a10,'//trim(string)//')') dummy10, elnes_orbital%rank_in_species(1:elnes_mwab%norbitals)
+    read (elnes_unit,'(a10,'//trim(string)//')') dummy10, elnes_orbital%shell(1:elnes_mwab%norbitals)
+    read (elnes_unit,'(a10,'//trim(string)//')') dummy10, elnes_orbital%am_channel(1:elnes_mwab%norbitals)
+
+    allocate (elnes_mat(1:elnes_mwab%norbitals, 1:elnes_mwab%nbands, 1:3, &
+         1:num_kpoints_on_node(0), 1:elnes_mwab%nspins), stat=ierr)
+     if (ierr /= 0) call io_error('Error: Problem allocating elnes_mat in read_elnes_fmt')
+        
+    do ik = 1, num_kpoints_on_node(0)
+       do is = 1, elnes_mwab%nspins
+          read(elnes_unit,'('//trim(string2)//')') (((elnes_mat(iorb, ib, indx, ik, is), iorb=1, elnes_mwab%norbitals), &
+               ib=1, elnes_mwab%nbands), indx=1, 3)
+       end do
+    end do
+    
+    call  elec_elnes_find_channel_names()
+    
   end subroutine read_elnes_fmt
   
   !=========================================================================
   subroutine  write_elnes_fmt()
     !=========================================================================
+    use od_electronic, only : elnes_mwab, elnes_orbital, elnes_mat, &
+         & elec_elnes_find_channel_numbers
+    use od_cell, only : num_kpoints_on_node
+    use od_io, only : io_file_unit
     implicit none
+
+    real(dp) :: file_version=1.0_dp
+    integer :: elnes_unit, ik, is, iorb, ib, indx
+    character(len=80) :: string, string2
+    
     write(stdout,*) "Write a formatted elnes file"
-    write(stdout,*) "Not implemented"
+
+    ! CASTEP (hence the bin file) and OptaDOS think about am_channel numbers
+    ! differently. To keep consistent we convert to CASTEP's numbering scheme
+    ! before we write out.
+    call elec_elnes_find_channel_numbers()
+    
+    elnes_unit=io_file_unit()
+
+    open(unit=elnes_unit,file=trim(outseedname)//".elnes_fmt",form='formatted')
+
+    write(elnes_unit,'('//trim(format_precision)//')') file_version
+    write(elnes_unit,'(a80)') adjustl(elnesfile_header)
+
+    write (elnes_unit,'(a20,x,i5)') "Norbitals", elnes_mwab%norbitals
+    write (elnes_unit,'(a20,x,i5)') "Nbands", elnes_mwab%nbands
+    write (elnes_unit,'(a20,x,i5)') "Nkpoints", elnes_mwab%nkpoints
+    write (elnes_unit,'(a20,x,i5)') "Nspins", elnes_mwab%nspins
+
+    write(string,'(i7,"(x,",a,")")') elnes_mwab%norbitals,"i5"
+    write(string2,'(i7,"(x,",a,")")') elnes_mwab%norbitals*elnes_mwab%nbands*3, trim(format_precision)
+
+    write (elnes_unit,'(a10,'//trim(string)//')') "Species_no", elnes_orbital%species_no(1:elnes_mwab%norbitals)
+    write (elnes_unit,'(a10,'//trim(string)//')') "Rank", elnes_orbital%rank_in_species(1:elnes_mwab%norbitals)
+    write (elnes_unit,'(a10,'//trim(string)//')') "Shell", elnes_orbital%shell(1:elnes_mwab%norbitals)
+    write (elnes_unit,'(a10,'//trim(string)//')') "Am_channel", elnes_orbital%am_channel(1:elnes_mwab%norbitals)
+
+    do ik = 1, num_kpoints_on_node(0)
+       do is = 1, elnes_mwab%nspins
+          write (elnes_unit,'('//trim(string2)//')') (((elnes_mat(iorb, ib, indx, ik, is), iorb=1, elnes_mwab%norbitals), &
+               ib=1, elnes_mwab%nbands), indx=1, 3)
+       end do
+    end do
+
+    close(elnes_unit)
+    
   end subroutine write_elnes_fmt
 
     !=========================================================================
@@ -643,44 +744,57 @@ module  od_conv
   !=========================================================================
   subroutine  write_elnes_bin()
     !=========================================================================
+    use od_electronic, only : elec_elnes_find_channel_numbers, elnes_orbital,&
+         & elnes_mat, elnes_mwab
+    use od_cell, only : num_kpoints_on_node
+    use od_io, only : io_file_unit
     implicit none
-    
-    integer,parameter:: dp=selected_real_kind(15,300)
-    integer,parameter:: tot_core_projectors=1  ! Total number of core states included in matrix elements
-    integer,parameter:: max_eigenvalues=1      ! Number of bands included in matrix elements
-    integer,parameter:: num_kpoints=1          ! Number of k-points
-    integer,parameter:: num_spins=1            ! Number of spins
-    integer,parameter:: num_eigenvalues(1:num_spins)=1    ! Number of eigenvalues
-    integer:: species(1:tot_core_projectors) ! Atomic species associated with each projector
-    integer:: ion(1:tot_core_projectors)     ! Ion associated with each projector
-    integer:: n(1:tot_core_projectors)       ! Principal quantum number associated with each projector
-    integer:: lm(1:tot_core_projectors)      ! Angular momentum quantum number associated with each projector
-    real(dp):: elnes_mat(tot_core_projectors,max_eigenvalues,3,num_kpoints,num_spins) ! matrix elements
-    
-    
-    integer :: nk,ns,nb,i,jb, elnes_file=6, orb,indx
-    open(unit=elnes_file, form='unformatted', file="elnes.out")
+
+    real(dp) :: file_version=1.0_dp
+    integer :: ik,is,ib, iorb,indx, elnes_unit
+
     
     write(stdout,*) " Write a binary elnes file"
 
     !!write !! Some headers here?
+
+    ! CASTEP (hence the bin file) and OptaDOS think about am_channel numbers
+    ! differently. To keep consistent we convert to CASTEP's numbering scheme
+    ! before we write out.
+    call elec_elnes_find_channel_numbers()
     
-    write(elnes_file) tot_core_projectors
-    write(elnes_file) max_eigenvalues
-    write(elnes_file) num_kpoints
-    write(elnes_file) num_spins
-    write(elnes_file) species(1:tot_core_projectors)
-    write(elnes_file) ion(1:tot_core_projectors)
-    write(elnes_file) n(1:tot_core_projectors)
-    write(elnes_file) lm(1:tot_core_projectors)
-    
-    do nk = 1,num_kpoints
-       do ns = 1, num_spins
-          write(elnes_file) (((elnes_mat(orb,nb,indx,nk,ns),orb=1,&
-               &tot_core_projectors),nb=1,num_eigenvalues(ns)),indx=1,3)
+   elnes_unit=io_file_unit()
+
+    open(unit=elnes_unit,file=trim(outseedname)//".elnes_bin",form='unformatted')
+
+    write(elnes_unit) file_version
+    write(elnes_unit) adjustl(elnesfile_header)
+
+    write (elnes_unit) elnes_mwab%norbitals
+    write (elnes_unit) elnes_mwab%nbands
+    write (elnes_unit) elnes_mwab%nkpoints
+    write (elnes_unit) elnes_mwab%nspins
+
+   ! write(string,'(i7,"(x,",a,")")') elnes_mwab%norbitals,"i5"
+   ! write(string2,'(i7,"(x,",a,")")') elnes_mwab%norbitals*elnes_mwab%nbands*3, trim(format_precision)
+
+    write (elnes_unit) elnes_orbital%species_no(1:elnes_mwab%norbitals)
+    write (elnes_unit) elnes_orbital%rank_in_species(1:elnes_mwab%norbitals)
+    write (elnes_unit) elnes_orbital%shell(1:elnes_mwab%norbitals)
+    write (elnes_unit) elnes_orbital%am_channel(1:elnes_mwab%norbitals)
+
+    do ik = 1, num_kpoints_on_node(0)
+       do is = 1, elnes_mwab%nspins
+          write (elnes_unit) (((elnes_mat(iorb, ib, indx, ik, is), iorb=1, elnes_mwab%norbitals), &
+               ib=1, elnes_mwab%nbands), indx=1, 3)
        end do
     end do
+
+
+
     
+    
+    close(elnes_unit)
     
   end subroutine write_elnes_bin
   
@@ -850,7 +964,7 @@ program od2od
      call elec_read_band_energy()
      call report_arraysize()
      call read_dome_bin()
-     write(stdout,*) domefile_header
+  !   write(stdout,*) domefile_header
   case ("pdos_fmt")
      pdos_conv=.true.
      call elec_read_band_energy()
@@ -862,13 +976,11 @@ program od2od
       call report_arraysize()
      call read_pdos_bin()
   case ("elnes_fmt")
-     stop "Not implemented yet"
       elnes_conv=.true.
       call elec_read_band_energy()
       call report_arraysize()
      call read_elnes_fmt()
   case("elnes_bin")
-     stop "Not implemented yet"
       elnes_conv=.true.
       call elec_read_band_energy()
       call report_arraysize()
@@ -906,11 +1018,9 @@ program od2od
      if(.not. pdos_conv) call io_error(' Input format '//trim(infile)//'not compatible with output format '//trim(outfile))
      call write_pdos_bin()  
   case ("elnes_fmt")
-     stop "Not implemented yet"
      if(.not. elnes_conv) call io_error(' Input format '//trim(infile)//'not compatible with output format '//trim(outfile))
      call write_elnes_fmt()  
   case("elnes_bin")
-     stop "Not implemented yet"
      if(.not. elnes_conv) call io_error(' Input format '//trim(infile)//'not compatible with output format '//trim(outfile))
      call write_elnes_bin()  
   case default
