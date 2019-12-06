@@ -2,9 +2,12 @@ VER := 1.2.380
 
 default : optados
 
-all : optados docs
+all : optados docs tools
 
-optados : 
+tools: 
+	cd ./src && $(MAKE) tools
+
+optados: 
 	cd ./src && $(MAKE) optados
 
 # Utility targets
