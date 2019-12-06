@@ -34,17 +34,17 @@ module  od_conv
      write (stdout, '(A)') "      pdos_fmt : a formatted projected density of states file"
      write (stdout, '(A)') "      pdos_bin : an unformatted projected density of states file"
      write (stdout, '(A)') "     elnes_fmt : an formatted ELNES file"
-     write (stdout, '(A)') "     elnse_bin : an unformatted ELNES file"
+     write (stdout, '(A)') "     elnes_bin : an unformatted ELNES file"
+     write (stdout, '(A)') "         dummy : no input or output file (for testing)"
      write (stdout, '(A)')
      write (stdout, '(A)') " Known issues: (1) a seedname.bands file also needs to be present until"
      write (stdout, '(A)') "    I've thought of a better way to do it."
-     write (stdout, '(A)') "               (3) It only works in serial."
-     write (stdout, '(A)') "               (4) It only decides if the output format is sane"
-     write (stdout, '(A)') "    after it's read the input."
-     write (stdout, '(A)') "               (5) I need to think more about the amount of precision in"
-     write (stdout, '(A)') "    in a formatted out file."
-     write (stdout, '(A)') "               (6) File versions and headers could be better stored and"
-     write (stdout, '(A)') "    reproduced."
+     write (stdout, '(A)') "      (3) It only works in serial."
+     write (stdout, '(A)') "      (4) It only decides if the output format is sane after it's"
+     write (stdout, '(A)') "     read the input."
+     write (stdout, '(A)') "      (5) I need to think more about the amount of precision in in a formatted"
+     write (stdout, '(A)') "     out file."
+     write (stdout, '(A)') "      (6) File versions and headers could be better stored and reproduced."
      write (stdout, '(A)')
      write (stdout, '(A)') " Features: (1) Ability to convert a ome into a dome."
      write (stdout, '(A)') 
@@ -98,10 +98,10 @@ module  od_conv
     character(len=100):: string, string2
     integer :: ik,is,ib,i,jb, ome_unit=6
 
-    write(stdout,*) " Read a formatted ome file: "
+    write(stdout,*) " Read a formatted ome file. "
 
     if(.not.allocated(optical_mat)) then
-       write(stdout,*) "Allocating optical_mat"
+       write(stdout,*) " Allocating optical_mat."
        allocate(optical_mat(nbands,nbands,3,nkpoints,nspins))
     endif
     
@@ -149,7 +149,8 @@ module  od_conv
     character(len=100):: string
     integer :: ik,is,ib,i,jb, ome_unit=6
 
-
+    write(stdout,*) " Write a formatted ome file. "
+    
     optical_mat=optical_mat/(bohr2ang*H2eV)
     
     open(unit=ome_unit, form='formatted', file=trim(outseedname)//".ome_fmt")
@@ -179,6 +180,8 @@ module  od_conv
   subroutine read_ome_bin()
     !=========================================================================
     implicit none
+     write(stdout,*) " Read a formatted ome file. "
+  
     call elec_read_optical_mat()
     write(stdout,*) " "//trim(seedname)//".ome_bin"//"--> Unformatted ome sucessfully read. "
   end subroutine read_ome_bin
@@ -199,7 +202,7 @@ module  od_conv
     integer :: ik,is,ib,i,jb, ome_unit=6
 
     
-    write(stdout,*) " Write a binary ome file"
+    write(stdout,*) " Write a binary ome file."
 
     optical_mat=optical_mat/(bohr2ang*H2eV)
     
@@ -241,7 +244,7 @@ module  od_conv
     integer :: ik,is,ib,i,jb, dome_unit=6
 
 
-    write(stdout,*) " Read a formatted dome file: "
+    write(stdout,*) " Read a formatted dome file. "
 
     if(.not.allocated(band_gradient)) then
        write(0,*) " Allocating band_gradient"
@@ -263,9 +266,10 @@ module  od_conv
        end do
     end do
 
-    close(unit=dome_unit)
-
+    band_gradient = band_gradient*(bohr2ang*H2eV)
     
+    close(unit=dome_unit)
+  
      write(stdout,*) " "//trim(seedname)//".dome_fmt"//"--> Formatted ome sucessfully read. "
   end subroutine read_dome_fmt
   
@@ -285,7 +289,7 @@ module  od_conv
     integer :: ik,is,ib,i,jb, dome_unit=6
     
 
-    write(stdout,*) " Write a formatted ome file..."
+    write(stdout,*) " Write a formatted ome file."
     
     open(unit=dome_unit, form='formatted', file=trim(outseedname)//".dome_fmt")
     
@@ -293,6 +297,8 @@ module  od_conv
     
     write(dome_unit,'('//trim(format_precision)//')') file_version
     write(dome_unit,'(a80)') adjustl(domefile_header)
+
+    band_gradient = band_gradient/(bohr2ang*H2eV)
     
     do ik=1,nkpoints
        do is=1,nspins
@@ -310,7 +316,7 @@ module  od_conv
   subroutine read_dome_bin()
     !=========================================================================
     implicit none
-    write(stdout,*) "Read a binary dome file"
+    write(stdout,*) " Read a binary dome file."
     call elec_read_band_gradient()
   end subroutine read_dome_bin
   
@@ -323,6 +329,7 @@ module  od_conv
          & io_error  
     use od_cell,  only : num_kpoints_on_node,nkpoints
     use od_electronic, only : nspins, nbands,  band_gradient
+    use od_constants,only : bohr2ang, H2eV
     implicit none
     
     real(dp):: file_version=1.0_dp          ! File version
@@ -332,9 +339,11 @@ module  od_conv
     integer :: ik,is,ib,i,jb, dome_unit=6
     
     
-    !  write(stdout,*) " Write a binary dome file"
+    write(stdout,*) " Write a binary dome file."
     
     open(unit=dome_unit, form='unformatted', file=trim(outseedname)//".dome_bin")
+
+    band_gradient = band_gradient/(bohr2ang*H2eV)
     
     write(dome_unit) file_version
     write(dome_unit) adjustl(domefile_header)
@@ -345,6 +354,7 @@ module  od_conv
                &i=1,3)
        end do
     end do
+    write(stdout,*) " Sucesfully written a binary dome file --> "//trim(outseedname)//".dome_bin"
   end subroutine write_dome_bin
   
   !=========================================================================
@@ -364,8 +374,7 @@ module  od_conv
     character(len=80) :: string, string2
     real(dp) :: file_version=1.0_dp
 
-
-    write(stdout,*) " Write a formatted pdos file..."
+    write(stdout,*) " Write a formatted pdos file."
     !-------------------------------------------------------------------------!
     ! W R I T E   T H E   D A T A   H E A D E R
 
@@ -439,7 +448,9 @@ module  od_conv
     enddo
            
     close(pdos_in_unit)
-   
+
+    write(stdout,*) " Sucesfully written a formtted pdos file --> "//trim(outseedname)//".dome_bin"
+    
   end subroutine write_pdos_fmt
   
   !=========================================================================
@@ -457,7 +468,7 @@ module  od_conv
     real(dp) :: file_version
 
 
-     write(stdout,*) " Read a formatted pdos file..."
+     write(stdout,*) " Read a formatted pdos file."
     !-------------------------------------------------------------------------!
     ! R E A D   T H E   D A T A   H E A D E R
 
@@ -538,13 +549,15 @@ module  od_conv
            
     close(pdos_in_unit)
 
+    write(stdout,*) " "//trim(seedname)//".pdos_fmt"//"--> Formatted pdos sucessfully read. "
+
   end subroutine read_pdos_fmt
   
   !=========================================================================
   subroutine  read_pdos_bin()
     !=========================================================================
     implicit none
-    write(stdout,*) " Read a binary pdos file..."
+    write(stdout,*) " Read a binary pdos file."
     call elec_pdos_read()
   end subroutine read_pdos_bin
   
@@ -569,14 +582,14 @@ module  od_conv
    ! real(dp):: pdos_weights(1:num_popn_orb,max_eigenv,num_kpoints,num_spins)!Matrix elements
     !character(len=80):: file_header ! File header comment
     
-    integer :: ik,is,ib, pdos_file,io
+    integer :: ik,is,ib, pdos_file,io, idex
 
     
     pdos_file=io_file_unit()
 
     open(unit=pdos_file,file=trim(outseedname)//".pdos_bin",form='unformatted')
     
-    write(stdout,*) " Write a binary pdos file..."
+    write(stdout,*) " Write a binary pdos file."
     
     write(pdos_file) file_version
     write(pdos_file) adjustl(pdosfile_header)
@@ -588,28 +601,28 @@ module  od_conv
     write(pdos_file) pdos_orbital%rank_in_species(1:pdos_mwab%norbitals)
     write(pdos_file) pdos_orbital%am_channel(1:pdos_mwab%norbitals)
 
-   ! write(stdout,*) pdos_mwab%nkpoints
-   ! write(stdout,*) pdos_mwab%nspins
-   ! write(stdout,*) pdos_mwab%norbitals
-   ! write(stdout,*) pdos_mwab%nbands
-   ! write(stdout,*) pdos_orbital%species_no(1:pdos_mwab%norbitals)
-   ! write(stdout,*) pdos_orbital%rank_in_species(1:pdos_mwab%norbitals)
-   ! ,*) pdos_orbital%am_channel(1:pdos_mwab%norbitals)
+    write(stdout,*) pdos_mwab%nkpoints
+    write(stdout,*) pdos_mwab%nspins
+    write(stdout,*) pdos_mwab%norbitals
+    write(stdout,*) pdos_mwab%nbands
+    write(stdout,*) pdos_orbital%species_no(1:pdos_mwab%norbitals)
+   write(stdout,*) pdos_orbital%rank_in_species(1:pdos_mwab%norbitals)
+   write(stdout,*) pdos_orbital%am_channel(1:pdos_mwab%norbitals)
 
-    
-    
     do ik=1,pdos_mwab%nkpoints
-        ! write(stdout, *) "loop", ik
-       write(pdos_file) ik, kpoint_r(ik,:)
+       write(stdout, *) "loop", ik
+       write(pdos_file) ik, (kpoint_r(idex,ik), idex=1,3)
        do is = 1,pdos_mwab%nspins
           write(pdos_file) is
           write(pdos_file) nbands_occ(ik,is)
+          write(stdout,*) is, nbands_occ(ik,is)
           do ib = 1,nbands_occ(ik,is)
              write(pdos_file) (pdos_weights(io,ib,ik,is), io=1,pdos_mwab%norbitals)
           end do
        end do
     end do
-    
+
+    write(stdout,*) " Sucesfully written a binary pdos file --> "//trim(outseedname)//".pdos_bin"
     
   end subroutine write_pdos_bin
   
@@ -632,7 +645,7 @@ module  od_conv
     integer :: elnes_unit, ik, is, iorb, ib, indx, ierr
     character(len=80) :: string, string2
      
-    write(stdout,*) "Read a formatted elnes file"
+    write(stdout,*) " Read a formatted elnes file."
 
     elnes_unit=io_file_unit()
     
@@ -679,6 +692,8 @@ module  od_conv
     end do
     
     call  elec_elnes_find_channel_names()
+
+     write(stdout,*) " "//trim(seedname)//".elnes_fmt"//"--> Formatted elnes sucessfully read. "
     
   end subroutine read_elnes_fmt
   
@@ -695,7 +710,7 @@ module  od_conv
     integer :: elnes_unit, ik, is, iorb, ib, indx
     character(len=80) :: string, string2
     
-    write(stdout,*) "Write a formatted elnes file"
+    write(stdout,*) " Write a formatted elnes file."
 
     ! CASTEP (hence the bin file) and OptaDOS think about am_channel numbers
     ! differently. To keep consistent we convert to CASTEP's numbering scheme
@@ -730,6 +745,8 @@ module  od_conv
     end do
 
     close(elnes_unit)
+
+    write(stdout,*) " Sucesfully written a formatted elnes file --> "//trim(outseedname)//".elnes_fmt"
     
   end subroutine write_elnes_fmt
 
@@ -737,7 +754,7 @@ module  od_conv
   subroutine  read_elnes_bin()
     !=========================================================================
     implicit none
-    write(stdout,*) "Read a binary elnes file"
+    write(stdout,*) " Read a binary elnes file."
     call  elec_read_elnes_mat()
   end subroutine read_elnes_bin
   
@@ -754,7 +771,7 @@ module  od_conv
     integer :: ik,is,ib, iorb,indx, elnes_unit
 
     
-    write(stdout,*) " Write a binary elnes file"
+    write(stdout,*) " Write a binary elnes file."
 
     !!write !! Some headers here?
 
@@ -790,9 +807,7 @@ module  od_conv
        end do
     end do
 
-
-
-    
+    write(stdout,*) " Sucesfully written a binary elnes file --> "//trim(outseedname)//".elnes_bin"
     
     close(elnes_unit)
     
@@ -860,16 +875,40 @@ module  od_conv
     use od_io, only: stdout
     implicit none
 
-    write(stdout,*)
     write(stdout,'(a40,i5)') " Number of kpoints : ", nkpoints
     write(stdout,'(a40,i5)') " Number of bands : ", nbands
     write(stdout,'(a40,i5)') " Number of spins : ", nspins
-    write(stdout,*)
+
     
   end subroutine report_arraysize
+
+  !=========================================================================
+  subroutine get_band_energy()
+    !=========================================================================
+    implicit none
+
+    write(stdout,*)
+    write(stdout,*) "+----------------------------- K-point information --------------------------+"
+  
+    call elec_read_band_energy()
+    call report_arraysize()
+    write(stdout,*) "+----------------------------------------------------------------------------+"
+    
+  end subroutine get_band_energy
+
+     !=========================================================================
+  subroutine write_read_file()
+     !=========================================================================
+    ! Noddy routine to prettify output
+    implicit none
+    write(stdout,*)
+    write(stdout,*) "+-------------------------------- Read File ---------------------------------+"
+    
+  end subroutine write_read_file
   
   end module od_conv
-          
+
+
 
 
 program od2od
@@ -882,7 +921,7 @@ program od2od
   implicit none
 
   logical :: file_found
-  logical ::   ome_conv, dome_conv, pdos_conv, elnes_conv ! Flags to stop people trying
+  logical ::   ome_conv, dome_conv, pdos_conv, elnes_conv, dummy_conv ! Flags to stop people trying
   ! to read in a pdos and write out an elnes.  That's not going to end well.
   integer :: file_unit
   real(kind=dp)    :: time0,time1       ! Varaibles for timing
@@ -896,7 +935,6 @@ program od2od
   
   call comms_setup
 
- 
   call conv_get_seedname
   stderr=io_file_unit()
   open(unit=stderr,file=trim(seedname)//'.opt_err')
@@ -906,133 +944,153 @@ program od2od
   stdout = io_file_unit()
   open (unit=stdout, file=trim(seedname)//'.log')
   !-------------------------------------------------------------------------!
-
   write(stdout,*)
-  write(stdout,*) " +=======================================================================+ "
-  write(stdout,*) " |                                                                       | "
-  write(stdout,*) " |                      OO   DDD   222    OO   DDD                       | "
-  write(stdout,*) " |                     O  O  D  D     2  O  O  D  D                      | "
-  write(stdout,*) " |                     O  O  D  D   22   O  O  D  D                      | "
-  write(stdout,*) " |                     O  O  D  D  2     O  O  D  D                      | "
-  write(stdout,*) " |                      OO   DDD   2222   OO   DDD                       | "
-  write(stdout,*) " |                                                                       | "
-  write(stdout,*) " |                For doing the odd thing to OptaDOS files               | "
-  write(stdout,*) " |                                                                       | "
-  write(stdout,*) " |                   OptaDOS Developers Group 2019 (C)                   | "                                  
-  write(stdout,*) " |                          (But blame Andrew)                           | "
-  write(stdout,*) " |                                                                       | "
-  write(stdout,*) " +=======================================================================+ "
+  write(stdout,*)  'od2od: Execution started on ',cdate,' at ',ctime
+  write(stdout,*)
+  write(stdout,*) "+============================================================================+ "
+  write(stdout,*) "|                                                                            | "
+  write(stdout,*) "|                         OO   DDD   222    OO   DDD                         | "
+  write(stdout,*) "|                        O  O  D  D     2  O  O  D  D                        | "
+  write(stdout,*) "|                        O  O  D  D   22   O  O  D  D                        | "
+  write(stdout,*) "|                        O  O  D  D  2     O  O  D  D                        | "
+  write(stdout,*) "|                         OO   DDD   2222   OO   DDD                         | "
+  write(stdout,*) "|                                                                            | "
+  write(stdout,*) "|                   For doing the odd thing to OptaDOS files                 | "
+  write(stdout,*) "|                                                                            | "
+  write(stdout,*) "|                      OptaDOS Developers Group 2019 (C)                     | "                                  
+  write(stdout,*) "|                             (But blame Andrew)                             | "
+  write(stdout,*) "|                                                                            | "
+  write(stdout,*) "+============================================================================+ "
+
 
   if (num_nodes /= 1) then
     call io_error('od2od can only be used in serial...')
   endif
 
   write(stdout,*) 
+  write(stdout,*) "+--------------------------------- JOB CONTROL ------------------------------+"
   write(stdout,'(a40,i5)') "Number of nodes : ",num_nodes
   write(stdout,'(a40,a)') "Convert from : ", trim(infile)
   write(stdout,'(a40,a)') "Convert to : ", trim(outfile)
   write(stdout,'(a40,a)') "Seedname : ", trim(seedname)
   write(stdout,'(a40,a)') "Output Seedname : ", trim(outseedname)
-
-
+  write(stdout,*) "+----------------------------------------------------------------------------+"
 
   ome_conv=.false.
   dome_conv=.false.
   pdos_conv=.false.
   elnes_conv=.false.
+  dummy_conv=.false.
   
 
   ! Main case to decide what file format to read in.
   read_input: select case(trim(infile))
   case("ome_fmt")
      ome_conv=.true.
-     call elec_read_band_energy()
-     call report_arraysize()
+     call get_band_energy()
+     call write_read_file()
      call read_ome_fmt()
   case("ome_bin")
      ome_conv=.true.
-     call elec_read_band_energy()
-     call report_arraysize()
+     call get_band_energy()
+     call write_read_file()
      call read_ome_bin()
   case ("dome_fmt")
      dome_conv=.true.
-     call elec_read_band_energy()
-     call report_arraysize()
+     call get_band_energy()
+     call write_read_file()
      call read_dome_fmt()
   case("dome_bin")
      dome_conv=.true.
-     call elec_read_band_energy()
-     call report_arraysize()
+     call get_band_energy()
+     call write_read_file()
      call read_dome_bin()
-  !   write(stdout,*) domefile_header
   case ("pdos_fmt")
      pdos_conv=.true.
-     call elec_read_band_energy()
-     call report_arraysize()
+     call get_band_energy()
+     call write_read_file()
      call read_pdos_fmt()
   case("pdos_bin")
      pdos_conv=.true.
-      call elec_read_band_energy()
-      call report_arraysize()
+     call get_band_energy()
+     call write_read_file()
      call read_pdos_bin()
   case ("elnes_fmt")
-      elnes_conv=.true.
-      call elec_read_band_energy()
-      call report_arraysize()
+     elnes_conv=.true.
+     call get_band_energy()
+     call write_read_file()
      call read_elnes_fmt()
   case("elnes_bin")
-      elnes_conv=.true.
-      call elec_read_band_energy()
-      call report_arraysize()
+     elnes_conv=.true.
+     call get_band_energy()
+     call write_read_file()
      call read_elnes_bin()
+  case("dummy")
+     dummy_conv=.true.
+     call get_band_energy()
+     call write_read_file()
+     write(stdout,*) " Not reading any input file."
   case default
      call io_error('Unknown Input File format speccified')
   end select read_input
-
+  write(stdout,*) "+----------------------------------------------------------------------------+"
+  write(stdout,*)
+  write(stdout,*) "+------------------------------- Write File ---------------------------------+"
   ! Main case to decide what file format to write.
   write_output: select case(trim(outfile))
   case("ome_fmt")
-     if(.not. (dome_conv.or.ome_conv)) call io_error(' Input format '//trim(infile)//'not compatible with output format '&
+     if(.not. (dome_conv.or.ome_conv)) call io_error(' Input format '//trim(infile)//' not compatible with output format '&
           &//trim(outfile))
      if(dome_conv) call pad_an_ome() 
      call write_ome_fmt() 
   case("ome_bin")
-     if(.not.  (dome_conv.or.ome_conv)) call io_error(' Input format '//trim(infile)//'not compatible with output format '&
+     if(.not.  (dome_conv.or.ome_conv)) call io_error(' Input format '//trim(infile)//' not compatible with output format '&
           &//trim(outfile))
      if(dome_conv) call pad_an_ome() 
      call write_ome_bin() 
   case ("dome_fmt")
      if(.not. (dome_conv.or.ome_conv)) call io_error(' Input format '//trim(infile)//&
-          &'not compatible with output format '//trim(outfile))
+          &' not compatible with output format '//trim(outfile))
      if(ome_conv) call slice_an_ome()    
      call write_dome_fmt()
   case("dome_bin")
      if(.not. (dome_conv.or.ome_conv)) call io_error(' Input format '//trim(infile)//&
-          &'not compatible with output format '//trim(outfile))
+          &' not compatible with output format '//trim(outfile))
      if(ome_conv) call slice_an_ome()
      call write_dome_bin() 
   case ("pdos_fmt")
-      if(.not. pdos_conv) call io_error(' Input format '//trim(infile)//'not compatible with output format '//trim(outfile))
+      if(.not. pdos_conv) call io_error(' Input format '//trim(infile)//' not compatible with output format '//trim(outfile))
      call write_pdos_fmt() 
   case("pdos_bin")
-     if(.not. pdos_conv) call io_error(' Input format '//trim(infile)//'not compatible with output format '//trim(outfile))
+     if(.not. pdos_conv) call io_error(' Input format '//trim(infile)//' not compatible with output format '//trim(outfile))
      call write_pdos_bin()  
   case ("elnes_fmt")
-     if(.not. elnes_conv) call io_error(' Input format '//trim(infile)//'not compatible with output format '//trim(outfile))
+     if(.not. elnes_conv) call io_error(' Input format '//trim(infile)//' not compatible with output format '//trim(outfile))
      call write_elnes_fmt()  
   case("elnes_bin")
-     if(.not. elnes_conv) call io_error(' Input format '//trim(infile)//'not compatible with output format '//trim(outfile))
-     call write_elnes_bin()  
+     if(.not. elnes_conv) call io_error(' Input format '//trim(infile)//' not compatible with output format '//trim(outfile))
+     call write_elnes_bin()
+  case("dummy")
+     write(stdout,*) " Not writing any output file."
+     if(dummy_conv) then
+        write(stdout,*)
+        write(stdout,*) "                 Dummy in + dummy out  -- who's the dummy now ?"
+     else
+         write(stdout,*)
+         write(stdout,*) "                No point in taking up disk space unnecessarily, eh ?"
+     endif 
   case default
      call io_error('Unknown Output File format speccified')
   end select write_output
 
 
   call io_date(cdate,ctime)
-  write(stdout,*)
+   write(stdout,*) "+----------------------------------------------------------------------------+"
+
+  
   time1=io_time()
   
-  write(stdout,'(1x,a40,f11.3,a)') 'Total runtime ',time1-time0,' (sec)'
+  write(stdout,'(1x,a40,f11.3,a)') 'Total runtime :',time1-time0,' (sec)'
   write(stdout,*)
   write(stdout,*) 'od2od: Execution complete on ',cdate,' at ',ctime
   write(stdout,*)
