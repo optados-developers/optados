@@ -34,8 +34,8 @@ all : optados tools
 
 tools : od2od
 
-od2od : od_fmt2bin.f90 $(OBJS) ../make.system
-	$(F90) $(FFLAGS) $< $(OBJS) -o od2od
+od2od : od2od.f90 $(OBJS) ../make.system
+	$(F90) $(FFLAGS) $< $(OBJS) -o ../od2od
 
 optados : optados.f90 $(OBJS) ../make.system
 	$(F90) $(FFLAGS) $< $(OBJS) -o ../optados$(EXTENSION) 
@@ -101,7 +101,7 @@ clean:
 
 
 veryclean: clean
-	rm -f optados$(EXTENSION) optados$(EXTENSION).debug optados$(EXTENSION).mpi
+	rm -f optados$(EXTENSION) optados$(EXTENSION).debug optados$(EXTENSION).mpi od2od
 
 install: 
 	cp optados$(EXTENSION) $(INSTALL_DIR)
