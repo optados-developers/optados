@@ -47,6 +47,7 @@ program optados
   use od_pdos, only: pdos_calculate
   use od_pdis, only: pdis_calculate
   use od_optics, only: optics_calculate
+  use od_build, only: build_info
   implicit none
 
   real(kind=dp)    :: time0, time1       ! Varaibles for timing
@@ -63,7 +64,7 @@ program optados
     call io_get_seedname()
     ! If blank set to seedname='--help'
     if (trim(seedname) == '-h' .or. trim(seedname) == '--help') call help_output
-
+    if (trim(seedname) == '-v' .or. trim(seedname) == '--version') call version_output
     !-------------------------------------------------------------------------!
     ! O R G A N I S E   T H E   E R R O R   F I L E
     stderr = io_file_unit()
@@ -246,5 +247,23 @@ contains
     write (*, *)
     stop
   end subroutine help_output
+
+  subroutine version_output
+    use od_build, only: build_info
+    use od_constants, only: optados_version, copyright
+    implicit none
+    write (*, *)
+    write (*, *) " OptaDOS ver.", trim(optados_version)
+    write (*, *)
+    write (*, *) " Andrew J. Morris, R. J. Nicholls, C. J. Pickard and J. R. Yates", trim(copyright)
+    write (*, *) " Compiled with "//trim(build_info%compiler)//" on "//trim(build_info%compile_date)&
+         & //" at "//trim(build_info%compile_time)//"."
+    write(*, *) " Compile type: "//trim(build_info%build_type)//", "//trim(build_info%comms_arch)
+    write(*, *) " From source "//trim(build_info%build)//" submitted on "//trim(build_info%source_date)&
+         &//" at " //trim(build_info%source_time)//"."
+ 
+ 
+    stop
+  end subroutine version_output
 
 end program optados
