@@ -1246,10 +1246,8 @@ contains
                         nspins*num_kpoints_on_node(inodes), inodes)
      end do
 
-     write(*,*) num_kpoints_on_node(0)
       do ik = 1, num_kpoints_on_node(0)
          ! The kpoint number, followed by the kpoint-vector
-              write(*,*) "loop", ik
         read (pdos_in_unit) dummyi, dummyr1, dummyr2, dummyr3
         do is = 1, pdos_mwab%nspins
           read (pdos_in_unit) dummyi ! this is the spin number
