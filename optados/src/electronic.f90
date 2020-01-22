@@ -111,6 +111,8 @@ module od_electronic
   public :: elec_dealloc_pdos
   public :: elec_dealloc_band_gradient
   public :: elec_dealloc_optical
+  public :: elec_elnes_find_channel_names
+  public :: elec_elnes_find_channel_numbers
 
   !-------------------------------------------------------------------------!
 
@@ -969,8 +971,37 @@ contains
 
     if (on_root) close (elnes_unit)
 
-    ! fill in some extra indexing data
+    call  elec_elnes_find_channel_names()
 
+    time1 = io_time()
+    if (on_root .and. iprint > 1) then
+      write (stdout, '(1x,a59,f11.3,a8)') &
+           '+ Time to read Elnes Matrix Elements                     &
+           &      ', time1 - time0, ' (sec) +'
+    endif
+
+    return
+
+100 call io_error('Error: Problem opening elnes file in elec_read_elnes_mat')
+102 call io_error('Error: Problem opening elnes_bin file in elec_read_elnes_mat')
+
+  end subroutine elec_read_elnes_mat
+
+  !=========================================================================
+  subroutine elec_elnes_find_channel_names
+    !=========================================================================
+    !
+    ! fill in some extra indexing data
+    ! Moved from within elec_read_elnes_mat when I made od2od
+    ! AJM 5/12/2019
+    use od_io, only : io_error
+    implicit none
+
+    integer :: loop
+
+ 
+   !  elnes_mwab is a module variable so don't declare.
+   
     do loop = 1, elnes_mwab%norbitals
       if (elnes_orbital%am_channel(loop) == 1) then
         elnes_orbital%am_channel(loop) = 0
@@ -1020,24 +1051,70 @@ contains
       elseif (elnes_orbital%am_channel(loop) == 16) then
         elnes_orbital%am_channel(loop) = 3
         elnes_orbital%am_channel_name(loop) = 'fx(yy-zz)'
-      else
-        call io_error(' Error : unknown angular momentum state in elec_read_elnes_mat')
+     else
+        call io_error(' Error : unknown angular momentum state in elec_elnes_find_channel_names')
       endif
     end do
+    
+  end subroutine elec_elnes_find_channel_names
 
-    time1 = io_time()
-    if (on_root .and. iprint > 1) then
-      write (stdout, '(1x,a59,f11.3,a8)') &
-           '+ Time to read Elnes Matrix Elements                     &
-           &      ', time1 - time0, ' (sec) +'
-    endif
 
-    return
+    !=========================================================================
+  subroutine elec_elnes_find_channel_numbers
+    !=========================================================================
+    !
+    ! The elnes_bin has channel numbers 1-16 internally optados thinks about
+    ! channel names. So we need to be able to go back and forth.
+    !
+    ! CASTEP (hence the bin file) and OptaDOS think about am_channel numbers
+    ! differently. To keep consistent we convert to CASTEP's numbering scheme
+    ! before we write out.
+    ! AJM 5/12/2019
+    use od_io, only : io_error
+    implicit none
 
-100 call io_error('Error: Problem opening elnes file in elec_read_elnes_mat')
-102 call io_error('Error: Problem opening elnes_bin file in elec_read_elnes_mat')
+    integer :: loop
 
-  end subroutine elec_read_elnes_mat
+    do loop = 1, elnes_mwab%norbitals
+       selectcase(trim(elnes_orbital%am_channel_name(loop)))
+       case('s')
+          elnes_orbital%am_channel(loop) = 1
+       case('px')
+          elnes_orbital%am_channel(loop) = 2
+       case('py')
+          elnes_orbital%am_channel(loop) = 3
+       case('pz')
+          elnes_orbital%am_channel(loop) = 4
+       case('dzz')
+          elnes_orbital%am_channel(loop) = 5
+       case('dzy')
+          elnes_orbital%am_channel(loop) = 6
+       case('dzx')
+          elnes_orbital%am_channel(loop) = 7
+       case('dxx-yy')
+          elnes_orbital%am_channel(loop) = 8
+       case('dxy')
+          elnes_orbital%am_channel(loop) = 9
+       case('fxxx')
+          elnes_orbital%am_channel(loop) = 10
+       case('fyyy')
+          elnes_orbital%am_channel(loop) = 11
+       case('fzzz')
+          elnes_orbital%am_channel(loop) = 12
+       case('fxyz')
+          elnes_orbital%am_channel(loop) = 13
+       case('fz(xx-yy)')
+          elnes_orbital%am_channel(loop) = 14
+       case('fy(zz-xx)')
+          elnes_orbital%am_channel(loop) = 15
+       case('fx(yy-zz)')
+          elnes_orbital%am_channel(loop) = 16
+       case default
+          call io_error(' Error : unknown angular momentum state in elec_elnes_find_channel_numbers')
+       end select
+    enddo
+    
+  end subroutine elec_elnes_find_channel_numbers
 
   !=========================================================================
   subroutine elec_pdos_read
@@ -1167,9 +1244,10 @@ contains
         enddo
         call comms_send(pdos_weights(1, 1, 1, 1), pdos_mwab%norbitals*pdos_mwab%nbands* &
                         nspins*num_kpoints_on_node(inodes), inodes)
-      end do
+     end do
+
       do ik = 1, num_kpoints_on_node(0)
-        ! The kpoint number, followed by the kpoint-vector
+         ! The kpoint number, followed by the kpoint-vector
         read (pdos_in_unit) dummyi, dummyr1, dummyr2, dummyr3
         do is = 1, pdos_mwab%nspins
           read (pdos_in_unit) dummyi ! this is the spin number
