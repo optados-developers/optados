@@ -91,8 +91,10 @@ projection_utils.o : projection_utils.f90 cell.o comms.o constants.o cell.o elec
 xmgrace_utils.o : xmgrace_utils.f90 io.o constants.o ../make.system
 	$(F90) -c $(FFLAGS) $<
 
-build.o : build.f90 ../make.system
+build.f90 : 
 	./make_build_info.sh
+
+build.o : build.f90 ../make.system
 	$(F90) -c $(FFLAGS) $<
 
 
