@@ -43,9 +43,9 @@ module od_io
 
   integer, public, save           :: stdout
   integer, public, save           :: stderr
-  character(len=50), public, save :: seedname
-  integer, parameter, public :: maxlen = 120  ! Max column width of input file
   integer, parameter, public :: filename_len = 80
+  character(len=filename_len), public, save :: seedname
+  integer, parameter, public :: maxlen = 120  ! Max column width of input file
 
   public :: io_get_seedname
   public :: io_time
