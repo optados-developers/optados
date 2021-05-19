@@ -40,6 +40,11 @@ module od_electronic
   complex(kind=dp), allocatable, public, save  :: optical_mat(:, :, :, :, :)
   complex(kind=dp), allocatable, public, save  :: elnes_mat(:, :, :, :, :)
 
+  !Additional variables for photoemission.- V.Chang Nov-2020
+  real(kind=dp), allocatable, public, save  :: band_curvature(:,:,:,:,:)
+  complex(kind=dp), allocatable, public, save  :: foptical_mat(:,:,:,:,:)
+
+
   real(kind=dp), public, save :: efermi ! The fermi energy we finally decide on
   logical, public, save       :: efermi_set = .false. ! Have we set efermi?
   real(kind=dp), public, save :: unshifted_efermi ! The fermi energy we finally decide on, perhaps not set to 0
@@ -113,6 +118,11 @@ module od_electronic
   public :: elec_dealloc_optical
   public :: elec_elnes_find_channel_names
   public :: elec_elnes_find_channel_numbers
+
+  !Additional functions for photoemission - V.Chang Nov-2020
+  public :: elec_read_band_curvature
+  public :: elec_read_foptical_mat
+
 
   !-------------------------------------------------------------------------!
 
@@ -295,6 +305,123 @@ contains
   end subroutine elec_read_band_gradient
 
   !=========================================================================
+  subroutine elec_read_band_curvature
+    !=========================================================================
+    ! Read the .ddome file in paralell if appropriate. These are the 
+    ! curvatures of the bands at each kpoint.
+    !-------------------------------------------------------------------------
+    ! Arguments: None
+    !-------------------------------------------------------------------------
+    ! Parent module variables: band_curvature,nspins,nbands                                       
+    !-------------------------------------------------------------------------
+    ! Modules used:  See below                                                 
+    !-------------------------------------------------------------------------
+    ! Key Internal Variables: None                                                      
+    !-------------------------------------------------------------------------
+    ! Necessary conditions: None     
+    !-------------------------------------------------------------------------
+    ! Known Worries: None                                              
+    !-------------------------------------------------------------------------
+    ! Written by  V Chang                                             Nov 2020
+    !=========================================================================
+    use od_comms, only : on_root, my_node_id, num_nodes, root_id,&
+         & comms_recv, comms_send, comms_bcast
+    use od_io,    only : io_time, filename_len, seedname, stdout, io_file_unit,&
+         & io_error
+    use od_cell,  only : num_kpoints_on_node,nkpoints
+    use od_constants,only : bohr2ang, H2eV
+    use od_parameters, only : legacy_file_format,iprint,devel_flag
+    use od_algorithms, only : algor_dist_array
+    implicit none
+
+    integer :: curvature_unit,i,j,ib,jb,is,ik,inodes,ierr,loop
+    character(filename_len) :: curvature_filename
+    character(len=80)       :: header
+    logical :: exists
+    real(kind=dp) :: time0, time1,file_version
+    real(kind=dp), parameter :: file_ver=1.0_dp
+    ! Check that we haven't already done this.
+    if(allocated(band_curvature)) return
+
+    ! first try to read a effective mass file
+
+    curvature_filename=trim(seedname)//".ddome_bin"
+
+    if(on_root) inquire(file=curvature_filename,exist=exists)
+    call comms_bcast(exists,1)
+
+    if(exists) then  ! good. We are reading from a velocity file
+
+       time0=io_time()
+       if(on_root) then
+          if(iprint>1) write(stdout,'(a)') ' '
+          if(iprint>1) write(stdout,'(a)') ' Reading band curvature from file:'//trim(curvature_filename)
+          curvature_unit=io_file_unit()
+             curvature_filename=trim(seedname)//".ddome_bin"
+             open(unit=curvature_unit,file=curvature_filename,status="old",form='unformatted',err=102)
+             read(curvature_unit) file_version
+             if( (file_version-file_ver)>0.001_dp) &
+                   call io_error('Error: Trying to read newer version of ddome_bin file. Update optados!')
+             read(curvature_unit) header
+             if(iprint>1) write(stdout,*) trim(header)
+
+       end if
+       ! Figure out how many kpoint should be on each node
+       call algor_dist_array(nkpoints,num_kpoints_on_node)
+       allocate(band_curvature(1:nbands,1:3,1:3,1:num_kpoints_on_node(my_node_id),1:nspins),stat=ierr)
+       if (ierr/=0) call io_error('Error: Problem allocating band_curvature in elec_read_band_curvature')
+
+       if(on_root) then
+          do inodes=1,num_nodes-1
+             do ik=1,num_kpoints_on_node(inodes)
+                do is=1,nspins
+                   do ib=1,nbands
+                      do i=1,3
+                         do j=1,3
+                            read(curvature_unit) band_curvature(ib,i,j,ik,is)
+                         end do
+                       end do
+                    end do
+                 end do
+              end do
+             call comms_send(band_curvature(1,1,1,1,1),nbands*3*3*nspins*num_kpoints_on_node(inodes),inodes)
+          end do
+          do ik=1,num_kpoints_on_node(0)
+             do is=1,nspins
+                do ib=1,nbands
+                   do i=1,3
+                      do j=1,3
+                         read(curvature_unit) band_curvature(ib,i,j,ik,is)
+                      end do
+                   end do
+                end do
+             end do
+          end do
+       end if
+
+       if(.not. on_root) then
+          call comms_recv(band_curvature(1,1,1,1,1),nbands*3*3*nspins*num_kpoints_on_node(my_node_id),root_id)
+       end if
+
+       if(on_root) close (unit=curvature_unit)
+
+       ! Convert all band curvatures to eV Ang
+       band_curvature=band_curvature*bohr2ang*bohr2ang*H2eV
+
+
+       time1=io_time()
+       if(on_root.and.iprint>1) write(stdout,'(1x,a40,f11.3,a)') 'Time to read band curvature',time1-time0,' (sec)'
+
+    end if
+
+    return
+
+101 call io_error('Error: Problem opening cst_vel file in read_band_curvature')
+102 call io_error('Error: Problem opening dome_bin file in read_band_curvature')
+
+  end subroutine elec_read_band_curvature
+
+  !=========================================================================
   subroutine elec_read_optical_mat
     !=========================================================================
     ! Read the .cst_ome file in paralell if appropriate. These are the
@@ -436,6 +563,152 @@ contains
 102 call io_error('Error: Problem opening ome_bin file in read_band_optical_mat')
 
   end subroutine elec_read_optical_mat
+
+  !=========================================================================
+  subroutine elec_read_foptical_mat
+    !=========================================================================
+    ! Read the .fome_bin file in paralell if appropriate. These are the 
+    ! free electron matrix at each kpoint.
+    !-------------------------------------------------------------------------
+    ! Arguments: None
+    !-------------------------------------------------------------------------
+    ! Parent module variables: foptical_mat,nspins,nbands                                       
+    !-------------------------------------------------------------------------
+    ! Modules used:  See below                                                 
+    !-------------------------------------------------------------------------
+    ! Key Internal Variables: None                                                      
+    !-------------------------------------------------------------------------
+    ! Necessary conditions: None     
+    !-------------------------------------------------------------------------
+    ! Known Worries: None                                              
+    !-------------------------------------------------------------------------
+    ! Written by  V Chang                                             Nov 2020
+    !=========================================================================
+    use od_comms, only : on_root, my_node_id, num_nodes, root_id,&
+         & comms_recv, comms_send
+    use od_io,    only : io_time, filename_len, seedname, stdout, io_file_unit,&
+         & io_error
+    use od_cell,  only : num_kpoints_on_node,nkpoints
+    use od_constants,only : bohr2ang, H2eV
+    use od_parameters, only : legacy_file_format,iprint,devel_flag
+    use od_algorithms, only : algor_dist_array
+    implicit none
+
+    integer :: gradient_unit,i,ib,jb,is,ik,inodes,ierr
+    character(filename_len) :: gradient_filename
+    character(len=80)       :: header
+    real(kind=dp) :: time0, time1,file_version
+    real(kind=dp), parameter :: file_ver=1.0_dp
+
+
+    ! Check that we haven't already done this.
+
+    if(allocated(foptical_mat)) return
+
+    time0=io_time()
+    if(on_root) then
+       gradient_unit=io_file_unit()
+       if(index(devel_flag,'old_filename')>0.or.legacy_file_format) then
+          gradient_filename=trim(seedname)//".cst_ome"
+          if(iprint>1) write(stdout,'(1x,a)') 'Reading foptical matrix elements from file: '//trim(gradient_filename)
+          open(unit=gradient_unit,file=gradient_filename,status="old",form='unformatted',err=101)
+       else
+          gradient_filename=trim(seedname)//".fome_bin"
+          if(iprint>1) write(stdout,'(1x,a)') 'Reading foptical matrix elements from file: '//trim(gradient_filename)
+          open(unit=gradient_unit,file=gradient_filename,status="old",form='unformatted',err=102)
+          read(gradient_unit) file_version
+          if( (file_version-file_ver)>0.001_dp) &
+                           call io_error('Error: Trying to read newer version of fome_bin file. Update optados!')
+          read(gradient_unit) header
+          if(iprint>1) write(stdout,'(1x,a)') trim(header)
+       endif
+    endif
+
+
+    ! Figure out how many kpoints should be on each node
+    call algor_dist_array(nkpoints,num_kpoints_on_node)
+    allocate(foptical_mat(1:nbands+1,1:nbands+1,1:3,1:num_kpoints_on_node(my_node_id),1:nspins),stat=ierr)
+    if (ierr/=0) call io_error('Error: Problem allocating foptical_mat in elec_read_optical_mat')
+
+    if(legacy_file_format) then
+
+       if(on_root) then
+          do inodes=1,num_nodes-1
+             do ik=1,num_kpoints_on_node(inodes)
+                do is=1,nspins
+                   do i=1,3
+                      do jb=1,nbands+1
+                         do ib=1,nbands+1
+                            ! Read in units of Ha Bohr^2 / Ang
+                            read (gradient_unit) foptical_mat(ib,jb,i,ik,is)
+                         end do
+                      end do
+                   end do
+                end do
+             end do
+             call comms_send(foptical_mat(1,1,1,1,1),(nbands+1)*(nbands+1)*3*nspins*num_kpoints_on_node(inodes),inodes)
+          end do
+
+          do ik=1,num_kpoints_on_node(0)
+             do is=1,nspins
+                do i=1,3
+                   do jb=1,nbands+1
+                      do ib=1,nbands+1
+                         ! Read in units of Ha Bohr^2 / Ang
+                         read (gradient_unit) foptical_mat(ib,jb,i,ik,is)
+                      end do
+                   end do
+                end do
+             end do
+          end do
+       endif
+
+    else ! sane file format
+
+       if(on_root) then
+          do inodes=1,num_nodes-1
+             do ik=1,num_kpoints_on_node(inodes)
+                do is=1,nspins
+                   read(gradient_unit) (((foptical_mat(ib,jb,i,ik,is),ib=1,nbands+1)&
+                        ,jb=1,nbands+1),i=1,3)
+                end do
+             end do
+             call comms_send(foptical_mat(1,1,1,1,1),(nbands+1)*(nbands+1)*3*nspins*num_kpoints_on_node(inodes),inodes)
+          end do
+          do ik=1,num_kpoints_on_node(0)
+             do is=1,nspins
+                read(gradient_unit) (((foptical_mat(ib,jb,i,ik,is),ib=1,nbands+1),jb=1,nbands+1),i=1,3)
+             end do
+          end do
+       end if
+    end if
+
+    if(.not. on_root) then
+       call comms_recv(foptical_mat(1,1,1,1,1),(nbands+1)*(nbands+1)*3*nspins*num_kpoints_on_node(my_node_id),root_id)
+    end if
+
+    if(on_root) close (unit=gradient_unit)
+   ! Convert all band gradients to eV Ang
+    if(legacy_file_format) then
+       foptical_mat=optical_mat*bohr2ang*bohr2ang*H2eV
+    else
+       foptical_mat=optical_mat*bohr2ang*H2eV
+    end if
+
+    time1=io_time()
+    if(on_root.and.iprint>1) then
+       write(stdout,'(1x,a59,f11.3,a8)') &
+            '+ Time to read F Optical Matrix Elements                   &
+            &      ',time1-time0,' (sec) +'
+    endif
+
+    return
+
+101 call io_error('Error: Problem opening cst_ome file in read_band_foptical_mat')
+102 call io_error('Error: Problem opening ome_bin file in read_band_foptical_mat')
+
+  end subroutine elec_read_foptical_mat
+
 
   !=========================================================================
   subroutine elec_read_band_energy !(band_energy,kpoint_r,kpoint_weight)

@@ -59,6 +59,8 @@ module od_parameters
   logical, public, save :: compare_jdos
   logical, public, save :: optics
   logical, public, save :: core
+  logical, public, save :: photo
+
 
   !Broadening parameters
   logical, public, save :: fixed
@@ -117,6 +119,28 @@ module od_parameters
   real(kind=dp), public, save :: LAI_lorentzian_offset
   logical, public, save :: LAI_lorentzian
 
+  ! Photoemission parameters - V.Chang Nov-2020
+  character(len=20), public, save :: photo_model
+  character(len=20), public, save :: photo_output
+  character(len=20), public, save :: momentum
+  logical,           public, save :: qe_matrix
+  logical,           public, save :: angle_resolution
+  character(len=20), public, save :: resolution_type
+  real(kind=dp)    , public, save :: phi_lower
+  real(kind=dp)    , public, save :: phi_upper
+  real(kind=dp)    , public, save :: theta_lower
+  real(kind=dp)    , public, save :: theta_upper
+  real(kind=dp)    , public, save :: photon_energy
+  real(kind=dp)    , public, save :: temp
+  real(kind=dp)    , public, save :: elec_field
+  real(kind=dp)    , public, save :: imfp_const
+  logical, public, save :: e_units
+  logical, public, save :: mte
+  real(kind=dp),     public, save :: work_function
+  real(kind=dp),     public, save :: s_area
+  real(kind=dp),     public, save :: slab_volume 
+  
+
   real(kind=dp), public, save :: lenconfac
 
   private
@@ -168,6 +192,7 @@ contains
 
     dos = .false.; pdos = .false.; pdis = .false.; jdos = .false.; optics = .false.
     core = .false.; compare_dos = .false.; compare_jdos = .false.
+    photo=.false.
     call param_get_vector_length('task', found, i_temp)
     if (found .and. i_temp > 0) then
       allocate (task_string(i_temp), stat=ierr)
@@ -190,6 +215,8 @@ contains
           dos = .true.; compare_dos = .true.
         elseif (index(task_string(loop), 'dos') > 0) then
           dos = .true.
+        elseif(index(task_string(loop), 'photoemission')>0) then
+          photo=.true.
         elseif (index(task_string(loop), 'none') > 0) then
           dos = .false.; pdos = .false.; jdos = .false.; optics = .false.; core = .false.
         elseif (index(task_string(loop), 'all') > 0) then
@@ -405,14 +432,66 @@ contains
     call param_get_keyword('lai_lorentzian_offset', found, r_value=LAI_lorentzian_offset)
     if (LAI_lorentzian_offset .lt. 0.0_dp) call io_error('Error: LAI_lorentzian_offset must be positive')
 
+   ! Photoemission parameters - V.Chang Nov-2020
+
+    momentum = 'crystal'
+    call param_get_keyword('momentum',found,c_value=momentum)
+    if(index(momentum,'kp')==0 .and. index(momentum,'crystal')==0 ) &
+         call io_error('Error: value of momentum not recognised in param_read')
+
+    photo_output = 'tes'
+    call param_get_keyword('photo_output',found,c_value=photo_output)
+    if(index(photo_output,'be')==0 .and. index(photo_output,'tes')==0 ) &
+         call io_error('Error: value of photoemission output not recognised in param_read')
+
+    photo_model = '1step'
+    call param_get_keyword('photo_model',found,c_value=photo_model)
+    if(index(photo_model,'3step')==0 .and. index(photo_model,'1step')==0 ) &
+         call io_error('Error: value of photoemission model not recognised in param_read')
+
+    call param_get_keyword('work_function',found,r_value=work_function)
+     if(photo .and. .not. found) &
+         call io_error('Error: please set workfunction for photoemission calculation')
+
+    theta_lower = 0.0_dp
+    call param_get_keyword('theta_lower',found,r_value=theta_lower)
+    theta_upper = 90.0_dp
+    call param_get_keyword('theta_upper',found,r_value=theta_upper)
+    phi_lower = 0.0_dp
+    call param_get_keyword('phi_lower',found,r_value=phi_lower)
+    phi_upper = 90.0_dp
+    call param_get_keyword('phi_upper',found,r_value=phi_upper)
+        call param_get_keyword('photon_energy',found,r_value=photon_energy)
+     if(photo .and. .not. found) &
+         call io_error('Error: please set photon energy for photoemission calculation')
+    temp = 298.0_dp
+    call param_get_keyword('temp',found,r_value=temp)
+
+    call param_get_keyword('s_area',found,r_value=s_area)
+     if(photo .and. .not. found) &
+         call io_error('Error: please set surface area for photoemission calculation')
+
+    call param_get_keyword('slab_volume',found,r_value=slab_volume)
+     if(photo .and. .not. found) &
+         call io_error('Error: please set volume of the slab for photoemission calculation')
+
+    elec_field          = 0.00_dp
+    call param_get_keyword('elec_field',found,r_value=elec_field)
+
+    imfp_const=0.0_dp
+    call param_get_keyword('imfp_const',found,r_value=imfp_const)
+     if(photo .and. .not. found) &
+         call io_error('Error: constant imfp, but imfp_const is not set')
+
     num_atoms = 0
     num_species = 0
     num_crystal_symmetry_operations = 0
-    if (pdos .or. pdis .or. core .or. optics) then
+    if (pdos .or. pdis .or. core .or. optics .or. photo) then
       ! try to read in the atoms from the cell file.
       ! We don't need them otherwise, so let's not bother
       !  if(index(devel_flag,'old_filename')>0) then
-      ! No longer need to call get_atoms as we're forcing people who use the legacy code to make an -out.cell
+      ! No longer need to call get_atoms as we're forcing people who use the
+      ! legacy code to make an -out.cell
       !     call cell_get_atoms
       !  else
       call cell_read_cell
@@ -668,6 +747,12 @@ contains
       write (stdout, '(1x,a78)') '|  Output Core-level Spectra                 :  True                         |'
     else
       write (stdout, '(1x,a78)') '|  Output Core-level Spectra                 :  False                        |'
+    endif
+    !Photoemission
+    if(photo) then
+       write(stdout,'(1x,a78)') '|  Photoemission Calculation                 :   True                         |'
+    else
+       write(stdout,'(1x,a78)') '|  Photoemission Calculation                 :   False                        |'
     endif
     write (stdout, '(1x,a46,2x,i3,26x,a1)') '|  iprint level                              :', iprint, '|'
     if (legacy_file_format) then
@@ -1520,6 +1605,13 @@ contains
     call comms_bcast(legacy_file_format, 1)
     call comms_bcast(projectors_string, len(projectors_string))
     call comms_bcast(set_efermi_zero, 1)
+
+    call comms_bcast(photo_model,len(photo_model))
+    call comms_bcast(photo_output,len(photo_output))
+    call comms_bcast(momentum,len(momentum))
+
+
+
     !
     call comms_bcast(num_exclude_bands, 1)
     if (num_exclude_bands > 1) then
