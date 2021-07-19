@@ -21,7 +21,7 @@
 \renewcommand{\d}{\mathrm{d}}
 \newcommand{\e}{\mathrm{e}}
 
-% Ensure that blank pages don't have numbers or heading on them 
+% Ensure that blank pages don't have numbers or heading on them
 \makeatletter
 \def\cleardoublepage{\clearpage\if@twoside \ifodd\c@page\else
  \hbox{}
@@ -132,7 +132,7 @@ We would like to thank Phil Hasnip and Keith Refson for very helpful discussions
  AJM, RJN and CJP acknowledge support from the EPSRC. Additionally AJM acknowledges
 the Winton programme for the physics of sustainability and RJN the ERC
 (Grant ERC-2009-StG-240500).
- JRY acknowledges support from the Royal Society through a University Research fellowship. 
+ JRY acknowledges support from the Royal Society through a University Research fellowship.
 \end{centering}
 \begin{flushright}
 AJM, RJN, CJP and JRY\\
@@ -142,7 +142,7 @@ September 2013
 \chapter*{Contributors}
  \thispagestyle{empty}
 
-\begin{itemize} 
+\begin{itemize}
 \item Matthew L. Evans, University of Cambridge: projected bandstructures and bug fixes.
 \end{itemize}
 
@@ -164,7 +164,7 @@ Further information and examples can be found at
 \section{Features}
 \optados\ generates optical, core-level excitation spectra along with full, partial and joint electronic DOS. The DOS, PDOS and JDOS take advantage of the linear and adaptive broadening schemes which are more accurate than standard Gaussian broadening since they exploit knowledge of the gradients of the bands at each $k$-point in the Brillouin zone.  These DOS are the basis of the more advanced functionality of \optados, the core and optical spectra.
 
-Along with data text files \optados\ also generates \verb#.agr# files of results to be read by \verb#grace#. 
+Along with data text files \optados\ also generates \verb#.agr# files of results to be read by \verb#grace#.
 
 
 
@@ -187,7 +187,7 @@ I^{(b)} \left ( E \right) = \sum^{\rm occ}_n \sum^{\rm unocc}_m
 \int_{\rm BZ} \frac {\d\kbf}{(2\pi)^3} F_{nm}(\kbf) \delta ( E - (E_{m\kbf}-E_{n\kbf})),
 \label{Eqn:IntB}
 \end{equation}
-where $E_{n\kbf}$ are the energy eigenvalues of the system. 
+where $E_{n\kbf}$ are the energy eigenvalues of the system.
 %
 They are also extendible to integration over spin-polarised channels
 in a straightforward way.
@@ -199,7 +199,7 @@ Since the crystal momentum, $\kbf$, is a continuous quantum number the band stru
 These $k$-points may be chosen through symmetry perhaps using a Monkhorst-Pack grid \cite{monkhorst:PRB:1976} or  the multi-$k$-point generalisation to the Baldereschi scheme\cite{rajagopal:PRL:1994,morris:PRB:2008}.
 
 
-Obtaining the energy bands from a set of eigenenergies at discrete $k$-points is non-trivial. 
+Obtaining the energy bands from a set of eigenenergies at discrete $k$-points is non-trivial.
 %
 This simplest way of assigning bands, by counting eigenvalues at $k$-points, implicitly assumes that there are no band crossings in the BZ.
 %
@@ -217,7 +217,7 @@ The reciprocal space is discretised into \emph{sub-cells} each containing a $k$-
 %
 Band dispersion may be crudely approximated by smearing each sub-cell's contribution by a fixed-width Gaussian function, of some width, $\omega$,
 \begin{equation}
-\delta (E_{n\kbf}-E) \rightarrow \frac{1}{\omega\sqrt{2\pi}}\exp \left (-\frac{1}{2}((E_{n\kbf}-E)/\omega)^2 \right ).  
+\delta (E_{n\kbf}-E) \rightarrow \frac{1}{\omega\sqrt{2\pi}}\exp \left (-\frac{1}{2}((E_{n\kbf}-E)/\omega)^2 \right ).
 \end{equation}
 This approach requires a large number of $k$-points to converge the DOS since when choosing $\omega$ there is a trade-off between representing the sharp features, such as van Hove singularities\cite{vanHove:PR:1953}  and not introducing spurious oscillations due to the limited $k$-point sampling.
 %
@@ -235,7 +235,7 @@ The DOS contribution of each tetrahedron is then calculated analytically by line
 
 Linear interpolation suffers from the band crossing problem, since the interpolation always joins the lowest energy bands together, which has the effect of avoiding all band crossing and kissing.
 %
-The method also does not describe van Hove singularities well since the interpolation is linear. 
+The method also does not describe van Hove singularities well since the interpolation is linear.
 
 Higher-order interpolation schemes, such as the quadratic tetrahedron scheme,  have been proposed which converge the singularities more rapidly than the linear scheme  \cite{boon:JPC:1986,methfessel:JPC:1983,methfessel:JPC:1987}, but these still require a high-density $k$-point grid to mitigate the band-crossing problem.
 
@@ -245,7 +245,7 @@ Extrapolating from each $k$-point rather than interpolating between adjacent poi
 %
 M\"uller and Wilkins show that for free electron bands the DOS is a smooth parabola when using the extrapolative method and a rough unconverged spectrum with the interpolative approach when using the same $k$-point mesh \cite{muller:PRB:1984}.
 
-The linear extrapolative scheme still does not represent van Hove singularities as well as a second-order approach.  
+The linear extrapolative scheme still does not represent van Hove singularities as well as a second-order approach.
 %
 Band curvatures may be combined with L\"owdin perturbation theory to extrapolate to higher order \cite{pickard:PRB:1999,pickard:PRB:2000}.
 
@@ -259,7 +259,7 @@ Each sub-cell's contribution to the DOS is broadened by a Gaussian function whos
 %
 This simple approach removes the spurious oscillations of the fixed broadening whilst maintaining the sharper features.
 %
-The adaptive broadening scheme was introduced in Ref \cite{yates:PRB:2007} in the context of Wannier interpolation of BZ quantities. 
+The adaptive broadening scheme was introduced in Ref \cite{yates:PRB:2007} in the context of Wannier interpolation of BZ quantities.
 %
 However, the scheme is more general that this, and with \optados\ we apply adaptive broadening directly to the quantities obtained from the electronic structure calculation.
 
@@ -268,7 +268,7 @@ Adaptive broadening may be chosen  for \optados\ calculations with, \texttt{broa
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Density of Electronic States} 
+\section{Density of Electronic States}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 When $F_{nm}(\kbf)=1$ the type (a) integral represents the electronic density of states (DOS) at $E$ and the total ground-state energy, $E_{\rm gs}$ is obtained by integrating over the occupied energies,
@@ -290,7 +290,7 @@ where $ T_{\mu n}(\kbf)= \langle \Psi_n(\kbf)|\phi_{\mu}(\kbf)
 atomic orbitals) basis, $\phi_{\mu}$ and planewave states, $\Psi_n$, and  $ S_{\mu n}(\kbf)=\langle \phi_n(\kbf)|\phi_{\mu}(\kbf) \rangle$, the overlap matrices of the LCAO basis.
 
 The PDOS is plotted with \optados\ using the \verb@task : pdos@
-command. 
+command.
 %
 The projection is defined using the \verb@pdos@ keyword as described
 in the user manual.
@@ -309,9 +309,9 @@ Core-level spectra and optical properties are related to the complex dielectric 
 \varepsilon_2 \left ( \omega \right ) = \frac{\pi e^2}{\varepsilon_0 \Omega} \frac{1}{q^2} \left | \langle  \psi^c_{\bf k}   |  \e^{-i{\bf q}.{\bf r}} | \psi^v_{\bf k + q} \rangle\right |^2,
 \end{equation}
 where $e$ is the charge on an electron, $\varepsilon_0$ is the permittivity of free space, $\Omega$ is the volume of the unit cell and {\bf q} is the momentum transfer \cite{dressel}.
-Using the dipole approximation, expressing {\bf q} as $q\,\hat{\bf{u}}$ and taking the limit that $q \rightarrow 0$, $\varepsilon_2$ can be written as an integral of type (b), 
+Using the dipole approximation, expressing {\bf q} as $q\,\hat{\bf{u}}$ and taking the limit that $q \rightarrow 0$, $\varepsilon_2$ can be written as an integral of type (b),
 \begin{equation}
-\varepsilon_2 \left ( \omega \right ) = \frac{\pi e^2}{\varepsilon_0 \Omega} I^{(b)}\left ( \hbar \omega \right ), 
+\varepsilon_2 \left ( \omega \right ) = \frac{\pi e^2}{\varepsilon_0 \Omega} I^{(b)}\left ( \hbar \omega \right ),
 \label{Eqn:Epsilon2}
 \end{equation}
 where,
@@ -319,9 +319,9 @@ where,
 F_{nm}(\kbf)= \left | \langle \psi^c_{\bf k}  |  \hat{\bf u}\cdot {\bf r} | \psi^v_{\bf k} \rangle\right |^2.
 \label{Eqn:Dipole}
 \end{equation}
-Most electronic structure codes do not calculate $\langle \psi^c_{\bf k}  |  {\bf r} | \psi^v_{\bf k} \rangle$ directly due to the ambiguity of a position operator in periodic cells. 
+Most electronic structure codes do not calculate $\langle \psi^c_{\bf k}  |  {\bf r} | \psi^v_{\bf k} \rangle$ directly due to the ambiguity of a position operator in periodic cells.
 %
-Rather they calculate $\langle \psi^c_{\bf k}  |  {\bf p} | \psi^v_{\bf k} \rangle$, where ${\bf p}$ is the momentum operator, which is trivial in reciprocal space. 
+Rather they calculate $\langle \psi^c_{\bf k}  |  {\bf p} | \psi^v_{\bf k} \rangle$, where ${\bf p}$ is the momentum operator, which is trivial in reciprocal space.
 
 Since,
 \begin{equation}
@@ -337,7 +337,7 @@ where $e^c$ and $e^v$ are the energy eigenvalues of the states $|\psi^c_{\bf k} 
 %
 Note that had we added scissor operator term to our Hamiltonian $\hat{H} = \hat{H}_{KS} + \Delta_{\mathrm{scissor}}$ then this also appears in the conversion from momentum matrix elements to optical matrix elements.
 
-Once $\varepsilon_2$ is known, it is possible to use the Kramers-Kronig relations to obtain $\varepsilon_1$ and hence obtain an expression for the full dielectric function.  The dielectric function is a tensor and in \optados\ it is either possible to output the full dielectric tensor or calculate dielectric function for the isotropic average of {\bf q}, a particular direction of {\bf q} or the average of {\bf q} over a plane perpendicular to a given direction.  Once the dielectric function has been calculated, core-level spectra and optical properties can be calculated.  
+Once $\varepsilon_2$ is known, it is possible to use the Kramers-Kronig relations to obtain $\varepsilon_1$ and hence obtain an expression for the full dielectric function.  The dielectric function is a tensor and in \optados\ it is either possible to output the full dielectric tensor or calculate dielectric function for the isotropic average of {\bf q}, a particular direction of {\bf q} or the average of {\bf q} over a plane perpendicular to a given direction.  Once the dielectric function has been calculated, core-level spectra and optical properties can be calculated.
 
 Core-level and low-loss EELS spectra are all related to the loss function, which is defined as \cite{egerton}:
 \begin{equation}
@@ -348,19 +348,19 @@ Core-level and low-loss EELS spectra are all related to the loss function, which
 
 \subsection{Core-level spectra}
 
-For core-level spectroscopy (core-loss EELS and x-ray absorption near edge spectroscopy (XANES)) the incident perturbation is far from resonance and since $\varepsilon_1\approx1$ and $\varepsilon_2\gg1$ equation\,{\ref{Eqn:LossFn} reduces to  $\Lambda = \varepsilon_2$ \cite{egerton}.  
-The type (b) integral in equation \ref{Eqn:Epsilon2} becomes a type (a) integral as the energy of the core state is fixed.  Emission spectra (transitions from valence to core XAS) can also be calculated by considering a sum over the occupied rather than unoccupied states.  Core-level spectra are calculated in \optados\ using the \verb@task : core@ command.
+For core-level spectroscopy (core-loss EELS and x-ray absorption near edge spectroscopy (XANES)) the incident perturbation is far from resonance and since $\varepsilon_1\approx1$ and $\varepsilon_2\gg1$ equation\,{\ref{Eqn:LossFn} reduces to  $\Lambda = \varepsilon_2$ \cite{egerton}.
+The type (b) integral in equation \ref{Eqn:Epsilon2} becomes a type (a) integral as the energy of the core state is fixed.  Emission spectra (transitions from valence to core XES) can also be calculated by considering a sum over the occupied rather than unoccupied states.  Core-level spectra are calculated in \optados\ using the \verb@task : core@ command.
 
-Several different experimental geometries are possible for core-level experiments and \optados\ allows the calculation of spectra with {\bf q} in a particular direction or an isotropic average.  
-In core-level absorption spectra there are several sources of broadening coming from the experimental set up and lifetime effects.  These can be included in \optados\ by broadening the theoretical spectrum using a combination of Gaussian and Lorentzian functions.  To include instrumentation and lifetime effects, \verb@core_LAI_broadening@ should be set to true.  
+Several different experimental geometries are possible for core-level experiments and \optados\ allows the calculation of spectra with {\bf q} in a particular direction or an isotropic average.
+In core-level absorption spectra there are several sources of broadening coming from the experimental set up and lifetime effects.  These can be included in \optados\ by broadening the theoretical spectrum using a combination of Gaussian and Lorentzian functions.  To include instrumentation and lifetime effects, \verb@core_LAI_broadening@ should be set to true.
 
 \subsection{Optical properties}
 
-In the low-loss EELS regime, the approximations used for core-level spectroscopy do not hold and the full form of the loss function needs to be calculated.  This is done by calculating $\varepsilon_2$ using equations \ref{Eqn:Epsilon2} and \ref{Eqn:Dipole} and then using the Kramers-Kronig relations to find $\varepsilon_1$.  Once the dielectric function has been calculated, the loss-function is simulated (without local field effects) using equation \ref{Eqn:LossFn}. As the dielectric function has been calculated, several other optical properties (which are listed below) can also be computed \cite{dressel}. 
+In the low-loss EELS regime, the approximations used for core-level spectroscopy do not hold and the full form of the loss function needs to be calculated.  This is done by calculating $\varepsilon_2$ using equations \ref{Eqn:Epsilon2} and \ref{Eqn:Dipole} and then using the Kramers-Kronig relations to find $\varepsilon_1$.  Once the dielectric function has been calculated, the loss-function is simulated (without local field effects) using equation \ref{Eqn:LossFn}. As the dielectric function has been calculated, several other optical properties (which are listed below) can also be computed \cite{dressel}.
 
 Conductivity, in units of Sm$^{-1}$, is computed using:
 \begin{equation}
-\sigma_1 = \varepsilon_0 \varepsilon_2 \omega, 
+\sigma_1 = \varepsilon_0 \varepsilon_2 \omega,
 \end{equation}
 \begin{equation}
 \sigma_2 = \varepsilon_0 \left ( 1 - \varepsilon_1 \right ) \omega.
@@ -394,20 +394,20 @@ For metals it is necessary to consider an intraband contribution to
 the optical response, i.e. a term when $n = m$ in equation
 \ref{Eqn:IntB}  \cite{dressel,draxl}.  The contribution to
 $\varepsilon$ can be written as a type (a) integral with $\hbar\omega$
-set to $E_F$, 
+set to $E_F$,
 \begin{equation}
 \varepsilon_1^{\rm{intra}} \left ( \omega \right ) = 1 - \frac{e^2}{\varepsilon_0 \Omega} \frac{1}{(\omega^2+\Gamma^2)} I^{(a)}\left ( E_F \right ),
 \end{equation}
 \begin{equation}
 \varepsilon_2^{\rm{intra}} \left ( \omega \right ) = \frac{e^2}{\varepsilon_0 \Omega}\frac{\Gamma}{\omega (\omega^2+\Gamma^2)} I^{(a)}\left ( E_F \right ),
 \end{equation}
-where $\Gamma$ denotes the relaxation rate.  
+where $\Gamma$ denotes the relaxation rate.
 
 
 
 \chapter{Getting Started}\label{chap:getting_started}
 \section{Installation}
-\optados\ is usually obtained in a gzipped tarball, \verb#optados-X.X.tar.gz#. Extract this ( \verb# tar -xzf optados-X.X.tar.gz#) in the desired directory. Inside the  \verb#optados/# directory are a number of sub directories,  \verb#documents/#,   \verb#examples/# and \verb#tools/#.  The code may be compiled using the \verb#Makefile# in the  \verb#optados/# directory.  The \verb#SYSTEM#, \verb#BUILD#, \verb#COMMS_ARCH# and \verb#PREFIX# flags must be set, either in the  \verb#makefile.system#, or from the command line (for example  \verb#make BUILD=fast#).  
+\optados\ is usually obtained in a gzipped tarball, \verb#optados-X.X.tar.gz#. Extract this ( \verb# tar -xzf optados-X.X.tar.gz#) in the desired directory. Inside the  \verb#optados/# directory are a number of sub directories,  \verb#documents/#,   \verb#examples/# and \verb#tools/#.  The code may be compiled using the \verb#Makefile# in the  \verb#optados/# directory.  The \verb#SYSTEM#, \verb#BUILD#, \verb#COMMS_ARCH# and \verb#PREFIX# flags must be set, either in the  \verb#makefile.system#, or from the command line (for example  \verb#make BUILD=fast#).
 
 \subsection[system]{\tt SYSTEM}
 
@@ -434,8 +434,8 @@ Choose the level of optimisations required when making \optados.  The valid valu
 
 Whether to compile for serial or parallel execution. The valid values are:
 \begin{itemize}
-\item[{\bf --}]  \verb#serial# (default) 
-\item[{\bf --}]  \verb#mpi# 
+\item[{\bf --}]  \verb#serial# (default)
+\item[{\bf --}]  \verb#mpi#
 \end{itemize}
 
 \subsection[bin_dir]{\tt PREFIX}
@@ -455,15 +455,15 @@ optados.x86\_64  [seedname]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Structure of the Program} \label{sec:structure}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-The schematic structure of the program is outlined in Fig.~\ref{fig:prog_structure}. 
+The schematic structure of the program is outlined in Fig.~\ref{fig:prog_structure}.
 %
-Each rounded-cornered box represents a Fortran95 module and the lines represent module dependencies. 
+Each rounded-cornered box represents a Fortran95 module and the lines represent module dependencies.
 %
-Modules only use data and subroutines from lower modules in the diagram. 
+Modules only use data and subroutines from lower modules in the diagram.
 %
 The modules are grouped into functional, structural, utility and low level.
 %
-Low level modules set up the environment for communication in serial or parallel between nodes and to disk. 
+Low level modules set up the environment for communication in serial or parallel between nodes and to disk.
 %
 The utility modules are not context dependent on the problem, and contain general algorithms and an interface to write \texttt{xmgrace} input files.
 %
@@ -507,7 +507,7 @@ A description of the purpose of each module is given below.
 
 \section{{\tt seedname.odi} File}
 The \optados\ input file {\tt seedname.odi} has a flexible free-form
-structure. 
+structure.
 
 The ordering of the keywords is not significant. Case is ignored (so
 \verb#smearing_width# is the same as \verb#Smearing_Width#). Characters after !, or \#
@@ -532,7 +532,7 @@ strings: {\tt T}, {\tt true}, {\tt .true.}.
 \section{General Parameters}
 \subsection[task]{\tt character(len=20) :: task}
 
-Tells the code what to compute. 
+Tells the code what to compute.
 
 The valid options for this parameter are:
 \begin{itemize}
@@ -547,9 +547,9 @@ The valid options for this parameter are:
 \item[{\bf --}]  \verb#all#
 \end{itemize}
 Several tasks can be specified \emph{e.g.} to compute dos and jdos use
-\verb#task : dos jdos#.  
+\verb#task : dos jdos#.
 However, the \verb#compare_dos# and \verb#compare_jdos# tasks can only be combined with each other, and no additional tasks.
-\verb#compare_dos# and \verb#compare_jdos# calculate the DOS and JDOS respectively using all broadening schemes. It is good practice to check the quality of the underlying DOS before other tasks are requested. 
+\verb#compare_dos# and \verb#compare_jdos# calculate the DOS and JDOS respectively using all broadening schemes. It is good practice to check the quality of the underlying DOS before other tasks are requested.
 
 \subsection[broadening]{\tt character(len=50) :: broadening}
 
@@ -601,7 +601,7 @@ If $\verb#spectral_scheme# = \verb#fixed#$ default value is 0.3eV.
 
 
 \subsection[adaptive\_smearing]{\tt real(kind=dp) :: linear\_smearing}
-Smear the linear broadening with a Gaussian of this width. 
+Smear the linear broadening with a Gaussian of this width.
 
 Default value is 0.0.
 
@@ -610,7 +610,7 @@ Choose which Fermi energy to use.
 
 The valid options for this parameter are:
 \begin{itemize}
-\item[{\bf --}]  \verb#optados# (default) \optados\ recalculates the Fermi energy by performing a DOS calculation. 
+\item[{\bf --}]  \verb#optados# (default) \optados\ recalculates the Fermi energy by performing a DOS calculation.
 \item[{\bf --}]  \verb#file# Take the value from the output of the ab-initio calculation.
 \item[{\bf --}]  \verb#insulator# Assume that the material is an insulator and counts filled bands to find the Fermi energy.
 \item[{\bf --}]  \verb#<real number># User supplied value.
@@ -624,12 +624,12 @@ Format in which to output data.
 
 The valid options for this parameter are:
 \begin{itemize}
-\item[{\bf --}]  \verb#gnuplot# 
+\item[{\bf --}]  \verb#gnuplot#
 \item[{\bf --}]  \verb#grace# (default)
 \end{itemize}
 
 \subsection[finite\_bin\_correction]{\tt logical :: finite\_bin\_correction}
-Force each Gaussian to be larger than a single energy bin. (Useful for adaptive smearing and semi-core states when \verb#numerical_intdos=TRUE#). 
+Force each Gaussian to be larger than a single energy bin. (Useful for adaptive smearing and semi-core states when \verb#numerical_intdos=TRUE#).
 
 Default value \verb#TRUE#.
 
@@ -639,8 +639,8 @@ Calculate the integrated dos by numerical integration instead of semi-analytical
 Default value \verb#FALSE#.
 
 \subsection[hybrid\_linear]{\tt logical :: hybrid\_linear}
-Switch from linear broadening scheme to adaptive broadening when band gradient less than \verb#hybrid_linear_grad_tol#. 
-This allows for a good description of very flat bands such as defect and semi-core states. May also be used in conjunction 
+Switch from linear broadening scheme to adaptive broadening when band gradient less than \verb#hybrid_linear_grad_tol#.
+This allows for a good description of very flat bands such as defect and semi-core states. May also be used in conjunction
 with \verb#finite_bin_correction# further improving the DOS and band energy
 
 Default value \verb#FALSE#.
@@ -694,7 +694,7 @@ Instead of setting a Default value \verb#dos_spacing# the total number of DOS bi
 \subsection[dos\_spacing]{\tt real(kind=dp) :: dos\_spacing}
 Resolution at which to compute the DOS and related properties.
 
-Default value is 0.1eV 
+Default value is 0.1eV
 
 \subsection[set\_efermi\_zero]{\tt logical :: set\_efermi\_zero}
 Shift energy scales so that the Fermi energy is at 0.
@@ -711,18 +711,18 @@ Upper energy range for JDOS and related properties.
 Default value is the difference between the valence band maximum (or
 Fermi level) and the highest eigenvalue in the bands file.
 
-\subsection[jdos\_spacing]{\tt real(kind=dp) :: jdos\_spacing} 
+\subsection[jdos\_spacing]{\tt real(kind=dp) :: jdos\_spacing}
 Resolution at which to compute the DOS and related properties.
 
-Default value is 0.01eV. 
+Default value is 0.01eV.
 
 \subsection[scissor\_op]{\tt real(kind=dp) :: scissor\_op}
-Value of the scissor operator. 
+Value of the scissor operator.
 
 Default value is 0\,eV (\emph{i.e.} not used)
 
 \subsection[exclude\_bands]{\tt real(kind=dp) :: exclude\_bands}
-This allows a list of bands which are NOT to be included in the JDOS or OPTICS calculation to be specified.  The bands 1, 2, 4, 5, 6, for example, can be specified using \verb#exclude_bands = 1,2,4-6#. 
+This allows a list of bands which are NOT to be included in the JDOS or OPTICS calculation to be specified.  The bands 1, 2, 4, 5, 6, for example, can be specified using \verb#exclude_bands = 1,2,4-6#.
 
 \section{PDOS Parameters}
 
@@ -757,32 +757,32 @@ been requested).
 Specifies the geometry for the optics calculation.  Possible options:
 \begin{itemize}
 \item[{\bf --}]  \verb#polycrystalline# (Isotropic average)
-\item[{\bf --}]  \verb#polarized#  
-\item[{\bf --}]  \verb#unpolarized# 
+\item[{\bf --}]  \verb#polarized#
+\item[{\bf --}]  \verb#unpolarized#
 \item[{\bf --}]  \verb#tensor# (Full dielectric tensor)
 \end{itemize}
 The default is polycrystalline.
 
 \subsection[optics\_qdir]{\tt real(kind=dp) :: optics\_qdir(3)}
-Direction of polarisation. Must be specified if \verb#optics_geom = polarized#  
+Direction of polarisation. Must be specified if \verb#optics_geom = polarized#
 or \verb#optics_geom = unpolarized#.
 
 There is no default value
 
 \subsection[optics\_intraband]{\tt logical :: optics\_intraband}
-If true, the intraband contribution to the dielectric function will be calculated.  (Important for metals.)    
+If true, the intraband contribution to the dielectric function will be calculated.  (Important for metals.)
 
 The default is FALSE.
 
 \subsection[optics\_drude\_broadening]{\tt real(kind=dp) :: optics\_drude\_broadening}
-Value of broadening included in the Drude term expressed in $s^{-1}$.  
+Value of broadening included in the Drude term expressed in $s^{-1}$.
 
-The default value is 1E-14.  
+The default value is 1E-14.
 
 \subsection[optics\_lossfn\_broadening]{\tt real(kind=dp) :: optics\_lossfn\_broadening}
-FWHM of Gaussian used to broaden the loss function.  
+FWHM of Gaussian used to broaden the loss function.
 
-The default value is 0 ($i.e.$ no broadening is used).  
+The default value is 0 ($i.e.$ no broadening is used).
 
 
 \section{Core-level Parameters}
@@ -791,7 +791,7 @@ The default value is 0 ($i.e.$ no broadening is used).
 
 Determines if we want absorption (transition from core to conduction
 ELNES / XANES)
-or emission (transition from valence to core XAS). It is also possible
+or emission (transition from valence to core XES). It is also possible
 to plot both.
 \begin{itemize}
 \item[{\bf --}]  \verb#absorption# (default)
@@ -801,10 +801,10 @@ to plot both.
 
 \subsection[core\_geom]{\tt character(len=20) :: core\_geom}
 
-Specifies the geometry for the core-spectra calculation.  Possible options: 
+Specifies the geometry for the core-spectra calculation.  Possible options:
 \begin{itemize}
 \item[{\bf --}]  \verb#polycrystalline# (Isotropic average)
-\item[{\bf --}]  \verb#polarized#  
+\item[{\bf --}]  \verb#polarized#
 \end{itemize}
 The default is polycrystalline.
 
@@ -816,31 +816,31 @@ This should be specified as three real numbers, \emph{e.g.} \verb@1 0 0@.
 There is no default value.
 
 \subsection[core\_LAI\_broadening]{\tt logical :: core\_LAI\_broadening}
-Include life-time and instrumentation broadening.  
+Include life-time and instrumentation broadening.
 
 The default is FALSE.
 
 \subsection[core\_gaussian\_width]{\tt real(kind=dp) :: LAI\_gaussian\_width}
-FWHM of Gaussian function used to broaden spectrum.  
+FWHM of Gaussian function used to broaden spectrum.
 
 The default value, if \verb#core_LAI_broadening = true#, is 0 ($i.e.$ no Gaussian used).
 
 \subsection[core\_lorentzian\_width]{\tt real(kind=dp) :: LAI\_lorentzian\_width}
-FWHM of fixed Lorentzian function used to broaden spectrum.  
+FWHM of fixed Lorentzian function used to broaden spectrum.
 
 The default value, if \verb#core_LAI_broadening = true#, is 0 ($i.e.$ no fixed Lorentzian used).
 
 \subsection[core\_lorentzian\_scale]{\tt real(kind=dp) :: LAI\_lorentzian\_scale}
-Variation of Lorentzian function with energy i.e. the width of the Lorentzian is (energy above the Fermi level x 
-\verb#core_lorentzian_scale#).  If set to zero, no energy dependent broadening is included.  
-If \verb#core_lorentzian_scale# and \verb#core_lorentzian_width# are both specified, the 
-total width of the Lorentzian used will be \verb#core_lorentzian_width# + (energy above the Fermi level x 
+Variation of Lorentzian function with energy i.e. the width of the Lorentzian is (energy above the Fermi level x
+\verb#core_lorentzian_scale#).  If set to zero, no energy dependent broadening is included.
+If \verb#core_lorentzian_scale# and \verb#core_lorentzian_width# are both specified, the
+total width of the Lorentzian used will be \verb#core_lorentzian_width# + (energy above the Fermi level x
 \verb#core_lorentzian_scale#).
 
-The default value, if \verb#core_LAI_broadening = true#, is 0.1. 
+The default value, if \verb#core_LAI_broadening = true#, is 0.1.
 
 \subsection[core\_lorentzian\_offset]{\tt real(kind=dp) :: LAI\_lorentzian\_offset}
-Energy (in eV) above the Fermi level that the energy dependent broadening starts.  
+Energy (in eV) above the Fermi level that the energy dependent broadening starts.
 
 The default value, if \verb#core_LAI_broadening = true#, is 0.
 
@@ -862,22 +862,22 @@ Each example in the \verb#examples/# directory contains example \castep\ input f
 
 \begin{enumerate}
 %%%%  Step 1 %%%%%
-\item Perform a \castep\ calculation on the bulk silicon using the  \verb#Si2_dos.cell#  and \verb#Si2_dos.param# input files. 
+\item Perform a \castep\ calculation on the bulk silicon using the  \verb#Si2_dos.cell#  and \verb#Si2_dos.param# input files.
 
-  \verb#$ castep Si2# 
+  \verb#$ castep Si2#
 
-This should take a couple of seconds to run. More help can be found in  the tutorials  on  the \castep\ website \verb#www.castep.org#.  
+This should take a couple of seconds to run. More help can be found in  the tutorials  on  the \castep\ website \verb#www.castep.org#.
 
 %%%%  Step 2 %%%%%
-\item Perform an \optados\ calculation.  Add \verb#LEGACY_FILE_FORMAT : true# in the \verb#Si2_DOS.odi# input file, if the \castep\ version you are using is before 6.0. Then execute:   
- 
-\verb#$ optados.<SYSTEM>.<BUILD>.<COMMS_ARCH>.x86_64 Si2# 
+\item Perform an \optados\ calculation.  Add \verb#LEGACY_FILE_FORMAT : true# in the \verb#Si2_DOS.odi# input file, if the \castep\ version you are using is before 6.0. Then execute:
+
+\verb#$ optados.<SYSTEM>.<BUILD>.<COMMS_ARCH>.x86_64 Si2#
 
 This generates 3 files:
 \begin{itemize}
 \item \verb#Si2.odo# -- \optados\ general output file.
 \item \verb#Si2.adaptive.dat# -- The adaptive broadened DOS raw output data.
-\item  \verb#Si2.adaptive.agr# -- The adaptive broadened DOS in a file suitable to be plotted by  \verb#xmgrace#.   
+\item  \verb#Si2.adaptive.agr# -- The adaptive broadened DOS in a file suitable to be plotted by  \verb#xmgrace#.
 \end{itemize}
 
 %%%%  Step 3 %%%%%
@@ -887,7 +887,7 @@ This generates 3 files:
 +------------------------ Fermi Energy Analysis ------------------------------+
 | From Adaptive broadening                                                    |
 |   Spin Component : 1 occupation between    3.99961 and    4.00003    <- Oc  |
-|   Spin Component : 2 occupation between    3.99961 and    4.00003    <- Oc  | 
+|   Spin Component : 2 occupation between    3.99961 and    4.00003    <- Oc  |
 |         Fermi energy (Adaptive broadening) :   5.4109 eV             <- EfA |
 +-----------------------------------------------------------------------------+
 \end{verbatim}
@@ -932,10 +932,10 @@ Finally \optados\ shifts the Fermi level to 0\,eV, for the output files.
 \begin{verbatim}
 ########################################################################
 #
-#                  O p t a D O S   o u t p u t   f i l e 
+#                  O p t a D O S   o u t p u t   f i l e
 #
 #    Density of States using adaptive broadening
-#  Generated on 12 Feb 2012 at 16:50:37 
+#  Generated on 12 Feb 2012 at 16:50:37
 # Column        Data
 #    1        Energy (eV)
 #    2        Up-spin DOS (electrons per eV)
@@ -954,14 +954,14 @@ This file can be plotted by your favourite graph-plotting software. However, \op
 \begin{center}
 \scalebox{0.35}{\includegraphics{./images/Si2.adaptive.eps}}
 \caption{Density of States of Silicon generated by adaptive broadening and a very coarse energy sampling of 0.1 eV.}
-\label{fig:Si2_adaptive1} 
+\label{fig:Si2_adaptive1}
 \end{center}
 \end{figure}
 
 %%%%  Step 5 %%%%%
 \item We now try again with a better sampling of the DOS, by setting \verb#DOS_SPACING : 0.001# and also analyse the band gap, by setting \verb#COMPUTE_BAND_GAP : true#.  You can remove all of the \optados\ output files by using \verb#./tools/optados_clean# in your working directory.  If you have a parallel version of \optados\ compiled, now might be the time to try it out, if not, the serial version will be fine, but just take a bit longer.  You can set \verb#IPRINT : 2# to see a progress report in  \verb#Si2.odo#.  In parallel:
 
-\verb#$ mpirun -np <nprocs> optados.SYSTEM.BUILD.COMMS_ARCH.x86_64 Si2# 
+\verb#$ mpirun -np <nprocs> optados.SYSTEM.BUILD.COMMS_ARCH.x86_64 Si2#
 
 but your MPI implementation may be different.
 
@@ -990,7 +990,7 @@ but your MPI implementation may be different.
 +-----------------------------------------------------------------------------+
 \end{verbatim}
 
-\optados\ is very careful in its band gap analysis. It uses the bare eigenvalues (un-broadened) and works out the nature and size of the thermal gap, optical gap and the average gap over all of the Brillouin zone. In cases of multi-valleyed semiconductors \optados\ will report the number of conduction band minima or valence band maxima with identical energies, but will not report the nature of the gap. 
+\optados\ is very careful in its band gap analysis. It uses the bare eigenvalues (un-broadened) and works out the nature and size of the thermal gap, optical gap and the average gap over all of the Brillouin zone. In cases of multi-valleyed semiconductors \optados\ will report the number of conduction band minima or valence band maxima with identical energies, but will not report the nature of the gap.
 
 Increasing the number of integration points has improved the band energy of the adaptive smearing:
 \begin{verbatim}
@@ -1005,9 +1005,9 @@ Plotting the linear broadened DOS over the adaptive we see that the default adap
 
 \verb#xmgrace Si2.adaptive.agr -nxy Si2.linear.dat#
 
-Linear broadening, although a massive improvement over fixed broadening, sometimes appears noisy if used with very low numbers of k-points. Linear and adaptive DOS should be compared and \verb#ADAPTIVE_SMEARING# may be tuned by eye until the adaptive DOS contains the features of the linear DOS, but with less noise.  Adding a random shift to a k-point mesh can greatly increase the quality of the DOS, especially if the k-point set contained the $\Gamma$-point. It generally pays off in computational time to have a coarse mesh at low symmetry points, than a fine mesh centred on high symmetry points. 
+Linear broadening, although a massive improvement over fixed broadening, sometimes appears noisy if used with very low numbers of k-points. Linear and adaptive DOS should be compared and \verb#ADAPTIVE_SMEARING# may be tuned by eye until the adaptive DOS contains the features of the linear DOS, but with less noise.  Adding a random shift to a k-point mesh can greatly increase the quality of the DOS, especially if the k-point set contained the $\Gamma$-point. It generally pays off in computational time to have a coarse mesh at low symmetry points, than a fine mesh centred on high symmetry points.
 
-Both fixed and adaptive broadening can fail to plot the sharpest features, such as semi-core states, if the bin widths are too broad. These sharp features may be forced to be present using the narrowest Gaussian still reproducible by the chosen bin widths by setting \verb#FINITE_BIN_CORRECTION : true#.  
+Both fixed and adaptive broadening can fail to plot the sharpest features, such as semi-core states, if the bin widths are too broad. These sharp features may be forced to be present using the narrowest Gaussian still reproducible by the chosen bin widths by setting \verb#FINITE_BIN_CORRECTION : true#.
 
 Linear broadening may also be improved by using \verb#HYBRID_LINEAR : true#. Van Hove singularities and other sharp features are now described at the adaptive broadening level if the bands are flatter than \verb#HYBRID_LINEAR_GRAD_TOL#. Hybrid linear may also take advantage of the finite bin correction if required.
 
@@ -1017,7 +1017,7 @@ Linear broadening may also be improved by using \verb#HYBRID_LINEAR : true#. Van
 
 
 \section{Projected Density of States}
-We assume the reader is familiar with the previous section on Density of States calculations and is now familiar with choosing broadening widths, and running \optados. 
+We assume the reader is familiar with the previous section on Density of States calculations and is now familiar with choosing broadening widths, and running \optados.
 \begin{itemize}
 \item \emph{Outline} : This is a simple example of using \optados\ for calculating electronic density of states of 2 atoms of crystalline silicon projected onto LCAO basis states.
 \item \emph{Input Files}:
@@ -1032,7 +1032,7 @@ We assume the reader is familiar with the previous section on Density of States 
 
 \item Choose a broadening scheme for the projected-DOS calculation and test using {\tt TASK : compare\_dos} as explained in the previous example. Checking that the  {\tt DOS\_SPACING} is sufficiently fine for the band energies to match.
 
-\item Once the DOS looks suitable, switch to  {\tt TASK : pdos}. We choose to decompose the DOS into angular momentum channels ({\tt PDOS : angular}) and as in the previous example we choose to recalculate the Fermi level using the calculated DOS, rather than use the Fermi level suggested by \castep. 
+\item Once the DOS looks suitable, switch to  {\tt TASK : pdos}. We choose to decompose the DOS into angular momentum channels ({\tt PDOS : angular}) and as in the previous example we choose to recalculate the Fermi level using the calculated DOS, rather than use the Fermi level suggested by \castep.
 
 \item Execute \optados.
 
@@ -1080,7 +1080,7 @@ The header shows that there are four projectors described below. The first conta
 \begin{center}
 \scalebox{0.35}{\includegraphics*{./images/Si2_PDOS.eps}}
 \caption{Density of States of Silicon generated by adaptive broadening projected onto LCAO momentum states.}
-\label{fig:Si2_PDOS} 
+\label{fig:Si2_PDOS}
 \end{center}
 \end{figure}
 
@@ -1113,18 +1113,18 @@ The header shows that there are four projectors described below. The first conta
 \end{enumerate}
 
 \section{JDOS}
-See  \verb#examples/Si2_JDOS/#. This is a simple example of using \optados\ for calculating joint electronic density of states.  We choose to recalculate the Fermi level using the calculated DOS, rather than use the Fermi level suggested by \castep\, and so \verb#EFERMI: OPTADOS# is included in the \verb#Si2.odi# file.  
+See  \verb#examples/Si2_JDOS/#. This is a simple example of using \optados\ for calculating joint electronic density of states.  We choose to recalculate the Fermi level using the calculated DOS, rather than use the Fermi level suggested by \castep\, and so \verb#EFERMI: OPTADOS# is included in the \verb#Si2.odi# file.
 \begin{enumerate}
 \item Execute \optados\ using the example files.  The JDOS is outputted to {\tt Si2.jadaptive.dat}. A file suitable for plotting using {\tt xmgrace} is written to {\tt Si2.jadaptive.agr}.
-\item Check the effect of changing the sampling by increasing and decreasing the value of \verb#JDOS_SPACING# in the \verb#Si2.odi# file. 
-\item If {\tt TASK : compare\_jdos} is used instead, \optados\ will calculate the JDOS using all the broadening methods.  This is good practice to see whether the broadening widths are appropriate before more advanced tasks are carried out.  
+\item Check the effect of changing the sampling by increasing and decreasing the value of \verb#JDOS_SPACING# in the \verb#Si2.odi# file.
+\item If {\tt TASK : compare\_jdos} is used instead, \optados\ will calculate the JDOS using all the broadening methods.  This is good practice to see whether the broadening widths are appropriate before more advanced tasks are carried out.
 \end{enumerate}
 
 \section{OPTICS}
-Two sets of example files are provided for calculations of optical properties.  For each example, the \castep\ files containing all the cell and simulation parameters are included, along with an \optados\ input file. We assume that the reader is familiar with the previous sections on DOS and JDOS.  
+Two sets of example files are provided for calculations of optical properties.  For each example, the \castep\ files containing all the cell and simulation parameters are included, along with an \optados\ input file. We assume that the reader is familiar with the previous sections on DOS and JDOS.
 \begin{itemize}
-\item[{\bf --}]  \verb#examples/Si2_OPTICS/#  This is a simple example of using \optados\ to calculate the optical properties of crystalline silicon, which is an insulator.   
-\item[{\bf --}]\verb#examples/Al_OPTICS/#  This is a simple example of using \optados\ to calculate the optical properties of a metal, aluminium. 
+\item[{\bf --}]  \verb#examples/Si2_OPTICS/#  This is a simple example of using \optados\ to calculate the optical properties of crystalline silicon, which is an insulator.
+\item[{\bf --}]\verb#examples/Al_OPTICS/#  This is a simple example of using \optados\ to calculate the optical properties of a metal, aluminium.
 \end{itemize}
 
 \subsection{Silicon}
@@ -1132,36 +1132,36 @@ Two sets of example files are provided for calculations of optical properties.  
 \item Choose a broadening scheme for the JDOS as explained in the JDOS example.  Once the JDOS looks suitable, switch the \verb#task# from \verb#JDOS# to \verb#OPTICS# and execute \optados\ to calculate the optical properties.  Several \verb#*.dat# files are produced:
 \begin{itemize}
 \item[{\bf --}] \verb#Si2_OPTICS_absorption.dat# : This file contains the absorption coefficient (second column) as function of energy (first column).
-\item[{\bf --}] \verb#Si2_OPTICS_conductivity.dat# : This file contains the conductivity outputted in SI units (Siemens per metre).  The columns are the energy, real part  and imaginary part of the conductivity respectively.  
-\item[{\bf --}] \verb#Si2_OPTICS_epsilon.dat# : This file contains the dielectric function.  The columns are the energy and real and imaginary parts of the dielectric function respectively. The file header also includes the result of the sum rule $\int_o^{\omega'}Im\epsilon{}(\omega{})d\omega = N_{eff}(\omega')$.  $N_{eff}$ is the effective number of electrons contributing to the absorption process, and is a function of energy.    
+\item[{\bf --}] \verb#Si2_OPTICS_conductivity.dat# : This file contains the conductivity outputted in SI units (Siemens per metre).  The columns are the energy, real part  and imaginary part of the conductivity respectively.
+\item[{\bf --}] \verb#Si2_OPTICS_epsilon.dat# : This file contains the dielectric function.  The columns are the energy and real and imaginary parts of the dielectric function respectively. The file header also includes the result of the sum rule $\int_o^{\omega'}Im\epsilon{}(\omega{})d\omega = N_{eff}(\omega')$.  $N_{eff}$ is the effective number of electrons contributing to the absorption process, and is a function of energy.
 \item[{\bf --}] \verb#Si2_OPTICS_loss_fn.dat# : This file contains the loss function (second column) as a function of energy (first column).  The header of the file shows the results of the two sum rules associated with the loss function $\int_o^{\omega'}Im\Big(\frac{-1}{\epsilon{}(\omega{})}\Big)\,\omega{}\,d\omega = N_{eff}(\omega')$ and $\int_o^{\omega'}Im\Big(\frac{-1}{\epsilon{}(\omega{})}\Big)\,\frac{1}{\omega}\,d\omega = \frac{\pi}{2}$.
 \item[{\bf --}] \verb#Si2_OPTICS_reflection.dat# : This file contains the reflection coefficient (second column) as a function of energy (first column).
-\item[{\bf --}] \verb#Si2_OPTICS_refractive_index.dat# : This file contains the refractive index.  The columns are the energy and real and imaginary parts of the refractive index respectively.  
+\item[{\bf --}] \verb#Si2_OPTICS_refractive_index.dat# : This file contains the refractive index.  The columns are the energy and real and imaginary parts of the refractive index respectively.
 \end{itemize}
 Corresponding \verb#*.agr# files are also generated which can be plotted easily using xmgrace.
 
-\item Change parameters \verb#JDOS_SPACING# and \verb#JDOS_MAX# and check the effect on the optical properties.  Note: all of the other optical properties are derived from the dielectric function.  
+\item Change parameters \verb#JDOS_SPACING# and \verb#JDOS_MAX# and check the effect on the optical properties.  Note: all of the other optical properties are derived from the dielectric function.
 
 \item  The \optados\ input file has been set up to calculate the optical properties in the polycrystalline geometry (\verb#optics_geom = polycrystalline#).  It is possible to calculate either polarised or unpolarised geometries, or to calculate the full dielectric tensor.  To calculate the full dielectric tensor set \verb#optics_geom = tensor#.  This time only the file \verb#Si2_OPTICS_epsilon.dat# is generated.  The format of this file is the same as before (the columns are the energy and the real and imaginary parts of the dielectric function respectively), but this time the six different components of the tensor are listed sequentially in the order $\epsilon_{xx}$, $\epsilon_{yy}$, $\epsilon_{zz}$, $\epsilon_{xy}$, $\epsilon_{xz}$ and $\epsilon_{yz}$.
 
-\item Additional broadening can be included in the calculation of the loss function.  This is done by including the keyword \verb#optics_lossfn_broadening# in the \optados\ input file.  If you include this keyword and re-run \optados, you will find that the file \verb#Si2_OPTICS_loss_fn.dat# now has three columns.  These are the energy, unbroadened spectrum and broadened spectrum respectively.  
+\item Additional broadening can be included in the calculation of the loss function.  This is done by including the keyword \verb#optics_lossfn_broadening# in the \optados\ input file.  If you include this keyword and re-run \optados, you will find that the file \verb#Si2_OPTICS_loss_fn.dat# now has three columns.  These are the energy, unbroadened spectrum and broadened spectrum respectively.
 
 \end{enumerate}
 
 \subsection{Aluminium}
 \begin{enumerate}
-\item As for the silicon example, a broadening scheme for the JDOS should first be determined.  
-\item Aluminium is a metal so we need to include both the interband and intraband contributions to the dielectric function.  To include the intraband contribution \verb#optics_intraband# \verb#= true# must be included in the \optados\ input file.  When you run \optados\, the same files are generated as when only the interband term is included.  
+\item As for the silicon example, a broadening scheme for the JDOS should first be determined.
+\item Aluminium is a metal so we need to include both the interband and intraband contributions to the dielectric function.  To include the intraband contribution \verb#optics_intraband# \verb#= true# must be included in the \optados\ input file.  When you run \optados\, the same files are generated as when only the interband term is included.
 
 The \verb#Al_OPTICS_epsilon.dat# file has the same format as before, but it now contains sequentially the interband contribution, the intraband contribution and the total dielectric function.  (The file \verb#Al_OPTICS_epsilon.agr# only contains the interband term.)  In the same way, \verb#Al_OPTICS_loss_fn.dat# contains the interband contribution, intraband contribution and total loss function.  All other optical properties are calculated from the total dielectric function and the format of the output files remains the same.
 
-\item In the case where the dielectric tensor is calculated and the intraband term is included, only the \verb#Al_OPTICS_epsilon.dat#  file is generated.  As before it contains each component, but this time it lists sequentially the interband contribution, intraband contribution and total dielectric function for each component.   
+\item In the case where the dielectric tensor is calculated and the intraband term is included, only the \verb#Al_OPTICS_epsilon.dat#  file is generated.  As before it contains each component, but this time it lists sequentially the interband contribution, intraband contribution and total dielectric function for each component.
 
-\item This time, if additional broadening for the loss function is included by using the key word \verb#optics_lossfn_broadening#, \verb#AL_OPTICS_loss_fn.dat# will contains four sequential data sets.  These are the interband contribution, the intraband contribution, the total loss function without the additional broadening and the broadened total loss function.  
+\item This time, if additional broadening for the loss function is included by using the key word \verb#optics_lossfn_broadening#, \verb#AL_OPTICS_loss_fn.dat# will contains four sequential data sets.  These are the interband contribution, the intraband contribution, the total loss function without the additional broadening and the broadened total loss function.
 \end{enumerate}
 
 \section{CORE}
-See  \verb#examples/Si2_CORE/#. This is a simple example of using \optados\ for calculating core level absorption spectra for crystalline silicon.  We assume that the reader is familiar with the previous section on calculating DOS.  
+See  \verb#examples/Si2_CORE/#. This is a simple example of using \optados\ for calculating core level absorption spectra for crystalline silicon.  We assume that the reader is familiar with the previous section on calculating DOS.
 \begin{enumerate}
 \item We begin by running a \castep\ calculation using the files provided in \verb#examples/Si2_CORE#.  Note that we do not specify pseudopotentials in the \verb#Si2_CORE.cell# file hence require \castep\ to generate on-the-fly pseudopotentials.  This is important as most pseudopotential formats do not contain enough information for the PAW reconstruction needed for a CORE calculation. For any atom a CORE spectra is to be calculated an On-the-fly pseudopotential must be used.
 
@@ -1175,46 +1175,46 @@ Execute \optados\ using the \optados\ input file provided and the file \verb#Si2
  # Si 2    L1
  # Si 2  L2,3
 \end{verbatim}
-$i.e.$ all edges from all atoms are produced.    
+$i.e.$ all edges from all atoms are produced.
 
 \item To include a core-hole in the calculation, first one atom is chosen to have the excitation.  To begin, we will keep two atoms in the unit cell and distinguish one atom by changing the \verb#%BLOCK POSITIONS_FRAC#
-\begin{verbatim} 
+\begin{verbatim}
      %BLOCK POSITIONS_FRAC
             Si:exi    0.0000000000    0.0000000000    0.0000000000
             Si        0.2500000000    0.2500000000    0.2500000000
       %ENDBLOCK POSITIONS_FRAC
 \end{verbatim}
-in the \verb#Si2_CORE.cell# file.  The atom \verb#Si:exi# is the one to have a core-hole.  To create a core-hole we remove a 1s electrons from the electronic configuration used in the generation of the pseudopotential.  We have already generated an on-the-fly pseudopotential without a core-hole in the previous section.  Information about the pseudopotentials is included at the top of the \verb#Si2_CORE.castep# file.  
+in the \verb#Si2_CORE.cell# file.  The atom \verb#Si:exi# is the one to have a core-hole.  To create a core-hole we remove a 1s electrons from the electronic configuration used in the generation of the pseudopotential.  We have already generated an on-the-fly pseudopotential without a core-hole in the previous section.  Information about the pseudopotentials is included at the top of the \verb#Si2_CORE.castep# file.
 
 \begin{verbatim}
-   ============================================================                
-   | Pseudopotential Report - Date of generation 16-05-2012   |                
-   ------------------------------------------------------------                
-   | Element: Si Ionic charge:  4.00 Level of theory: LDA     |                
-   |                                                          |                
-   |               Reference Electronic Structure             |                
-   |         Orbital         Occupation         Energy        |                
-   |            3s              2.000           -0.400        |                
-   |            3p              2.000           -0.153        |                
-   |                                                          |                
-   |                 Pseudopotential Definition               |                
-   |        Beta     l      e      Rc     scheme   norm       |                
-   |          1      0   -0.400   1.797     qc      0         |                
-   |          2      0    0.250   1.797     qc      0         |                
-   |          3      1   -0.153   1.797     qc      0         |                
-   |          4      1    0.250   1.797     qc      0         |                
-   |         loc     2    0.000   1.797     pn      0         |                
-   |                                                          |                
-   | Augmentation charge Rinner = 1.298                       |                
-   | Partial core correction Rc = 1.298                       |                
-   ------------------------------------------------------------                
-   | "2|1.8|1.8|1.3|2|3|4|30:31:32LGG(qc=4)"                  |                
-   ------------------------------------------------------------                
-   |      Author: Chris J. Pickard, Cambridge University      |                
-   ============================================================      
+   ============================================================
+   | Pseudopotential Report - Date of generation 16-05-2012   |
+   ------------------------------------------------------------
+   | Element: Si Ionic charge:  4.00 Level of theory: LDA     |
+   |                                                          |
+   |               Reference Electronic Structure             |
+   |         Orbital         Occupation         Energy        |
+   |            3s              2.000           -0.400        |
+   |            3p              2.000           -0.153        |
+   |                                                          |
+   |                 Pseudopotential Definition               |
+   |        Beta     l      e      Rc     scheme   norm       |
+   |          1      0   -0.400   1.797     qc      0         |
+   |          2      0    0.250   1.797     qc      0         |
+   |          3      1   -0.153   1.797     qc      0         |
+   |          4      1    0.250   1.797     qc      0         |
+   |         loc     2    0.000   1.797     pn      0         |
+   |                                                          |
+   | Augmentation charge Rinner = 1.298                       |
+   | Partial core correction Rc = 1.298                       |
+   ------------------------------------------------------------
+   | "2|1.8|1.8|1.3|2|3|4|30:31:32LGG(qc=4)"                  |
+   ------------------------------------------------------------
+   |      Author: Chris J. Pickard, Cambridge University      |
+   ============================================================
 \end{verbatim}
 
-The line 
+The line
 \begin{verbatim}
     2|1.8|1.8|1.3|2|3|4|30:31:32LGG(qc=4)
 \end{verbatim}
@@ -1224,25 +1224,25 @@ specifies the parameters used to create the pseudopotential.  We use this as the
 \end{verbatim}
 If, instead of removing a 1s electron, we wanted to remove a 2s electron from the core, we would have included \verb#{2s1.00}# instead of \verb#{1s1.00}# in the pseudopotential string.
 
-We are only interested in the spectra from the atom with the core-hole and so copy the pseudopotential file generated by the previous calculation (\verb#Si_OFT.usp#) to \verb#Si_LDA.usp#.  Then include 
+We are only interested in the spectra from the atom with the core-hole and so copy the pseudopotential file generated by the previous calculation (\verb#Si_OFT.usp#) to \verb#Si_LDA.usp#.  Then include
 \begin{verbatim}
       %BLOCK SPECIES_POT
             Si:exi    2|1.8|1.8|1.3|2|3|4|30:31:32LGG{1s1.00}(qc=4)
             Si        Si_LDA.usp
       %ENDBLOCK SPECIES_POT
 \end{verbatim}
-in the \castep\ \verb#Si2_CORE.cell# file.  
+in the \castep\ \verb#Si2_CORE.cell# file.
 
 
-To maintain the neutrality of the cell, we include 
+To maintain the neutrality of the cell, we include
 \begin{verbatim}
-  CHARGE : +1 
+  CHARGE : +1
 \end{verbatim}
-in the \verb#Si2_CORE.param# file.  Run the calculation.  This time the \verb#Si2_CORE_core_edge.dat# file will contain only the edges from the core-hole atom.  Compare the K-edge from the core-hole calculation with the previous non-core-hole calculation.  
+in the \verb#Si2_CORE.param# file.  Run the calculation.  This time the \verb#Si2_CORE_core_edge.dat# file will contain only the edges from the core-hole atom.  Compare the K-edge from the core-hole calculation with the previous non-core-hole calculation.
 
 \item The periodic images of the core-hole will interact with one another.  As this is unphysical, we need to increase the distance between the core-holes.  This is done by creating a supercell.  To start with we use a face-centred unit cell rather than the primitive unit cell.  This is done by changing the lattice parameters and fractional co-ordinates to:
-\begin{verbatim} 
-     %BLOCK LATTICE_CART 
+\begin{verbatim}
+     %BLOCK LATTICE_CART
             5.46  0.00 0.00
             0.00  5.46 0.00
             0.00  0.00 5.46
@@ -1250,7 +1250,7 @@ in the \verb#Si2_CORE.param# file.  Run the calculation.  This time the \verb#Si
 
      %BLOCK POSITIONS_FRAC
             Si:exi    0.0000000000    0.0000000000    0.0000000000
-            Si        0.5000000000    0.5000000000    0.0000000000  
+            Si        0.5000000000    0.5000000000    0.0000000000
             Si        0.5000000000    0.0000000000    0.5000000000
             Si        0.0000000000    0.5000000000    0.5000000000
             Si        0.2500000000    0.2500000000    0.2500000000
@@ -1259,7 +1259,7 @@ in the \verb#Si2_CORE.param# file.  Run the calculation.  This time the \verb#Si
             Si        0.7500000000    0.7500000000    0.2500000000
       %ENDBLOCK POSITIONS_FRAC
 \end{verbatim}
-Run \optados\ and compare the spectrum from the face-centred unit cell with that from the primitive unit cell.  Continue constructing larger unit cells until the core-hole spectrum stops changing with increasing separation between the periodic images.  
+Run \optados\ and compare the spectrum from the face-centred unit cell with that from the primitive unit cell.  Continue constructing larger unit cells until the core-hole spectrum stops changing with increasing separation between the periodic images.
 
 \item Other things to try include
 \begin{itemize}
@@ -1270,9 +1270,9 @@ Run \optados\ and compare the spectrum from the face-centred unit cell with that
 
 \chapter{ONETEP Examples}
 \section{(L)PDOS}
-\onetep\ outputs an \optados\ compatible \verb@seedname_prefix.bands@ file, and from version 4.2 onwards, a \verb@seedname_prefix.pdos_bin@, \verb@seedname_prefix.dome_bin@ and a \verb@seedname-out.cell@ file. Where \verb@prefix@ may be one of \verb@val@, \verb@cond@ or \verb@joint@. 
+\onetep\ outputs an \optados\ compatible \verb@seedname_prefix.bands@ file, and from version 4.2 onwards, a \verb@seedname_prefix.pdos_bin@, \verb@seedname_prefix.dome_bin@ and a \verb@seedname-out.cell@ file. Where \verb@prefix@ may be one of \verb@val@, \verb@cond@ or \verb@joint@.
 %
-A normal \onetep\  run will only output the valence files (\verb@val@), if conduction states are required, a \onetep\  conduction calculation should be run, in which case the \verb@cond@ and \verb@joint@ files will also be written to disk. 
+A normal \onetep\  run will only output the valence files (\verb@val@), if conduction states are required, a \onetep\  conduction calculation should be run, in which case the \verb@cond@ and \verb@joint@ files will also be written to disk.
 %
 For a full DOS (conduction and valence), the \verb@joint@ files should be used with \optados.
 
@@ -1333,18 +1333,18 @@ Which version of \castep\ are you using? See Sect.\,\ref{sect:lff}.
 The spectral module in \castep\ 6.0 generates the pdos weights commensurate with the optics grid you have chosen. However this gets overwritten by the main routines. Hence to get the right PDOS weights you must set \verb#PDOS_CALCULATE_WEIGHTS : FALSE# in the param file.
 
 \section{\optados\ is reporting the wrong number of kpoints}
-This is a rare bug that can happen if you have picked the magic k-point offset for your grid, that is a $3/(4n)$ offset where $n$ is the number of MP grid points in that direction. It is a very difficult edge-case to catch. Until a permanent workaround is found you can tell \optados\ the right number using the \verb#KPOINT_MP_GRID nx ny nz# in the odi file. 
+This is a rare bug that can happen if you have picked the magic k-point offset for your grid, that is a $3/(4n)$ offset where $n$ is the number of MP grid points in that direction. It is a very difficult edge-case to catch. Until a permanent workaround is found you can tell \optados\ the right number using the \verb#KPOINT_MP_GRID nx ny nz# in the odi file.
 
 \section{I'd like \optados\ to do X as well}
 Contact the developers we're always interested in discussing new functionality.
 
 \section{I'd like to help, what can I do?}
 Contact the developers, there's always more functionality that we'd
-like to add to the code.  
+like to add to the code.
 
 \section{I think I've found a bug: what should I do?}
 \begin{itemize}
-\item Check and re-check that it is a bug.  
+\item Check and re-check that it is a bug.
 \item Check the output of the electronic structure code.
 \item Check that you're using the latest version of \optados.
 \item Email the developers the input and output files with
@@ -1375,15 +1375,15 @@ integer:: num_spins                  ! Number of spins
 integer:: max_eigenv                 ! Number of bands included in matrix elements
 integer:: num_electrons(num_spins)   ! Number of electrons of each spin
 integer:: num_eigenvalues(num_spins) ! Number of eigenvalues of each spin
-real(dp):: efermi(num_spins)         ! Fermi level calculated from electronic 
-                                     ! structure code for each spin           
+real(dp):: efermi(num_spins)         ! Fermi level calculated from electronic
+                                     ! structure code for each spin
 real(dp):: cell_lattice(1:3,1:3)     ! Real-space lattice vectors
-real(dp):: kpoint_positions(num_kpoints,1:3) ! K-point position vectors in 
+real(dp):: kpoint_positions(num_kpoints,1:3) ! K-point position vectors in
                                              ! fractions of Brillouin Zone
 real(dp):: kpoint_weight(num_kpoints)        ! K-point weight
-real(dp):: band_energy(max_eigenv, num_spins, num_kpoints) ! Energy eigenvalue 
+real(dp):: band_energy(max_eigenv, num_spins, num_kpoints) ! Energy eigenvalue
                                                            ! list
-                                          
+
 write (band_unit,'(a,i4)') 'Number of k-points ', num_kpoints
 write (band_unit,'(a,i1)') 'Number of spin components ', num_spins
 if(num_spins>1) then
@@ -1412,14 +1412,14 @@ do ik=1,num_kpoints
  do is=1,num_spins
   write(band_unit,'(a,i1)')'Spin component ',is
   do ib=1,num_eigenvalues(is)
-   write (band_unit,*) band_energy(ib,is,ik) 
+   write (band_unit,*) band_energy(ib,is,ik)
   end do
  end do
 end do
 \end{verbatim}
 %\begin{landscape}
 \section{\texttt{.ome\_bin} file}
-The \texttt{.ome\_bin} file is required for adaptive and linear broadening, and for optics calculations. 
+The \texttt{.ome\_bin} file is required for adaptive and linear broadening, and for optics calculations.
 %
 Note that a \texttt{.dome} file is just the diagonal elements of the \texttt{.ome}.
 %
@@ -1476,7 +1476,7 @@ write(pdos_file) max_eigenv
 write(pdos_file) species(1_:num_popn_orb)
 write(pdos_file) ion(1:num_popn_orb)
 write(pdos_file) am_channel(1:num_popn_orb)
-       
+
 do nk=1,num_kpoints
  write(pdos_file) nk, kpoint_positions(nk,:)
  do ns = 1,num_spins
@@ -1517,7 +1517,7 @@ write(elnes_file) species(1:tot_core_projectors)
 write(elnes_file) ion(1:tot_core_projectors)
 write(elnes_file) n(1:tot_core_projectors)
 write(elnes_file) lm(1:tot_core_projectors)
-        
+
 do nk = 1,num_kpoints
  do ns = 1, num_spins
   write(elnes_file) (((elnes_mat(orb,nb,indx,nk,ns),orb=1,&
