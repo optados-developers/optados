@@ -1,0 +1,22 @@
+TASK              : photoemission
+work_function : 4.556
+s_area : 6.339744873
+slab_volume : 190.942338 
+elec_field : 0
+imfp_const : 19.0 
+JDOS_SPACING : 0.1
+JDOS_MAX_ENERGY : 25
+BROADENING : linear
+OPTICS_GEOM : unpolar
+optics_qdir : 1 1.000 1.0000
+photon_energy : 21.2
+linear_smearing : 0.026
+fixed_smearing :  0.026
+optics_intraband : true
+photo_model : 1step
+momentum : crystal
+hybrid_linear : true
+temp : 300
+theta_lower : 59
+theta_upper : 61
+photo_output = be

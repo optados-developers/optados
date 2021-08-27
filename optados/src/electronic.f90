@@ -405,7 +405,7 @@ contains
 
        if(on_root) close (unit=curvature_unit)
 
-       ! Convert all band curvatures to eV Ang
+       ! Convert all band curvatures to eV Ang^2
        band_curvature=band_curvature*bohr2ang*bohr2ang*H2eV
 
 
@@ -567,7 +567,7 @@ contains
   !=========================================================================
   subroutine elec_read_foptical_mat
     !=========================================================================
-    ! Read the .fome_bin file in paralell if appropriate. These are the 
+    ! Read the .fem_bin file in paralell if appropriate. These are the 
     ! free electron matrix at each kpoint.
     !-------------------------------------------------------------------------
     ! Arguments: None
@@ -608,20 +608,14 @@ contains
     time0=io_time()
     if(on_root) then
        gradient_unit=io_file_unit()
-       if(index(devel_flag,'old_filename')>0.or.legacy_file_format) then
-          gradient_filename=trim(seedname)//".cst_ome"
-          if(iprint>1) write(stdout,'(1x,a)') 'Reading foptical matrix elements from file: '//trim(gradient_filename)
-          open(unit=gradient_unit,file=gradient_filename,status="old",form='unformatted',err=101)
-       else
-          gradient_filename=trim(seedname)//".fome_bin"
-          if(iprint>1) write(stdout,'(1x,a)') 'Reading foptical matrix elements from file: '//trim(gradient_filename)
+       gradient_filename=trim(seedname)//".fem_bin"
+       if(iprint>1) write(stdout,'(1x,a)') 'Reading foptical matrix elements from file: '//trim(gradient_filename)
           open(unit=gradient_unit,file=gradient_filename,status="old",form='unformatted',err=102)
           read(gradient_unit) file_version
-          if( (file_version-file_ver)>0.001_dp) &
-                           call io_error('Error: Trying to read newer version of fome_bin file. Update optados!')
+       if( (file_version-file_ver)>0.001_dp) &
+                           call io_error('Error: Trying to read newer version of fem_bin file. Update optados!')
           read(gradient_unit) header
-          if(iprint>1) write(stdout,'(1x,a)') trim(header)
-       endif
+       if(iprint>1) write(stdout,'(1x,a)') trim(header)
     endif
 
 
@@ -629,42 +623,6 @@ contains
     call algor_dist_array(nkpoints,num_kpoints_on_node)
     allocate(foptical_mat(1:nbands+1,1:nbands+1,1:3,1:num_kpoints_on_node(my_node_id),1:nspins),stat=ierr)
     if (ierr/=0) call io_error('Error: Problem allocating foptical_mat in elec_read_optical_mat')
-
-    if(legacy_file_format) then
-
-       if(on_root) then
-          do inodes=1,num_nodes-1
-             do ik=1,num_kpoints_on_node(inodes)
-                do is=1,nspins
-                   do i=1,3
-                      do jb=1,nbands+1
-                         do ib=1,nbands+1
-                            ! Read in units of Ha Bohr^2 / Ang
-                            read (gradient_unit) foptical_mat(ib,jb,i,ik,is)
-                         end do
-                      end do
-                   end do
-                end do
-             end do
-             call comms_send(foptical_mat(1,1,1,1,1),(nbands+1)*(nbands+1)*3*nspins*num_kpoints_on_node(inodes),inodes)
-          end do
-
-          do ik=1,num_kpoints_on_node(0)
-             do is=1,nspins
-                do i=1,3
-                   do jb=1,nbands+1
-                      do ib=1,nbands+1
-                         ! Read in units of Ha Bohr^2 / Ang
-                         read (gradient_unit) foptical_mat(ib,jb,i,ik,is)
-                      end do
-                   end do
-                end do
-             end do
-          end do
-       endif
-
-    else ! sane file format
-
        if(on_root) then
           do inodes=1,num_nodes-1
              do ik=1,num_kpoints_on_node(inodes)
@@ -679,8 +637,7 @@ contains
              do is=1,nspins
                 read(gradient_unit) (((foptical_mat(ib,jb,i,ik,is),ib=1,nbands+1),jb=1,nbands+1),i=1,3)
              end do
-          end do
-       end if
+          end do 
     end if
 
     if(.not. on_root) then
@@ -698,14 +655,14 @@ contains
     time1=io_time()
     if(on_root.and.iprint>1) then
        write(stdout,'(1x,a59,f11.3,a8)') &
-            '+ Time to read F Optical Matrix Elements                   &
+            '+ Time to read Free electron Matrix Elements                   &
             &      ',time1-time0,' (sec) +'
     endif
 
     return
 
-101 call io_error('Error: Problem opening cst_ome file in read_band_foptical_mat')
-102 call io_error('Error: Problem opening ome_bin file in read_band_foptical_mat')
+
+102 call io_error('Error: Problem opening fem_bin file in read_band_foptical_mat')
 
   end subroutine elec_read_foptical_mat
 

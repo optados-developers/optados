@@ -48,6 +48,24 @@ module od_constants
   complex(dp), parameter, public :: cmplx_0 = (0.0_dp, 0.0_dp)
   complex(dp), parameter, public :: cmplx_i = (0.0_dp, 1.0_dp)
 
+  !Optics constants
+  real(kind=dp), parameter,public :: epsilon_0 = 8.8541878176E-12_dp
+  real(kind=dp), parameter,public :: e_charge = 1.602176487E-19_dp
+  real(kind=dp), parameter,public :: e_mass = 9.10938215E-31_dp
+  real(kind=dp), parameter,public :: hbar = 1.054571628E-34_dp
+  real(kind=dp), parameter,public :: c_speed = 299792458.0_dp
+
+  !Photoemission constants
+  real(kind=dp), parameter,public :: epsilon_zero = 55.26349406_dp     !e^2 GeV^-1 fm^-1
+  real(kind=dp), parameter,public :: j_to_ev =  6.24150934E+18_dp      !J eV^-1
+  real(kind=dp), parameter,public :: ev_to_j =  1.602176565E-19_dp          !eV J^-1
+  real(kind=dp), parameter,public :: ev_to_hartree =   0.03674932379_dp          !eV Ha^-1
+  real(kind=dp), parameter,public :: rad_to_deg =  57.2957795_dp          !deg rad^-1
+  real(kind=dp), parameter,public :: deg_to_rad =  0.0174532925_dp      !rad^-1 to deg
+  real(kind=dp), parameter,public :: boltzmann = 1.38064852E-23_dp      !J K^-1
+  real(kind=dp), parameter,public :: kB = 8.617333262E-5_dp                ! ev K^-1
+  real(kind=dp), parameter,public :: ge = 10.24633_dp
+
   character(len=3), parameter, dimension(109), public :: periodic_table_name = (/ &
        & 'H ', 'He', &
        & 'Li', 'Be', 'B ', 'C ', 'N ', 'O ', 'F ', 'Ne', &

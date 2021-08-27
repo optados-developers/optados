@@ -1,0 +1,233 @@
+ OptaDOS: Execution started on 27 Aug 2021 at 17:09:23 
+          Parallelised over    1 thread(s)
+
+ +===========================================================================+
+ |                                                                           |
+ |                OOO   PPPP  TTTTT  AA   DDD    OOO    SSS                  |
+ |               O   O  P   P   T   A  A  D  D  O   O  S                     |
+ |               O   O  PPPP    T   AAAA  D  D  O   O   SS                   |
+ |               O   O  P       T   A  A  D  D  O   O     S                  |
+ |                OOO   P       T   A  A  DDD    OOO   SSS                   |
+ |                                                                           |
+ +---------------------------------------------------------------------------+
+ |                                                                           |
+ |                 Welcome to OptaDOS version  1.2                           | 
+ |                                                                           |
+ |         Andrew J. Morris, Rebecca Nicholls, Chris J. Pickard              |
+ |                       and Jonathan R. Yates                               |
+ |                                                                           |
+ |                       Copyright (c) 2010-2015                             |
+ |                                                                           |
+ |  Please cite:                                                             |
+ |  Andrew J. Morris, Rebecca Nicholls, Chris J. Pickard and Jonathan Yates  |
+ |              Comp. Phys. Comm. 185, 5, 1477 (2014)                        |
+ |                                                                           |
+ |  Additionally when using the linear broadening:                           |
+ | C.J. Pickard and M.C. Payne, Phys. Rev. B, 59, 7, 4685 (1999)             |
+ | C.J. Pickard and M.C. Payne, Phys. Rev. B, 62, 7, 4383 (2000)             |
+ |                                                                           |
+ |  Additionally when using the adaptive broadening:                         |
+ | J.Yates, X.Wang, D.Vanderbilt and I.Souza, Phys. Rev. B, 75, 195121 (2007)|
+ |                                                                           |
+ |      in all your publications arising from your use of OptaDOS            |
+ |                                                                           |
+ +===========================================================================+
+
+ +------------------------------ JOB CONTROL ---------------------------------+
+ |  Output Density of States                  :  False                        |
+ |  Output Partial Density of States          :  False                        |
+ |  Output Projected Bandstructure            :  False                        |
+ |  Output Joint Density of States            :  False                        |
+ |  Output Optical Response                   :  False                        |
+ |  Output Core-level Spectra                 :  False                        |
+ |  Photoemission Calculation                 :   True                         
+ |  iprint level                              :    1                          |
+ |  Use CASTEP < 6.0 file format              :  False                        |
+ +-------------------------------- UNITS -------------------------------------+
+ |  Length Unit                               :   Ang                         |
+ +--------------------------SPECTRAL PARAMETERS ------------------------------+
+ |  Linear Extrapolation                      :  True                         |
+ |  Smearing Width                            :    0.02600                    |
+ |  Finite Bin Correction                     :  True                         |
+ |  Hybrid Linear Correction                     :  True                       
+ |  Hybrid Linear Gradient Tolerance             0.01000000                   |
+ |  Shift energy scale so fermi_energy=0      :  False                        |
+ |  Fermi energy                              : -990.00000                    |
+ |  Compute the band energy                   :  True                         |
+ |  Compute the band gap                      :  True                         |
+ +----------------------------------------------------------------------------+
+  
+  
+ +----------------------------------------------------------------------------+
+ |             Species                  Sites                  Total Atoms    |
+ +----------------------------------------------------------------------------+
+ |                C                    1 to   2                   2           |
+ +----------------------------------------------------------------------------+
+  
+                              Lattice Vectors (Ang)
+                    a_1     1.234000   1.234000   0.000000
+                    a_2    -2.137350   2.137350   0.000000
+                    a_3     0.000000   0.000000  25.000000
+
+                        Reciprocal-Space Vectors (Ang^-1)
+                    b_1     2.545861  -1.469854   0.000000
+                    b_2     2.545861   1.469854  -0.000000
+                    b_3    -0.000000   0.000000   0.251327
+
+                   Unit Cell Volume:     131.87452  (Ang^3)
+
+
+ +----------------------- Electronic Data ------------------------------------+
+ |  Number of Bands                           :            33                 |
+ |  Grid size                                 :       60 x 60 x  1            |
+ |  Number of K-points                        :            21                 |
+ |  Spin-Polarised Calculation                :           False               |
+ |  Number of electrons                       :             8.00              |
+ +----------------------------------------------------------------------------+
+ +============================================================================+
+ +                             Photoemission Calculation                      +
+ +============================================================================+
+ |                                                                            |
+ +--------------------------- Setting Fermi Energy  --------------------------+
+ +----------------------------- Fermi Energy Analysis ------------------------+
+ | From Linear broadening                                                     |
+ |   Spin Component : 1 occupation between    7.99413 and    8.00235   <- Occ |
+ |           Fermi energy (Linear broadening) :  -3.1103 eV            <- EfL |
+ +----------------------------------------------------------------------------+
+ |                      Fermi energy from DOS :  -3.1103 eV            <- EfD |
+ +----------------------------------------------------------------------------+
+
+ +------------------------------- Atomic Order  ------------------------------+
+ | Atom |  Atom Order  |   Layer   |          Atomic Position (Angs)          |
+ |  c           1           1                  0.0000000000000000            |
+ |  c           2           1                  0.0000000000000000            |
+ +----------------------------------------------------------------------------+
+ |  Max number of atoms:           2    Max  number of layers:           1    |
+ +----------------------------------------------------------------------------+
+ OptaDOS: Execution started on 27 Aug 2021 at 17:10:06 
+          Parallelised over    1 thread(s)
+
+ +===========================================================================+
+ |                                                                           |
+ |                OOO   PPPP  TTTTT  AA   DDD    OOO    SSS                  |
+ |               O   O  P   P   T   A  A  D  D  O   O  S                     |
+ |               O   O  PPPP    T   AAAA  D  D  O   O   SS                   |
+ |               O   O  P       T   A  A  D  D  O   O     S                  |
+ |                OOO   P       T   A  A  DDD    OOO   SSS                   |
+ |                                                                           |
+ +---------------------------------------------------------------------------+
+ |                                                                           |
+ |                 Welcome to OptaDOS version  1.2                           | 
+ |                                                                           |
+ |         Andrew J. Morris, Rebecca Nicholls, Chris J. Pickard              |
+ |                       and Jonathan R. Yates                               |
+ |                                                                           |
+ |                       Copyright (c) 2010-2015                             |
+ |                                                                           |
+ |  Please cite:                                                             |
+ |  Andrew J. Morris, Rebecca Nicholls, Chris J. Pickard and Jonathan Yates  |
+ |              Comp. Phys. Comm. 185, 5, 1477 (2014)                        |
+ |                                                                           |
+ |  Additionally when using the linear broadening:                           |
+ | C.J. Pickard and M.C. Payne, Phys. Rev. B, 59, 7, 4685 (1999)             |
+ | C.J. Pickard and M.C. Payne, Phys. Rev. B, 62, 7, 4383 (2000)             |
+ |                                                                           |
+ |  Additionally when using the adaptive broadening:                         |
+ | J.Yates, X.Wang, D.Vanderbilt and I.Souza, Phys. Rev. B, 75, 195121 (2007)|
+ |                                                                           |
+ |      in all your publications arising from your use of OptaDOS            |
+ |                                                                           |
+ +===========================================================================+
+
+ +------------------------------ JOB CONTROL ---------------------------------+
+ |  Output Density of States                  :  False                        |
+ |  Output Partial Density of States          :  False                        |
+ |  Output Projected Bandstructure            :  False                        |
+ |  Output Joint Density of States            :  False                        |
+ |  Output Optical Response                   :  False                        |
+ |  Output Core-level Spectra                 :  False                        |
+ |  Photoemission Calculation                 :   True                         
+ |  iprint level                              :    1                          |
+ |  Use CASTEP < 6.0 file format              :  False                        |
+ +-------------------------------- UNITS -------------------------------------+
+ |  Length Unit                               :   Ang                         |
+ +--------------------------SPECTRAL PARAMETERS ------------------------------+
+ |  Linear Extrapolation                      :  True                         |
+ |  Smearing Width                            :    0.02600                    |
+ |  Finite Bin Correction                     :  True                         |
+ |  Hybrid Linear Correction                     :  True                       
+ |  Hybrid Linear Gradient Tolerance             0.01000000                   |
+ |  Shift energy scale so fermi_energy=0      :  False                        |
+ |  Fermi energy                              : -990.00000                    |
+ |  Compute the band energy                   :  True                         |
+ |  Compute the band gap                      :  True                         |
+ +----------------------------------------------------------------------------+
+  
+  
+ +----------------------------------------------------------------------------+
+ |             Species                  Sites                  Total Atoms    |
+ +----------------------------------------------------------------------------+
+ |                C                    1 to   2                   2           |
+ +----------------------------------------------------------------------------+
+  
+                              Lattice Vectors (Ang)
+                    a_1     1.234000   1.234000   0.000000
+                    a_2    -2.137350   2.137350   0.000000
+                    a_3     0.000000   0.000000  25.000000
+
+                        Reciprocal-Space Vectors (Ang^-1)
+                    b_1     2.545861  -1.469854   0.000000
+                    b_2     2.545861   1.469854  -0.000000
+                    b_3    -0.000000   0.000000   0.251327
+
+                   Unit Cell Volume:     131.87452  (Ang^3)
+
+
+ +----------------------- Electronic Data ------------------------------------+
+ |  Number of Bands                           :            33                 |
+ |  Grid size                                 :       60 x 60 x  1            |
+ |  Number of K-points                        :            21                 |
+ |  Spin-Polarised Calculation                :           False               |
+ |  Number of electrons                       :             8.00              |
+ +----------------------------------------------------------------------------+
+ +============================================================================+
+ +                             Photoemission Calculation                      +
+ +============================================================================+
+ |                                                                            |
+ +--------------------------- Setting Fermi Energy  --------------------------+
+ +----------------------------- Fermi Energy Analysis ------------------------+
+ | From Linear broadening                                                     |
+ |   Spin Component : 1 occupation between    7.99413 and    8.00235   <- Occ |
+ |           Fermi energy (Linear broadening) :  -3.1103 eV            <- EfL |
+ +----------------------------------------------------------------------------+
+ |                      Fermi energy from DOS :  -3.1103 eV            <- EfD |
+ +----------------------------------------------------------------------------+
+
+ +------------------------------- Atomic Order  ------------------------------+
+ | Atom |  Atom Order  |   Layer   |          Atomic Position (Angs)          |
+ |  c           1           1                  0.0000000000000000            |
+ |  c           2           1                  0.0000000000000000            |
+ +----------------------------------------------------------------------------+
+ |  Max number of atoms:           2    Max  number of layers:           1    |
+ +----------------------------------------------------------------------------+
+ +---------------------------- Photoemission ---------------------------------+
+ +----------------------------------------------------------------------------+
+ | Work Function         4.2940  eV          PhotonEnergy        50.0000 eV  |
+ | Effective Work Function    4.2940   eV        Electric field    0.0000V/A  |
+ | Final state : Free electron state                                          |
+ +----------------------------------------------------------------------------+
+ | Atom |  Atom Order  |   Layer   |             Quantum Efficiency           |
+ |  c           1           1                  4.9247180077172929E-002       |
+ |  c           2           1                  4.9247180077172922E-002       |
+ |  Bulk                                        1.1057189153927098E-320       |
+ |  Total quantum efficiency (electrons/photon):   9.8494360154345831E-002    |
+ |  Weighted mean transverse energy (eV):   4.0717043915277857                |
+ +----------------------------------------------------------------------------+
+ End of execution
+ |                                                                            |
+   + Time to calculate Photoemission                              5.986 (sec) +
+ +============================================================================+
+  
+  
+
+ OptaDOS: Execution complete on 27 Aug 2021 at 17:10:12 

@@ -1,0 +1,19 @@
+TASK              : photoemission
+work_function : 4.294
+surface_area : 5.27498 
+slab_volume : 8.9675
+elec_field : 0
+imfp_const : 20.0 
+JDOS_SPACING : 0.1
+JDOS_MAX_ENERGY : 50
+BROADENING : linear
+OPTICS_GEOM : unpolar
+optics_qdir : 1 0.000 0.0000
+photon_energy : 50
+linear_smearing : 0.026
+optics_intraband : true
+photo_model : 3step
+momentum : crystal
+hybrid_linear : true
+temp : 300
+write_photo_matrix = slab

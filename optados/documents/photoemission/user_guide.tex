@@ -724,68 +724,125 @@ This generates several files:
 %%%%  Step 3 %%%%%
 \item Open the \verb#Cu.odo# file in a text editor (\emph{e.g.} vi or emacs).
 
+\begin{verbatim}
+ +----------------------- Electronic Data ------------------------------------+
+ |  Number of Bands                           :           243                 |
+ |  Grid size                                 :       32 x 32 x  1            |
+ |  Number of K-points                        :           272                 |
+ |  Spin-Polarised Calculation                :           False               |
+ |  Number of electrons                       :           176.00              |
+ +----------------------------------------------------------------------------+
+\end{verbatim}
 
- 
- Output file (truncated):
- \begin{verbatim}
-  +============================================================================+
- +                             Photoemission Calculation                      +
- +============================================================================+
- |                                                                            |
- +--------------------------- Setting Fermi Energy  --------------------------+
+
+
+\begin{verbatim}
  +----------------------------- Fermi Energy Analysis ------------------------+
  | From Linear broadening                                                     |
- |   Spin Component : 1 occupation between  175.95555 and  176.00289   <- Occ |
- |           Fermi energy (Linear broadening) :   0.7883 eV            <- EfL |
+ |   Spin Component : 1 occupation between  175.97524 and  176.02447   <- Occ |
+ |           Fermi energy (Linear broadening) :   1.5384 eV            <- EfL |
  +----------------------------------------------------------------------------+
- |                      Fermi energy from DOS :   0.7883 eV            <- EfD |
+ |                      Fermi energy from DOS :   1.5384 eV            <- EfD |
  +----------------------------------------------------------------------------+
 
+\end{verbatim}
+
+Since we had \verb#efermi : optados#, \optados\ sets the internal value of the Fermi level to the one it has derived from the DOS.
+
+\begin{verbatim}
  +------------------------------- Atomic Order  ------------------------------+
  | Atom |  Atom Order  |   Layer   |          Atomic Position (Angs)          |
- |  cu           1           1                  13.326149909131798            |
- |  cu           2           2                  11.593149920948759            |
- |  cu           3           3                  9.8006999331710976            |
- |  cu           4           4                  8.0101999453801387            |
- |  cu           5           5                  6.2310999575114456            |
- |  cu           6           6                  4.4502499696546858            |
- |  cu           7           7                  2.6706499817894018            |
- |  cu           8           8                 0.89019999392991433            |
- |  cu           9           9                -0.89019999392991433            |
- |  cu          10          10                 -2.6706499817894018            |
- |  cu          11          11                 -4.4502499696546858            |
- |  cu          12          12                 -6.2310999575114456            |
- |  cu          13          13                 -8.0101999453801387            |
- |  cu          14          14                 -9.8006999331710976            |
- |  cu          15          15                 -11.593149920948759            |
- |  cu          16          16                 -13.326149909131798            |
+ |  cu           1           1                  15.407899894936785            |
+ |  cu           2           2                  13.369449908836545            |
+ |  cu           3           3                  11.312049922865521            |
+ |  cu           4           4                  9.2513499369169985            |
+ |  cu           5           5                  7.1948999509394964            |
+ |  cu           6           6                  5.1403499649490394            |
+ |  cu           7           7                  3.0826499789800610            |
+ |  cu           8           8                  1.0291499929824437            |
+ |  cu           9           9                 -1.0291499929824437            |
+ |  cu          10          10                 -3.0826499789800610            |
+ |  cu          11          11                 -5.1403499649490394            |
+ |  cu          12          12                 -7.1948999509394964            |
+ |  cu          13          13                 -9.2513499369169985            |
+ |  cu          14          14                 -11.312049922865521            |
+ |  cu          15          15                 -13.369449908836545            |
+ |  cu          16          16                 -15.407899894936785            |
  +----------------------------------------------------------------------------+
  |  Max number of atoms:           8    Max  number of layers:           8    |
  +----------------------------------------------------------------------------+
- +---------------------------- Photoemission ---------------------------------+
+\end{verbatim}
+
+Information about the atomic species in the surface simulation. In a slab model, the top and bottom surfaces are equivalent by symmetry and therefore, only the top half is used in the photoemission simulation.
+
+\begin{verbatim}
+ +---------------------- Optical properties per layer  -----------------------+
+ | Atom |  Atom Order  |   Layer   |          Absorption coefficient          |
+ |  cu           1           1                  2.4114520919828505E-002       |
+ |  cu           2           2                  1.9124892165494047E-002       |
+ |  cu           3           3                  1.9882923812787744E-002       |
+ |  cu           4           4                  2.0100105840700870E-002       |
+ |  cu           5           5                  2.0595654070773198E-002       |
+ |  cu           6           6                  2.0545211955800835E-002       |
+ |  cu           7           7                  2.0637248981351140E-002       |
+ |  cu           8           8                  2.0628463460725707E-002       |
++----------------------------------------------------------------------------+
+  | Atom |  Atom Order  |   Layer   |              Reflectivity               |
+ |  cu           1           1                  5.8349896985995971E-002       |
+ |  cu           2           2                  2.7796617806491092E-002       |
+ |  cu           3           3                  3.0257333493129961E-002       |
+ |  cu           4           4                  3.0719788189343879E-002       |
+ |  cu           5           5                  3.1924720446811293E-002       |
+ |  cu           6           6                  3.1763537001444180E-002       |
+ |  cu           7           7                  3.1979446025942167E-002       |
+ |  cu           8           8                  3.1964012412798774E-002       |
  +----------------------------------------------------------------------------+
- | Work Function         4.5560 eV          Photon Energy         4.7000 eV   |
- | Effective Work Function    4.4360   eV        Electric field    0.0010V/A  |
- | Final state : Bloch state                                                  |
+ | Atom |  Atom Order  |   Layer   |          Intensity of the light          |
+ |  cu           1           1                 0.94165010301400398            |
+ |  cu           2           2                 0.89601564560543812            |
+ |  cu           3           3                 0.84811884450563124            |
+ |  cu           4           4                 0.80052196168218737            |
+ |  cu           5           5                 0.75227859130525809            |
+ |  cu           6           6                 0.70521701998629815            |
+ |  cu           7           7                 0.65883298154767655            |
+ |  cu           8           8                 0.61341747586867401            |
+ +----------------------------------------------------------------------------+
+\end{verbatim}
+
+Optical properties decomposed into the simulated atomic layers.
+
+\begin{verbatim}
+ +---------------------------- Electron escape  ------------------------------+
+ |  Inelastic mean free path:   19.000000000000000                            |
+ | Atom |  Atom Order  |   Layer   |       Electron escape probability        |
+ |  cu           1           1                  1.0000000000000000            |
+ |  cu           2           2                 0.89826797561286487            |
+ |  cu           3           3                 0.80608099523232135            |
+ |  cu           4           4                 0.72322930808960084            |
+ |  cu           5           5                 0.64903855650296116            |
+ |  cu           6           6                 0.58251673476992794            |
+ |  cu           7           7                 0.52272625549648866            |
+ |  cu           8           8                 0.46917647094832965            |
+ +----------------------------------------------------------------------------+
+\end{verbatim}
+
+Escape probability of the electrons using the inelastic mean free path theory.
+
+\begin{verbatim}
+  +---------------------------- Photoemission ---------------------------------+
  +----------------------------------------------------------------------------+
  | Atom |  Atom Order  |   Layer   |             Quantum Efficiency           |
- |  cu           1           1                  6.4323462534403726E-006       |
- |  cu           2           2                  0.0000000000000000            |
- |  cu           3           3                  4.6827844145536271E-007       |
- |  cu           4           4                  1.0551651594541037E-006       |
- |  cu           5           5                  1.9117009775645270E-006       |
- |  cu           6           6                  1.6248016213239814E-006       |
- |  cu           7           7                  1.0332973207922402E-006       |
- |  cu           8           8                  4.1019373536807091E-007       |
- |  Bulk                                        2.1753811814371912E-006       |
- |  Total quantum efficiency (electrons/photon):   1.5111164690835850E-005    |
- |  Weighted mean transverse energy (eV):   2.3076853605907301E-002           |
- |  Total field emission (electrons/A^2):   1.7679531256450310E-075           |
+ |  cu           1           1                  2.3217901509035196E-005       |
+ |  cu           2           2                  5.9479689615359595E-007       |
+ |  cu           3           3                  2.0573369310693271E-006       |
+ |  cu           4           4                  1.8994244754806170E-006       |
+ |  cu           5           5                  4.9226373043843047E-007       |
+ |  cu           6           6                  3.7706074336735349E-007       |
+ |  cu           7           7                  1.0197378537795378E-007       |
+ |  cu           8           8                  6.0016978185771041E-008       |
+ |  Total quantum efficiency (electrons/photon):   2.8800775049108252E-005    |
+ |  Weighted mean transverse energy (eV):  0.17173952380847210                |
  +----------------------------------------------------------------------------+
- End of execution
- |                                                                            |
-   + Time to calculate Photoemission                             93.607 (sec) +
- +============================================================================+
 \end{verbatim}
 
 Layer-by-layer decomposition of the Quantum efficiency, the total quantum efficiency and the weighted mean transverse.
