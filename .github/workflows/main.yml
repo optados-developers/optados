@@ -45,3 +45,9 @@ jobs:
         run:  |
           cd optados 
           make
+      - name: run tests
+        run: |
+          cd test-suite
+          ./run_tests --category=default
+      - name: compute coverage
+        uses: codecov/codecov-action@v1
