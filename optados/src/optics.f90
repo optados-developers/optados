@@ -23,11 +23,19 @@
 !===============================================================================
 module od_optics
 
-  use od_constants, only: dp
+  use od_constants, only: dp,epsilon_0,e_charge,e_mass,hbar,c_speed
 
   implicit none
   private
   public :: optics_calculate
+  public :: make_weights
+  public :: calc_epsilon_2
+  public :: calc_epsilon_1
+  public :: calc_conduct
+  public :: calc_refract
+  public :: calc_loss_fn
+  public :: calc_absorp
+  public :: calc_reflect
 
   type :: graph_labels
     character(20) :: name
@@ -65,12 +73,6 @@ module od_optics
   integer :: N
   integer :: N2
 
-  real(kind=dp), parameter :: epsilon_0 = 8.8541878176E-12_dp
-  real(kind=dp), parameter :: e_charge = 1.602176487E-19_dp
-  real(kind=dp), parameter :: e_mass = 9.10938215E-31_dp
-  real(kind=dp), parameter :: hbar = 1.054571628E-34_dp
-  real(kind=dp), parameter :: c_speed = 299792458.0_dp
-
 contains
 
   subroutine optics_calculate
@@ -101,14 +103,14 @@ contains
     call elec_read_optical_mat
 
     ! Form matrix element
-    call make_weights
+    call make_weights(matrix_weights)
 
     ! Send matrix element to jDOS routine and get weighted jDOS back
     call jdos_utils_calculate(matrix_weights, weighted_jdos)
 
     ! Calculate weighted DOS at Ef for intraband term
     if (optics_intraband) then
-      allocate (dos_matrix_weights(size(matrix_weights, 5), nbands, num_kpoints_on_node(my_node_id), nspins))
+      allocate (dos_matrix_weights(size(matrix_weights, 5), nbands,num_kpoints_on_node(my_node_id), nspins))
       allocate (dos_at_e(3, nspins))
       allocate (weighted_dos_at_e(nspins, size(matrix_weights, 5)))
       weighted_dos_at_e = 0.0_dp
@@ -124,7 +126,7 @@ contains
 
     if (on_root) then
       ! Calculate epsilon_2
-      call calc_epsilon_2
+      call calc_epsilon_2(weighted_jdos,weighted_dos_at_e)
 
       ! Calculate epsilon_1
       call calc_epsilon_1
@@ -154,7 +156,7 @@ contains
   ! Subroutines go here
 
   !***************************************************************
-  subroutine make_weights
+  subroutine make_weights(matrix_weights)
     !***************************************************************
     use od_constants, only: dp
     use od_electronic, only: nbands, nspins, optical_mat, num_electrons, &
@@ -164,6 +166,8 @@ contains
     use od_parameters, only: optics_geom, optics_qdir, legacy_file_format, scissor_op, devel_flag
     use od_io, only: io_error, stdout
     use od_comms, only: my_node_id
+
+    real(kind=dp), intent(out),allocatable, dimension(:, :, :, :, :) :: matrix_weights
 
     real(kind=dp), dimension(3) :: qdir
     real(kind=dp), dimension(3) :: qdir1
@@ -492,7 +496,7 @@ contains
   end subroutine make_weights
 
   !***************************************************************
-  subroutine calc_epsilon_2
+  subroutine calc_epsilon_2(weighted_jdos,weighted_dos_at_e)
     !***************************************************************
     ! This subroutine calculates epsilon_2
 
@@ -501,6 +505,9 @@ contains
     use od_electronic, only: nspins, electrons_per_state, nbands
     use od_jdos_utils, only: E, jdos_nbins
     use od_parameters, only: optics_intraband, optics_drude_broadening
+
+    real(kind=dp), intent(in), allocatable, dimension(:, :, :) :: weighted_jdos
+    real(kind=dp), intent(in), allocatable, dimension(:, :) :: weighted_dos_at_e
 
     integer :: N_energy
     integer :: N
