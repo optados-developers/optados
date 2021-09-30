@@ -49,5 +49,4 @@ jobs:
         run: |
           cd optados/test-suite
           ./run_tests --category=default
-      - name: compute coverage
-        uses: codecov/codecov-action@v1
+
