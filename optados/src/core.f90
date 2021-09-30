@@ -117,7 +117,7 @@ contains
     do N = 1, num_kpoints_on_node(my_node_id)                      ! Loop over kpoints
       do N_spin = 1, nspins                                    ! Loop over spins
         do n_eigen = 1, nbands                                ! Loop over state 1
-          if (band_energy(n_eigen, N_spin, N) < efermi .and. core_type == 'absorption') cycle ! XAS
+          if (band_energy(n_eigen, N_spin, N) < efermi .and. core_type == 'absorption') cycle ! XES
           if (band_energy(n_eigen, N_spin, N) > efermi .and. core_type == 'emission') cycle   ! ELNES / XANES
           do orb = 1, elnes_mwab%norbitals
             if (index(core_geom, 'polar') > 0) then
