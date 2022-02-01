@@ -11,7 +11,7 @@ optados:
 	cd ./src && $(MAKE) optados
 
 # Utility targets
-.PHONY: clean veryclean
+.PHONY: ford clean veryclean
 
 install:
 	 cd ./src && $(MAKE) install
@@ -24,6 +24,9 @@ clean:
 	cd ./documents && $(MAKE) clean
 	cd ./python  && $(MAKE) clean
 
+ford: 
+	ford -d ../src -o ../auto_doc ./ford/project.md
+
 python: optados
 	cd ./python && $(MAKE) python
 
@@ -31,7 +34,6 @@ veryclean:
 	cd ./src && $(MAKE) veryclean
 	cd ./documents && $(MAKE) veryclean
 	cd ./python &&  $(MAKE) veryclean
-
 
 dist: optados-$(VER).tar.gz
 
