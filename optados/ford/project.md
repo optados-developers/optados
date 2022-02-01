@@ -1,9 +1,9 @@
 Title: OptaDOS 
-Author: The OptaDOS developers 
+Author: The OptaDOS developers group
 Licence: by-nc 
 Project: OptaDOS 
-project_github: optados-developers/optados
-project_website: www.optados.org
+project_github:  https://github.com/optados-developers/optados
+project_website: http://www.optados.org
 docmark: !
 docmark_alt: *
 search: true
