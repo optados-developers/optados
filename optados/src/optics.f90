@@ -93,7 +93,7 @@ contains
       write (stdout, '(1x,a78)') '+                                Optics Calculation                          +'
       write (stdout, '(1x,a78)') '+============================================================================+'
       write (stdout, '(1x,a78)') '|                                                                            |'
-    endif
+    end if
 
     if (.not. efermi_set) call dos_utils_set_efermi
 
@@ -115,10 +115,10 @@ contains
       do N = 1, size(matrix_weights, 5)
         do N2 = 1, nbands
           dos_matrix_weights(N, N2, :, :) = matrix_weights(N2, N2, :, :, N)
-        enddo
-      enddo
+        end do
+      end do
       call dos_utils_calculate_at_e(efermi, dos_at_e, dos_matrix_weights, weighted_dos_at_e)
-    endif
+    end if
 
     call elec_dealloc_optical ! don't need this large array anymore
 
@@ -147,7 +147,7 @@ contains
         call write_absorp
         call write_reflect
       end if
-    endif
+    end if
 
   end subroutine optics_calculate
 
@@ -204,17 +204,17 @@ contains
     num_occ = 0.0_dp
     do N_spin = 1, nspins
       num_occ(N_spin) = num_electrons(N_spin)
-    enddo
+    end do
 
     if (electrons_per_state == 2) then
       num_occ(1) = num_occ(1)/2.0_dp
-    endif
+    end if
 
     if (.not. index(optics_geom, 'tensor') > 0) then ! I can rewrite this in a simplier way??
       N_geom = 1
     elseif (index(optics_geom, 'tensor') > 0) then
       N_geom = 6
-    endif
+    end if
 
     allocate (matrix_weights(nbands, nbands, num_kpoints_on_node(my_node_id), nspins, N_geom))
     matrix_weights = 0.0_dp
@@ -224,7 +224,7 @@ contains
       q_weight = ((qdir(1)**2) + (qdir(2)**2) + (qdir(3)**2))**0.5_dp
       if (q_weight < 0.001_dp) &
         call io_error("Error:  please check optics_qdir, norm close to zero")
-    endif
+    end if
 
     if (index(optics_geom, 'unpolar') > 0) then
       if (optics_qdir(3) == 0) then
@@ -235,13 +235,13 @@ contains
         qdir1(1) = 1.0_dp
         qdir1(2) = 1.0_dp
         qdir1(3) = -(optics_qdir(1) + optics_qdir(2))/optics_qdir(3)
-      endif
+      end if
       qdir2(1) = (optics_qdir(2)*qdir1(3)) - (optics_qdir(3)*qdir1(2))
       qdir2(2) = (optics_qdir(3)*qdir1(1)) - (optics_qdir(1)*qdir1(3))
       qdir2(3) = (optics_qdir(1)*qdir1(2)) - (optics_qdir(2)*qdir1(1))
       q_weight1 = ((qdir1(1)**2) + (qdir1(2)**2) + (qdir1(3)**2))**0.5_dp
       q_weight2 = ((qdir2(1)**2) + (qdir2(2)**2) + (qdir2(3)**2))**0.5_dp
-    endif
+    end if
 
     N_in = 1  ! 0 = no inversion, 1 = inversion
     g = 0.0_dp
@@ -253,8 +253,8 @@ contains
           write (stdout, *) kpoint_r(1, N)**2 + kpoint_r(2, N)**2 + kpoint_r(3, N)**2, " = kpoint norm "
           write (stdout, *) " N= ", N
           gamma_is = N
-        endif
-      endif
+        end if
+      end if
       do N_spin = 1, nspins                                    ! Loop over spins
         do n_eigen = 1, nbands                                ! Loop over state 1
           do n_eigen2 = n_eigen, nbands                      ! Loop over state 2
@@ -266,7 +266,7 @@ contains
             elseif (band_energy(n_eigen2, N_spin, N) > efermi) then
               factor = 1.0_dp/((band_energy(n_eigen2, N_spin, N) - band_energy(n_eigen, N_spin, N) &
                                 + scissor_op)**2)
-            endif
+            end if
             if (index(optics_geom, 'unpolar') > 0) then
               if (num_symm == 0) then
                 g(1) = (((qdir1(1)*optical_mat(n_eigen, n_eigen2, 1, N, N_spin)) + &
@@ -428,7 +428,7 @@ contains
                   end do
                 end do
               end if
-            endif
+            end if
           end do
         end do
       end do
@@ -455,8 +455,8 @@ contains
           exit
         else
           top_filled_band = i
-        endif
-      enddo
+        end if
+      end do
 
 ! Set these for the number of bands either side of the Fermi energy that you want the
 ! OMES for.
@@ -484,11 +484,11 @@ contains
         do i = lower_window, upper_window
           write (stdout, FMT=rowfmt) band_energy(i, k, gamma_is) - band_energy(top_filled_band, k, gamma_is), &
                   & (matrix_weights(i, j, gamma_is, k, :), j=lower_window, upper_window)
-        enddo
-      enddo
+        end do
+      end do
       write (stdout, '(1x,a78)') '+============================================================================+'
       stop " Completed generating the OMEs -- see the odo file"
-    endif
+    end if
   end subroutine make_weights
 
   !***************************************************************
@@ -520,16 +520,16 @@ contains
       do N = 1, N_geom
         do N_spin = 1, nspins
           intra(N) = intra(N) + weighted_dos_at_e(N_spin, N)
-        enddo
-      enddo
+        end do
+      end do
       intra = intra*e_charge/(cell_volume*1E-10*epsilon_0)
-    endif
+    end if
 
     if (.not. optics_intraband) then
       allocate (epsilon(jdos_nbins, 2, N_geom, 1))
     else
       allocate (epsilon(jdos_nbins, 2, N_geom, 3))
-    endif
+    end if
     epsilon = 0.0_dp
 
     do N2 = 1, N_geom
@@ -558,7 +558,7 @@ contains
           x = x + ((N*(dE**2)*epsilon(N, 2, 1, 1))/(hbar**2))
         else
           x = x + ((N*(dE**2)*epsilon(N, 2, 1, 3))/((hbar**2)*E(N)*e_charge))
-        endif
+        end if
       end do
       N_eff = (x*e_mass*cell_volume*1E-30*epsilon_0*2)/(pi)
     end if
@@ -587,7 +587,7 @@ contains
       allocate (q(1))
     else
       allocate (q(3))
-    endif
+    end if
 
     do N2 = 1, N_geom
       do N_energy = 1, jdos_nbins
@@ -600,20 +600,21 @@ contains
             if (optics_intraband) then
               q(2) = q(2) + ((dE*epsilon(N_energy2, 2, N2, 2))/(((energy2**2) - (energy1**2))*e_charge))
               q(3) = q(3) + ((dE*epsilon(N_energy2, 2, N2, 3))/(((energy2**2) - (energy1**2))*e_charge))
-            endif
+            end if
           end if
         end do
         if (N2 .le. 3) then
           epsilon(N_energy, 1, N2, 1) = ((2.0_dp/pi)*q(1)) + 1.0_dp
         else
           epsilon(N_energy, 1, N2, 1) = ((2.0_dp/pi)*q(1))
-        endif
+        end if
         if (optics_intraband) then
           !             epsilon(N_energy,1,N2,2)=((2.0_dp/pi)*q(2))+1.0_dp  !! old KK method
-          epsilon(N_energy, 1, N2, 2) = 1.0_dp - (intra(N2)/((E(N_energy)**2) + (((optics_drude_broadening*hbar)/e_charge)**2)))
+          epsilon(N_energy, 1, N2, 2) = 1.0_dp - (intra(N2)/((E(N_energy)**2) &
+          &+ (((optics_drude_broadening*hbar)/e_charge)**2)))
           !             epsilon(N_energy,1,N2,3)=((2.0_dp/pi)*q(3))+1.0_dp  !! old KK method
           epsilon(N_energy, 1, N2, 3) = epsilon(N_energy, 1, N2, 1) + epsilon(N_energy, 1, N2, 2) - 1.0_dp
-        endif
+        end if
       end do
     end do
 
@@ -640,14 +641,14 @@ contains
         allocate (loss_fn(jdos_nbins, 2))
       else
         allocate (loss_fn(jdos_nbins, 1))
-      endif
+      end if
     else
       if (optics_lossfn_broadening) then
         allocate (loss_fn(jdos_nbins, 4))
       else
         allocate (loss_fn(jdos_nbins, 3))
-      endif
-    endif
+      end if
+    end if
 
     loss_fn = 0.0_dp
 
@@ -666,8 +667,8 @@ contains
           loss_fn(N_energy, 2) = -1*aimag(1.0_dp/g)
           g = epsilon(N_energy, 1, 1, 3) + (cmplx_i*epsilon(N_energy, 2, 1, 3)/(E(N_energy)*e_charge))
           loss_fn(N_energy, 3) = -1*aimag(1.0_dp/g)
-        endif
-      endif
+        end if
+      end if
     end do
 
     ! Broadening
@@ -682,7 +683,7 @@ contains
             loss_fn(N_energy2, 2) = loss_fn(N_energy2, 2) + (g*loss_fn(N_energy, 1)*dE)
           end do
         end do                        ! End loop over energy
-      endif
+      end if
       if (optics_intraband) then
         do N_energy = 1, jdos_nbins       ! Loop over energy
           do N_energy2 = 1, jdos_nbins   ! Turn each energy value into a function
@@ -692,8 +693,8 @@ contains
             loss_fn(N_energy2, 4) = loss_fn(N_energy2, 4) + (g*loss_fn(N_energy, 3)*dE)
           end do
         end do                        ! End loop over energy
-      endif
-    endif
+      end if
+    end if
 
     ! Sum rule 1
     x = 0.0_dp
@@ -702,7 +703,7 @@ contains
         x = x + (N_energy*(dE**2)*loss_fn(N_energy, 1))
       else
         x = x + (N_energy*(dE**2)*loss_fn(N_energy, 3))
-      endif
+      end if
     end do
     N_eff2 = x*(e_mass*cell_volume*1E-30*epsilon_0*2)/(pi*(hbar**2))
 
@@ -713,7 +714,7 @@ contains
         x = x + (loss_fn(N_energy, 1)/N_energy)
       else
         x = x + (loss_fn(N_energy, 3)/N_energy)
-      endif
+      end if
     end do
     N_eff3 = x
 
@@ -889,28 +890,28 @@ contains
       do N = 1, N_geom
         write (epsilon_unit, *) '# Plasmon energy:', (intra(N)**0.5)
       end do
-    endif
+    end if
     if (N_geom == 1) then
       write (epsilon_unit, *) '# Result of sum rule: Neff(E) =  ', N_eff
       write (epsilon_unit, *) '#'
       if (.not. optics_intraband) then
         do N = 1, jdos_nbins
           write (epsilon_unit, *) E(N), epsilon(N, 1, 1, 1), epsilon(N, 2, 1, 1)
-        enddo
+        end do
       else
         write (epsilon_unit, *) ''
         write (epsilon_unit, *) ''
         do N = 1, jdos_nbins
           write (epsilon_unit, *) E(N), epsilon(N, 1, 1, 1), epsilon(N, 2, 1, 1)
-        enddo
+        end do
         do N2 = 2, 3
           write (epsilon_unit, *) ''
           write (epsilon_unit, *) ''
           do N = 1, jdos_nbins
             write (epsilon_unit, *) E(N), epsilon(N, 1, 1, N2), epsilon(N, 2, 1, N2)/(E(N)*e_charge)
-          enddo
-        enddo
-      endif
+          end do
+        end do
+      end if
 
       if (trim(output_format) == "xmgrace") then
         call write_optics_xmgrace(label, E, epsilon(:, 1, 1, 1), epsilon(:, 2, 1, 1))
@@ -918,7 +919,7 @@ contains
         call write_optics_gnuplot(label, E, epsilon(:, 1, 1, 1), epsilon(:, 2, 1, 1))
       else
         write (stdout, *) " WARNING: Unknown output format requested, continuing..."
-      endif
+      end if
     end if
 
     if (index(optics_geom, 'tensor') > 0) then
@@ -936,10 +937,10 @@ contains
           do N3 = 1, 3
             do N = 1, jdos_nbins
               write (epsilon_unit, *) E(N), epsilon(N, 1, N2, N3), epsilon(N, 2, N2, N3)
-            enddo
+            end do
             write (epsilon_unit, *) ''
             write (epsilon_unit, *) ''
-          enddo
+          end do
         end if
 
         ! I don't think we want to plot in the tensor case, so this is commented out (it's broke anyhow!) jry
@@ -986,7 +987,7 @@ contains
         label%legend_b = "Broadened"
       else
         label%legend_a = ""
-      endif
+      end if
     else
       if (optics_lossfn_broadening) then
         label%legend_a = "Interband"
@@ -997,8 +998,8 @@ contains
         label%legend_a = "Interband"
         label%legend_b = "Intraband"
         label%legend_c = "Total"
-      endif
-    endif
+      end if
+    end if
     ! Open the output file
     loss_fn_unit = io_file_unit()
     open (unit=loss_fn_unit, action='write', file=trim(seedname)//'_loss_fn.dat')
@@ -1044,16 +1045,16 @@ contains
         do N2 = 1, 4
           do N = 1, jdos_nbins
             write (loss_fn_unit, *) E(N), loss_fn(N, N2)
-          enddo
-        enddo
+          end do
+        end do
       else
         do N2 = 1, 3
           do N = 1, jdos_nbins
             write (loss_fn_unit, *) E(N), loss_fn(N, N2)
-          enddo
-        enddo
-      endif
-    endif
+          end do
+        end do
+      end if
+    end if
 
     ! Close output file
     close (unit=loss_fn_unit)
@@ -1064,23 +1065,23 @@ contains
           call write_optics_xmgrace(label, E, loss_fn(:, 1), loss_fn(:, 2))
         else
           call write_optics_xmgrace(label, E, loss_fn(:, 1))
-        endif
+        end if
       else
         if (optics_lossfn_broadening) then
           call write_optics_xmgrace(label, E, loss_fn(:, 1), loss_fn(:, 2), loss_fn(:, 3), loss_fn(:, 4))
         else
           call write_optics_xmgrace(label, E, loss_fn(:, 1), loss_fn(:, 2), loss_fn(:, 3))
-        endif
-      endif
+        end if
+      end if
     elseif (trim(output_format) == "gnuplot") then
       if (.not. optics_intraband) then
         call write_optics_gnuplot(label, E, loss_fn(:, 1))
       else
         call write_optics_gnuplot(label, E, loss_fn(:, 1), loss_fn(:, 2), loss_fn(:, 3))
-      endif
+      end if
     else
       write (stdout, *) " WARNING: Unknown output format requested, continuing..."
-    endif
+    end if
 
   end subroutine write_loss_fn
 
@@ -1150,7 +1151,7 @@ contains
       call write_optics_gnuplot(label, E, conduct(:, 1), conduct(:, 2))
     else
       write (stdout, *) " WARNING: Unknown output format requested, continuing..."
-    endif
+    end if
 
   end subroutine write_conduct
 
@@ -1219,7 +1220,7 @@ contains
       call write_optics_gnuplot(label, E, refract(:, 1), refract(:, 2))
     else
       write (stdout, *) " WARNING: Unknown output format requested, continuing..."
-    endif
+    end if
 
   end subroutine write_refract
 
@@ -1286,7 +1287,7 @@ contains
       call write_optics_gnuplot(label, E, absorp)
     else
       write (stdout, *) " WARNING: Unknown output format requested, continuing..."
-    endif
+    end if
 
   end subroutine write_absorp
 
@@ -1353,7 +1354,7 @@ contains
       call write_optics_gnuplot(label, E, reflect)
     else
       write (stdout, *) " WARNING: Unknown output format requested, continuing..."
-    endif
+    end if
 
   end subroutine write_reflect
 
@@ -1391,7 +1392,7 @@ contains
       min_y = min(minval(column1), minval(column2))
     else
       min_y = minval(column1)
-    endif
+    end if
 
     if (present(column4)) then
       max_y = max(maxval(column1), maxval(column2), maxval(column3), maxval(column4))
@@ -1401,7 +1402,7 @@ contains
       max_y = max(maxval(column1), maxval(column2))
     else
       max_y = maxval(column1)
-    endif
+    end if
 
     ! For aesthetic reasons we make the axis range 1% larger than the data range
     range = abs(max_y - min_y)
@@ -1440,7 +1441,7 @@ contains
     else
       call xmgu_data_header(batch_file, 0, 1, trim(label%legend_a))
       call xmgu_data(batch_file, 0, E(:), column1)
-    endif
+    end if
 
   end subroutine write_optics_xmgrace
 
@@ -1485,9 +1486,9 @@ contains
     else
       write (gnu_unit, *) 'plot ', '"'//trim(seedname)//'_'//trim(label%name)//'.dat'//'"', ' u 1:2 t ', '"'// &
         trim(label%legend_a)//'"', ' w l'
-    endif
+    end if
     close (gnu_unit)
 
   end subroutine write_optics_gnuplot
 
-endmodule od_optics
+end module od_optics

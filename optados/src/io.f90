@@ -156,7 +156,7 @@ contains
       first = .false.
     else
       io_time = t1 - t0
-    endif
+    end if
     return
   end function io_time
 

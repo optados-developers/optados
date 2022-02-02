@@ -231,7 +231,7 @@ contains
       axis_name = "xaxis"
     elseif (axis == "y") then
       axis_name = "yaxis"
-    endif
+    end if
 
     write (unit, *) '@    '//trim(axis_name)//' on'
     write (unit, *) '@    '//trim(axis_name)//' type zero false'
@@ -351,7 +351,7 @@ contains
 
     do i = 1, size(x_data, 1)
       write (unit, *) x_data(i), y_data(i)
-    enddo
+    end do
     write (unit, *) "&"
 
   end subroutine xmgu_data

@@ -83,7 +83,7 @@ program optados
       stat = 'old'
     else
       stat = 'replace'
-    endif
+    end if
     pos = 'append'
 
     stdout = io_file_unit()
@@ -129,7 +129,7 @@ program optados
       write (stdout, *) ' '
       write (stdout, *) ' '
     end if
-  endif
+  end if
   !-------------------------------------------------------------------------!
 
   !-------------------------------------------------------------------------!
@@ -146,7 +146,7 @@ program optados
       write (stdout, *) ' '
       write (stdout, *) ' '
     end if
-  endif
+  end if
   !-------------------------------------------------------------------------!
 
   !-------------------------------------------------------------------------!
@@ -164,7 +164,7 @@ program optados
       write (stdout, *) ' '
       write (stdout, *) ' '
     end if
-  endif
+  end if
   !-------------------------------------------------------------------------!
 
   !-------------------------------------------------------------------------!
@@ -181,7 +181,7 @@ program optados
       write (stdout, *) ' '
       write (stdout, *) ' '
     end if
-  endif
+  end if
   !-------------------------------------------------------------------------!
 
   !-------------------------------------------------------------------------!
@@ -197,8 +197,8 @@ program optados
       write (stdout, '(1x,a78)') '+============================================================================+'
       write (stdout, *) ' '
       write (stdout, *) ' '
-    endif
-  endif
+    end if
+  end if
   !-------------------------------------------------------------------------!
 
   !-------------------------------------------------------------------------!
@@ -214,9 +214,9 @@ program optados
       write (stdout, '(1x,a78)') '+============================================================================+'
       write (stdout, *) ' '
       write (stdout, *) ' '
-    endif
+    end if
 
-  endif
+  end if
   !-------------------------------------------------------------------------!
 
   !-------------------------------------------------------------------------!
@@ -258,11 +258,10 @@ contains
     write (*, *) " Andrew J. Morris, R. J. Nicholls, C. J. Pickard and J. R. Yates", trim(copyright)
     write (*, *) " Compiled with "//trim(build_info%compiler)//" on "//trim(build_info%compile_date)&
          & //" at "//trim(build_info%compile_time)//"."
-    write(*, *) " Compile type: "//trim(build_info%build_type)//", "//trim(build_info%comms_arch)
-    write(*, *) " From source "//trim(build_info%build)//" submitted on "//trim(build_info%source_date)&
-         &//" at " //trim(build_info%source_time)//"."
- 
- 
+    write (*, *) " Compile type: "//trim(build_info%build_type)//", "//trim(build_info%comms_arch)
+    write (*, *) " From source "//trim(build_info%build)//" submitted on "//trim(build_info%source_date)&
+         &//" at "//trim(build_info%source_time)//"."
+
     stop
   end subroutine version_output
 
