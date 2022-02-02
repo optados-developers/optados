@@ -161,7 +161,7 @@ contains
       write (stdout, *) "                              MP grid finder "
       write (stdout, *)
       write (stdout, *) " Kpoints found:", num_kpts
-    endif
+    end if
 
     ! Add time reversal
     kpoint_TR(1:3, 1:num_kpts) = kpoints(1:3, 1:num_kpts)
@@ -172,8 +172,8 @@ contains
       ! Fold all kpoints between (-0.5,0.5]
       do ikpt = 1, num_kpts*2
         kpoint_TR(idim, ikpt) = kpoint_TR(idim, ikpt) - floor(kpoint_TR(idim, ikpt) + 0.5_dp)
-      enddo
-    enddo
+      end do
+    end do
 
     unique_kpoints = 0.0_dp
 
@@ -189,8 +189,8 @@ contains
           if (abs(unique_kpoints(idim, iunique_kpoints) - kpoint_TR(idim, ikpt)) .le. subtraction_tol) then
             !We've seen this before
             cycle over_kpts
-          endif
-        enddo
+          end if
+        end do
         ! If we ended up here then, this is new
         nunique_kpoints = nunique_kpoints + 1
         if (iprint > 3) write (stdout, *) " ikpt= ", ikpt, "nunique_kpoints= ", nunique_kpoints
@@ -228,7 +228,7 @@ contains
           if (present(kpoint_offset)) kpoint_offset(idim) = min_img/2
           kpoint_grid_dim(idim) = 1
           cycle over_dim
-        endif
+        end if
       elseif (nunique_kpoints == 3) then
         ! This is the case of a MP3 grid with a point at Gamma
         !! AJM COMMENTED OUT AS A TEST AGAINST
@@ -237,7 +237,7 @@ contains
         !      kpoint_grid_dim(idim)=3
         !      cycle over_dim
         continue
-      endif
+      end if
 
       if (iprint > 3) write (stdout, *) " Left the special-case kpoint finder for dimension:", idim
       if (iprint > 3) write (stdout, *) " Now trying to use the general solver..."
@@ -249,8 +249,8 @@ contains
         do jkpt = ikpt + 1, nunique_kpoints
           image = abs(unique_kpoints(idim, ikpt) - unique_kpoints(idim, jkpt))
           if (image < min_img) min_img = image
-        enddo
-      enddo
+        end do
+      end do
       if (abs(min_img - huge(min_img)) .le. subtraction_tol) &
            & call io_error('cell_find_MP_grid: Failed to find a 1st min image')
 
@@ -260,8 +260,8 @@ contains
         do jkpt = ikpt, nunique_kpoints
           image = abs(unique_kpoints(idim, ikpt) - unique_kpoints(idim, jkpt))
           if ((image < min_img2) .and. image > min_img + min_img_tol) min_img2 = image
-        enddo
-      enddo
+        end do
+      end do
       if (abs(min_img2 - huge(min_img2)) .le. subtraction_tol) &
            & call io_error('cell_find_MP_grid: Failed to find a 2nd min image')
 
@@ -271,8 +271,8 @@ contains
         do jkpt = ikpt, nunique_kpoints
           image = abs(unique_kpoints(idim, ikpt) - unique_kpoints(idim, jkpt))
           if ((image < min_img3) .and. image > min_img2 + min_img_tol) min_img3 = image
-        enddo
-      enddo
+        end do
+      end do
       if (abs(min_img3 - huge(min_img3)) .le. subtraction_tol) then
         ! It's possible in CASTEP 6 and 7 to have 3 kpoints only for a 5 MP grid
         ! the specieal case solver then got confused.
@@ -284,8 +284,8 @@ contains
           continue
         else
           call io_error('cell_find_MP_grid: Failed to find a 3rd min image')
-        endif
-      endif
+        end if
+      end if
 
       if (iprint > 3) then
         write (stdout, *) " Min images for dimension:", idim
@@ -293,7 +293,7 @@ contains
         write (stdout, *) " 2nd:", min_img2
         write (stdout, *) " 3rd:", min_img3
         write (stdout, *) " 1st^-1:", 1.0_dp/min_img
-      endif
+      end if
 
       if (abs(2.0_dp*min_img - min_img2) < min_img_tol) then
         ! If 1stMI==2ndMI then 1/1stMP is the grid density
@@ -306,9 +306,9 @@ contains
         ! and 1stMI/2 is the shift
         if (present(kpoint_offset)) kpoint_offset(idim) = min_img/2.0_dp
         kpoint_grid_dim(idim) = int(1.0_dp/min_img3)
-      endif
+      end if
 
-    enddo over_dim
+    end do over_dim
 
     if (iprint > 3) write (stdout, *) " Conclusion = kpoint_grid_dim: ", kpoint_grid_dim
     ! if(present(kpoint_offset))  write(*,*) "kpoint_offset= ",  kpoint_offset
@@ -380,7 +380,7 @@ contains
         read (sym_file) crystal_symmetry_operations
         read (sym_file) crystal_symmetry_disps
       end if
-    endif
+    end if
 
     call comms_bcast(num_crystal_symmetry_operations, 1)
     if (num_crystal_symmetry_operations > 0) then
@@ -389,7 +389,7 @@ contains
         if (ierr /= 0) call io_error(" Error : cannot allocate crystal_symmetry_operations in cell_get_symmetry")
         allocate (crystal_symmetry_disps(3, num_crystal_symmetry_operations), stat=ierr)
         if (ierr /= 0) call io_error(" Error : cannot allocate crystal_symmetry_disps in cell_get_symmetry")
-      endif
+      end if
       call comms_bcast(crystal_symmetry_operations(1, 1, 1), 9*num_crystal_symmetry_operations)
       call comms_bcast(crystal_symmetry_disps(1, 1), 3*num_crystal_symmetry_operations)
     end if
@@ -436,7 +436,7 @@ contains
       tot_num_lines = tot_num_lines + 1
       if (.not. dummy(1:1) == '!' .and. .not. dummy(1:1) == '#') then
         if (len(trim(dummy)) > 0) num_lines = num_lines + 1
-      endif
+      end if
 
     end do
 
@@ -482,11 +482,11 @@ contains
         frac = .false.
       else
         cycle
-      endif
+      end if
       line_s = loop
       if (found_s) then
         call io_error('Error: Found %block'//trim(keyword)//' more than once in cell file')
-      endif
+      end if
       found_s = .true.
     end do
 
@@ -505,7 +505,7 @@ contains
       line_e = loop
       if (found_e) then
         call io_error('Error: Found %block'//trim(keyword)//' more than once in cell file')
-      endif
+      end if
       found_e = .true.
     end do
 
@@ -527,7 +527,7 @@ contains
     elseif (index(dummy, 'bohr') .ne. 0) then
       lconvert = .true.
       line_s = line_s + 1
-    endif
+    end if
 
     num_atoms = line_e - 1 - (line_s + 1) + 1
     allocate (atoms_pos_frac_tmp(3, num_atoms), stat=ierr)
@@ -631,7 +631,7 @@ contains
       line_s = loop
       if (found_s) then
         call io_error('Error: Found %block'//trim(keyword)//' more than once in out.cell file')
-      endif
+      end if
       found_s = .true.
     end do
 
@@ -646,7 +646,7 @@ contains
         line_e = loop
         if (found_e) then
           call io_error('Error: Found %block'//trim(keyword)//' more than once in out.cell file')
-        endif
+        end if
         found_e = .true.
       end do
 
@@ -687,7 +687,7 @@ contains
       end if
     else
       call io_error('Error: Cannot find %block '//trim(keyword)//' in '//trim(seedname)//'-out.cell')
-    endif
+    end if
 
     return
 
@@ -731,7 +731,7 @@ contains
       tot_num_lines = tot_num_lines + 1
       if (.not. dummy(1:1) == '!' .and. .not. dummy(1:1) == '#') then
         if (len(trim(dummy)) > 0) num_lines = num_lines + 1
-      endif
+      end if
 
     end do
 
@@ -777,11 +777,11 @@ contains
         frac = .false.
       else
         cycle
-      endif
+      end if
       line_s = loop
       if (found_s) then
         call io_error('Error: Found %block'//trim(keyword)//' more than once in cell file')
-      endif
+      end if
       found_s = .true.
     end do
 
@@ -800,7 +800,7 @@ contains
       line_e = loop
       if (found_e) then
         call io_error('Error: Found %block'//trim(keyword)//' more than once in cell file')
-      endif
+      end if
       found_e = .true.
     end do
 
@@ -822,7 +822,7 @@ contains
     elseif (index(dummy, 'bohr') .ne. 0) then
       lconvert = .true.
       line_s = line_s + 1
-    endif
+    end if
 
     num_atoms = line_e - 1 - (line_s + 1) + 1
     allocate (atoms_pos_frac_tmp(3, num_atoms), stat=ierr)
@@ -972,7 +972,7 @@ contains
 
     if (cell_volume < 0.0_dp) then ! Left handed set
       cell_volume = -cell_volume
-    endif
+    end if
 
     ! Scale reciprocal lattice by 2*pi/volume
     recip_lattice(:, :) = recip_lattice(:, :)*pi*2.0_dp/cell_volume
@@ -1072,7 +1072,7 @@ contains
       call comms_bcast(atoms_pos_cart(1, 1, 1), 3*num_species*max_sites)
       call comms_bcast(atoms_label(1), len(atoms_label(1))*num_species)
       call comms_bcast(atoms_symbol(1), len(atoms_symbol(1))*num_species)
-    endif
+    end if
     call comms_bcast(num_crystal_symmetry_operations, 1)
     if (num_crystal_symmetry_operations > 0) then
       if (.not. on_root) then
@@ -1080,11 +1080,11 @@ contains
         if (ierr /= 0) call io_error(" Error : cannot allocate crystal_symmetry_operations in cell_dist")
         allocate (crystal_symmetry_disps(3, num_crystal_symmetry_operations), stat=ierr)
         if (ierr /= 0) call io_error(" Error : cannot allocate crystal_symmetry_disps in cell_dist")
-      endif
+      end if
       call comms_bcast(crystal_symmetry_operations(1, 1, 1), 3*3*num_crystal_symmetry_operations)
       call comms_bcast(crystal_symmetry_disps(1, 1), 3*num_crystal_symmetry_operations)
     end if
 
   end subroutine cell_dist
 
-endmodule od_cell
+end module od_cell

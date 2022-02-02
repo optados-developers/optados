@@ -77,7 +77,7 @@ contains
       write (stdout, '(1x,a78)') '+                              Density of States                             +'
       write (stdout, '(1x,a78)') '+============================================================================+'
       write (stdout, '(1x,a78)')
-    endif
+    end if
 
     call dos_utils_calculate   ! Will return if this has already been done.
 
@@ -134,13 +134,13 @@ contains
       if (adaptive) call write_dos(E, dos_adaptive, intdos_adaptive, "adaptive")
       if (linear) call write_dos(E, dos_linear, intdos_linear, "linear")
       !if(quad)    call write_dos(E, dos_quad, intdos_quad, "quad")
-    endif
+    end if
     time1 = io_time()
     if (on_root .and. iprint > 1) then
       write (stdout, '(1x,a59,f11.3,a8)') &
            '+ Time to write DOS to disk                              &
            &      ', time1 - time0, ' (sec) +'
-    endif
+    end if
 
     !-------------------------------------------------------------------------------
 
@@ -191,7 +191,7 @@ contains
       E_shift = E - efermi
     else
       E_shift = E
-    endif
+    end if
 
     dos_file = io_file_unit()
     open (unit=dos_file, file=trim(seedname)//'.'//trim(dos_name)//'.dat', iostat=ierr)
@@ -201,7 +201,7 @@ contains
     if (dos_per_volume) then
       dos_units = "(electrons per eV/A^3)"
       intdos_units = "(electrons per A^3)"
-    endif
+    end if
 
     write (dos_file, *) "##############################################################################"
     write (dos_file, *) "#"
@@ -220,19 +220,19 @@ contains
     else
       write (dos_file, *) "#    2        DOS ", trim(dos_units)
       write (dos_file, *) "#    3        Integrated DOS ", trim(intdos_units)
-    endif
+    end if
     write (dos_file, '(1x,a1)') "#"
     write (dos_file, '(1x,a78)') "##############################################################################"
 
     if (nspins > 1) then
       do i = 1, dos_nbins
         write (dos_file, '(5(E21.13,2x))') E_shift(i), dos(i, 1), -dos(i, 2), intdos(i, 1), -intdos(i, 2)
-      enddo
+      end do
     else
       do i = 1, dos_nbins
         write (dos_file, '(3(E21.13,2x))') E_shift(i), dos(i, 1), intdos(i, 1)
-      enddo
-    endif
+      end do
+    end if
     close (dos_file)
 
     if (trim(output_format) == "xmgrace") then
@@ -243,7 +243,7 @@ contains
       !     call write_dos_gnuplot(dos_name,E,dos)
     else
       write (stdout, *) " WARNING: Unknown output format requested, continuing..."
-    endif
+    end if
 
     deallocate (E_shift, stat=ierr)
     if (ierr /= 0) call io_error('Error deallocating E_shift in write_dos')
@@ -278,7 +278,7 @@ contains
     max_y = maxval(dos)
     if (nspins > 1) then
       min_y = -max_y
-    endif
+    end if
 
     call xmgu_setup(batch_file)
     call xmgu_legend(batch_file)
@@ -292,7 +292,7 @@ contains
       call xmgu_vertical_line(batch_file, 0.0_dp, max_y, min_y)
     else
       if (efermi_set) call xmgu_vertical_line(batch_file, efermi, max_y, min_y)
-    endif
+    end if
 
     if (nspins > 1) then
       call xmgu_data_header(batch_file, 0, 1, "up-spin channel")
@@ -302,10 +302,10 @@ contains
     else
       call xmgu_data_header(batch_file, 0, 1, "Total DOS")
       call xmgu_data(batch_file, 0, E(:), dos(:, 1))
-    endif
+    end if
 
     close (batch_file)
 
   end subroutine write_dos_xmgrace
 
-endmodule od_dos
+end module od_dos

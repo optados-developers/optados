@@ -176,7 +176,7 @@ contains
         projection_array(:, :, loop, loop) = 1
       end do
       shortcut = .true.
-    endif
+    end if
 
     if (.not. shortcut) then
 
@@ -359,15 +359,15 @@ contains
             do loop_r = 1, range_size
               counter = counter + 1
               if (min(num1, num2) + loop_r - 1 > proj_sites(species)) &
-                call io_error &
-                ('projection_analyse_substring: Atom number given in pdos string is greater than number of atoms for given species')
+                 call io_error('projection_analyse_substring: Atom number given in pdos string &
+         &is greater than number of atoms for given species')
               pdos_atoms(min(num1, num2) + loop_r - 1) = 1
             end do
           else
             counter = counter + 1
             if (num1 > proj_sites(species)) &
-              call io_error &
-              ('projection_analyse_substring: Atom number given in pdos string is greater than number of atoms for given species')
+               call io_error('projection_analyse_substring: Atom number given in pdos string &
+          &is greater than number of atoms for given species')
             pdos_atoms(num1) = 1
           end if
 
@@ -390,7 +390,7 @@ contains
             ctemp2 = dummy
           else
             ctemp2 = dummy(:pos3 - 1)
-          endif
+          end if
           read (ctemp2(1:), *, err=106, end=106) m_string
           select case (trim(adjustl(m_string)))
           case ('s')
@@ -406,10 +406,10 @@ contains
           end select
           if (pos3 == 0) exit
           dummy = dummy(pos3 + 1:)
-        enddo
+        end do
       else
         am_sum = .true.
-      endif
+      end if
 
       if (site_sum) then
         num_sites = 1

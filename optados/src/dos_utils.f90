@@ -140,8 +140,8 @@ contains
         if (on_root .and. iprint > 1) write (stdout, '(1x,a78)') "| Already calculated dos, so returning... &
              &                                   |"
         return  ! The dos has already been calculated previously so just return.
-      endif
-    endif
+      end if
+    end if
 
     if (calc_weighted_dos) then
       mw%norbitals = size(matrix_weights, 1)
@@ -155,7 +155,7 @@ contains
       if (mw%nspins .ne. nspins) call io_error("ERROR : DOS :  mw%nspins not equal to nspins.")
       if (mw%nkpoints .ne. num_kpoints_on_node(my_node_id)) &
         call io_error("ERROR : DOS : mw%nkpoints not equal to nkpoints.")
-    endif
+    end if
 
     !-------------------------------------------------------------------------------
     ! R E A D   B A N D   G R A D I E N T S
@@ -163,7 +163,7 @@ contains
     ! band gradients too
     if (quad .or. linear .or. adaptive) then
       if (.not. allocated(band_gradient)) call elec_read_band_gradient
-    endif
+    end if
     !-------------------------------------------------------------------------------
     ! C A L C U L A T E   D O S
     ! Now everything is set up, we can perform the dos accumulation in parallel
@@ -180,9 +180,9 @@ contains
       else
         call calculate_dos("f", dos_fixed, intdos_fixed)
         call dos_utils_merge(dos_fixed)
-      endif
+      end if
       call dos_utils_merge(intdos_fixed)
-    endif
+    end if
     if (adaptive) then
       if (calc_weighted_dos .and. (.not. linear)) then
         call calculate_dos("a", dos_adaptive, intdos_adaptive, matrix_weights=matrix_weights, weighted_dos=weighted_dos)
@@ -190,9 +190,9 @@ contains
       else
         call calculate_dos("a", dos_adaptive, intdos_adaptive)
         call dos_utils_merge(dos_adaptive)
-      endif
+      end if
       call dos_utils_merge(intdos_adaptive)
-    endif
+    end if
     if (linear) then
       if (calc_weighted_dos) then
         call calculate_dos("l", dos_linear, intdos_linear, matrix_weights=matrix_weights, weighted_dos=weighted_dos)
@@ -200,15 +200,15 @@ contains
       else
         call calculate_dos("l", dos_linear, intdos_linear)
         call dos_utils_merge(dos_linear)
-      endif
+      end if
       call dos_utils_merge(intdos_linear)
-    endif
+    end if
 
     if (quad) then
       call io_error("quadratic broadening not implemented")
       !if(quad)    call merge_dos(dos_quad)
       !if(quad)    call merge_dos(intdos_quad)
-    endif
+    end if
 
     !    if(.not.on_root) then
     !       if(allocated(E)) deallocate(E, stat=ierr)
@@ -217,9 +217,10 @@ contains
 
     time1 = io_time()
     if (on_root .and. iprint > 1) then
-      write (stdout, '(1x,a59,f11.3,a8)') '+ Time to calculate DOS                                     ', time1 - time0, ' (sec) +'
+      write (stdout, '(1x,a59,f11.3,a8)') '+ Time to calculate DOS                                     ', &
+      &time1 - time0, ' (sec) +'
       write (stdout, '(1x,a78)')
-    endif
+    end if
     !-------------------------------------------------------------------------------
 
     !-------------------------------------------------------------------------------
@@ -234,10 +235,11 @@ contains
         if (fixed) then
           write (stdout, '(1x,a23,54x,a1)') "| From Fixed broadening", "|"
           efermi_fixed = calc_efermi_from_intdos(intdos_fixed)
-          write (stdout, '(1x,a1,a46,f8.4,a3,12x,a8)') "|", " Fermi energy (Fixed broadening) : ", efermi_fixed, "eV", "<- EfF |"
+          write (stdout, '(1x,a1,a46,f8.4,a3,12x,a8)') "|", " Fermi energy (Fixed broadening) : ", &
+          &efermi_fixed, "eV", "<- EfF |"
 
           write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
-        endif
+        end if
         if (adaptive) then
           write (stdout, '(1x,a26,51x,a1)') "| From Adaptive broadening", "|"
           efermi_adaptive = calc_efermi_from_intdos(intdos_adaptive)
@@ -245,7 +247,7 @@ contains
             , efermi_adaptive, "eV", "<- EfA |"
 
           write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
-        endif
+        end if
         if (linear) then
           write (stdout, '(1x,a24,53x,a1)') "| From Linear broadening", "|"
           efermi_linear = calc_efermi_from_intdos(intdos_linear)
@@ -253,9 +255,9 @@ contains
             efermi_linear, " eV", "<- EfL |"
 
           write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
-        endif
-      endif
-    endif
+        end if
+      end if
+    end if
 
     call comms_bcast(efermi_fixed, 1)
     call comms_bcast(efermi_linear, 1)
@@ -266,24 +268,24 @@ contains
         if (fixed) then
           dos_fixed = dos_fixed/cell_volume
           intdos_fixed = intdos_fixed/cell_volume
-        endif
+        end if
         if (adaptive) then
           dos_adaptive = dos_adaptive/cell_volume
           intdos_adaptive = intdos_adaptive/cell_volume
-        endif
+        end if
         if (linear) then
           dos_linear = dos_linear/cell_volume
           intdos_linear = intdos_linear/cell_volume
-        endif
+        end if
         if (calc_weighted_dos) then
           weighted_dos = weighted_dos/cell_volume
-        endif
+        end if
         ! if(quad) then
         !    dos_quad=dos_quad/cell_volume
         !    intdos_quad=intdos_quad/cell_volume
         ! endif
-      endif
-    endif
+      end if
+    end if
 
   end subroutine dos_utils_calculate
 
@@ -339,10 +341,10 @@ contains
           if (num_electrons(is) + 1 .le. nbands) then
             if (band_energy(top_occ_band + 1, is, ik) < cbm) &
                  &cbm = band_energy(top_occ_band + 1, is, ik)
-          endif
-        enddo
+          end if
+        end do
         if (on_root .and. iprint > 3) write (stdout, *) vbm, " =vbm : cbm= ", cbm
-      enddo
+      end do
 
       ! Find the globals
       call comms_reduce(cbm, 1, 'MIN')
@@ -357,7 +359,7 @@ contains
         efermi = vbm + 0.5_dp
       else
         efermi = vbm + 0.5_dp*(cbm - vbm)
-      endif
+      end if
 
       if (on_root) write (stdout, '(1x,a1,a46,f8.4,a3,12x,a8)') "|",&
            &" Fermi energy assuming insulator : ", efermi, " eV", "  <- EfI"
@@ -380,7 +382,7 @@ contains
 
     efermi_set = .true.
 
-  endsubroutine dos_utils_set_efermi
+  end subroutine dos_utils_set_efermi
 
   !===============================================================================
   subroutine dos_utils_compute_dos_at_efermi
@@ -401,7 +403,7 @@ contains
 
     if ((iprint > 1) .and. on_root) then
       write (stdout, *)
-    endif
+    end if
 
     if (on_root) then
       write (stdout, '(1x,a78)') '+----------------------- DOS at Fermi Energy Analysis -----------------------+'
@@ -412,27 +414,27 @@ contains
         do is = 1, nspins
           write (stdout, '(1x,a1,a20,i1,a25,f8.4,a9,6x,a8)') "|", "Spin Component : ", is,&
                &"  DOS at Fermi Energy : ", dos_at_efermi(1, is), " eln/cell", "<- DEF |"
-        enddo
+        end do
         write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
-      endif
+      end if
 
       if (adaptive) then
         write (stdout, '(1x,a78)') "| From Adaptive broadening                                                   |"
         do is = 1, nspins
           write (stdout, '(1x,a1,a20,i1,a25,f8.4,a9,6x,a8)') "|", "Spin Component : ", is,&
                &"  DOS at Fermi Energy : ", dos_at_efermi(2, is), " eln/cell", "<- DEA |"
-        enddo
+        end do
         write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
-      endif
+      end if
 
       if (linear) then
         write (stdout, '(1x,a78)') "| From Linear broadening                                                     |"
         do is = 1, nspins
           write (stdout, '(1x,a1,a20,i1,a25,f8.4,a9,6x,a8)') "|", "Spin Component : ", is,&
                &"  DOS at Fermi Energy : ", dos_at_efermi(3, is), " eln/cell", "<- DEL |"
-        enddo
+        end do
         write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
-      endif
+      end if
 
       time1 = io_time()
       if (iprint > 1) then
@@ -440,7 +442,7 @@ contains
              '+ Time to calculate DOS at Fermi Energy                  &
              &      ', time1 - time0, ' (sec) +'
 
-      endif
+      end if
       write (stdout, '(1x,a78)')
 
       !-------------------------------------------------------------------------------
@@ -500,9 +502,9 @@ contains
       if (iprint > 2) then
         write (stdout, *)
         write (stdout, '(1x,a78)') "| Finding an estimate of the maximum bandgap...                              |"
-      endif
+      end if
       write (stdout, '(1x,a78)') '+----------------------------- Bandgap Analysis -----------------------------+'
-    endif
+    end if
 
     allocate (bandgap(1:2, 1:nspins, 1:num_kpoints_on_node(my_node_id)), stat=ierr)
     if (ierr /= 0) call io_error('Error allocating bandgap in dos_utils: compute_bandgap')
@@ -521,10 +523,10 @@ contains
             bandgap(1, is, ik) = band_energy(ib - 1, is, ik)
             bandgap(2, is, ik) = band_energy(ib, is, ik)
             exit bands_loop
-          endif
-        enddo bands_loop
-      enddo !ik
-    enddo !is
+          end if
+        end do bands_loop
+      end do !ik
+    end do !is
 
     ! Create a global kpoint array,and set it to something silly in case we need to debug whether
     ! data was actually written to it.
@@ -532,7 +534,7 @@ contains
       allocate (global_bandgap(1:2, 1:nspins, 1:nkpoints), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating global_bandgap in dos_utils: compute_bandgap')
       global_bandgap = -100.00_dp
-    endif
+    end if
 
     ! Pass all the slices around Efermi to the head node, making sure whe get the global
     ! kpoint number. *And* crucially the same kpoint numbers as in the bands file.
@@ -544,7 +546,7 @@ contains
       if (on_root) call comms_recv(global_bandgap(1, 1, &
            & kpoints_before_this_node + 1), 2*is*num_kpoints_on_node(inode), inode)
       kpoints_before_this_node = kpoints_before_this_node + num_kpoints_on_node(inode)
-    enddo
+    end do
     ! Copy the root node's slice to the global array.
     if (on_root) &
          & global_bandgap(1:2, 1:nspins, kpoints_before_this_node &
@@ -570,7 +572,7 @@ contains
       if (ierr /= 0) call io_error('Error allocatingthermal_cbm_multiplicity in dos_utils: compute_bandgap')
       allocate (optical_multiplicity(nspins), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating optical_multiplicity in dos_utils: compute_bandgap')
-    endif
+    end if
 
     ! Now lets look for the various bandgaps by cycling through the global_bandgap array
     if (on_root) then
@@ -607,8 +609,8 @@ contains
               thermal_vbm = global_bandgap(1, is, ik)
               thermal_vbm_multiplicity(is) = 1
               thermal_vbm_k = ik
-            endif
-          endif
+            end if
+          end if
           ! We search for the CBM in the same way as the VBM above.
           if (global_bandgap(2, is, ik) .le. thermal_cbm) then
             if (abs(global_bandgap(2, is, ik) - thermal_cbm) < epsilon(thermal_cbm)) then
@@ -617,8 +619,8 @@ contains
               thermal_cbm = global_bandgap(2, is, ik)
               thermal_cbm_multiplicity(is) = 1
               thermal_cbm_k = ik
-            endif
-          endif
+            end if
+          end if
 
           ! Work out the bandgap for this particular kpoint and spin
           kpoint_bandgap(is) = global_bandgap(2, is, ik) - global_bandgap(1, is, ik)
@@ -632,11 +634,11 @@ contains
             else
               optical_bandgap(is) = kpoint_bandgap(is)
               optical_multiplicity(is) = 1
-            endif
-          endif
+            end if
+          end if
           average_bandgap(is) = average_bandgap(is) + (global_bandgap(2, is, ik) - global_bandgap(1, is, ik))
-        enddo ! nkpoints
-      enddo ! nspins
+        end do ! nkpoints
+      end do ! nspins
 
       ! We now have enough info to calculate the average bandgap and the thermal bandgap
       average_bandgap = average_bandgap/nkpoints
@@ -653,14 +655,14 @@ contains
       thermal_multiplicity = .false.
       do is = 1, nspins
         if ((thermal_vbm_multiplicity(is) .ne. 1) .or. (thermal_cbm_multiplicity(is) .ne. 1)) thermal_multiplicity = .true.
-      enddo
+      end do
 
       ! Report the thermal gap multiplicity
       write (stdout, '(1x,1a,a50, 19x, a8)') "|", "Number of kpoints at       VBM       CBM", "       |"
       do is = 1, nspins
         write (stdout, '(1x,a1,a25,1x,i3,1x,a3,1x,i5,5x,i5,20x,a8)') "|", " Spin :", is, " : ", &
              &thermal_vbm_multiplicity(is), thermal_cbm_multiplicity(is), "       |"
-      enddo
+      end do
 
       ! Write out the thermal gap info
       write (stdout, '(1x,a1,a32,f15.10,1x,a3,18x,a8)') "|", "Thermal Bandgap :", thermal_bandgap, "eV", "<- TBg |"
@@ -676,10 +678,10 @@ contains
           write (stdout, '(1x,a1,a32,1x,f10.5,1x,f10.5,1x,f10.5,4x,a8)') "|", "and CBM kpoint:", &
             all_kpoints(1:3, thermal_cbm_k), "       |"
           write (stdout, '(1x,a78)') '|             ==> Indirect Gap                                               |'
-        endif
+        end if
       else ! thermal_mutiplicty=.true.
         write (stdout, '(1x,a78)') '|          ==> Multiple Band Minima and Maxima -- Gap unknown                |'
-      endif
+      end if
 
       ! We allocated this in elec_read_band_energy but kept it if compute_band_gap=T
       deallocate (all_kpoints, stat=ierr)
@@ -691,12 +693,12 @@ contains
       do is = 1, nspins
         write (stdout, '(1x,a1,a25,1x,i3,1x,a3,1x,f15.10,1x,a3,16x,a8)') "|", " Spin :", is, " : ", optical_bandgap(is),&
              &"eV", "<- OBg |"
-      enddo
+      end do
       write (stdout, '(1x,1a,a50, 19x, a8)') "|", "Number of kpoints with this gap         ", "       |"
       ! The multiplicity info here is just for reference.
       do is = 1, nspins
         write (stdout, '(1x,a1,a25,1x,i3,1x,a3,6x,i5,25x,a8)') "|", " Spin :", is, " : ", optical_multiplicity(is), "       |"
-      enddo
+      end do
 
       ! Write out the average bandgap
       write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
@@ -704,15 +706,15 @@ contains
       do is = 1, nspins
         write (stdout, '(1x,a1,a25,1x,i3,1x,a3,1x,f15.10,1x,a3,16x,a8)') "|", " Spin :", is, " : ", &
              &average_bandgap(is), "eV", "<- ABg |"
-      enddo
+      end do
       ! If we have more then one spin, then we need some way to combine the up and down spin bandgaps
       ! At Richard Needs' suggestion we use the weighted sum.
       if (nspins > 1) then
         weighted_average = (average_bandgap(1)*num_electrons(1) + average_bandgap(2)*num_electrons(2)) &
              & /(num_electrons(1) + num_electrons(2))
         write (stdout, '(1x,a1,a33,1x,f15.10,1x,a3,16x,a8)') "|", " Weighted Average : ", weighted_average, "eV", "<- wAB |"
-      endif
-    endif
+      end if
+    end if
 
     ! Let not have these other arrays hanging around a moment longer than we need them
     if (on_root) then
@@ -728,7 +730,7 @@ contains
       if (ierr /= 0) call io_error('Error deallocatingthermal_cbm_multiplicity in dos_utils: compute_bandgap')
       deallocate (optical_multiplicity, stat=ierr)
       if (ierr /= 0) call io_error('Error deallocating optical_multiplicity in dos_utils: compute_bandgap')
-    endif
+    end if
 
     if (on_root) then
       write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
@@ -777,12 +779,12 @@ contains
           gband = gband + dos(idos, is)*E(idos)*delta_bins
         else
           exit
-        endif
+        end if
       end do
-    enddo
+    end do
 
     calc_band_energies = gband
-  endfunction calc_band_energies
+  end function calc_band_energies
 
   !===============================================================================
   function calc_efermi_from_intdos(INTDOS)
@@ -834,7 +836,7 @@ contains
       do j = 1, nspins
         write (stdout, '(1x,a1,a20,i1,a20,f10.5,a4,1x,f10.5,3x,a8)') "|", "Spin Component : ", j,&
             &" occupation between ", INTDOS(i, j), "and", INTDOS(idos, j), "<- Occ |"
-      enddo
+      end do
     end if
 
   end function calc_efermi_from_intdos
@@ -878,22 +880,23 @@ contains
       if (fixed) then
         write (stdout, '(1x,a1,a46,f12.4,a3,8x,a8)') "|", &
           " Band energy (Fixed broadening)  : ", calc_band_energies(dos_fixed), "eV", "<- BEF |"
-      endif
+      end if
       if (adaptive) then
         write (stdout, '(1x,a1,a46,f12.4,a3,8x,a8)') "|", &
           " Band energy (Adaptive broadening) : ", calc_band_energies(dos_adaptive), "eV", "<- BEA |"
-      endif
+      end if
       if (linear) then
         write (stdout, '(1x,a1,a46,f12.4,a3,8x,a8)') "|", &
           " Band energy (Linear broadening) : ", calc_band_energies(dos_linear), "eV", "<- BEL |"
-      endif
-    endif
+      end if
+    end if
 
     eband = 0.0_dp
     do ik = 1, num_kpoints_on_node(my_node_id)
       do is = 1, nspins
         do ib = 1, nbands
-          if (band_energy(ib, is, ik) .le. efermi) eband = eband + band_energy(ib, is, ik)*electrons_per_state*kpoint_weight(ik)
+          if (band_energy(ib, is, ik) .le. efermi) eband = eband + band_energy(ib, is, ik)*electrons_per_state&
+                                                          &*kpoint_weight(ik)
         end do
       end do
     end do
@@ -906,7 +909,7 @@ contains
         write (stdout, '(1x,a59,f11.3,a8)') &
              '+ Time to calculate Band Energies                        &
           &      ', time1 - time0, ' (sec) +'
-      endif
+      end if
       write (stdout, '(1x,a78)')
     end if
 
@@ -945,7 +948,7 @@ contains
     if (allocated(E)) then
       deallocate (E, stat=ierr)
       if (ierr /= 0) call io_error("cannot deallocate E in dos_utils setup_energy_scale")
-    endif
+    end if
 
     ! If we do have dos_min_energy and dos_max_energy set, then we'd better
     ! use them. If not, let's set some sensible values.
@@ -953,7 +956,7 @@ contains
       min_band_energy = minval(band_energy) - 5.0_dp
     else
       min_band_energy = dos_min_energy
-    endif
+    end if
     call comms_reduce(min_band_energy, 1, 'MIN')
     call comms_bcast(min_band_energy, 1)
 
@@ -961,7 +964,7 @@ contains
       max_band_energy = maxval(band_energy) + 5.0_dp
     else
       max_band_energy = dos_max_energy
-    endif
+    end if
     call comms_reduce(max_band_energy, 1, 'MAX')
     call comms_bcast(max_band_energy, 1)
 
@@ -973,9 +976,9 @@ contains
         write (stdout, *)
         write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
         write (stdout, '(1x,a40,f11.3,13x,a14)') '| max_band_energy (before correction) : ', max_band_energy, "<-- DOS Grid |"
-      endif
+      end if
       max_band_energy = min_band_energy + dos_nbins*dos_spacing
-    endif
+    end if
 
     allocate (E(1:dos_nbins), stat=ierr)
     if (ierr /= 0) call io_error("cannot allocate E in dos_utils setup_energy_scale")
@@ -994,7 +997,7 @@ contains
       write (stdout, '(1x,1a,a39,f11.3,13x,a14)') '|', 'dos_spacing : ', dos_spacing, "<-- DOS Grid |"
       write (stdout, '(1x,1a,a39,f11.3,13x,a14)') '|', 'delta_bins : ', delta_bins, "<-- DOS Grid |"
       write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
-    endif
+    end if
 
   end subroutine setup_energy_scale
 
@@ -1087,7 +1090,7 @@ contains
       allocate (w_dos(dos_nbins, mw%nspins, mw%norbitals), stat=ierr)
       if (ierr /= 0) call io_error("error in allocating weighted_dos")
       w_dos = 0.0_dp
-    endif
+    end if
   end subroutine allocate_dos
 
   subroutine dos_utils_deallocate
@@ -1200,9 +1203,9 @@ contains
     if (adaptive .or. hybrid_linear) then
       do i = 1, 3
         sub_cell_length(i) = sqrt(recip_lattice(i, 1)**2 + recip_lattice(i, 2)**2 + recip_lattice(i, 3)**2)*step(i)
-      enddo
+      end do
       adaptive_smearing_temp = adaptive_smearing*sum(sub_cell_length)/3.0_dp
-    endif
+    end if
 
     if (fixed) width = fixed_smearing
 
@@ -1210,15 +1213,15 @@ contains
       call allocate_dos(dos, intdos, w_dos=weighted_dos)
     else
       call allocate_dos(dos, intdos)
-    endif
+    end if
     if (iprint > 1 .and. on_root) then ! This is to contain the Calculating k-points block
       write (stdout, '(1x,a78)') '+------------------------------ Calculate DOS -------------------------------+'
-    endif
+    end if
     do ik = 1, num_kpoints_on_node(my_node_id)
       if (iprint > 1 .and. on_root) then
         if (mod(real(ik, dp), 10.0_dp) == 0.0_dp) write (stdout, '(1x,a1,a28,i4,a3,i4,a14,7x,a17)') "|",&
              &"Calculating k-point ", ik, " of", num_kpoints_on_node(my_node_id), " on this node", "<-- DOS |"
-      Endif
+      End if
       do is = 1, nspins
         do ib = 1, nbands
           if (linear .or. adaptive) grad(:) = band_gradient(ib, :, ik, is)
@@ -1248,8 +1251,8 @@ contains
               else ! Do it (semi)-analytically
                 intdos(idos, is) = intdos(idos, is) + 0.5_dp*(1.0_dp + algorithms_erf((E(idos) - &
                      & band_energy(ib, is, ik))/(sqrt_two*width)))*electrons_per_state*kpoint_weight(ik)
-              endif
-            endif
+              end if
+            end if
 
             dos(idos, is) = dos(idos, is) + dos_temp
 
@@ -1259,10 +1262,10 @@ contains
                   do iorb = 1, mw%norbitals
                     weighted_dos(idos, is, iorb) = weighted_dos(idos, is, iorb) + &
                          & dos_temp*matrix_weights(iorb, ib, ik, is)
-                  enddo
-                endif
-              endif
-            endif
+                  end do
+                end if
+              end if
+            end if
           end do
         end do
       end do
@@ -1271,7 +1274,7 @@ contains
     if (linear .and. (linear_smearing .gt. 0.0_dp)) then
       if (iprint > 1 .and. on_root) then ! This is to contain the Calculating k-points block
         write (stdout, '(1x,a78)') '+-------------------------------- Smear DOS ---------------------------------+'
-      endif
+      end if
       ! Post smear the dos with a Guassian
       ! allocate a temporary array
       allocate (dos_smear(dos_nbins, nspins), stat=ierr)
@@ -1285,21 +1288,21 @@ contains
           if (iprint > 1 .and. on_root) then
             if (mod(real(idos, dp), 1000.0_dp) == 0.0_dp) write (stdout, '(1x,a1,a25,i14,a3,i10,a14,1x,a10)') "|",&
            &"Calculating bin ", idos, " of", dos_nbins, " on this node", "<--sDOS |"
-          endif
+          end if
           do i = 1, dos_nbins
             dos_smear(idos, is) = dos_smear(idos, is) + dos(i, is)*gaussian(E(idos), linear_smearing, E(i))*delta_bins
-          enddo
-        enddo
-      enddo
+          end do
+        end do
+      end do
       ! copy array back
       dos = dos_smear
       ! deallocate array
       deallocate (dos_smear)
-    endif
+    end if
 
     if (iprint > 1 .and. on_root) then ! This is to contain the Calculating k-points block
       write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
-    endif
+    end if
 
     if (.not. linear .and. numerical_intdos) intdos = intdos*delta_bins
 
@@ -1373,7 +1376,7 @@ contains
     EigenV(0) = Energy
     do i = 1, 4
       EigenV(i) = EigenV(0) + DE(4 + i)
-    enddo
+    end do
   end subroutine doslin_sub_cell_corners
 
   !===============================================================================
@@ -1448,7 +1451,7 @@ contains
       alpha = 1.0_dp
     else
       alpha = 1.0_dp/((e1 - e3)*(e1 - e4) + (e3 - e4)**2/3.0_dp - (e1 - e2)**2/3.0_dp + (e1 + e2 - e3 - e4)*(e0 - e1)) ! TRUE
-    endif
+    end if
 
     ! ** Flip if above e0
 
@@ -1575,7 +1578,7 @@ contains
       if (mw%nspins .ne. nspins) call io_error("ERROR : DOS :  mw%nspins not equal to nspins.")
       if (mw%nkpoints .ne. num_kpoints_on_node(my_node_id)) &
            & call io_error("ERROR : DOS : mw%nkpoints not equal to nkpoints.")
-    endif
+    end if
 
     !-------------------------------------------------------------------------------
     ! R E A D   B A N D   G R A D I E N T S
@@ -1583,7 +1586,7 @@ contains
     ! band gradients too
     if (quad .or. linear .or. adaptive) then
       if (.not. allocated(band_gradient)) call elec_read_band_gradient
-    endif
+    end if
     !-------------------------------------------------------------------------------
     ! C A L C U L A T E   D O S
     ! Now everything is set up, we can perform the dos accumulation in parellel
@@ -1598,8 +1601,8 @@ contains
       else
         call calculate_dos_at_e("f", energy, dos_at_e(1, :))
         call dos_utils_merge_at_e(dos_at_e(1, :))
-      endif
-    endif
+      end if
+    end if
     if (adaptive) then
       if (calc_weighted_dos .and. (.not. linear)) then
         call calculate_dos_at_e("a", energy, dos_at_e(2, :), matrix_weights=matrix_weights, &
@@ -1608,8 +1611,8 @@ contains
       else
         call calculate_dos_at_e("a", energy, dos_at_e(2, :))
         call dos_utils_merge_at_e(dos_at_e(2, :))
-      endif
-    endif
+      end if
+    end if
     if (linear) then
       if (calc_weighted_dos) then
         call calculate_dos_at_e("l", energy, dos_at_e(3, :), matrix_weights=matrix_weights, &
@@ -1618,8 +1621,8 @@ contains
       else
         call calculate_dos_at_e("l", energy, dos_at_e(3, :))
         call dos_utils_merge_at_e(dos_at_e(3, :))
-      endif
-    endif
+      end if
+    end if
     ! if(quad) then
 
     !
@@ -1630,7 +1633,7 @@ contains
       write (stdout, '(1x,a59,f11.3,a8)') &
            '+ Time to calculate DOS at certain energy                &
            &      ', time1 - time0, ' (sec) +'
-    endif
+    end if
 
     !-------------------------------------------------------------------------------
 
@@ -1717,9 +1720,9 @@ contains
     if (adaptive .or. hybrid_linear) then
       do i = 1, 3
         sub_cell_length(i) = sqrt(recip_lattice(i, 1)**2 + recip_lattice(i, 2)**2 + recip_lattice(i, 3)**2)*step(i)
-      enddo
+      end do
       adaptive_smearing_temp = adaptive_smearing*sum(sub_cell_length)/3
-    endif
+    end if
 
     if (fixed) width = fixed_smearing
 
@@ -1728,13 +1731,13 @@ contains
     if ((iprint > 1) .and. on_root) then
       write (stdout, *)
       write (stdout, '(1x,a78)') "+------------------------- Calculate DOS at energy --------------------------+"
-    endif
+    end if
 
     do ik = 1, num_kpoints_on_node(my_node_id)
       if (iprint > 1 .and. on_root) then
         if (mod(real(ik, dp), 10.0_dp) == 0.0_dp) write (stdout, '(1x,1a,a28,i4,a3,i4,a14,10x,a14)') '|', &
              &"Calculating k-point ", ik, " of", num_kpoints_on_node(my_node_id), " on this node", "<-- DOS at E |"
-      endif
+      end if
 
       do is = 1, nspins
 
@@ -1752,8 +1755,8 @@ contains
           if (finite_bin_correction) then ! Force the compiler to do this the right way around
             if (width < delta_bins) then
               width = delta_bins
-            endif
-          endif
+            end if
+          end if
 
           intdos_accum = 0.0_dp
 
@@ -1765,7 +1768,7 @@ contains
           else
             dos_temp = gaussian(band_energy(ib, is, ik), width, energy)*electrons_per_state*kpoint_weight(ik)
 
-          endif
+          end if
 
           dos_at_e(is) = dos_at_e(is) + dos_temp
 
@@ -1775,10 +1778,10 @@ contains
                 do iorb = 1, mw%norbitals
                   weighted_dos_at_e(is, iorb) = weighted_dos_at_e(is, iorb) + &
                        & dos_temp*matrix_weights(iorb, ib, ik, is)
-                enddo
-              endif
-            endif
-          endif
+                end do
+              end if
+            end if
+          end if
         end do
       end do
     end do
@@ -1828,4 +1831,4 @@ contains
 !    endif
   end subroutine dos_utils_merge_at_e
 
-endmodule od_dos_utils
+end module od_dos_utils

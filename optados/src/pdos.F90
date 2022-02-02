@@ -61,7 +61,7 @@ contains
       write (stdout, '(1x,a78)') '+                 Projected Density Of States Calculation                    +'
       write (stdout, '(1x,a78)') '+============================================================================+'
       write (stdout, '(1x,a78)')
-    endif
+    end if
 
     ! read in the pdos weights
     call elec_pdos_read
@@ -77,7 +77,7 @@ contains
 
     if (on_root .and. (iprint > 2)) then
       call pdos_report_projectors
-    endif
+    end if
 
     ! now compute the weighted dos
     call dos_utils_calculate(matrix_weights, dos_partial)
@@ -86,7 +86,7 @@ contains
     if (set_efermi_zero .and. .not. efermi_set) call dos_utils_set_efermi
     if (on_root) then
       call pdos_write
-    endif
+    end if
 
   end subroutine pdos_calculate
 
@@ -128,14 +128,14 @@ contains
           end_iproj = num_proj
         else
           end_iproj = ifile*10
-        endif
+        end if
 
         write (start_iproj_name, '(I20.4)') start_iproj
         write (end_iproj_name, '(I20.4)') end_iproj
         name = trim(seedname)//'.pdos.proj-'//trim(adjustl(start_iproj_name))//'-'//trim(adjustl(end_iproj_name))//'.dat'
         call write_proj_to_file(start_iproj, end_iproj, name)
-      enddo
-    endif
+      end do
+    end if
   end subroutine pdos_write
 
   subroutine write_proj_to_file(start_proj, stop_proj, name)
@@ -165,7 +165,7 @@ contains
       E_shift = E - efermi
     else
       E_shift = E
-    endif
+    end if
 
     write (string, '(I4,"(x,es14.7)")') (stop_proj - start_proj) + 1
 
@@ -195,12 +195,12 @@ contains
             if (projection_array(ispecies, ispecies_num, iam, iproj) == 1) then
               write (pdos_file, '(1a,a1,a13,i3,a18,16x,a2,24x,1a)') "#", "|", proj_symbol(ispecies), &
                    &ispecies_num, channel_to_am(iam), 'Up', '|'
-            endif
-            enddo
-          enddo
-        enddo
+            end if
+            end do
+          end do
+        end do
         write (pdos_file, '(1a,a)') '#', '+----------------------------------------------------------------------------+'
-      enddo
+      end do
       do iproj = start_proj, stop_proj
         write (pdos_file, '(1a,a1,a12,i4,a10,50x,a1)') '#', '|', ' Column: ', iproj + num_proj, ' contains:', '|'
         write (pdos_file, '(1a,a1,a16,10x,a14,5x,a15,16x,a1)') '#', '|', ' Atom ', ' AngM Channel ', ' Spin Channel ', '|'
@@ -210,12 +210,12 @@ contains
               if (projection_array(ispecies, ispecies_num, iam, iproj) == 1) then
                 write (pdos_file, '(1a,a1,a13,i3,a18,15x,a4,23x,1a)') "#", "|", proj_symbol(ispecies), &
                      &ispecies_num, channel_to_am(iam), 'Down', '|'
-              endif
-            enddo
-          enddo
-        enddo
+              end if
+            end do
+          end do
+        end do
         write (pdos_file, '(1a,a)') '#', '+----------------------------------------------------------------------------+'
-      enddo
+      end do
 
       dos_partial(:, 2, :) = -dos_partial(:, 2, :)
       do idos = 1, dos_nbins
@@ -232,17 +232,17 @@ contains
               if (projection_array(ispecies, ispecies_num, iam, iproj) == 1) then
                 write (pdos_file, '(1a,a1,a13,i3,a18,42x,a1)') "#", "|", proj_symbol(ispecies), &
                      &ispecies_num, channel_to_am(iam), '|'
-              endif
-            enddo
-          enddo
-        enddo
+              end if
+            end do
+          end do
+        end do
         write (pdos_file, '(1a,a)') '#', '+----------------------------------------------------------------------------+'
-      enddo
+      end do
 
       do idos = 1, dos_nbins
         write (pdos_file, '(es14.7,'//trim(string)//')') E_shift(idos), (dos_partial(idos, 1, i), i=start_proj, stop_proj)
       end do
-    endif
+    end if
 
     close (pdos_file)
 
@@ -273,12 +273,12 @@ contains
             if (projection_array(ispecies, ispecies_num, iam, iproj) == 1) then
               write (stdout, '(1x,a1,a13,i3,a18,42x,a1)') "|", proj_symbol(ispecies), &
                 ispecies_num, channel_to_am(iam), '|' !, " |  DEBUG :",  ispecies ,iam
-            endif
-          enddo
-        enddo
-      enddo
+            end if
+          end do
+        end do
+      end do
       write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
-    enddo
+    end do
   end subroutine pdos_report_projectors
 
 !!$!===============================================================================
