@@ -4,8 +4,8 @@
 # Put in the examples directory
 # un comment the castep running lines if you haven't run it before
 
-OD2OD_EXE="/Users/ajm143/src/optados/optados/src/od2od"
-CASTEP_EXE="/Users/ajm143/bin/castep.serial"
+OD2OD_EXE="../od2od" # /Users/ajm143/src/optados/optados/src/od2od"
+CASTEP_EXE="castep.serial" #"/Users/ajm143/bin/castep.serial"
 
 OME_SEEDNAME=Si2_OPTICS
 DOME_SEEDNAME=Si2_CORE
