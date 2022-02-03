@@ -240,7 +240,7 @@ contains
     use od_constants, only: optados_version, copyright
     implicit none
     write (*, *)
-    write (*, *) " OptaDOS ver.", trim(optados_version)
+    write (*, *) " OptaDOS version ", trim(build_info%build)
     write (*, *)
     write (*, *) " Andrew J. Morris, R. J. Nicholls, C. J. Pickard and J. R. Yates", trim(copyright)
     write (*, *) " Usage: optados <seedname>"
@@ -253,7 +253,7 @@ contains
     use od_constants, only: optados_version, copyright
     implicit none
     write (*, *)
-    write (*, *) " OptaDOS ver.", trim(optados_version)
+    write (*, *) " OptaDOS version ", trim(build_info%build)
     write (*, *)
     write (*, *) " Andrew J. Morris, R. J. Nicholls, C. J. Pickard and J. R. Yates", trim(copyright)
     write (*, *) " Compiled with "//trim(build_info%compiler)//" on "//trim(build_info%compile_date)&
