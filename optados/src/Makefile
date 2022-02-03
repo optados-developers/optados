@@ -104,7 +104,7 @@ build.o : build.f90 ../make.system
 
 
 clean:
-	rm -f *.o *.mod *.MOD
+	rm -f *.o *.mod *.MOD build_info.f90
 
 
 veryclean: clean
