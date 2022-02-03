@@ -86,7 +86,7 @@ contains
       return
     else
       gaussian = inv_sqrt_two_pi*exp(-0.5_dp*((x - m)/w)**2)/w
-    endif
+    end if
     return
   end function gaussian
 
@@ -192,7 +192,7 @@ contains
       ilett = ichar(string(ipos:ipos))
       if ((ilett .ge. iA) .and. (ilett .le. iZ)) &
         utility_lowercase(ipos:ipos) = char(ilett - idiff)
-    enddo
+    end do
 
     utility_lowercase = trim(adjustl(utility_lowercase))
 
@@ -301,7 +301,7 @@ contains
     else
       algorithms_erf = 1.0_dp
       if (X < 0.0_dp) algorithms_erf = -algorithms_erf
-    endif
+    end if
 
   end function algorithms_erf
 
@@ -335,8 +335,8 @@ contains
       do loop = 0, num_elements - elements_per_node(0)*num_nodes - 1
         elements_per_node(loop) = elements_per_node(loop) + 1
       end do
-    endif
+    end if
 
   end subroutine algor_dist_array
 
-endmodule od_algorithms
+end module od_algorithms

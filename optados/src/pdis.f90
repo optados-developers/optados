@@ -55,7 +55,7 @@ contains
       write (stdout, '(1x,a78)') '+                 Projected Dispersion Curve Calculation                     +'
       write (stdout, '(1x,a78)') '+============================================================================+'
       write (stdout, '(1x,a78)')
-    endif
+    end if
 
     ! read in the pdos weights
     call elec_pdis_read
@@ -77,11 +77,11 @@ contains
     ! write everything out
     if (on_root .and. (iprint > 2)) then
       call pdis_report_projectors
-    endif
+    end if
 
     if (on_root) then
       call pdis_write
-    endif
+    end if
 
   end subroutine pdis_calculate
 
@@ -123,7 +123,7 @@ contains
 
     if (set_efermi_zero) then
       band_energy = band_energy - efermi
-    endif
+    end if
 
     write (string, '(I4,"(x,es14.7)")') (stop_proj - start_proj) + 1
 
@@ -155,12 +155,12 @@ contains
               if (projection_array(ispecies, ispecies_num, iam, iproj) == 1) then
                 write (pdis_file, '(1a,a1,a13,i3,a18,42x,a1)') "#", "|", proj_symbol(ispecies), &
                      &ispecies_num, channel_to_am(iam), '|'
-              endif
-            enddo
-          enddo
-        enddo
+              end if
+            end do
+          end do
+        end do
         write (pdis_file, '(1a,a)') '#', '+----------------------------------------------------------------------------+'
-      enddo
+      end do
 
       do N = 1, nkpoints
         write (pdis_file, '(a10, i4, a10, es18.7, es18.7, es18.7)') 'K-point   ', N, '     ', (all_kpoints(i, N), i=1, 3)
@@ -170,7 +170,7 @@ contains
         end do
       end do
 
-    endif
+    end if
 
     close (pdis_file)
 
@@ -198,12 +198,12 @@ contains
             if (projection_array(ispecies, ispecies_num, iam, iproj) == 1) then
               write (stdout, '(1x,a1,a13,i3,a18,42x,a1)') "|", proj_symbol(ispecies), &
                 ispecies_num, channel_to_am(iam), '|' !, " |  DEBUG :",  ispecies ,iam
-            endif
-          enddo
-        enddo
-      enddo
+            end if
+          end do
+        end do
+      end do
       write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
-    enddo
+    end do
   end subroutine pdis_report_projectors
 
 end module od_pdis

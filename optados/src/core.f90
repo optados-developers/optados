@@ -50,7 +50,7 @@ contains
       write (stdout, '(1x,a78)') '+                            Core Loss Calculation                           +'
       write (stdout, '(1x,a78)') '+============================================================================+'
       write (stdout, '(1x,a78)') '|                                                                            |'
-    endif
+    end if
 
     ! read in the core matrix elements from disk
     call elec_read_elnes_mat
@@ -68,12 +68,12 @@ contains
       weighted_dos_broadened = 0.0_dp
       if (LAI_lorentzian .or. (LAI_lorentzian_scale .gt. 0.00001_dp)) call core_lorentzian
       if (LAI_gaussian) call core_gaussian
-    endif
+    end if
 
     if (set_efermi_zero .and. .not. efermi_set) call dos_utils_set_efermi
     if (on_root) then
       call write_core
-    endif
+    end if
 
   end subroutine core_calculate
 
@@ -200,20 +200,20 @@ contains
       E_shift = E - efermi
     else
       E_shift = E
-    endif
+    end if
 
     if (nspins == 1) then
       allocate (dos_temp(dos_nbins, 1), stat=ierr)
     else
       allocate (dos_temp(dos_nbins, 3), stat=ierr)
-    endif
+    end if
     if (ierr /= 0) call io_error('Error: core_write - allocation of dos_temp failed')
 
     if (nspins == 1) then
       allocate (dos_temp2(dos_nbins, 1), stat=ierr)
     else
       allocate (dos_temp2(dos_nbins, 3), stat=ierr)
-    endif
+    end if
     if (ierr /= 0) call io_error('Error: core_write - allocation of dos_temp2 failed')
 
     allocate (elnes_symbol(num_species), stat=ierr)
@@ -257,8 +257,8 @@ contains
               counter = counter + 1
               exit
             end if
-          enddo
-        endif
+          end do
+        end if
       end do
     end if
 
@@ -330,13 +330,13 @@ contains
                & elnes_orbital%rank_in_species(loop) == ion_num_in_species(loop2)) then
             found = .true.
           end if
-        enddo
+        end do
         if (.not. found) then
           counter = counter + 1
           ion_species(counter) = elnes_orbital%species_no(loop)
           ion_num_in_species(counter) = elnes_orbital%rank_in_species(loop)
-        endif
-      endif
+        end if
+      end if
     end do
     num_sites = counter
 
@@ -401,7 +401,7 @@ contains
           temp = 'L1'
         elseif (edge_am(loop) == 1) then
           temp = 'L2,3'
-        endif
+        end if
       elseif (edge_shell(loop) == 3) then
         if (edge_am(loop) == 0) then
           temp = 'M1'
@@ -409,7 +409,7 @@ contains
           temp = 'M2,3'
         elseif (edge_am(loop) == 2) then
           temp = 'M4,5'
-        endif
+        end if
       elseif (edge_shell(loop) == 4) then
         if (edge_am(loop) == 0) then
           temp = 'N1'
@@ -419,7 +419,7 @@ contains
           temp = 'N4,5'
         elseif (edge_am(loop) == 3) then
           temp = 'N6,7'
-        endif
+        end if
       elseif (edge_shell(loop) == 5) then
         if (edge_am(loop) == 0) then
           temp = 'O1'
@@ -429,7 +429,7 @@ contains
           temp = 'O4,5'
         elseif (edge_am(loop) == 3) then
           temp = 'O6,7'
-        endif
+        end if
       elseif (edge_shell(loop) == 6) then
         if (edge_am(loop) == 0) then
           temp = 'P1'
@@ -439,15 +439,16 @@ contains
           temp = 'P4,5'
         elseif (edge_am(loop) == 3) then
           temp = 'P6,7'
-        endif
-      endif
+        end if
+      end if
 
       if (elnes_label(edge_species(loop)) == '') then
-        write (edge_name(loop), '(a2,1x,i0,1x,a5)') trim(elnes_symbol(edge_species(loop))), edge_rank_in_species(loop), trim(temp)
+        write (edge_name(loop), '(a2,1x,i0,1x,a5)') trim(elnes_symbol(edge_species(loop))), &
+        & edge_rank_in_species(loop), trim(temp)
       else
         write (edge_name(loop), '(a2,1x,i0,1x,a5,a10)') trim(elnes_symbol(edge_species(loop))), &
           edge_rank_in_species(loop), trim(temp), trim(elnes_label(edge_species(loop)))
-      endif
+      end if
     end do
 
     ! Now we know how many edges we have we can write them to a file
@@ -481,7 +482,8 @@ contains
         do loop2 = 1, edge_num_am(loop)
           dos_temp(:, 1) = dos_temp(:, 1) + weighted_dos(:, 1, edge_list(loop, loop2))/real(edge_num_am(loop), dp)
           if (core_LAI_broadening) then
-            dos_temp2(:, 1) = dos_temp2(:, 1) + weighted_dos_broadened(:, 1, edge_list(loop, loop2))/real(edge_num_am(loop), dp)
+            dos_temp2(:, 1) = dos_temp2(:, 1) + weighted_dos_broadened(:, 1, edge_list(loop, loop2))&
+            &/real(edge_num_am(loop), dp)
           end if
         end do
       else
@@ -490,8 +492,10 @@ contains
           dos_temp(:, 2) = dos_temp(:, 2) + weighted_dos(:, 2, edge_list(loop, loop2))/real(edge_num_am(loop), dp)
           dos_temp(:, 3) = dos_temp(:, 3) + dos_temp(:, 1) + dos_temp(:, 2)
           if (core_LAI_broadening) then
-            dos_temp2(:, 1) = dos_temp2(:, 1) + weighted_dos_broadened(:, 1, edge_list(loop, loop2))/real(edge_num_am(loop), dp)
-            dos_temp2(:, 2) = dos_temp2(:, 2) + weighted_dos_broadened(:, 2, edge_list(loop, loop2))/real(edge_num_am(loop), dp)
+            dos_temp2(:, 1) = dos_temp2(:, 1) + weighted_dos_broadened(:, 1, edge_list(loop, loop2))/&
+            &real(edge_num_am(loop), dp)
+            dos_temp2(:, 2) = dos_temp2(:, 2) + weighted_dos_broadened(:, 2, edge_list(loop, loop2))/&
+            &real(edge_num_am(loop), dp)
             dos_temp2(:, 3) = dos_temp2(:, 3) + dos_temp2(:, 1) + dos_temp2(:, 2)
           end if
         end do
@@ -511,7 +515,7 @@ contains
           else
             write (core_unit, '(4(E21.13,2x))') E_shift(N), dos_temp(N, 1), dos_temp(N, 2), dos_temp(N, 3)
           end if
-        endif
+        end if
       end do
 
       write (core_unit, *) ''
@@ -554,7 +558,7 @@ contains
               dos_temp(:, 1) = dos_temp(:, 1) + weighted_dos(:, 1, edge_list(loop, loop2))/real(edge_num_am(loop), dp)
               dos_temp(:, 2) = dos_temp(:, 2) + weighted_dos(:, 2, edge_list(loop, loop2))/real(edge_num_am(loop), dp)
               dos_temp(:, 3) = dos_temp(:, 1) + dos_temp(:, 1) + dos_temp(:, 2)
-            endif
+            end if
           end do
 
           call xmgu_data_header(core_unit, loop, loop, trim(edge_name(loop)))
@@ -589,21 +593,24 @@ contains
             dos_temp = 0.0_dp; dos_temp2 = 0.0_dp
             do loop2 = 1, edge_num_am(loop)
               if (nspins == 1) then
-                dos_temp(:, 1) = dos_temp(:, 1) + weighted_dos_broadened(:, 1, edge_list(loop, loop2))/real(edge_num_am(loop), dp)
+                dos_temp(:, 1) = dos_temp(:, 1) + weighted_dos_broadened(:, 1, edge_list(loop, loop2))/&
+                &real(edge_num_am(loop), dp)
               else
-                dos_temp(:, 1) = dos_temp(:, 1) + weighted_dos_broadened(:, 1, edge_list(loop, loop2))/real(edge_num_am(loop), dp)
-                dos_temp(:, 2) = dos_temp(:, 2) + weighted_dos_broadened(:, 2, edge_list(loop, loop2))/real(edge_num_am(loop), dp)
+                dos_temp(:, 1) = dos_temp(:, 1) + weighted_dos_broadened(:, 1, edge_list(loop, loop2))/&
+                &real(edge_num_am(loop), dp)
+                dos_temp(:, 2) = dos_temp(:, 2) + weighted_dos_broadened(:, 2, edge_list(loop, loop2))/&
+                &real(edge_num_am(loop), dp)
                 dos_temp(:, 3) = dos_temp(:, 1) + dos_temp(:, 1) + dos_temp(:, 2)
-              endif
+              end if
             end do
 
             call xmgu_data_header(core_unit, loop, loop, trim(edge_name(loop)))
             call xmgu_data(core_unit, loop, E_shift(:), dos_temp(:, 1))   ! Only 1 part for now RJN 28Aug14
           end do
 
-        endif
+        end if
 
-      endif
+      end if
 
     end if
 
@@ -679,7 +686,7 @@ contains
           end if
           if ((L_width*pi) .lt. dE) then  ! to get rid of spikes caused by L_width too small
             L_width = dE/pi
-          endif
+          end if
           do N_energy2 = 1, dos_nbins ! Turn each energy value into a function
             l = weighted_dos(N_energy, N_spin, N)*L_width/(pi*(((E(N_energy2) - E(N_energy))**2) + (L_width**2)))  ! Lorentzian
             weighted_dos_broadened(N_energy2, N_spin, N) = weighted_dos_broadened(N_energy2, N_spin, N) + (l*dE)

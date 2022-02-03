@@ -49,7 +49,7 @@ contains
       write (stdout, '(1x,a78)') '+                           Joint Density of States                          +'
       write (stdout, '(1x,a78)') '+============================================================================+'
       write (stdout, '(1x,a78)') '|                                                                            |'
-    endif
+    end if
 
     call jdos_utils_calculate
 
@@ -64,7 +64,7 @@ contains
       if (adaptive) call write_jdos(E, jdos_adaptive, "adaptive")
       if (linear) call write_jdos(E, jdos_linear, "linear")
       !if(quad)    call write_jdos(E, dos_quad, intdos_quad, "quad")
-    endif
+    end if
     time1 = io_time()
 
     !-------------------------------------------------------------------------------
@@ -98,7 +98,7 @@ contains
     if (dos_per_volume) then
       dos_units = "(electrons per eV/A^3)"
       intdos_units = "(electrons per A^3)"
-    endif
+    end if
 
     write (dos_file, *) "##############################################################################"
     write (dos_file, *) "#"
@@ -117,19 +117,19 @@ contains
     else
       write (dos_file, *) "#    2        DOS ", trim(dos_units)
       write (dos_file, *) "#    3        Integrated DOS ", trim(intdos_units)
-    endif
+    end if
     write (dos_file, '(1x,a1)') "#"
     write (dos_file, '(1x,a78)') "##############################################################################"
 
     if (nspins > 1) then
       do i = 1, jdos_nbins
         write (dos_file, '(3(E21.13,2x))') E(i), dos(i, 1), -dos(i, 2)
-      enddo
+      end do
     else
       do i = 1, jdos_nbins
         write (dos_file, '(2(E21.13,2x))') E(i), dos(i, 1)
-      enddo
-    endif
+      end do
+    end if
     close (dos_file)
 
     if (trim(output_format) == "xmgrace") then
@@ -140,7 +140,7 @@ contains
       !     call write_dos_gnuplot(dos_name,E,dos)
     else
       write (stdout, *) " WARNING: Unknown output format requested, continuing..."
-    endif
+    end if
 
   end subroutine write_jdos
   !===============================================================================
@@ -172,7 +172,7 @@ contains
     max_y = maxval(dos)
     if (nspins > 1) then
       min_y = -max_y
-    endif
+    end if
 
     call xmgu_setup(batch_file)
     call xmgu_legend(batch_file)
@@ -190,10 +190,10 @@ contains
     else
       call xmgu_data_header(batch_file, 0, 1, "Total JDOS")
       call xmgu_data(batch_file, 0, E(:), dos(:, 1))
-    endif
+    end if
 
     close (batch_file)
 
   end subroutine write_jdos_xmgrace
 
-endmodule od_jdos
+end module od_jdos
