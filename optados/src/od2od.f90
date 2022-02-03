@@ -762,7 +762,7 @@ contains
 
     real(dp) :: file_version = 1.0_dp
     !! The file verioson format to write. Currently we're on version 1.
-    integer :: ik, is, ib, iorb, indx,
+    integer :: ik, is, ib, iorb, indx
     !! Loop variables
     integer :: elnes_unit
     !! File unit number to write to.
