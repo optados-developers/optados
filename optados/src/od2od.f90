@@ -26,7 +26,7 @@ contains
     write (stdout, '(A)')
     write (stdout, '(A)') " OptaDOS od2od "
     write (stdout, '(A)')
-    write (stdout, '(A)') " Usage: od2od <in_type> <out_type> [seedname] [seedout]"
+    write (stdout, '(A)') " Usage: od2od -i/--in_file <in_type> -o/--out_file <out_type> -w/--out_seedname [seedout] [seedname] "
     write (stdout, '(A)')
     write (stdout, '(A)') " [seedname] and [seedout] are optional input and output seednames"
     write (stdout, '(A)')
@@ -57,27 +57,43 @@ contains
   !=========================================================================
   subroutine conv_get_seedname
     !! Set the seedname from the command line
+    use od_io, only: seedname
     implicit none
 
     integer :: num_arg
+    integer :: i !! Temporary variable
     character(len=50) :: ctemp
 
     num_arg = command_argument_count()
-    if (num_arg == 2) then
-      seedname = 'optados'
-    elseif (num_arg == 3) then
-      call get_command_argument(3, seedname)
-      outseedname = trim(seedname)
-    elseif (num_arg == 4) then
-      call get_command_argument(3, seedname)
-      call get_command_argument(4, outseedname)
-    else
-      call print_usage
-      call io_error('Wrong command line arguments, see logfile for usage')
-    end if
 
-    call get_command_argument(1, infile)
-    call get_command_argument(2, outfile)
+    seedname = 'optados' !! set to optados until proven otherwise
+    i=1
+    do while (i .le. num_arg)
+      call get_command_argument(i, ctemp)
+      select case (trim(ctemp))
+      case ("-i","--in_file")
+        i=i+1
+        call get_command_argument(i, infile)
+      case ("-o","--out_file")
+        i=i+1
+        call get_command_argument(i, outfile)
+      case ("-w","--out_seedname")
+        i=i+1
+        call get_command_argument(i, outseedname)
+      case ("--") !! End of flags
+        i=i+1
+        call get_command_argument(i, seedname)
+      case default
+        if(seedname=='optados') then
+          seedname=trim(ctemp)
+          i=i+1
+        else !! We've already set the seedname so it can't be that again!
+          call print_usage
+          call io_error('Wrong command line arguments, see logfile for usage')
+        end if
+      end select
+      i=i+1
+    end do
 
   end subroutine conv_get_seedname
 
@@ -951,6 +967,7 @@ program od2od
   call comms_setup
 
   call conv_get_seedname
+
   stderr = io_file_unit()
   open (unit=stderr, file=trim(seedname)//'.opt_err')
   call io_date(cdate, ctime)
