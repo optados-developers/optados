@@ -66,6 +66,7 @@ contains
 
     num_arg = command_argument_count()
 
+    outseedname='optados'
     seedname = 'optados' !! set to optados until proven otherwise
     i=1
     do while (i .le. num_arg)
@@ -94,6 +95,10 @@ contains
       end select
       i=i+1
     end do
+
+    if(outseedname=='optados')then
+      outseedname=seedname
+    endif
 
   end subroutine conv_get_seedname
 
