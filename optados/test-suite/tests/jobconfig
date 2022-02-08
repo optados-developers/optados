@@ -8,7 +8,7 @@ output = Si2.odo
 # correctly read the number of bands from a Si2.band file
 [testod2od_dummy]
 program = OD2OD_LOG_OK
-inputs_args = ('dummy', 'dummy', 'Si2')
+inputs_args = ('', '-i dummy -o dummy Si2')
 output = Si2.log
 
 [categories]
