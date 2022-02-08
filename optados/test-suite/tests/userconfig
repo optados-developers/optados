@@ -8,6 +8,9 @@ exe = ../../optados.x
 extract_fn = tools parsers.parse_odo.parse
 #tolerance = ( 1.0e-3, 1.0e-3, 'fermi_fb'))
 
+[OD2OD_LOG_OK]
+exe = ../../od2od
+extract_fn = tools parsers.parse_od2od_log.parse
 
 [user]
 # This is the string (or list of strings) that identifies sets of tests

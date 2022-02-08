@@ -4,6 +4,12 @@ program = OPTADOS_ODO_OK
 inputs_args = ('Si2.odi', '')
 output = Si2.odo
 
+# Test that od2od produces an output. In this case we look for whether it has
+# correctly read the number of bands from a Si2.band file
+[testod2od_dummy]
+program = OD2OD_LOG_OK
+inputs_args = ('dummy', 'dummy', 'Si2')
+output = Si2.log
 
 [categories]
 optados_only = testopt_*
