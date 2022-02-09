@@ -30,4 +30,6 @@ CORE_GEOM          : polycrystalline  # Default
 # Include life-time and instrumentaion broadening
 CORE_LAI_BROADENING : true  # Default
 
-
+# Mizoguchi Correction calculated from miz_correction script
+# located in the tools/ folder
+mizoguchi_correction : 1500 
