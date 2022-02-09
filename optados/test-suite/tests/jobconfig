@@ -1,6 +1,6 @@
 # Initial JRY example test
 # It does fixed broadening so only requires a band file 
-[testopt_example01]
+[testopt_dos_fixed]
 program = OPTADOS_ODO_OK
 inputs_args = ('Si2.odi', '')
 output = Si2.odo
