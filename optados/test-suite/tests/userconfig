@@ -8,6 +8,10 @@ exe = ../../optados.x
 extract_fn = tools parsers.parse_odo.parse
 #tolerance = ( 1.0e-3, 1.0e-3, 'fermi_fb'))
 
+[OPTADOS_DOS_DAT_OK]
+exe = ../../optados.x
+extract_fn = tools parsers.parse_dos_dat.parse
+
 [OD2OD_LOG_OK]
 exe = ../../od2od
 extract_fn = tools parsers.parse_od2od_log.parse
