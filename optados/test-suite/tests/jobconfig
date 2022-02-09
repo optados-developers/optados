@@ -1,8 +1,19 @@
-# Gallium Arsenide, valence bands
+# Initial JRY example test
+# It does fixed broadening so only requires a band file 
 [testopt_example01]
 program = OPTADOS_ODO_OK
 inputs_args = ('Si2.odi', '')
 output = Si2.odo
+
+# Test the adaptive smearing for a DOS
+# Note this is the prototype test for any test that requires
+# Unzipping and converting formatted files.
+[testopt_dos_adaptive]
+program = OPTADOS_ODO_OK
+inputs_args = ('Si2.odi', '')
+output = Si2.odo
+
+
 
 # Test that od2od produces an output. In this case we look for whether it has
 # correctly read the number of bands from a Si2.band file
@@ -13,5 +24,6 @@ output = Si2.log
 
 [categories]
 optados_only = testopt_*
-all = optados_only
+od2od_only = testod2od_*
+all = optados_only od2od_only
 default =  all

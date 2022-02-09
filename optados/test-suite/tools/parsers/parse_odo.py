@@ -10,6 +10,9 @@ from collections import defaultdict
 from . import show_output
 
 e_fermi_fb = re.compile("Fermi\ energy\ \(Fixed\ broadening\)\ \:\s*([0-9\.-]+)\s*")
+e_fermi_ab = re.compile("Fermi\ energy\ \(Adaptive\ broadening\)\ \:\s*([0-9\.-]+)\s*")
+e_fermi_lb = re.compile("Fermi\ energy\ \(Linear\ broadening\)\ \:\s*([0-9\.-]+)\s*")
+
 
 def parse(fname):
     """
@@ -31,6 +34,15 @@ def parse(fname):
         if match:
             retdict["fermi_fb"].append(float(match.groups()[0]))
             continue
+	match = e_fermi_ab.search(l)
+        if match:	
+            retdict["fermi_ab"].append(float(match.groups()[0]))
+            continue
+        match = e_fermi_lb.search(l)
+        if match:
+            retdict["fermi_lb"].append(float(match.groups()[0]))
+            continue
+
         ###############################################################
         
 
