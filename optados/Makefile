@@ -23,6 +23,7 @@ clean:
 	cd ./src && $(MAKE) clean 
 	cd ./documents && $(MAKE) clean
 	cd ./python  && $(MAKE) clean
+	cd ./test-suite && ./clean-tests
 
 ford: 
 	ford -d ../src -o ../auto_doc ./ford/project.md
@@ -34,6 +35,7 @@ veryclean:
 	cd ./src && $(MAKE) veryclean
 	cd ./documents && $(MAKE) veryclean
 	cd ./python &&  $(MAKE) veryclean
+	cd ./test-suite && ./clean-tests -i
 
 dist: optados-$(VER).tar.gz
 
