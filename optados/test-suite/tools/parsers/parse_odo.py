@@ -34,8 +34,8 @@ def parse(fname):
         if match:
             retdict["fermi_fb"].append(float(match.groups()[0]))
             continue
-	match = e_fermi_ab.search(l)
-        if match:	
+        match = e_fermi_ab.search(l)
+        if match:
             retdict["fermi_ab"].append(float(match.groups()[0]))
             continue
         match = e_fermi_lb.search(l)
@@ -44,7 +44,7 @@ def parse(fname):
             continue
 
         ###############################################################
-        
+
 
     retdict = dict(retdict)
     if show_output:

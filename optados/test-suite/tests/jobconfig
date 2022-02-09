@@ -19,6 +19,11 @@ program = OPTADOS_ODO_OK
 inputs_args = ('Si2.odi', '')
 output = Si2.odo
 
+# Test the adaptive  smearing dat file for a DOS
+[testopt_dos_adaptive_dat]
+program = OPTADOS_DOS_DAT_OK
+inputs_args = ('Si2.odi', '')
+output = Si2.adaptive.dat
 
 # Test that od2od produces an output. In this case we look for whether it has
 # correctly read the number of bands from a Si2.band file
