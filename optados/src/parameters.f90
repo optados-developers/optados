@@ -116,6 +116,7 @@ module od_parameters
   real(kind=dp), public, save :: LAI_lorentzian_scale
   real(kind=dp), public, save :: LAI_lorentzian_offset
   logical, public, save :: LAI_lorentzian
+  real(kind=dp), public, save :: mizoguchi_correction ! used in conjunction with miz_correction script in tools
 
   real(kind=dp), public, save :: lenconfac
 
@@ -258,6 +259,10 @@ contains
       efermi_choice = "file"
     end if
     call param_get_efermi('efermi', found, efermi_choice, efermi_user)
+
+    ! Here we apply a correction to the core energy if supplied by the user
+    mizoguchi_correction = 0.0_dp ! No correction applied to the core energy
+    call param_get_keyword('mizoguchi_correction', found, r_value=mizoguchi_correction)
 
     ! Force all Gaussians to be greater than the width of a bin. When using numerical_indos
     ! this is critical for counting all of the Gaussian DOS peaks.
