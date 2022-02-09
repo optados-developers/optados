@@ -13,6 +13,11 @@ program = OPTADOS_ODO_OK
 inputs_args = ('Si2.odi', '')
 output = Si2.odo
 
+# Test the linear smearing for a DOS
+[testopt_dos_linear]
+program = OPTADOS_ODO_OK
+inputs_args = ('Si2.odi', '')
+output = Si2.odo
 
 
 # Test that od2od produces an output. In this case we look for whether it has
