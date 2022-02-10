@@ -1,7 +1,20 @@
 #--------------------------------------------------------------
 # O p t a D O S   D O S   T e s t s 
 #--------------------------------------------------------------
+#
+# Test coverage
+#           +-------+----------+--------+
+#           | fixed | adaptive | linear |
+# ----------+-------+----------+--------+
+# odo file  |   1   |    2     |    3   |
+# dat file  |       |    4,5   |    6   |
+# spin      |   1   |    2,4   |    3   |
+# no spin   |       |    5     |        |
+# ome file  |   1   |    2,4,5 |    3   |
+# dome file |       |          |    6   |
+# ----------+-------+----------+--------+
 
+# 1)
 # Initial JRY example test
 # It does fixed broadening so only requires a band file 
 [testopt_dos_fixed]
@@ -9,6 +22,7 @@ program = OPTADOS_ODO_OK
 inputs_args = ('Si2.odi', '')
 output = Si2.odo
 
+# 2)
 # Test the adaptive smearing for a DOS
 # Note this is the prototype test for any test that requires
 # Unzipping and converting formatted files.
@@ -17,17 +31,39 @@ program = OPTADOS_ODO_OK
 inputs_args = ('Si2.odi', '')
 output = Si2.odo
 
+# 3)
 # Test the linear smearing for a DOS
 [testopt_dos_linear]
 program = OPTADOS_ODO_OK
 inputs_args = ('Si2.odi', '')
 output = Si2.odo
 
+# 4)
 # Test the adaptive  smearing dat file for a DOS
 [testopt_dos_adaptive_dat]
 program = OPTADOS_DOS_DAT_OK
 inputs_args = ('Si2.odi', '')
 output = Si2.adaptive.dat
+
+# 5)
+# Test the adaptive smearing dat file for a DOS
+# in the case where the underlying states are not spin dependent
+[testopt_dos_adaptive_no_spin]
+program = OPTADOS_DOS_DAT_OK
+inputs_args = ('Si2.odi', '')
+output = Si2.adaptive.dat
+
+# 6)
+# Test the linear smearing dat file for a DOS from a dome file
+[testopt_dos_linear_dome]
+program = OPTADOS_DOS_DAT_OK
+inputs_args = ('Si2.odi', '')
+output = Si2.linear.dat
+
+#--------------------------------------------------------------
+# O p t a D O S   P D O S   T e s t s
+#--------------------------------------------------------------
+
 
 #--------------------------------------------------------------
 # O D 2 O D   T e s t s
