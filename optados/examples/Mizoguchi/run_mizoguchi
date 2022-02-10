@@ -1,0 +1,3 @@
+#!/usr/bin/bash
+
+miz_correction -i atom-sc -e Ge -t -106903.51336456 -exe castep.mpi
