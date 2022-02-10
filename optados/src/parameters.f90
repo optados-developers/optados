@@ -792,6 +792,12 @@ contains
       else
         write (stdout, '(1x,a78)') '|  Absorption or Emission Spectrum           :  Both                         |'
       end if
+      ! Write out if mizoguchi correction is applied
+      if (mizoguchi_correction == 0.0_dp) then ! efermi_user not set
+        write (stdout, '(1x,a78)') '|  Mizoguchi correction                      :  None                         |'
+      else ! It is set
+        write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Mizoguchi correction                      :', mizoguchi_correction, '|'
+      end if
       if (core_LAI_broadening) then
         write (stdout, '(1x,a78)') '|  Include lifetime and Instrument Broadening:  True                         |'
         write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Gaussian Width                            :', LAI_gaussian_width, '|'
