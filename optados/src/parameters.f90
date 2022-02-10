@@ -793,7 +793,7 @@ contains
         write (stdout, '(1x,a78)') '|  Absorption or Emission Spectrum           :  Both                         |'
       end if
       ! Write out if mizoguchi correction is applied
-      if (mizoguchi_correction == 0.0_dp) then ! efermi_user not set
+      if (mizoguchi_correction == 0.0_dp) then ! mizoguchi correction not set
         write (stdout, '(1x,a78)') '|  Mizoguchi correction                      :  None                         |'
       else ! It is set
         write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Mizoguchi correction                      :', mizoguchi_correction, '|'
@@ -1515,6 +1515,7 @@ contains
     call comms_bcast(optics_qdir(1), 3)
     call comms_bcast(optics_intraband, 1)
     call comms_bcast(optics_drude_broadening, 1)
+    call comms_bcast(mizoguchi_correction, 1)
     call comms_bcast(core_geom, len(core_geom))
     call comms_bcast(core_type, len(core_type))
     call comms_bcast(core_qdir(1), 3)

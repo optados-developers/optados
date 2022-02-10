@@ -169,7 +169,7 @@ contains
     use od_constants, only: bohr2ang, periodic_table_name, pi
     use od_parameters, only: dos_nbins, core_LAI_broadening, LAI_gaussian, LAI_gaussian_width, &
       LAI_lorentzian, LAI_lorentzian_scale, LAI_lorentzian_width, LAI_lorentzian_offset, output_format, &
-      set_efermi_zero
+      set_efermi_zero, mizoguchi_correction
     use od_electronic, only: elnes_mwab, elnes_orbital, efermi, efermi_set, nspins
     use od_io, only: seedname, io_file_unit, io_error
     use od_dos_utils, only: E, dos_utils_set_efermi
@@ -201,6 +201,8 @@ contains
     else
       E_shift = E
     end if
+    ! Applies mizoguchi correction if added to dos
+    E_shift = E + mizoguchi_correction 
 
     if (nspins == 1) then
       allocate (dos_temp(dos_nbins, 1), stat=ierr)
