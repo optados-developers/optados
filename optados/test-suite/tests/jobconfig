@@ -1,3 +1,7 @@
+#--------------------------------------------------------------
+# O p t a D O S   D O S   T e s t s 
+#--------------------------------------------------------------
+
 # Initial JRY example test
 # It does fixed broadening so only requires a band file 
 [testopt_dos_fixed]
@@ -25,6 +29,10 @@ program = OPTADOS_DOS_DAT_OK
 inputs_args = ('Si2.odi', '')
 output = Si2.adaptive.dat
 
+#--------------------------------------------------------------
+# O D 2 O D   T e s t s
+#--------------------------------------------------------------
+
 # Test that od2od produces an output. In this case we look for whether it has
 # correctly read the number of bands from a Si2.band file
 [testod2od_dummy]
@@ -32,6 +40,19 @@ program = OD2OD_LOG_OK
 inputs_args = ('', '-i dummy -o dummy Si2')
 output = Si2.log
 
+# It is non-trivial to test the tester. Here we take the ome_fmt file convert
+# it to a ome_bin (using the makefile) then convert it back to an ome_fmt with 
+# the testcode.
+# I am aware that this does NOT test that the .ome_bin is correct. Only that
+# od2od manages to perform AA^-1=I.  Better ideas welcome!  
+[testod2od_ome_fmt]
+program = OD2OD_FMT_OK
+inputs_args = ('', '-i ome_bin -o ome_fmt -w Si2_out Si2')
+output = Si2_out.ome_fmt
+
+#--------------------------------------------------------------
+# C a t e g o r y   L i s t 
+#--------------------------------------------------------------
 [categories]
 optados_only = testopt_*
 od2od_only = testod2od_*

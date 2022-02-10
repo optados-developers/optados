@@ -16,6 +16,10 @@ extract_fn = tools parsers.parse_dos_dat.parse
 exe = ../../od2od
 extract_fn = tools parsers.parse_od2od_log.parse
 
+[OD2OD_FMT_OK]
+exe = ../../od2od
+extract_fn = tools parsers.parse_od2od_fmt.parse
+
 [user]
 # This is the string (or list of strings) that identifies sets of tests
 # to be run - one could have multiple ones
