@@ -268,7 +268,7 @@ contains
     write (stdout, *) " Read a formatted dome file. "
 
     if (.not. allocated(band_gradient)) then
-      write (0, *) " Allocating band_gradient"
+      write (stdout, *) " Allocating band_gradient"
       allocate (band_gradient(nbands, 3, nkpoints, nspins))
     end if
 
@@ -848,7 +848,7 @@ contains
     write (stdout, *) " Slicing an ome into a dome."
 
     if (.not. allocated(band_gradient)) then
-      write (0, *) " Allocating band_gradient"
+      write (stdout, *) " Allocating band_gradient"
       allocate (band_gradient(nbands, 3, nkpoints, nspins))
     end if
 
@@ -878,7 +878,7 @@ contains
     write (stdout, *) " Padding a dome into a ome."
 
     if (.not. allocated(optical_mat)) then
-      write (0, *) " Allocating optical_mat"
+      write (stdout, *) " Allocating optical_mat"
       allocate (optical_mat(nbands, nbands, 3, nkpoints, nspins))
     end if
 
