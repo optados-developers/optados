@@ -36,6 +36,9 @@ def parse(fname):
         retdict["energy"].append(float(elements[0]))
         retdict["dos"].append(float(elements[1]))
         retdict["intdos"].append(float(elements[2]))
+    elif len(elements)==2:
+        retdict["energy"].append(float(elements[0]))
+        retdict["value"].append(float(elements[1]))
     else:
         sys.exit("Error reading the number of entries at end of"+fname)
 

@@ -141,8 +141,22 @@ output = Si2.odo
 # -----------------+-------+----------+--------+
 
 # 1)
+[testopt_jdos_fixed_odo]
+program = OPTADOS_ODO_OK
+inputs_args = ('Si2.odi', '')
+output = Si2.odo
+
 # 2)
+[testopt_jdos_adaptive_dome]
+program = OPTADOS_DOS_DAT_OK
+inputs_args = ('Si2.odi', '')
+output = Si2.jadaptive.dat
+
 # 3)
+[testopt_jdos_linear_no_spin]
+program = OPTADOS_DOS_DAT_OK
+inputs_args = ('Si2.odi', '')
+output = Si2.jlinear.dat
 
 #--------------------------------------------------------------
 # O p t a D O S   O p t i c s   T e s t s
