@@ -163,12 +163,46 @@ output = Si2.jlinear.dat
 #--------------------------------------------------------------
 # Test coverage
 
+#               |1|2|3|4|5|6|7|
+# --------------+-+-+-+-+-+-+-+
+# Si            |x|x|x|x| | | |
+# Al            | | | | |x|x|x|
+# Polyxtaline   |x| | | |x|x|x|
+# Polarised     | |x| | | | | |
+# Unpolarized   | | |x| | | | |
+# Tensor        | | | |x| | | |
+# Fixed         |x| | | | | |x|
+# Adaptive      | |x| |x| |x| |
+# Linear        | | |x| |x| | | 
+# Intraband     | | | | |x|x|x|
+# Loss_fn Bdng  | | |@| | | | |
+# Drude Bdng    | | | |@| | | |
+# --------------+-+-+-+-+-+-+-+
+# odo file      |x| | | | | | |
+# epsilon file  | |x| | | | | |
+# loss_fn       | | |x| | | | |
+# absorption    | | | |x| | | |
+# reflection    | | | | |x| | |
+# ref inx       | | | | | |x| |
+# conductiviy   | | | | | | |x|
+# --------------+-+-+-+-+-+-+-+
+#
+# @= change from default
+#
+
 
 #--------------------------------------------------------------
 # O p t a D O S   C o r e l o s s    T e s t s
 #--------------------------------------------------------------
 # Test coverage
-
+#
+# Core type: abs, emission
+# Gore-geom, poly, polarised (nned core_qdie)
+# core broadening, tweak 
+# LAI gaussian width
+# LAI lorentzian width
+# LAI lorentzian scale
+# LAI lorentzian offset
 
 #--------------------------------------------------------------
 # O p t a D O S   I n t e r n a l   S t u f f    T e s t s
@@ -179,7 +213,7 @@ output = Si2.jlinear.dat
 # hybrid linear
 # finite bin corrections
 # band_gap_stuf
-
+# DOS at fermi -- do we have a route? 
 
 #--------------------------------------------------------------
 # O D 2 O D   T e s t s
