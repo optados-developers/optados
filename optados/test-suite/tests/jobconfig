@@ -196,13 +196,26 @@ output = Si2.jlinear.dat
 #--------------------------------------------------------------
 # Test coverage
 #
-# Core type: abs, emission
-# Gore-geom, poly, polarised (nned core_qdie)
-# core broadening, tweak 
-# LAI gaussian width
-# LAI lorentzian width
-# LAI lorentzian scale
-# LAI lorentzian offset
+
+#                           |1|2|3|4|
+# --------------------------+-+-+-+-+
+# Si                        |x|x|x|x|
+# absorbtion                |x| | | | 
+# emision                   | |x|x| |
+# all                       | | | |x|
+# poly                      |x| |x|x|
+# polarised                 | |x|x| |
+# core broadening           | |x|x|x|
+# LAI gaussian width        | |@| |@|
+# LAI lorentzian width      | | |@|@|
+# LAI lorentzian scale      | | |@|@|
+# LAI lorentzian offset     | | |@|@|
+# --------------------------+-+-+-+-+
+# odo file                  |x| | | |        
+# core_edge file            | |x|x|x|
+# --------------------------+-+-+-+-+
+#
+# @= change from default
 
 #--------------------------------------------------------------
 # O p t a D O S   I n t e r n a l   S t u f f    T e s t s
