@@ -187,11 +187,12 @@ def flags(args,outfile):
 
 
 def write_odi_file(infile,E_TE):
-    odifile = open('%s.odi'%infile,'a+')
+    odifile = open('%s.odi'%infile).readlines()
     write_mizo = True
     for line in odifile:
         if 'mizoguchi_correction' in line:
             write_mizo = False
+    odifile = open('%s.odi'%infile,'a+')
     if write_mizo: 
         odifile.write('mizoguchi_correction : %f'%E_TE)
     odifile.close()
