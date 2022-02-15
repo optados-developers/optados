@@ -1,4 +1,4 @@
-Mizoguchi Correction: Execution started on 15/2/2022 at 11:44:17
+Mizoguchi Correction: Execution started on 15/2/2022 at 11:48:25
 +============================================================================+
 |                                                                            |
 |            M M  IIIII  ZZZZZ  OOO   GGG  U   U  CCC  H  H IIIII            |
@@ -13,7 +13,7 @@ Mizoguchi Correction: Execution started on 15/2/2022 at 11:44:17
 |  Element with core hole                    : Ge                            |
 |  Input file to read from                   : atom-sc                       |
 |  Non core hole ground state energy         : -106903.51 eV                 |
-|  CASTEP Executable                         : /usr/local/bin/castep.serial  |
+|  CASTEP Executable                         : /Users/angelaharper/bin/castep/bin/darwin_arm64_gfortran10--serial/castep.serial|
 +----------------------------------------------------------------------------+
 
 +-------------------------------- ECORE -------------------------------------+
