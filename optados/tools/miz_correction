@@ -43,11 +43,11 @@ def get_Ecore(element,infile,exe,outfile):
             outfile.write('\n...EXITING...')
             exit()
 
-    outfile.write('''|  E excited all electrons                   : {:<10.2f} eV                 |
+    outfile.write('''|  E excited all electrons                   : {:>23.2f} eV    |
 '''.format(E_exc_all))
-    outfile.write('''|  E excited valence electrons               : {:<10.2f} eV                 |
+    outfile.write('''|  E excited valence electrons               : {:>23.2f} eV    |
 '''.format(E_exc_val))
-    outfile.write('''|  E ground state valence electrons          : {:<10.2f} eV                 |
+    outfile.write('''|  E ground state valence electrons          : {:>23.2f} eV    |
 '''.format(E_gs_val))
     
     # Check to be sure all values are supplied
@@ -69,10 +69,21 @@ def get_Ecore(element,infile,exe,outfile):
             newcellfile.write(line)
     newcellfile.close()
     os.system('cp %s.param %s-dryrun.param'%(infile,infile))
+
     if os.path.isfile('%s-dryrun.castep'%infile):
-        print('CASTEP DRYRUN ALREADY COMPLETED...')
+        outfile.write('''+----------------------------------------------------------------------------+
+''')
+        outfile.write('''|  Castep dryrun information from file       :      {:20}     |
+'''.format(infile))
+        outfile.write('''+----------------------------------------------------------------------------+
+''')
     else:
-        print('RUNNING CASTEP DRYRUN CALC...')
+        outfile.write('''+----------------------------------------------------------------------------+
+''')
+        outfile.write('''|  Castep dryrun information from file       :      {:20}     |
+'''.format(infile))
+        outfile.write('''+----------------------------------------------------------------------------+
+''')
         os.system('%s --dryrun %s-dryrun'%(exe,infile))
         
     try:
@@ -86,7 +97,7 @@ def get_Ecore(element,infile,exe,outfile):
         if ('Atomic calculation' in line) and ('%s:'%element in line):
             E_gs_all = float(newcastepfile[i+2].split(' ')[-2])
 
-    outfile.write('''|  E ground state all electrons              : {:<10.2f} eV                 |
+    outfile.write('''|  E ground state all electrons              : {:>23.2f} eV    |
 '''.format(E_gs_all))
 
     if E_gs_all == 0:
@@ -97,7 +108,7 @@ def get_Ecore(element,infile,exe,outfile):
     Ecore = (E_exc_all - E_gs_all) - (E_exc_val - E_gs_val)
     outfile.write('''+----------------------------------------------------------------------------+
 ''')
-    outfile.write('''|  E core from pseudopotentials              : {:<10.2f} eV                 |
+    outfile.write('''|  E core from pseudopotentials              : {:>23.2f} eV    |
 '''.format(Ecore))
     outfile.write('''+----------------------------------------------------------------------------+
 ''')
@@ -129,7 +140,7 @@ def get_exc_cell(element,infile):
         outfile.write('\n...EXITING...')
         exit()
 
-    outfile.write('''|  Core hole total energy                    : {:<10.2f} eV                 |
+    outfile.write('''|  Core hole total energy                    : {:>23.2f} eV    |
 '''.format(E_exc_cell))
 
     return E_exc_cell
@@ -156,20 +167,20 @@ def flags(args,outfile):
 +-------------------------------- FLAGS -------------------------------------+
 ''')
 
-    outfile.write('''|  Element with core hole                    : {:30}|
+    outfile.write('''|  Element with core hole                    :      {:20}     |
 '''.format(args.element))
     
-    outfile.write('''|  Input file to read from                   : {:30}|
+    outfile.write('''|  Input file to read from                   :      {:20}     |
 '''.format(args.inputfile))
 
     if args.totalenergy:
-        outfile.write('''|  Non core hole ground state energy         : {:<10.2f} eV                 |
+        outfile.write('''|  Non core hole ground state energy         : {:>23.2f} eV    |
 '''.format(args.totalenergy))
     else:
-        outfile.write('''|  Non core hole ground state energy         :  None                         |
+        outfile.write('''|  Non core hole ground state energy         :                      None     |
 '''%args.totalenergy)
 
-    outfile.write('''|  CASTEP Executable                         : {:30}|
+    outfile.write('''|  CASTEP Executable                         :      {:20}     |
 '''.format(args.executable))
     outfile.write('''+----------------------------------------------------------------------------+
 ''')
@@ -250,7 +261,7 @@ if __name__ == '__main__':
         E_TE = (E_exc_cell - E_gs_cell)+Ecore
         outfile.write('''+----------------------------------------------------------------------------+''')
         outfile.write('''
-|  Mizoguchi correction to E_TE              : {:<10.2f} eV                 |'''.format(E_TE))
+|  Mizoguchi correction to E_TE              : {:>23.2f} eV    |'''.format(E_TE))
         outfile.write('''
 +----------------------------------------------------------------------------+''')
 
@@ -261,6 +272,7 @@ if __name__ == '__main__':
     
 
     write_odi_file(args.inputfile,E_TE)
+    outfile.write('''                                                                              ''')
     outfile.write('''                                                                              ''')
     outfile.write('''
 +----------------------------------------------------------------------------+''')
