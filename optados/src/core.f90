@@ -163,8 +163,11 @@ contains
   end subroutine core_prepare_matrix_elements
 
   subroutine write_core
-    !***************************************************************
+    !*************************************************************************
     ! This subroutine writes out the Core loss function
+    !-------------------------------------------------------------------------
+    ! Adapted by A F Harper to include an E_shift to account for core hole 
+    !=========================================================================
 
     use od_constants, only: bohr2ang, periodic_table_name, pi
     use od_parameters, only: dos_nbins, core_LAI_broadening, LAI_gaussian, LAI_gaussian_width, &
@@ -202,7 +205,9 @@ contains
       E_shift = E
     end if
     ! Applies mizoguchi correction if added to dos
-    E_shift = E + mizoguchi_correction 
+    if (mizoguchi_correction /= -990.0_dp) then
+      E_shift = E + mizoguchi_correction 
+    end if
 
     if (nspins == 1) then
       allocate (dos_temp(dos_nbins, 1), stat=ierr)
