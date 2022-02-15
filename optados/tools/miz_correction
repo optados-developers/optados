@@ -1,6 +1,7 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 import os,sys
 import argparse
+import shutil
 import datetime
 
 
@@ -205,8 +206,8 @@ if __name__ == '__main__':
                         help='Name of the input file (<input>.castep only) in which the core loss calculation has been performed')
     parser.add_argument('-t', '--totalenergy', type=float,
                         help='Total energy of unit cell without a core hole. If included this will calculate the full Mizoguchi corrected transition energy using this value as the total singlepoint free energy (E-0.5TS)')
-    parser.add_argument('-exe', '--executable', type=str,required=True,
-                        help='This is the castep binary name e.g. castep.mpi or castep19.1 which should be on your $PATH')
+    parser.add_argument('-exe', '--executable', type=str,
+                        help='This is the castep binary name e.g. castep.mpi or castep19.1 or path to castep binary. This will look for a castep binary on your $PATH if not supplied')
 
     starttime = datetime.datetime.now()
     args = parser.parse_args()
@@ -220,6 +221,22 @@ if __name__ == '__main__':
 
     # Create the output file for the Mizoguchi correction
     write_header(outfile,starttime)
+
+    # Check for CASTEP on the path and if found then use first exe found
+    if args.executable is None:
+        castep_exe = ['castep','castep.mpi','castep.serial']
+        for exe in castep_exe:
+            onpath = shutil.which(exe)
+            if onpath is not None:
+                continue
+
+        args.executable = onpath
+
+    # If we still couldn't find CASTEP then quit, because we can't do the DRYRUN calculation
+    if args.executable is None:
+        outfile.write('Cannot find a castep executable on your path please supply one with the -exe flag')
+        outfile.write('\n...EXITING...')
+        exit()
 
     # Write out which options we are using
     flags(args,outfile)
