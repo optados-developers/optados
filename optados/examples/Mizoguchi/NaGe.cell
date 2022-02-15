@@ -52,12 +52,8 @@ Na 12.901314 14.740690  7.179230
 Ge:1K  7.740810 10.380791  5.130701
 %ENDBLOCK POSITIONS_ABS
 
-!FIX_COM : true
-
 %BLOCK species_pot
-   Ge:1K      3|1.5|13|15|17|30U:31U:32:40:41(qc=6){1s1}
+Ge:1K      3|1.5|13|15|17|30U:31U:32:40:41(qc=6){1s1}
 %ENDBLOCK species_pot
-
-
 
 kpoint_mp_spacing : 0.03

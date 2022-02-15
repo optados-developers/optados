@@ -280,5 +280,7 @@ if __name__ == '__main__':
 |                                  FINISHED                                  |''')
     outfile.write('''
 +----------------------------------------------------------------------------+''')
-    outfile.write('''\r\n''')
+    e = datetime.datetime.now()
+    outfile.write('\nMizoguchi Correction: Execution finished on %s/%s/%s at %s:%s:%s'%(e.day,e.month,e.year,e.hour,e.minute,e.second))
+    outfile.write('''\n ''')
 
