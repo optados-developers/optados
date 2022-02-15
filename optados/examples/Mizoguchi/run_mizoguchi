@@ -1,1 +1,15 @@
-../../tools/miz_correction -i atom-sc -e Ge -t -106903.51336456 -exe ~/bin/castep/bin/darwin_arm64_gfortran10--serial/castep.serial
+# This is a file that runs the miz_correction script
+#
+# Here we are using all of the miz_correction flags in order to
+# calculate the correction to the absorption energy for a file
+# named NaGe on a core hole on a Ge atom. We have previously done
+# a singlepoint calculation (files not shown) to determine that the 
+# E-TS groundstate energy is -106903.51336456 and are using that as 
+# our groundstate energy. The executable we are using is called 
+# castep.serial and is on our $PATH. This will run a castep
+# DRYRUN calculation and then write a file called NaGe-mizoguchi.out
+# Which has all the details of the calculation including if it failed
+../../tools/miz_correction -i NaGe -e Ge -t -106903.51336456 -exe castep.serial
+
+
+

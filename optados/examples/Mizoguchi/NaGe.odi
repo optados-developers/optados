@@ -1,0 +1,10 @@
+task : core
+broadening : adaptive
+adaptive_smearing : 0.2
+efermi : optados
+core_type : absorption
+core_LAI_broadening : true
+LAI_gaussian_width : 1
+LAI_lorentzian_width : 0.5
+LAI_lorentzian_scale : 0.1
+mizoguchi_correction : 11140.128787mizoguchi_correction : 11140.128787mizoguchi_correction : 11140.128787mizoguchi_correction : 11140.128787mizoguchi_correction : 11140.128787mizoguchi_correction : 11140.128787mizoguchi_correction : 11140.128787mizoguchi_correction : 11140.128787mizoguchi_correction : 11140.128787
