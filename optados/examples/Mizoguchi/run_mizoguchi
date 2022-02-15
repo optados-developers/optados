@@ -9,7 +9,8 @@
 # castep.serial and is on our $PATH. This will run a castep
 # DRYRUN calculation and then write a file called NaGe-mizoguchi.out
 # Which has all the details of the calculation including if it failed
+# ../../tools/miz_correction -i NaGe -e Ge -t -106903.51336456 -exe castep.serial
+
+
 ../../tools/miz_correction -i NaGe -e Ge -t -106903.51336456 -exe castep.serial
-
-
 
