@@ -55,7 +55,6 @@ Ge:1K  7.740810 10.380791  5.130701
 !FIX_COM : true
 
 %BLOCK species_pot
-HARD
    Ge:1K      3|1.5|13|15|17|30U:31U:32:40:41(qc=6){1s1}
 %ENDBLOCK species_pot
 
