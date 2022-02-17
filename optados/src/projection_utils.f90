@@ -200,13 +200,8 @@ contains
       do
         !look for each species section
         ! and pass to find number of projections
-        pos = index(ctemp2, c_atomsep)
-        if (pos == 0) then
-          ctemp3 = ctemp2
-        else
-          ctemp3 = ctemp2(1:pos - 1)
-        end if
-        call projection_analyse_substring(ctemp3, species_proj)
+        call projection_find_atom(ctemp2, ctemp3, pos)
+        call projection_analyse_atom(ctemp3, species_proj)
         num_proj = num_proj + species_proj
         if (pos == 0) exit
         species_count = species_count + 1
@@ -223,13 +218,8 @@ contains
       do loop = 1, species_count
         !loop for each species section
         !and pass fill in projection
-        pos = index(ctemp2, c_atomsep)
-        if (pos == 0) then
-          ctemp3 = ctemp2
-        else
-          ctemp3 = ctemp2(1:pos - 1)
-        end if
-        call projection_analyse_substring(ctemp3)
+        call projection_find_atom(ctemp2, ctemp3, pos)
+        call projection_analyse_atom(ctemp3)
         ctemp2 = ctemp2(pos + 1:)
       end do
 
@@ -263,11 +253,32 @@ contains
 
   end subroutine projection_get_string
 
+  !===============================================================================
+  subroutine projection_find_atom(cstring_in, catom_out, position)
+   !! Looks for the first atom in cstring_in and returns it in catom_out
+   !! returns the position of the seperator afer the atom or zero if there is none
+   !! after it.
+
+    use od_io, only: maxlen, io_error
 
 
+    character(len=maxlen), intent(out) :: cstring_in
+    character(len=maxlen), intent(out) :: catom_out
+    integer, intent(out) :: position
+
+    position = index(cstring_in, c_atomsep)
+    if (position == 0) then
+      catom_out = cstring_in
+    else
+      catom_out = cstring_in(1:position - 1)
+    end if
+
+    return
+
+  end subroutine projection_find_atom
 
     !===============================================================================
-    subroutine projection_analyse_substring(ctemp, species_proj)
+    subroutine projection_analyse_atom(ctemp, species_proj)
       !===============================================================================
       ! This is a mindbendingly horrific exercise in book-keeping
       !===============================================================================
@@ -459,10 +470,10 @@ contains
 
       return
 
-101   call io_error('projection_analyse_substring Error parsing keyword ')
-106   call io_error('projection_analyse_substring: Problem reading l state into string ')
+101   call io_error('projection_analyse_atom Error parsing keyword ')
+106   call io_error('projection_analyse_atom: Problem reading l state into string ')
 
-    end subroutine projection_analyse_substring
+end subroutine projection_analyse_atom
 
 
 
