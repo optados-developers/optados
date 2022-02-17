@@ -1,6 +1,6 @@
 #!/usr/bin/python
 import os,sys
-import matplotlib
+import matplotlib.pyplot as plt
 import argparse
 
 
@@ -49,16 +49,41 @@ def read_pdis(pdisfile):
             # Get Al1s, or Sip, or p, as the name of projector
             proj_string = elem+site+ang
             proj_string = ''.join(proj_string)
-            pdis_data.append({'name':proj_string,
-                              'x':[],'y':[],'i':[]})
+            pdis_data.append({'position':proj_num,'name':proj_string,
+                              'kpoints':[],'energies':[],'intensities':[]})
 
-    #FIXME Header is now parsed, but the data still needs to be read in
-    # currently have the data as a list so for each line at each k-point
-    # y i_0 i_1 --> pdis_data[0]['y'] etc...
+    k_point = 0
+    for i,line in enumerate(pdisfile):
+        if line.startswith('K-point'):
+            
+            for proj in pdis_data:
+                proj['energies'].append([])
+                proj['intensities'].append([])
 
-    #WARNING FIXME reading this into a list is a bit dangerous as lists are
-    #changeable later on...so need to either be extra careful not to move around 
-    #items in list or just read in the file and then be done with it
+            j = i + 1
+            # Only read the data for that K-point and then stop
+            k = 0 #counter for each energy level in the k-point
+
+            while j < len(pdisfile) and 'K-point' not in pdisfile[j]:
+                nextline = pdisfile[j]
+                nextline = nextline.strip().split(' ')
+                nospaces = []
+                for ele in nextline:
+                    if ele.strip():
+                        nospaces.append((float(ele)))
+                
+
+                for proj in pdis_data:
+                    proj['energies'][k_point].append(nospaces[0])
+                    proj['intensities'][k_point].append(nospaces[proj['position']])
+                j += 1
+                k += 1
+
+            k_point += 1
+
+
+    for proj in pdis_data:
+        proj['kpoints'] = [i for i in range(len(proj['energies']))]
     print(pdis_data)
     return pdis_data
     
@@ -76,6 +101,16 @@ def plot_pdis(infile):
     
     pdis_data = read_pdis(pdisfile)
 
+    
+    # Now plot the resulting data
+    fig, ax = plt.subplots(1,1,figsize=(10,8))
+
+    # FIXME we've read in all the data properly now we need to plot it using a zip
+    #for xe, ye in zip(x, y):
+    #    plt.scatter([xe] * len(ye), ye)
+    
+    plt.legend
+    plt.show()
 
 
 
