@@ -54,6 +54,13 @@ module od_projection_utils
   logical, public :: shortcut
   !-------------------------------------------------------------------------!
 
+
+  character(len=1), parameter :: c_atomsep = ":"
+  character(len=10), parameter :: c_digit = "0123456789"
+  character(len=1), parameter :: c_range = "-"
+  character(len=1), parameter :: c_projsep = ","
+  character(len=4), parameter :: c_punc = " ,-:"
+
   private
 
   public :: projection_merge, projection_get_string, projection_analyse_orbitals
@@ -111,10 +118,9 @@ contains
 
     integer :: loop4, loop3, loop2, ierr
     logical :: pdos_sum
-
     integer   :: loop, pos, loop_l, loop_a, loop_p
     integer   ::  species_count, species_proj
-    character(len=1), parameter :: c_sep = ":"
+
     integer, allocatable :: pdos_temp(:, :, :, :)
 
     !Check for any short cuts
@@ -194,7 +200,7 @@ contains
       do
         !look for each species section
         ! and pass to find number of projections
-        pos = index(ctemp2, c_sep)
+        pos = index(ctemp2, c_atomsep)
         if (pos == 0) then
           ctemp3 = ctemp2
         else
@@ -217,7 +223,7 @@ contains
       do loop = 1, species_count
         !loop for each species section
         !and pass fill in projection
-        pos = index(ctemp2, c_sep)
+        pos = index(ctemp2, c_atomsep)
         if (pos == 0) then
           ctemp3 = ctemp2
         else
@@ -257,6 +263,9 @@ contains
 
   end subroutine projection_get_string
 
+
+
+
     !===============================================================================
     subroutine projection_analyse_substring(ctemp, species_proj)
       !===============================================================================
@@ -280,10 +289,6 @@ contains
       integer   :: num1, num2, i_punc, pos3, loop_l, loop_a, loop_p, loop_j
       integer   :: counter, loop_r, range_size, ierr
       character(len=maxlen) :: dummy
-      character(len=10), parameter :: c_digit = "0123456789"
-      character(len=1), parameter :: c_range = "-"
-      character(len=1), parameter :: c_sep = ","
-      character(len=4), parameter :: c_punc = " ,-:"
       character(len=5)  :: c_num1, c_num2
       integer, allocatable :: pdos_atoms(:), pdos_ang(:)
       logical :: lcount
@@ -371,7 +376,7 @@ contains
             pdos_atoms(num1) = 1
           end if
 
-          if (scan(dummy, c_sep) == 1) dummy = adjustl(dummy(2:))
+          if (scan(dummy, c_projsep) == 1) dummy = adjustl(dummy(2:))
           if (scan(dummy, c_range) == 1) &
                & call io_error('projection_analyse_substring: Error parsing atoms numbers - incorrect range')
           if (index(dummy, ' ') == 1) exit
