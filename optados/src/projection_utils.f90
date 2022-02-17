@@ -113,7 +113,7 @@ contains
     logical :: pdos_sum
 
     integer   :: loop, pos, loop_l, loop_a, loop_p
-    integer   :: i_digit, species_count, species_proj
+    integer   ::  species_count, species_proj
     character(len=1), parameter :: c_sep = ":"
     integer, allocatable :: pdos_temp(:, :, :, :)
 
@@ -255,7 +255,7 @@ contains
 
     return
 
-  contains
+  end subroutine projection_get_string
 
     !===============================================================================
     subroutine projection_analyse_substring(ctemp, species_proj)
@@ -270,7 +270,7 @@ contains
       integer, optional, intent(out) :: species_proj
 
       integer, save :: offset = 0
-
+      integer :: i_digit
       character(len=maxlen) :: ctemp2, c_am, m_string
 
       integer :: pos_l, pos_r, ia, iz, idiff, ic1, ic2, species, num_sites, num_am
@@ -459,7 +459,7 @@ contains
 
     end subroutine projection_analyse_substring
 
-  end subroutine projection_get_string
+
 
   subroutine projection_analyse_orbitals
     use od_electronic, only: pdos_orbital, pdos_mwab
