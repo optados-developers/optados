@@ -35,6 +35,7 @@
 module od_projection_utils
 
   use od_constants, only: dp
+  use od_parameters, only: iprint
 
   implicit none
 
@@ -59,7 +60,9 @@ module od_projection_utils
   character(len=10), parameter :: c_digit = "0123456789"
   character(len=1), parameter :: c_range = "-"
   character(len=1), parameter :: c_projsep = ","
+  character(len=1), parameter :: c_delimiter = '"'
   character(len=4), parameter :: c_punc = " ,-:"
+
 
   private
 
@@ -118,6 +121,7 @@ contains
 
     integer :: loop4, loop3, loop2, ierr
     logical :: pdos_sum
+    logical :: dummy_logical
     integer   :: loop, pos, loop_l, loop_a, loop_p
     integer   ::  species_count, species_proj
 
@@ -198,9 +202,9 @@ contains
       ctemp2 = ctemp
       species_count = 1; num_proj = 0
       do
-        !look for each species section
+        ! look for each species section
         ! and pass to find number of projections
-        call projection_find_atom(ctemp2, ctemp3, pos)
+        call projection_find_atom(ctemp2, ctemp3, pos, dummy_logical)
         call projection_analyse_atom(ctemp3, species_proj)
         num_proj = num_proj + species_proj
         if (pos == 0) exit
@@ -218,7 +222,7 @@ contains
       do loop = 1, species_count
         !loop for each species section
         !and pass fill in projection
-        call projection_find_atom(ctemp2, ctemp3, pos)
+        call projection_find_atom(ctemp2, ctemp3, pos, dummy_logical)
         call projection_analyse_atom(ctemp3)
         ctemp2 = ctemp2(pos + 1:)
       end do
@@ -254,24 +258,51 @@ contains
   end subroutine projection_get_string
 
   !===============================================================================
-  subroutine projection_find_atom(cstring_in, catom_out, position)
+  subroutine projection_find_atom(cstring_in, catom_out, atomsep_position, atom_label)
    !! Looks for the first atom in cstring_in and returns it in catom_out
    !! returns the position of the seperator afer the atom or zero if there is none
    !! after it.
+   !! Returns atom label to indicate that this is not just a one or two character
+   !! atom name.
 
-    use od_io, only: maxlen, io_error
+    use od_io, only: maxlen, io_error, stdout
 
 
     character(len=maxlen), intent(out) :: cstring_in
     character(len=maxlen), intent(out) :: catom_out
-    integer, intent(out) :: position
+    integer, intent(out) :: atomsep_position
+    logical, intent(out) :: atom_label
+    integer :: deliminter_position, delimiter_position_end
 
-    position = index(cstring_in, c_atomsep)
-    if (position == 0) then
+    if(iprint>2) write(stdout,*) " projection_find_atom: cstring_in :", cstring_in
+
+    atom_label=.false.
+
+    atomsep_position = index(cstring_in, c_atomsep)
+    deliminter_position = index(cstring_in, c_delimiter)
+
+    ! If the position is zero there is no seperator, so the whole string is the
+    ! atom
+    if (( atomsep_position == 0 ) .and. ( deliminter_position == 0 )) then
+      ! There's one atom and no delimiting
       catom_out = cstring_in
+    elseif( deliminter_position .ne. 0 ) then
+      ! Look for the second delimiter
+      delimiter_position_end = index(cstring_in(deliminter_position+1:), c_delimiter)
+      if(delimiter_position_end == 0) call io_error('projection_find_atom: Error &
+          & finding closing inverted comma')
+          catom_out = cstring_in(deliminter_position+1:delimiter_position_end)
+          atom_label=.true.
+          atomsep_position=delimiter_position_end+2 ! This needs nudging as we need to skip
+          ! after the "
+    elseif ( atomsep_position .ne. 0 ) then
+      ! If there aren't any delimiters than we just jump to the end of the atom seperator
+      catom_out = cstring_in(:atomsep_position-1)
     else
-      catom_out = cstring_in(1:position - 1)
+      call io_error('projection_find_atom: Error parsing string. This is a BUG!')
     end if
+
+    if(iprint>2) write(stdout,*) " projection_find_atom: cstring_out : ", catom_out
 
     return
 
@@ -305,9 +336,9 @@ contains
       logical :: lcount
 
       allocate (pdos_atoms(maxval(atoms_species_num)), stat=ierr)
-      if (ierr /= 0) call io_error('Error: projection_analyse_substring - allocation of pdos_atoms failed')
+      if (ierr /= 0) call io_error('Error: projection_analyse_atom - allocation of pdos_atoms failed')
       allocate (pdos_ang(max_am), stat=ierr)
-      if (ierr /= 0) call io_error('Error: projection_analyse_substring - allocation of pdos_ang failed')
+      if (ierr /= 0) call io_error('Error: projection_analyse_atom - allocation of pdos_ang failed')
 
       lcount = .false.
       if (present(species_proj)) lcount = .true.
@@ -320,8 +351,8 @@ contains
       pos_l = index(ctemp, '(')
       if (pos_l > 0) then
         pos_r = index(ctemp, ')')
-        if (pos_r == 0) call io_error('projection_analyse_substring: found ( but no )')
-        if (pos_r <= pos_l) call io_error('projection_analyse_substring: found ) before (')
+        if (pos_r == 0) call io_error('projection_analyse_atom: found ( but no )')
+        if (pos_r <= pos_l) call io_error('projection_analyse_atom: found ) before (')
         c_am = ctemp(pos_l + 1:pos_r - 1)
         ctemp = ctemp(:pos_l - 1)
       else ! implicit sum over AM
@@ -333,7 +364,7 @@ contains
       idiff = ichar('Z') - ichar('z')
 
       ic1 = ichar(ctemp(1:1))
-      if (ic1 < ia .or. ic1 > iz) call io_error('projection_analyse_substring: problem reading atomic symbol in pdos string')
+      if (ic1 < ia .or. ic1 > iz) call io_error('projection_analyse_atom: problem reading atomic symbol in pdos string')
       ic2 = ichar(ctemp(2:2))
       if (ic2 >= ia .and. ic1 <= iz) then
         c_symbol(1:1) = char(ic1 + idiff)
@@ -350,7 +381,7 @@ contains
           species = loop_j
         end if
       end do
-      if (species == 0) call io_error('projection_analyse_substring: Failed to match atomic symbol in pdos string')
+      if (species == 0) call io_error('projection_analyse_atom: Failed to match atomic symbol in pdos string')
 
       !Count atoms numbers
       counter = 0
@@ -359,7 +390,7 @@ contains
         dummy = adjustl(dummy)
         do
           i_punc = scan(dummy, c_punc)
-          if (i_punc == 0) call io_error('projection_analyse_substring: error looking for atom numbers')
+          if (i_punc == 0) call io_error('projection_analyse_atom: error looking for atom numbers')
           c_num1 = dummy(1:i_punc - 1)
           read (c_num1, *, err=101, end=101) num1
           dummy = adjustl(dummy(i_punc:))
@@ -375,21 +406,21 @@ contains
             do loop_r = 1, range_size
               counter = counter + 1
               if (min(num1, num2) + loop_r - 1 > proj_sites(species)) &
-                 call io_error('projection_analyse_substring: Atom number given in pdos string &
+                 call io_error('projection_analyse_atom: Atom number given in pdos string &
          &is greater than number of atoms for given species')
               pdos_atoms(min(num1, num2) + loop_r - 1) = 1
             end do
           else
             counter = counter + 1
             if (num1 > proj_sites(species)) &
-               call io_error('projection_analyse_substring: Atom number given in pdos string &
+               call io_error('projection_analyse_atom: Atom number given in pdos string &
           &is greater than number of atoms for given species')
             pdos_atoms(num1) = 1
           end if
 
           if (scan(dummy, c_projsep) == 1) dummy = adjustl(dummy(2:))
           if (scan(dummy, c_range) == 1) &
-               & call io_error('projection_analyse_substring: Error parsing atoms numbers - incorrect range')
+               & call io_error('projection_analyse_atom: Error parsing atoms numbers - incorrect range')
           if (index(dummy, ' ') == 1) exit
         end do
       else
@@ -418,7 +449,7 @@ contains
           case ('f')
             pdos_ang(4) = 1
           case default
-            call io_error('projection_analyse_substring: Problem reading l state ')
+            call io_error('projection_analyse_atom: Problem reading l state ')
           end select
           if (pos3 == 0) exit
           dummy = dummy(pos3 + 1:)
@@ -474,8 +505,6 @@ contains
 106   call io_error('projection_analyse_atom: Problem reading l state into string ')
 
 end subroutine projection_analyse_atom
-
-
 
   subroutine projection_analyse_orbitals
     use od_electronic, only: pdos_orbital, pdos_mwab
