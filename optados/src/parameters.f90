@@ -261,7 +261,7 @@ contains
     call param_get_efermi('efermi', found, efermi_choice, efermi_user)
 
     ! Here we apply a correction to the core energy if supplied by the user
-    mizoguchi_correction = -990.0_dp ! No correction applied to the core energy
+    mizoguchi_correction = -1.0_dp ! Mizoguchi correction is always +ve 
     call param_get_keyword('mizoguchi_correction', found, r_value=mizoguchi_correction)
 
     ! Force all Gaussians to be greater than the width of a bin. When using numerical_indos
@@ -793,7 +793,7 @@ contains
         write (stdout, '(1x,a78)') '|  Absorption or Emission Spectrum           :  Both                         |'
       end if
       ! Write out if mizoguchi correction is applied
-      if (mizoguchi_correction == -990.0_dp) then ! mizoguchi correction not set
+      if (mizoguchi_correction == -1.0_dp) then ! mizoguchi correction not set
         write (stdout, '(1x,a78)') '|  Mizoguchi correction                      :  None                         |'
       else ! It is set
         write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Mizoguchi correction                      :', mizoguchi_correction, '|'
