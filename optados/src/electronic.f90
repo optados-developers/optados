@@ -1149,9 +1149,8 @@ contains
 
     ! Band indices used in the read-in of the pdos
     real(kind=dp)                        :: dummyr1, dummyr2, dummyr3
-    integer                              :: dummyi, ib, ik, is
+    integer                              :: dummyi, ib, ik, is, iorbitals
     integer                              :: pdos_in_unit, ierr, inodes
-    logical                              :: full_debug_pdos_weights = .false.
     character(filename_len) :: pdos_filename
     real(kind=dp) :: time0, time1, file_version
     real(kind=dp), parameter :: file_ver = 1.0_dp
@@ -1181,14 +1180,15 @@ contains
       read (pdos_in_unit) pdos_mwab%nspins
       read (pdos_in_unit) pdos_mwab%norbitals
       read (pdos_in_unit) pdos_mwab%nbands
-      if (full_debug_pdos_weights) then
-        write (stdout, *) " ***** F U L L _ D E B U G _ P D O S _ W E I G H T S ***** "
-        write (stdout, *) "pdos_mwab%nkpoints= ", pdos_mwab%nkpoints
-        write (stdout, *) "pdos_mwab%nspins= ", pdos_mwab%nspins
-        write (stdout, *) "pdos_mwab%norbitals= ", pdos_mwab%norbitals
-        write (stdout, *) "pdos_mwab%nbands= ", pdos_mwab%nbands
-        write (stdout, *) "   **** ***** *****  ***** ***** *****  ***** ***** *****  "
-      end if
+      if (iprint > 3) then
+        write (stdout, *) " +==========================================================================+"
+        write (stdout, *) " |                          D E B U G   P D O S                             |"
+        write (stdout, *) " +==========================================================================+"
+        write (stdout, *) " pdos_mwab%nkpoints : ", pdos_mwab%nkpoints
+        write (stdout, *) " pdos_mwab%nspins   : ", pdos_mwab%nspins
+        write (stdout, *) " pdos_mwab%norbitals: ", pdos_mwab%norbitals
+        write (stdout, *) " pdos_mwab%nbands   : ", pdos_mwab%nbands
+      endif
 
       allocate (pdos_orbital%species_no(pdos_mwab%norbitals), stat=ierr)
       if (ierr /= 0) call io_error(" Error : cannot allocate pdos_orbital")
@@ -1200,6 +1200,18 @@ contains
       read (pdos_in_unit) pdos_orbital%species_no(1:pdos_mwab%norbitals)
       read (pdos_in_unit) pdos_orbital%rank_in_species(1:pdos_mwab%norbitals)
       read (pdos_in_unit) pdos_orbital%am_channel(1:pdos_mwab%norbitals)
+      if (iprint > 3) then
+        write(stdout,*)
+        write (stdout, *) " +--------------------------------------------------------------------------+"
+        write (stdout, *) "                                   pdos_orbital%                           "
+        write (stdout, *) "       species_no                 rank_in_species                am_channel"
+        write (stdout, *) " +--------------------------------------------------------------------------+"
+        do iorbitals = 1, pdos_mwab%norbitals
+          write(stdout, '(10x,i5,25x,i5,25x,i5)') pdos_orbital%species_no(iorbitals), pdos_orbital%rank_in_species(iorbitals), &
+          & pdos_orbital%am_channel(iorbitals)
+      end do
+      write (stdout, *) " +==========================================================================+ "
+    end if
       !-------------------------------------------------------------------------!
     end if
     call comms_bcast(pdos_mwab%norbitals, 1)
@@ -1235,7 +1247,7 @@ contains
             read (pdos_in_unit) dummyi ! this is the spin number
             read (pdos_in_unit) nbands_occ(ik, is)
             do ib = 1, nbands_occ(ik, is)
-              if (full_debug_pdos_weights) then
+              if (iprint > 3) then
                 write (stdout, *) " ***** F U L L _ D E B U G _ P D O S _ W E I G H T S ***** "
                 write (stdout, *) ib, ik, is
                 write (stdout, *) "   **** ***** *****  ***** ***** *****  ***** ***** *****  "
