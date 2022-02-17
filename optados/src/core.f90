@@ -205,7 +205,7 @@ contains
       E_shift = E
     end if
     ! Applies mizoguchi correction if added to dos
-    if (mizoguchi_correction /= -990.0_dp) then
+    if (mizoguchi_correction /= -1.0_dp) then
       E_shift = E + mizoguchi_correction 
     end if
 
