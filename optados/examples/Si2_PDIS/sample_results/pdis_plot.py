@@ -136,7 +136,7 @@ def plot_pdis(infile):
     for i,kpoint in enumerate(k_point_list_str):
         if kpoint is not None:
             ax.plot([pdis_data[0]['kpoints'][i],pdis_data[0]['kpoints'][i]],[min(pdis_data[0]['energies'][0]),max(pdis_data[0]['energies'][0])],color='k',linestyle='--')
-    print(k_point_list_str)
+
     ax.tick_params(which='major', length=0)
     ax.set_xticks(pdis_data[0]['kpoints'])
     ax.set_xticklabels(k_point_list_str)
