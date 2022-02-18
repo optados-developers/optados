@@ -54,9 +54,15 @@ def read_pdis(pdisfile):
                               'kpoints':[],'energies':[],'intensities':[]})
 
     k_point = 0
+    k_point_list = []
     for i,line in enumerate(pdisfile):
         if line.startswith('K-point'):
-            
+            newline = line.strip().split(' ') 
+            nospaces = []
+            for ele in newline:
+                if ele.strip():
+                    nospaces.append(ele)
+            k_point_list.append([round(float(point),2) for point in nospaces[2:]])
             for proj in pdis_data:
                 proj['energies'].append([])
                 proj['intensities'].append([])
@@ -82,10 +88,9 @@ def read_pdis(pdisfile):
 
             k_point += 1
 
-
     for proj in pdis_data:
         proj['kpoints'] = [i for i in range(len(proj['energies']))]
-    return pdis_data
+    return pdis_data,k_point_list
     
 def plot_pdis(infile):
     """Plot the projected dispersion from a pdis.dat file 
@@ -99,7 +104,7 @@ def plot_pdis(infile):
         print(('\n...EXITING...'))
         exit()
     
-    pdis_data = read_pdis(pdisfile)
+    pdis_data,k_point_list = read_pdis(pdisfile)
 
     
     # Now plot the resulting data
@@ -121,6 +126,20 @@ def plot_pdis(infile):
             else:
                 plt.scatter([x]*len(y),y,s=i,color=color[proj['position']-1])
     
+    k_point_list_str = []
+    for kpoint in k_point_list:
+        if kpoint == [0.0,0.0,0.0]:
+            k_point_list_str.append(r'$\Gamma$')
+        else:
+            k_point_list_str.append(None)
+
+    for i,kpoint in enumerate(k_point_list_str):
+        if kpoint is not None:
+            ax.plot([pdis_data[0]['kpoints'][i],pdis_data[0]['kpoints'][i]],[min(pdis_data[0]['energies'][0]),max(pdis_data[0]['energies'][0])],color='k',linestyle='--')
+    print(k_point_list_str)
+    ax.tick_params(which='major', length=0)
+    ax.set_xticks(pdis_data[0]['kpoints'])
+    ax.set_xticklabels(k_point_list_str)
     plt.legend()
     plt.show()
 
