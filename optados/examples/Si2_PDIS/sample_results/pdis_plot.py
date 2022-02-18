@@ -1,6 +1,7 @@
 #!/usr/bin/python
 import os,sys
 import matplotlib.pyplot as plt
+import random
 import argparse
 
 
@@ -84,7 +85,6 @@ def read_pdis(pdisfile):
 
     for proj in pdis_data:
         proj['kpoints'] = [i for i in range(len(proj['energies']))]
-    print(pdis_data)
     return pdis_data
     
 def plot_pdis(infile):
@@ -105,11 +105,23 @@ def plot_pdis(infile):
     # Now plot the resulting data
     fig, ax = plt.subplots(1,1,figsize=(10,8))
 
-    # FIXME we've read in all the data properly now we need to plot it using a zip
-    #for xe, ye in zip(x, y):
-    #    plt.scatter([xe] * len(ye), ye)
+    #Here make the list of colors
+    #Possible FIXME is for users to add in their own custom colors
+    color = [ "red", "blue", "green", "yellow", "purple", "orange", "magenta", "black" ]
+
+
     
-    plt.legend
+    for proj in pdis_data:
+        label = False
+        for x,y,i in zip(proj['kpoints'],proj['energies'],proj['intensities']):
+            i = [num*50 for num in i]
+            if not label:
+                plt.scatter([x]*len(y),y,s=i,color=color[proj['position']-1],label=proj['name'])
+                label = True
+            else:
+                plt.scatter([x]*len(y),y,s=i,color=color[proj['position']-1])
+    
+    plt.legend()
     plt.show()
 
 
@@ -118,7 +130,7 @@ def plot_pdis(infile):
 #Main script#
 #############
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='''Generates a quick plot for analysing outpu from a \
+    parser = argparse.ArgumentParser(description='''Generates a quick plot for analysing output from a \
             pdis OptaDOS calculation. 
             Example usage is `pdis_plotter.py -i <filename>\
             ''')
