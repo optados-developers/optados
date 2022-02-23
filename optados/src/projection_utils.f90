@@ -372,33 +372,73 @@ contains
 
     !===============================================================================
     subroutine projection_analyse_atom(ctemp,  atom_label, species_proj)
-      !===============================================================================
-      ! This is a mindbendingly horrific exercise in book-keeping
-      !===============================================================================
+      !! Receive a string about an indivudial species in ctemp and either count the
+      !! number of projectors needed (if species_proj is present) or actually
+      !! populate the module varaible projection_array(:, :, :, :) (if species_proj)
+      !! is absent.
+      !! This subroutine is called twice, the first time it counts the number of
+      !! projectors necessary such that projection_array(:, :, :, :) can be
+      !! allocated. The second time it populates projection_array(:, :, :, :)
+      !! AJM Feb 2022
+      !! AJM (Before Feb 2022): This is a mindbendingly horrific exercise in book-keeping
+
       use od_cell, only: num_species, atoms_species_num, atoms_label, atoms_symbol
       use od_io, only: maxlen, io_error
       implicit none
 
       character(len=maxlen), intent(inout) :: ctemp
+      !! Provides a snippet of a PDOS string that contains info about a
+      !! particular species or projector e.g. "C:exi"1(s,p)
+
       logical, intent(out) :: atom_label
+      !! Whether the atom we're looking at has a label or not e.g. C:exi where
+      !! exi is the label
+
       integer, optional, intent(out) :: species_proj
+      !! Count the number of projectors we need for this snippet of the PDOS string
 
       integer, save :: offset = 0
+      !! Keep tabs on how may projectors we have already allocated. We call this
+      !! function multiple times as we build up the module variable
+      !! projection_array(:, :, :, :)
+
       integer :: i_digit, ispecies
-      character(len=maxlen) :: ctemp2, c_am, m_string, cspecies,catom_label
 
-      integer :: pos_l, pos_r, ia, iz, idiff, ic1, ic2, species, num_sites, num_am
       character(len=3)  :: c_symbol = '   '
-      logical :: am_sum, site_sum
+      !! The atomic symbol of the species we have in the snippet
 
+      character(len=maxlen) ::  c_am
+      !! The angular momentum information stripped off the input snippet
+
+      character(len=maxlen) ::  catom_label
+      !! If present, the label after the atom's species in the input snippet.
+      !! i.e. the "exi" in C:exi.
+
+      character(len=maxlen) ::  cspecies
+      !! A temporary variable contining the species name whilst we're stripping
+      !! out the delimiters.
+
+      character(len=maxlen) :: ctemp2,  m_string
+
+      integer :: species, num_sites, num_am
+
+      integer :: pos_l, pos_r, ia, iz, idiff, ic1, ic2
+
+      logical :: am_sum, site_sum
       integer   :: num1, num2, i_punc, pos3, loop_l, loop_a, loop_p, loop_j
       integer   :: counter, loop_r, range_size, ierr, label_position
       character(len=maxlen) :: dummy, label
       character(len=5)  :: c_num1, c_num2
+
       integer, allocatable :: pdos_atoms(:), pdos_ang(:)
-      logical :: lcount, delimiter_exists
+      logical :: lcount
+
 
       integer :: delimiter_position_start, delimiter_position_end
+      !! Start and end of where the quotes are, if any.
+
+      logical :: delimiter_exists
+      !! If the atom label has quotes aroud it
 
       allocate (pdos_atoms(maxval(atoms_species_num)), stat=ierr)
       if (ierr /= 0) call io_error('Error: projection_analyse_atom - allocation of pdos_atoms failed')
@@ -406,7 +446,10 @@ contains
       if (ierr /= 0) call io_error('Error: projection_analyse_atom - allocation of pdos_ang failed')
 
       lcount = .false.
+
       if (present(species_proj)) lcount = .true.
+      !! We are just in projector counting mode. Otherwise we're in
+      !! projection_array(:, :, :, :) filling mode.
 
       pdos_atoms = 0; pdos_ang = 0
       site_sum = .false.
@@ -423,7 +466,8 @@ contains
         write(stdout,'(3x,a1,a30,x,a20,19x,a1)') "|","  String in :", trim(ctemp), '|'
       endif
 
-      ! look for Ang Mtm string eg (s,p)
+      !! Parse for Ang Mtm string eg (s,p). The angular momentum information is
+      !! is stripped off into c_am and ctemp goes forward without it.
       c_am = ''
       pos_l = index(ctemp, '(')
       if (pos_l > 0) then
@@ -439,11 +483,17 @@ contains
 
       if(iprint>2) write(stdout,'(3x,a1,a30,x,a20,19x,a1)') "|","  String with AM removed :", trim(ctemp), '|'
 
-      ! Check for inverted commas around string
+      !! Parse for inverted commas around the species name. If they are present
+      !! we strip them off and send ctemp forward without them.
+      !! We set delimiter_exist = .true. so that we know that they were there.
+      !! Note: if a label is present, we send that on as well, s.t. "C:exi" ==> C:exi
+      !! the routines below will cope with the colon (:) it just had to be delimited
+      !! in this subroutine's parent routine.
+      !! Note that we could delimit without a label, e.g. "C", we do this s.t. later
+      !! we only match C and not with C:exi.
       delimiter_position_start = index(ctemp, c_delimiter)
       if(delimiter_position_start .ne. 0) then
-        ! we have a delimiter
-        ! Find the other end.
+        !! We have a delimiter. Need to find the other end.
         delimiter_position_end = index(ctemp(delimiter_position_start+1:), c_delimiter)+delimiter_position_start
         if(iprint>2) write(stdout,'(3x,a1,a30,x,i10,x,i10,18x,a1)')  "|","  delimiters at position :",&
         & delimiter_position_start, delimiter_position_end, "|"
@@ -457,7 +507,9 @@ contains
         delimiter_exists = .false.
       end if
 
-      ! Look for a label in the atom symbol we picked up.
+      !! Parse for an atom label, e.g. C:exi. ctemp goes forward with the
+      !! label stripped off. If a label exists cspecies and catom_label are populated and
+      !! atom_label is set to true.
       label_position = index(catom_label, c_labelsep)
       if (label_position == 0) then
         ! There isn't a label seperator
@@ -472,17 +524,16 @@ contains
         if(iprint>2) write(stdout,'(3x,a1,a30,x,a20,19x,a1)') "|","  Label found :", trim(catom_label), '|'
         cspecies=trim(ctemp(1:label_position-1))
         if(iprint>2) write(stdout,'(3x,a1,a30,x,a20,19x,a1)') "|","  Species found :", trim(cspecies), '|'
-        write(stdout,*) "ctemp(2)=", ctemp
-        write(stdout,*) ctemp(delimiter_position_end-1:)
         ctemp=trim(cspecies)//ctemp(delimiter_position_end-1:) !Subtract 1 extra becasue we've stripped the ""
-        write(stdout,*) "ctemp(3)=", ctemp
-      else
+      else ! Error
         write(stderr,*) 'projection_analyse_atom: cannot understand atom &
         &label, ', ctemp
         call io_error('projection_analyse_atom: found an atom label but could &
         &not work out a valid syntax for it')
       endif
 
+      !! Now we parse the atomic symbol placing it into c_symbol. Whatever is left
+      !! is sent forward in ctemp. In this case that can only be the number in species.
       ia = ichar('a')
       iz = ichar('z')
       idiff = ichar('Z') - ichar('z')
@@ -501,12 +552,11 @@ contains
       end if
 
 
-      if(iprint>2)  write(stdout,*) "     From od_cell: num_species: ", num_species
-
+      !! I don't understand this code. It seems convoluted. I've reproduced it below
+      !! to cope with atom labels.
+      !! The code finds the species number for the species in the PDOS snippet.
 !      species = 0
 !      do loop_j = 1, num_species
-!        write(stdout,*) " c_symbol=", c_symbol, loop_j
-!        write(stdout,*) " proj_symbol=", proj_symbol
 !        if (adjustl(c_symbol) == adjustl(proj_symbol(loop_j))) then
 !          species = loop_j
 !        end if
@@ -514,14 +564,10 @@ contains
       species = 0
       do loop_j = 1, num_species
         if(.not. atom_label) then
-      !    write(stdout,*) trim(c_symbol)
-    !      write(stdout,*) (proj_symbol(loop_j))
           if (trim(c_symbol) == adjustl(proj_symbol(loop_j))) then
             species = loop_j
           endif
         elseif(atom_label) then
-    !      write(stdout,*) trim(c_symbol)//":"//trim(catom_label)
-  !        write(stdout,*) (proj_symbol(loop_j))
           if (trim(c_symbol)//":"//trim(catom_label) == adjustl(proj_symbol(loop_j))) then
             species = loop_j
           end if
@@ -530,9 +576,8 @@ contains
 
 
       if(iprint>2) then
-        write(stdout,*) "     From od_cell: num_species: ", num_species
-        write(stdout,*) "     Species number we've counted here: ", species
-        write(stdout,*) "     Atom number (if any) ", trim(ctemp)
+        write(stdout,'(3x,a1,a30,x,i5,34x,a1)') "|","     Species index number  :", species,  "|"
+        write(stdout,'(3x,a1,a30,x,a5,34x,a1)') "|", "     Atom number in species :", trim(ctemp), "|"
       endif
 
       if (species == 0) call io_error('projection_analyse_atom: Failed to match atomic symbol in pdos string')
@@ -540,7 +585,6 @@ contains
       !Count atoms numbers
       counter = 0
       dummy = adjustl(ctemp)
-      write(stdout,*) "ctemp, dummy = ", ctemp, dummy
       if (len_trim(dummy) > 0) then
         dummy = adjustl(dummy)
         do
@@ -586,7 +630,7 @@ contains
       ! count am
       counter = 0
       dummy = adjustl(c_am)
-      write(stdout,*) "     Angular momemtum channels found: ", dummy
+      write(stdout,'(3x,a1,a30,x,a50,19x,a1)') "|", " Ang. mom. channels found :", dummy, "|"
       if (len_trim(dummy) > 0) then
         do
           pos3 = index(dummy, ',')
@@ -615,8 +659,6 @@ contains
         am_sum = .true.
       end if
 
-
-      write(stdout,*) "     pdos_atoms=", pdos_atoms
       if (site_sum) then
         num_sites = 1
       else
