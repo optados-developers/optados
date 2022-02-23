@@ -275,7 +275,7 @@ contains
 
     if(iprint>2) then
         write(stdout,*) "+--------------------------------------------------------------------------+"
-        write(stdout,*) "|                          projection_array(:,:,:,:)                       |"
+        write(stdout,*) "|  projection_array( num_species, atoms_in_species, max_am, num_proj)      |"
         write(stdout,*) "|       Atoms         Species     Atoms in                Array            |"
         write(stdout,*) "| Proj  label          Number     Species      am         value            |"
       do loop4 = 1, num_proj
@@ -375,7 +375,7 @@ contains
       !===============================================================================
       ! This is a mindbendingly horrific exercise in book-keeping
       !===============================================================================
-      use od_cell, only: num_species, atoms_species_num, atoms_label
+      use od_cell, only: num_species, atoms_species_num, atoms_label, atoms_symbol
       use od_io, only: maxlen, io_error
       implicit none
 
@@ -384,7 +384,7 @@ contains
       integer, optional, intent(out) :: species_proj
 
       integer, save :: offset = 0
-      integer :: i_digit
+      integer :: i_digit, ispecies
       character(len=maxlen) :: ctemp2, c_am, m_string, cspecies,catom_label
 
       integer :: pos_l, pos_r, ia, iz, idiff, ic1, ic2, species, num_sites, num_am
@@ -396,7 +396,7 @@ contains
       character(len=maxlen) :: dummy, label
       character(len=5)  :: c_num1, c_num2
       integer, allocatable :: pdos_atoms(:), pdos_ang(:)
-      logical :: lcount
+      logical :: lcount, delimiter_exists
 
       integer :: delimiter_position_start, delimiter_position_end
 
@@ -412,7 +412,7 @@ contains
       site_sum = .false.
       am_sum = .false.
       atom_label = .false.
-
+      delimiter_exists = .false.
 
       ctemp=trim(ctemp)
 
@@ -451,8 +451,10 @@ contains
         catom_label=ctemp(delimiter_position_start+1:delimiter_position_end)
         ctemp=ctemp(delimiter_position_start+1:delimiter_position_end-1) &
         &//trim(ctemp(delimiter_position_end+1:)) ! temporarily store everything beyond the delimiter
+        delimiter_exists  = .true.
       else ! no delimiter
         catom_label=''
+        delimiter_exists = .false.
       end if
 
       ! Look for a label in the atom symbol we picked up.
@@ -633,10 +635,28 @@ contains
         loop_p = 1 + offset
         if (site_sum .and. am_sum) then
           projection_array(species, :, :, loop_p) = 1
+          if(.not. delimiter_exists .and. catom_label=='') then ! Its not in quotes and its not
+            ! specially tagged. Hence C must match C:exi
+            do ispecies=1,num_species
+              if(ispecies == species) cycle !self interaction!
+              if(atoms_symbol(ispecies) == c_symbol) then
+                projection_array(ispecies, :, :, loop_p) = 1
+              endif
+            enddo
+          endif
         elseif (site_sum .and. .not. am_sum) then
           do loop_l = 1, max_am
             if (pdos_ang(loop_l) == 0) cycle
             projection_array(species, :, loop_l, loop_p) = 1
+            if(.not. delimiter_exists .and. catom_label=='') then ! Its not in quotes and its not
+              ! specially tagged. Hence C must match C:exi
+              do ispecies=1,num_species
+                if(ispecies == species) cycle !self interaction!
+                if(atoms_symbol(ispecies) == c_symbol) then
+                  projection_array(ispecies, :, loop_l, loop_p) = 1
+                endif
+              enddo
+            endif
             loop_p = loop_p + 1
           end do
         elseif (.not. site_sum .and. am_sum) then
@@ -656,6 +676,10 @@ contains
           end do
         end if
         offset = loop_p - 1
+
+
+
+
       end if
 
       if(iprint>2) then
