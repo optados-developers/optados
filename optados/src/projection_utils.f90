@@ -36,6 +36,7 @@ module od_projection_utils
 
   use od_constants, only: dp
   use od_parameters, only: iprint
+  use od_io, only: stdout, stderr
 
   implicit none
 
@@ -57,6 +58,7 @@ module od_projection_utils
 
 
   character(len=1), parameter :: c_atomsep = ":"
+  character(len=1), parameter :: c_labelsep = ":"
   character(len=10), parameter :: c_digit = "0123456789"
   character(len=1), parameter :: c_range = "-"
   character(len=1), parameter :: c_projsep = ","
@@ -114,14 +116,15 @@ contains
     ! This is a mindbendingly horrific exercise in book-keeping
     !===============================================================================
     use od_parameters, only: projectors_string
-    use od_cell, only: num_species, atoms_species_num
+    use od_cell, only: num_species, atoms_species_num, atoms_label
     use od_io, only: maxlen, io_error
+    use od_algorithms, only: channel_to_am
     implicit none
     character(len=maxlen) :: ctemp, ctemp2, ctemp3
 
     integer :: loop4, loop3, loop2, ierr
     logical :: pdos_sum
-    logical :: dummy_logical
+    logical :: long_atom_name_exits, delimiter_exists
     integer   :: loop, pos, loop_l, loop_a, loop_p
     integer   ::  species_count, species_proj
 
@@ -202,13 +205,24 @@ contains
       ctemp2 = ctemp
       species_count = 1; num_proj = 0
       do
+        delimiter_exists=.false.
+        long_atom_name_exits=.false.
         ! look for each species section
         ! and pass to find number of projections
-        call projection_find_atom(ctemp2, ctemp3, pos, dummy_logical)
-        call projection_analyse_atom(ctemp3, species_proj)
+        call projection_find_atom(ctemp2, ctemp3, delimiter_exists, pos)
+        call projection_analyse_atom(ctemp3, long_atom_name_exits, species_proj)
+        if(long_atom_name_exits .and. .not. delimiter_exists) then
+          call io_error('Error: projection_get_string - something odd reading the PDOS string. BUG (2)')
+        elseif(.not. long_atom_name_exits .and. delimiter_exists) then
+          if(iprint > 2) write (stdout,*) " projection_get_string: delimiter but &
+          &no atom label. Not invalid. Just unnecessary."
+        endif
         num_proj = num_proj + species_proj
-        if (pos == 0) exit
         species_count = species_count + 1
+        write(stdout,*) "species_proj: ", species_proj
+        write(stdout,*) "species_count: ", species_count
+        write(stdout,*) "num_proj: ", num_proj
+        if (pos == 0 .or. pos > len(trim(ctemp2))) exit ! There's nothing left to read
         ctemp2 = ctemp2(pos + 1:)
       end do
 
@@ -222,8 +236,14 @@ contains
       do loop = 1, species_count
         !loop for each species section
         !and pass fill in projection
-        call projection_find_atom(ctemp2, ctemp3, pos, dummy_logical)
-        call projection_analyse_atom(ctemp3)
+        call projection_find_atom(ctemp2, ctemp3, delimiter_exists, pos)
+        call projection_analyse_atom(ctemp3, long_atom_name_exits)
+        if(long_atom_name_exits .and. .not. delimiter_exists) then
+          call io_error('Error: projection_get_string - something odd reading the PDOS string. BUG (2)')
+        elseif(.not. long_atom_name_exits .and. delimiter_exists) then
+          if(iprint > 2) write (stdout,*) " projection_get_string: delimiter but &
+          &no atom label. Not invalid. Just unnecessary."
+        endif
         ctemp2 = ctemp2(pos + 1:)
       end do
 
@@ -253,12 +273,32 @@ contains
       end if
     end if
 
+    if(iprint>2) then
+        write(stdout,*) "+--------------------------------------------------------------------------+"
+        write(stdout,*) "|                          projection_array(:,:,:,:)                       |"
+        write(stdout,*) "|       Atoms         Species     Atoms in                Array            |"
+        write(stdout,*) "| Proj  label          Number     Species      am         value            |"
+      do loop4 = 1, num_proj
+        write(stdout,*) "+--------------------------------------------------------------------------+"
+        do loop3 = 1, max_am
+          do loop2 = 1, maxval(atoms_species_num)
+            do loop = 1, num_species
+              write(stdout,'(i4,6x,a10,6x,i4,6x,i4,8x,1a,8x,i4)') loop4, atoms_label(loop),loop, loop2, &
+              & channel_to_am(loop3), projection_array(loop, loop2, loop3, loop4)
+            end do
+          end do
+        end do
+      end do
+        write(stdout,*) "+--------------------------------------------------------------------------+"
+    endif
+
+
     return
 
   end subroutine projection_get_string
 
   !===============================================================================
-  subroutine projection_find_atom(cstring_in, catom_out, atomsep_position, atom_label)
+  subroutine projection_find_atom(cstring_in, catom_out, atom_label, atomsep_position)
    !! Looks for the first atom in cstring_in and returns it in catom_out
    !! returns the position of the seperator afer the atom or zero if there is none
    !! after it.
@@ -267,49 +307,71 @@ contains
 
     use od_io, only: maxlen, io_error, stdout
 
-
-    character(len=maxlen), intent(out) :: cstring_in
+    character(len=maxlen), intent(in) :: cstring_in
     character(len=maxlen), intent(out) :: catom_out
     integer, intent(out) :: atomsep_position
     logical, intent(out) :: atom_label
-    integer :: deliminter_position, delimiter_position_end
+    integer :: delimiter_position, delimiter_position_end
 
-    if(iprint>2) write(stdout,*) " projection_find_atom: cstring_in :", cstring_in
+    if(iprint>2) then
+      write(stdout,*) "+-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*+"
+      write(stdout,*) "|                 projection_untils :>  projection_find_atom               |"
+      write(stdout,*) "+--------------------------------------------------------------------------+"
+      write(stdout,'(x,a1,a30,x,a20,23x,a1)') "|","  String in :", trim(cstring_in), '|'
+    endif
+
+    if(len(trim(cstring_in)) == 0) call io_error('projection_find_atom: Zero lenght string input. This is a BUG!')
 
     atom_label=.false.
 
     atomsep_position = index(cstring_in, c_atomsep)
-    deliminter_position = index(cstring_in, c_delimiter)
+    delimiter_position = index(cstring_in, c_delimiter)
 
     ! If the position is zero there is no seperator, so the whole string is the
     ! atom
-    if (( atomsep_position == 0 ) .and. ( deliminter_position == 0 )) then
+    if (( atomsep_position == 0 ) .and. ( delimiter_position == 0 )) then
       ! There's one atom and no delimiting
-      catom_out = cstring_in
-    elseif( deliminter_position .ne. 0 ) then
+        if(iprint>2) write(stdout,'(x,a1,a30,44x,a1)') "|"," one atom, no delimiter.","|"
+       catom_out = cstring_in
+    elseif( delimiter_position .ne. 0 ) then
       ! Look for the second delimiter
-      delimiter_position_end = index(cstring_in(deliminter_position+1:), c_delimiter)
+      delimiter_position_end = index(cstring_in(delimiter_position+1:), c_delimiter)
       if(delimiter_position_end == 0) call io_error('projection_find_atom: Error &
           & finding closing inverted comma')
-          catom_out = cstring_in(deliminter_position+1:delimiter_position_end)
-          atom_label=.true.
-          atomsep_position=delimiter_position_end+2 ! This needs nudging as we need to skip
-          ! after the "
-    elseif ( atomsep_position .ne. 0 ) then
+      ! The seperator is now after the end delimiter
+      atomsep_position = index(cstring_in(delimiter_position_end:), c_atomsep)
+      if( atomsep_position == 0 ) then
+        catom_out=cstring_in
+      else
+        ! The atom seperator is after the delimiter
+        atomsep_position=atomsep_position+delimiter_position_end-1
+        catom_out = cstring_in(:atomsep_position-1)
+      endif
+      atom_label=.true.
+      if(iprint>2) write(stdout,'(x,a1,a30,x,i20,23x,a1)') "|", " atom seperator position :", atomsep_position, "|"
+      if(iprint>2) write(stdout,'(x,a1,a30,x,i10,x,i10,22x,a1)')  "|","  delimiters at position :",&
+      & delimiter_position, delimiter_position_end, "|"
+    elseif (( atomsep_position .ne. 0 ) .and. ( delimiter_position == 0 ) ) then
       ! If there aren't any delimiters than we just jump to the end of the atom seperator
+      if(iprint>2) write(stdout,*) " no delimiters"
       catom_out = cstring_in(:atomsep_position-1)
     else
       call io_error('projection_find_atom: Error parsing string. This is a BUG!')
     end if
 
-    if(iprint>2) write(stdout,*) " projection_find_atom: cstring_out : ", catom_out
-
+    catom_out=trim(catom_out)
+    if(iprint>2) then
+      if(atom_label) write(stdout,'(x,a1,a30,x,a20,23x,a1)') "|", "Atom label present  :", "TRUE", '|'
+      write(stdout,'(x,a1,a30,x,a20,23x,a1)') "|","  String out :", trim(catom_out), '|'
+      write(stdout,*) "+-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*+"
+      write(stdout,*)
+    endif
     return
 
   end subroutine projection_find_atom
 
     !===============================================================================
-    subroutine projection_analyse_atom(ctemp, species_proj)
+    subroutine projection_analyse_atom(ctemp,  atom_label, species_proj)
       !===============================================================================
       ! This is a mindbendingly horrific exercise in book-keeping
       !===============================================================================
@@ -318,22 +380,25 @@ contains
       implicit none
 
       character(len=maxlen), intent(inout) :: ctemp
+      logical, intent(out) :: atom_label
       integer, optional, intent(out) :: species_proj
 
       integer, save :: offset = 0
       integer :: i_digit
-      character(len=maxlen) :: ctemp2, c_am, m_string
+      character(len=maxlen) :: ctemp2, c_am, m_string, cspecies,catom_label
 
       integer :: pos_l, pos_r, ia, iz, idiff, ic1, ic2, species, num_sites, num_am
       character(len=3)  :: c_symbol = '   '
       logical :: am_sum, site_sum
 
       integer   :: num1, num2, i_punc, pos3, loop_l, loop_a, loop_p, loop_j
-      integer   :: counter, loop_r, range_size, ierr
-      character(len=maxlen) :: dummy
+      integer   :: counter, loop_r, range_size, ierr, label_position
+      character(len=maxlen) :: dummy, label
       character(len=5)  :: c_num1, c_num2
       integer, allocatable :: pdos_atoms(:), pdos_ang(:)
       logical :: lcount
+
+      integer :: delimiter_position_start, delimiter_position_end
 
       allocate (pdos_atoms(maxval(atoms_species_num)), stat=ierr)
       if (ierr /= 0) call io_error('Error: projection_analyse_atom - allocation of pdos_atoms failed')
@@ -346,10 +411,23 @@ contains
       pdos_atoms = 0; pdos_ang = 0
       site_sum = .false.
       am_sum = .false.
+      atom_label = .false.
+
+
+      ctemp=trim(ctemp)
+
+      if(iprint>2) then
+        write(stdout,*) "  +-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=+"
+        write(stdout,*) "  |             projection_untils :>  projection_analyse_atom            |"
+        write(stdout,*) "  +----------------------------------------------------------------------+"
+        write(stdout,'(3x,a1,a30,x,a20,19x,a1)') "|","  String in :", trim(ctemp), '|'
+      endif
+
       ! look for Ang Mtm string eg (s,p)
       c_am = ''
       pos_l = index(ctemp, '(')
       if (pos_l > 0) then
+        ! There are brackets
         pos_r = index(ctemp, ')')
         if (pos_r == 0) call io_error('projection_analyse_atom: found ( but no )')
         if (pos_r <= pos_l) call io_error('projection_analyse_atom: found ) before (')
@@ -358,6 +436,46 @@ contains
       else ! implicit sum over AM
         am_sum = .true.
       end if
+
+      if(iprint>2) write(stdout,'(3x,a1,a30,x,a20,19x,a1)') "|","  String with AM removed :", trim(ctemp), '|'
+
+      ! Check for inverted commas around string
+      delimiter_position_start = index(ctemp, c_delimiter)
+      if(delimiter_position_start .ne. 0) then
+        ! we have a delimiter
+        ! Find the other end.
+        delimiter_position_end = index(ctemp(delimiter_position_start+1:), c_delimiter)+delimiter_position_start
+        if(iprint>2) write(stdout,'(3x,a1,a30,x,i10,x,i10,18x,a1)')  "|","  delimiters at position :",&
+        & delimiter_position_start, delimiter_position_end, "|"
+        if(delimiter_position_end == 0) call  io_error('projection_analyse_atom: Opening " found but no closing "')
+        catom_label=ctemp(delimiter_position_start+1:delimiter_position_end)
+        ctemp=ctemp(delimiter_position_start+1:delimiter_position_end-1) &
+        &//trim(ctemp(delimiter_position_end+1:)) ! temporarily store everything beyond the delimiter
+      else ! no delimiter
+        catom_label=''
+      end if
+
+      ! Look for a label in the atom symbol we picked up.
+      label_position = index(catom_label, c_labelsep)
+      if (label_position == 0) then
+        ! There isn't a label seperator
+        atom_label=.false. ! Say it explicitly
+        catom_label=''
+        if(iprint>2) write(stdout,'(3x,a1,a30,x,a4,35x,a1)') "|","  Label found :", "None", '|'
+        ctemp=trim(ctemp)
+      elseif(label_position > 1) then
+        atom_label=.true.
+        catom_label=ctemp(label_position+1:delimiter_position_end-2)
+        if(iprint>2) write(stdout,'(3x,a1,a30,x,a20,19x,a1)') "|","  Label found :", trim(catom_label), '|'
+        cspecies=trim(ctemp(1:label_position-1))
+        if(iprint>2) write(stdout,'(3x,a1,a30,x,a20,19x,a1)') "|","  Species found :", trim(cspecies), '|'
+        ctemp=cspecies//trim(ctemp(delimiter_position_end+1:))
+      else
+        write(stderr,*) 'projection_analyse_atom: cannot understand atom &
+        &label, ', ctemp
+        call io_error('projection_analyse_atom: found an atom label but could &
+        &not work out a valid syntax for it')
+      endif
 
       ia = ichar('a')
       iz = ichar('z')
@@ -375,12 +493,25 @@ contains
         c_symbol(2:2) = ''
         ctemp = ctemp(2:)
       end if
+
+
+      if(iprint>2)  write(stdout,*) "     From od_cell: num_species: ", num_species
+
       species = 0
       do loop_j = 1, num_species
+        write(stdout,*) " c_symbol=", c_symbol, loop_j
+        write(stdout,*) " proj_symbol=", proj_symbol
         if (adjustl(c_symbol) == adjustl(proj_symbol(loop_j))) then
           species = loop_j
         end if
       end do
+
+      if(iprint>2) then
+        write(stdout,*) "     From od_cell: num_species: ", num_species
+        write(stdout,*) "     Number of species we've counted here: ", species
+        write(stdout,*) "     Atom number (if any) ", trim(ctemp)
+      endif
+
       if (species == 0) call io_error('projection_analyse_atom: Failed to match atomic symbol in pdos string')
 
       !Count atoms numbers
@@ -430,6 +561,7 @@ contains
       ! count am
       counter = 0
       dummy = adjustl(c_am)
+      write(stdout,*) "     Angular momemtum channels found: ", dummy
       if (len_trim(dummy) > 0) then
         do
           pos3 = index(dummy, ',')
@@ -458,16 +590,20 @@ contains
         am_sum = .true.
       end if
 
+
+      write(stdout,*) "     pdos_atoms=", pdos_atoms
       if (site_sum) then
         num_sites = 1
       else
         num_sites = count(pdos_atoms == 1)
       end if
+
       if (am_sum) then
         num_am = 1
       else
         num_am = count(pdos_ang == 1)
       end if
+
       if (lcount) species_proj = num_am*num_sites
 
       if (.not. lcount) then
@@ -499,7 +635,15 @@ contains
         offset = loop_p - 1
       end if
 
+      if(iprint>2) then
+        write(stdout,*)  "  +-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=+"
+        write(stdout,*)
+      endif
+
       return
+
+
+
 
 101   call io_error('projection_analyse_atom Error parsing keyword ')
 106   call io_error('projection_analyse_atom: Problem reading l state into string ')
@@ -508,15 +652,22 @@ end subroutine projection_analyse_atom
 
   subroutine projection_analyse_orbitals
     use od_electronic, only: pdos_orbital, pdos_mwab
-    use od_cell, only: atoms_symbol, num_species
+    use od_cell, only: atoms_symbol, num_species, atoms_label
     use od_constants, only: periodic_table_name
     use od_io, only: io_error
     implicit none
 
     integer :: loop, loop2, counter, ierr
 
+    if(iprint > 2) then
+      write(stdout,*) "+--------------------------------------------------------------------------+"
+      write(stdout,*) "|                 projection_untils :>  projection_analyse_orbitals        |"
+      write(stdout,*) "+--------------------------------------------------------------------------+"
+    endif
+
     if (maxval(pdos_orbital%species_no(:)) > num_species) &
       call io_error('Error: projection_analyse_substring - more species in pdos file than in cell file')
+
 
     allocate (proj_sites(maxval(pdos_orbital%species_no(:))), stat=ierr)
     if (ierr /= 0) call io_error('Error: projection_analyse_substring - allocation of proj_sites failed')
@@ -544,6 +695,23 @@ end subroutine projection_analyse_atom
         end if
       end do
     end do
+
+  write(stdout,*) atoms_label
+  write(stdout,*) atoms_symbol
+    write(stdout,*) proj_symbol
+
+    do loop = 1, num_species
+      do loop2 = loop+1, num_species
+        if(proj_symbol(loop) == proj_symbol(loop2)) Then
+          write(stdout,*) " projection_analyse_orbitals: &
+        &duplicate species found.", proj_symbol(loop),  proj_symbol(loop2), loop
+        write(stdout,*) atoms_label(loop2)
+      endif
+
+      enddo
+    enddo
+
+    if(iprint > 2) write(stdout,*) "+--------------------------------------------------------------------------+"
 
   end subroutine projection_analyse_orbitals
 
