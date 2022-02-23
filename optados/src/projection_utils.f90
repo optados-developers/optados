@@ -50,7 +50,7 @@ module od_projection_utils
   integer, public, parameter :: max_am = 4                   ! s,p,d,f  hard coded!
 
   ! Data derived from the info in the pdos_weights file
-  character(len=3), public, allocatable :: proj_symbol(:)   ! symbols
+  character(len=8), public, allocatable :: proj_symbol(:)   ! symbols
   integer, public, allocatable :: proj_am(:, :)              ! angular mtm (num_species,max_am)
   integer, public, allocatable :: proj_sites(:)             ! number of each species
   logical, public :: shortcut
@@ -203,7 +203,7 @@ contains
       ! take 1st part of string
 
       ctemp2 = ctemp
-      species_count = 1; num_proj = 0
+      species_count = 0; num_proj = 0
       do
         delimiter_exists=.false.
         long_atom_name_exits=.false.
@@ -375,7 +375,7 @@ contains
       !===============================================================================
       ! This is a mindbendingly horrific exercise in book-keeping
       !===============================================================================
-      use od_cell, only: num_species, atoms_species_num
+      use od_cell, only: num_species, atoms_species_num, atoms_label
       use od_io, only: maxlen, io_error
       implicit none
 
@@ -464,12 +464,16 @@ contains
         if(iprint>2) write(stdout,'(3x,a1,a30,x,a4,35x,a1)') "|","  Label found :", "None", '|'
         ctemp=trim(ctemp)
       elseif(label_position > 1) then
+        ! There is a seperator
         atom_label=.true.
         catom_label=ctemp(label_position+1:delimiter_position_end-2)
         if(iprint>2) write(stdout,'(3x,a1,a30,x,a20,19x,a1)') "|","  Label found :", trim(catom_label), '|'
         cspecies=trim(ctemp(1:label_position-1))
         if(iprint>2) write(stdout,'(3x,a1,a30,x,a20,19x,a1)') "|","  Species found :", trim(cspecies), '|'
-        ctemp=cspecies//trim(ctemp(delimiter_position_end+1:))
+        write(stdout,*) "ctemp(2)=", ctemp
+        write(stdout,*) ctemp(delimiter_position_end-1:)
+        ctemp=trim(cspecies)//ctemp(delimiter_position_end-1:) !Subtract 1 extra becasue we've stripped the ""
+        write(stdout,*) "ctemp(3)=", ctemp
       else
         write(stderr,*) 'projection_analyse_atom: cannot understand atom &
         &label, ', ctemp
@@ -497,18 +501,35 @@ contains
 
       if(iprint>2)  write(stdout,*) "     From od_cell: num_species: ", num_species
 
+!      species = 0
+!      do loop_j = 1, num_species
+!        write(stdout,*) " c_symbol=", c_symbol, loop_j
+!        write(stdout,*) " proj_symbol=", proj_symbol
+!        if (adjustl(c_symbol) == adjustl(proj_symbol(loop_j))) then
+!          species = loop_j
+!        end if
+!      end do
       species = 0
       do loop_j = 1, num_species
-        write(stdout,*) " c_symbol=", c_symbol, loop_j
-        write(stdout,*) " proj_symbol=", proj_symbol
-        if (adjustl(c_symbol) == adjustl(proj_symbol(loop_j))) then
-          species = loop_j
+        if(.not. atom_label) then
+      !    write(stdout,*) trim(c_symbol)
+    !      write(stdout,*) (proj_symbol(loop_j))
+          if (trim(c_symbol) == adjustl(proj_symbol(loop_j))) then
+            species = loop_j
+          endif
+        elseif(atom_label) then
+    !      write(stdout,*) trim(c_symbol)//":"//trim(catom_label)
+  !        write(stdout,*) (proj_symbol(loop_j))
+          if (trim(c_symbol)//":"//trim(catom_label) == adjustl(proj_symbol(loop_j))) then
+            species = loop_j
+          end if
         end if
       end do
 
+
       if(iprint>2) then
         write(stdout,*) "     From od_cell: num_species: ", num_species
-        write(stdout,*) "     Number of species we've counted here: ", species
+        write(stdout,*) "     Species number we've counted here: ", species
         write(stdout,*) "     Atom number (if any) ", trim(ctemp)
       endif
 
@@ -517,6 +538,7 @@ contains
       !Count atoms numbers
       counter = 0
       dummy = adjustl(ctemp)
+      write(stdout,*) "ctemp, dummy = ", ctemp, dummy
       if (len_trim(dummy) > 0) then
         dummy = adjustl(dummy)
         do
@@ -532,6 +554,7 @@ contains
             i_punc = scan(dummy, c_punc)
             c_num2 = dummy(1:i_punc - 1)
             read (c_num2, *, err=101, end=101) num2
+            write(stdout,*) "dummy=",dummy
             dummy = adjustl(dummy(i_punc:))
             range_size = abs(num2 - num1) + 1
             do loop_r = 1, range_size
@@ -683,36 +706,45 @@ end subroutine projection_analyse_atom
         proj_am(pdos_orbital%species_no(loop), pdos_orbital%am_channel(loop) + 1) = 1
     end do
 
-    !Now need to figure out symbols for each species
+    ! Now need to figure out symbols for each species
 
-    counter = 1
-    do loop2 = 1, 109
-      do loop = 1, num_species
-        if (atoms_symbol(loop) == periodic_table_name(loop2)) then
-          proj_symbol(counter) = periodic_table_name(loop2)
-          counter = counter + 1
-          !check atom count here
-        end if
-      end do
-    end do
+! AJM: This looks like it doesn't put things in CASTEP atom order if labels are present
+! TBH I don't understand why it was doing it this way -- will probably learn the hard way! :)
+!    counter = 1
+!    do loop2 = 1, 109
+!      do loop = 1, num_species
+!        if (atoms_symbol(loop) == periodic_table_name(loop2)) then
+!          proj_symbol(counter) = periodic_table_name(loop2)
+!          counter = counter + 1
+!          !check atom count here
+!        end if
+!      end do
+!    end do
+  do loop = 1,num_species
+    do loop2 = 1,109
+      if (atoms_symbol(loop) == periodic_table_name(loop2)) then
+        proj_symbol(loop) = atoms_label(loop)
+      endif
+   enddo
+  enddo
 
-  write(stdout,*) atoms_label
-  write(stdout,*) atoms_symbol
-    write(stdout,*) proj_symbol
+  if(iprint > 2) then
+    write(stdout,'(x,a1,x,10x,x,a14,3x,a15,3x,a14,13x,a1)') "|","atoms_label(:)","atoms_symbol(:)","proj_symbol(:)","|"
+    do loop=1,num_species
+      write(stdout,'(x,a1,x,i5,x,a14,3x,a15,3x,a14,18x,a1)') "|",loop,trim(atoms_label(loop)),&
+      &trim(atoms_symbol(loop)),trim(proj_symbol(loop)),"|"
+    enddo
 
     do loop = 1, num_species
       do loop2 = loop+1, num_species
         if(proj_symbol(loop) == proj_symbol(loop2)) Then
-          write(stdout,*) " projection_analyse_orbitals: &
-        &duplicate species found.", proj_symbol(loop),  proj_symbol(loop2), loop
-        write(stdout,*) atoms_label(loop2)
-      endif
-
+          write(stdout,'(x,a1,xa24,3x,a3,3x,a3,3x,i5,3x,i5,21x,a1)') "|", "duplicate species found:", &
+          &proj_symbol(loop),  proj_symbol(loop2), loop, loop2,"|"
+        endif
       enddo
     enddo
-
-    if(iprint > 2) write(stdout,*) "+--------------------------------------------------------------------------+"
-
+    write(stdout,*) "+--------------------------------------------------------------------------+"
+  endif
   end subroutine projection_analyse_orbitals
 
 end module od_projection_utils
