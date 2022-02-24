@@ -14,7 +14,6 @@
 # singlepoint calculation without a charge and without a core hole
 # on the same cell as in NaGe.cell
 #
-# ../../tools/miz_correction -i NaGe -e Ge -t -6350.174255159
 
 
 ../../tools/miz_correction -i NaGe -e Ge -t -6350.174255159

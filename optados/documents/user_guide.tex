@@ -1281,7 +1281,7 @@ Na  0.620573953121250       0.758852093757499       0.836258492531341
 Na  0.379426046878750       0.241147906242501       0.163741507468659
 Na  0.220453843197638       0.559092313604724       0.600726924771292
 Na  0.779546156802362       0.440907686395276       0.399273075228708
-Ge:exc -0.000000000000000      -0.000000000000000      -0.000000000000000
+Ge:exc 0.000000000000000      0.000000000000000      0.000000000000000
 %ENDBLOCK positions_frac
 
 %BLOCK species_pot
@@ -1296,7 +1296,7 @@ Na  0.620573953121250       0.758852093757499       0.836258492531341
 Na  0.379426046878750       0.241147906242501       0.163741507468659
 Na  0.220453843197638       0.559092313604724       0.600726924771292
 Na  0.779546156802362       0.440907686395276       0.399273075228708
-Ge -0.000000000000000      -0.000000000000000      -0.000000000000000
+Ge  0.000000000000000       0.000000000000000       0.000000000000000
 %ENDBLOCK positions_frac
 
 %BLOCK species_pot
@@ -1313,7 +1313,7 @@ xc_functional : PBE
 write_checkpoint : None
 \end{verbatim}
 Here we have commented out the line for charge inclusion, and changed the task keyword. Run the \castep\ calculation and compare the ground state total energies of your two different files. You should see that the groundstate energy of -6350.174255159 eV is less than the core hole groundstate energy. 
-\item Now we want to calculate the mizoguchi correction associated with this difference in energies. To do this, we will use the code located at \verb#tools/miz_correction#. This code is written in \python\ and you can see the different keywords it takes using the \verb#--help# flag. To calculate the correction for our system we will use the command:
+\item Now we want to calculate the Mizoguchi correction associated with this difference in energies. To do this, we will use the code located at \verb#tools/miz_correction#. This code is written in \python\ and you can see the different keywords it takes using the \verb#--help# flag. To calculate the correction for our system we will use the command:
 \begin{verbatim}
 ../../tools/miz_correction -i NaGe -e Ge -t -6350.174255159
 \end{verbatim}
