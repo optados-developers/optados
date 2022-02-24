@@ -1,5 +1,5 @@
 #--------------------------------------------------------------
-# O p t a D O S   D O S   T e s t s 
+# O p t a D O S   D O S   T e s t s
 #--------------------------------------------------------------
 #
 # Test coverage
@@ -16,7 +16,7 @@
 
 # 1)
 # Initial JRY example test
-# It does fixed broadening so only requires a band file 
+# It does fixed broadening so only requires a band file
 [testopt_dos_fixed]
 program = OPTADOS_ODO_OK
 inputs_args = ('Si2.odi', '')
@@ -67,7 +67,7 @@ output = Si2.linear.dat
 #                  +-------+----------+--------+
 #                  | fixed | adaptive | linear |
 # -----------------+-------+----------+--------+
-# odo file         |  2    |          |   5    |     
+# odo file         |  2    |          |   5    |
 # pdos.dat file    |       |    1     |        |
 # generic out file |       |    3     |   4    |
 # String 1         |  2    |          |        |
@@ -80,7 +80,7 @@ output = Si2.linear.dat
 # -----------------+-------+----------+--------+
 
 # 1)
-# Test the PDOS using short-cut keywords, use an ome input and 
+# Test the PDOS using short-cut keywords, use an ome input and
 # and check the anguar output file
 [testopt_pdos_angular]
 program = OPTADOS_GEN_DAT_OK
@@ -88,7 +88,7 @@ inputs_args = ('Si2.odi', '')
 output = Si2.pdos.dat
 
 # 2)
-# Test the PDOS using the first string in the examples, use an 
+# Test the PDOS using the first string in the examples, use an
 # ome as input and test fixed smearing
 [testopt_pdos_string1]
 program = OPTADOS_ODO_OK
@@ -105,7 +105,7 @@ inputs_args = ('Si2.odi', '')
 output = Si2.pdos.proj-0001-0001.dat
 
 # 4)
-# Test the PDOS using the third string in the example, do it indpendent 
+# Test the PDOS using the third string in the example, do it indpendent
 # of spin, use linear smearing and test the generic out file
 [testopt_pdos_string3]
 program = OPTADOS_GEN_DAT_OK
@@ -113,7 +113,7 @@ inputs_args = ('Si2.odi', '')
 output = Si2.pdos.proj-0001-0002.dat
 
 # 5)
-# Test the PDOS using the fourth string in the eamples, do it using 
+# Test the PDOS using the fourth string in the eamples, do it using
 # linear broadening and testing the odo file.
 [testopt_pdos_string4]
 program = OPTADOS_ODO_OK
@@ -133,7 +133,7 @@ output = Si2.odo
 #                  +-------+----------+--------+
 #                  | fixed | adaptive | linear |
 # -----------------+-------+----------+--------+
-# odo file         |   1   |          |        | 
+# odo file         |   1   |          |        |
 # dat file         |       |   2      |   3    |
 # ome_file         |   1   |          |        |
 # dome_file        |       |   2      |        |
@@ -162,7 +162,15 @@ output = Si2.jlinear.dat
 # O p t a D O S   O p t i c s   T e s t s
 #--------------------------------------------------------------
 # Test coverage
-
+#
+# 1 testopt_optics_poly
+# 2 testopt_optics_polar
+# 3 testopt_optics_unpolar
+# 4 testopt_optics_tensor
+# 5 testopt_optics_drude
+# 6 testopt_optics_intraband
+# 7 testopt_optics_conductivity
+#
 #               |1|2|3|4|5|6|7|
 # --------------+-+-+-+-+-+-+-+
 # Si            |x|x|x|x| | | |
@@ -173,7 +181,7 @@ output = Si2.jlinear.dat
 # Tensor        | | | |x| | | |
 # Fixed         |x| | | | | |x|
 # Adaptive      | |x| |x| |x| |
-# Linear        | | |x| |x| | | 
+# Linear        | | |x| |x| | |
 # Intraband     | | | | |x|x|x|
 # Loss_fn Bdng  | | |@| | | | |
 # Drude Bdng    | | | | |@| | |
@@ -190,6 +198,47 @@ output = Si2.jlinear.dat
 # @= change from default
 #
 
+#1
+[testopt_optics_poly]
+program = OPTADOS_ODO_OK
+inputs_args = ('Si2.odi', '')
+output = Si2.odo
+
+#2
+[testopt_optics_polar]
+program = OPTADOS_GEN_DAT_OK
+inputs_args = ('Si2.odi', '')
+output = Si2.epsilon.dat
+
+#3
+[testopt_optics_unpolar]
+program = OPTADOS_GEN_DAT_OK
+inputs_args = ('Si2.odi', '')
+output = Si2.loss_fn.dat
+
+#4
+[testopt_optics_tensor]
+program = OPTADOS_GEN_DAT_OK
+inputs_args = ('Si2.odi', '')
+output = Si2.absorption.dat
+
+#5
+[testopt_optics_drude]
+program = OPTADOS_GEN_DAT_OK
+inputs_args = ('Al4.odi', '')
+output = Al4.reflection.dat
+
+#6
+[testopt_optics_intraband]
+program = OPTADOS_GEN_DAT_OK
+inputs_args = ('Al4.odi', '')
+output = Al4.refractive_index.dat
+
+#7
+[testopt_optics_conductivity]
+program = OPTADOS_GEN_DAT_OK
+inputs_args = ('Al4.odi', '')
+output = Al4.conductivity.dat
 
 #--------------------------------------------------------------
 # O p t a D O S   C o r e l o s s    T e s t s
@@ -197,10 +246,15 @@ output = Si2.jlinear.dat
 # Test coverage
 #
 
+# 1 testopt_core_absorb
+# 2 testopt_core_emisson
+# 3 testopt_core_polarised
+# 4 testopt_core_all
+
 #                           |1|2|3|4|
 # --------------------------+-+-+-+-+
 # Si                        |x|x|x|x|
-# absorbtion                |x| | | | 
+# absorbtion                |x| | | |
 # emision                   | |x|x| |
 # all                       | | | |x|
 # poly                      |x| |x|x|
@@ -211,11 +265,35 @@ output = Si2.jlinear.dat
 # LAI lorentzian scale      | | |@|@|
 # LAI lorentzian offset     | | |@|@|
 # --------------------------+-+-+-+-+
-# odo file                  |x| | | |        
+# odo file                  |x| | | |
 # core_edge file            | |x|x|x|
 # --------------------------+-+-+-+-+
 #
 # @= change from default
+
+#1
+[testopt_core_absorb]
+program = OPTADOS_ODO_OK
+inputs_args = ('Si2.odi', '')
+output = Si2.odo
+
+#2
+[testopt_core_emisson]
+program = OPTADOS_GEN_DAT_OK
+inputs_args = ('Si2.odi', '')
+output = Si2_core_edge.dat
+
+#3
+[testopt_core_polarised]
+program = OPTADOS_GEN_DAT_OK
+inputs_args = ('Si2.odi', '')
+output = Si2_core_edge.dat
+
+#4
+[testopt_core_all]
+program = OPTADOS_GEN_DAT_OK
+inputs_args = ('Si2.odi', '')
+output = Si2_core_edge.dat
 
 #--------------------------------------------------------------
 # O p t a D O S   I n t e r n a l   S t u f f    T e s t s
@@ -226,7 +304,7 @@ output = Si2.jlinear.dat
 # hybrid linear
 # finite bin corrections
 # band_gap_stuf
-# DOS at fermi -- do we have a route? 
+# DOS at fermi -- do we have a route?
 
 #--------------------------------------------------------------
 # O D 2 O D   T e s t s
@@ -240,17 +318,17 @@ inputs_args = ('', '-i dummy -o dummy Si2')
 output = Si2.log
 
 # It is non-trivial to test the tester. Here we take the ome_fmt file convert
-# it to a ome_bin (using the makefile) then convert it back to an ome_fmt with 
+# it to a ome_bin (using the makefile) then convert it back to an ome_fmt with
 # the testcode.
 # I am aware that this does NOT test that the .ome_bin is correct. Only that
-# od2od manages to perform AA^-1=I.  Better ideas welcome!  
+# od2od manages to perform AA^-1=I.  Better ideas welcome!
 [testod2od_ome_fmt]
 program = OD2OD_FMT_OK
 inputs_args = ('', '-i ome_bin -o ome_fmt -w Si2_out Si2')
 output = Si2_out.ome_fmt
 
 #--------------------------------------------------------------
-# C a t e g o r y   L i s t 
+# C a t e g o r y   L i s t
 #--------------------------------------------------------------
 [categories]
 optados_only = testopt_*
