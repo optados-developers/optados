@@ -208,37 +208,37 @@ output = Si2.odo
 [testopt_optics_polar]
 program = OPTADOS_GEN_DAT_OK
 inputs_args = ('Si2.odi', '')
-output = Si2.epsilon.dat
+output = Si2_epsilon.dat
 
 #3
 [testopt_optics_unpolar]
 program = OPTADOS_GEN_DAT_OK
 inputs_args = ('Si2.odi', '')
-output = Si2.loss_fn.dat
+output = Si2_loss_fn.dat
 
 #4
 [testopt_optics_tensor]
 program = OPTADOS_GEN_DAT_OK
 inputs_args = ('Si2.odi', '')
-output = Si2.absorption.dat
+output = Si2_absorption.dat
 
 #5
 [testopt_optics_drude]
 program = OPTADOS_GEN_DAT_OK
 inputs_args = ('Al4.odi', '')
-output = Al4.reflection.dat
+output = Al4_reflection.dat
 
 #6
 [testopt_optics_intraband]
 program = OPTADOS_GEN_DAT_OK
 inputs_args = ('Al4.odi', '')
-output = Al4.refractive_index.dat
+output = Al4_refractive_index.dat
 
 #7
 [testopt_optics_conductivity]
 program = OPTADOS_GEN_DAT_OK
 inputs_args = ('Al4.odi', '')
-output = Al4.conductivity.dat
+output = Al4_conductivity.dat
 
 #--------------------------------------------------------------
 # O p t a D O S   C o r e l o s s    T e s t s
