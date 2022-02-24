@@ -176,7 +176,7 @@ output = Si2.jlinear.dat
 # Linear        | | |x| |x| | | 
 # Intraband     | | | | |x|x|x|
 # Loss_fn Bdng  | | |@| | | | |
-# Drude Bdng    | | | |@| | | |
+# Drude Bdng    | | | | |@| | |
 # --------------+-+-+-+-+-+-+-+
 # odo file      |x| | | | | | |
 # epsilon file  | |x| | | | | |
