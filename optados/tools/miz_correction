@@ -206,10 +206,10 @@ if __name__ == '__main__':
 for plane wave pseudopotential calculated EELS/XAS spectra from a .castep file.
 Requires castep to be on your path, and the .castep, .cell, and .param files to be
 in the current working directory. This calculation will perform a castep dryrun.
-Example usage is `./miz_correction -i NaGe -e Ge -t -6350.174255159 -exe /usr/bin/castep.mpi`
+Example usage is `./miz_correction -i NaGe -e Ge -t -6348.264726871 -exe /usr/bin/castep.mpi`
 In the NaGe-mizoguchi.out file this provides the calculated correction as
 +----------------------------------------------------------------------------+
-|  Mizoguchi correction to E_TE              :                11130.51 eV    |
+|  Mizoguchi correction to E_TE              :                 11128.60 eV    |
 +----------------------------------------------------------------------------+
 ''',formatter_class=RawTextHelpFormatter)
 
