@@ -1,30 +1,18 @@
-import sys
-import numpy
+#!/usr/bin/python3
+
+import os
+import argparse
+
 ############################################################################################
 # This module produces a .chge_trans and .adf file. The former contains a single           #
 # number per atom in the unit cell describing the static/dynamic charge (from an efield    #
 # calculation), whilst the latter contains (for every input k-point and temperature) the   #
 # atomic displacement parameters from a thermodynamics calculation.                        #
 ############################################################################################
-
-outputtype=sys.argv[1] #Type of calculation wanted (-c or -a)
-if outputtype=="-c":
-  chargetype=sys.argv[2] #Type of charge (mulliken, hirschfield or born) requested by user.
-  castepfile=sys.argv[3] #CASTEP file containing efield calculations
-  outfile = castepfile.split(".")[0]+".chge_trans"
-elif outputtype=="-a":
-  castepfile=sys.argv[2] #CASTEP file containing efield calculations
-  outfile = castepfile.split(".")[0]+".adf"
-else:
-  raise NameError("Please choose the type of calculation as -c or -a")
-
-charge_dic = {} # Dictionary for charge analysis storage to produce .chge_trans file
-adf_dic = {} #Dictionary for thermal analysis storage to produce .adf file
-
 # Fill the charge_dic dictionary containing atom names and their static/dynamic charges
-def fill_charge_dic(castep_file,charge_type): 
+def fill_charge_dic(castep_file,charge_type,outfile): 
   data=[]
-  file_in=open(castepfile)
+  file_in=open(castep_file)
   file_in=file_in.readlines()
   for line in file_in:
     line=line.rstrip("\n").split(" ")
@@ -53,7 +41,7 @@ def fill_charge_dic(castep_file,charge_type):
     except NameError:
       print("Cannot find Born effective charges, please perform the appropriate calculations (CALCULATE_BORN_CHARGES = TRUE).")
 
-    for atom_ind in numpy.arange(number_of_species): 
+    for atom_ind in range(number_of_species): 
       atom=data[Born_index+atom_ind*3][0]+data[Born_index+atom_ind*3][1]
       row1=[float(i) for i in [data[Born_index+atom_ind*3][2],data[Born_index+atom_ind*3][3],data[Born_index+atom_ind*3][4]]]
       row2=[float(i) for i in [data[Born_index+atom_ind*3+1][0],data[Born_index+atom_ind*3+1][1],data[Born_index+atom_ind*3+1][2]]]
@@ -71,7 +59,7 @@ def fill_charge_dic(castep_file,charge_type):
     except NameError:
       print("Cannot find Mulliken charges, please perform the appropriate calculations.")
 
-    for atom_ind in numpy.arange(number_of_species):
+    for atom_ind in range(number_of_species):
       atom=data[Mulliken_index+atom_ind][0]+data[Mulliken_index+atom_ind][1]
       mull = data[Mulliken_index+atom_ind][-1]
       charge_dic["{}".format(atom)]=mull
@@ -86,7 +74,7 @@ def fill_charge_dic(castep_file,charge_type):
     except NameError:
       print("Cannot find Hirshfeld charges, please perform the appropriate calculations. (CALCULATE_HIRSHFELD : TRUE)")
 
-    for atom_ind in numpy.arange(number_of_species):
+    for atom_ind in range(number_of_species):
       atom=data[Hirsh_index+atom_ind][0]+data[Hirsh_index+atom_ind][1]
       hirsh = data[Hirsh_index+atom_ind][-1]
       charge_dic["{}".format(atom)]=hirsh
@@ -102,10 +90,10 @@ def fill_charge_dic(castep_file,charge_type):
     f.write("{} {}\n".format(atom, charge_dic[atom]))
   f.close()
 
-
-def fill_adf_dic(castep_file):
+# Fill the adf_dic dictionary containing atom names and their thermal factors at all calculated temperatures
+def fill_adf_dic(castep_file,outfile):
   data=[]
-  file_in=open(castepfile)
+  file_in=open(castep_file)
   file_in=file_in.readlines()
   for line in file_in:
     line=line.rstrip("\n").split(" ")
@@ -139,14 +127,14 @@ def fill_adf_dic(castep_file):
       break
 
   temperature_list=[]
-  for Uii_line_index in numpy.arange(number_of_species):
+  for Uii_line_index in range(number_of_species):
     atom = data[adf_index+Uii_line_index][1]+data[adf_index+Uii_line_index][2]
     adf_dic["{}".format(atom)]={}
     temperature=float(data[adf_index+Uii_line_index][0])
     temperature_list.append(temperature)
     adf_dic["{}".format(atom)]["{}".format(temperature)]=data[adf_index+Uii_line_index][3:]
-  for Uii_tempblock_index in numpy.arange(1,number_of_temp_vals):
-    for Uii_atomblock_index in numpy.arange(number_of_species):
+  for Uii_tempblock_index in range(1,number_of_temp_vals):
+    for Uii_atomblock_index in range(number_of_species):
       atom = data[adf_index+Uii_tempblock_index*number_of_species+Uii_atomblock_index][1]+data[adf_index+Uii_tempblock_index*number_of_species+Uii_atomblock_index][2]
       temperature=float(data[adf_index+Uii_tempblock_index*number_of_species+Uii_atomblock_index][0])
       temperature_list.append(temperature)
@@ -155,22 +143,56 @@ def fill_adf_dic(castep_file):
   temperature_list=list(set(temperature_list))
   f=open(outfile,'w')
   f.write(" # This file contains the atomic displacement parameters or thermal factors used to calculate the debye-waller factor \n")
-  f.write(" # Each line of 6 numbers is the order of U11, U22, U33, U23 U31 U12, since the matrix is symmetry.")
+  f.write(" # Each line of 6 numbers is the order of U11, U22, U33, U23 U31 U12, since the matrix is symmetry.\n")
   f.write("Number of atoms: {} \n".format(number_of_species))
   f.write("Temperature List: ")
   for temp in temperature_list:
-    f.write(" {}".format(temp))
+    f.write("{} ".format(temp))
   f.write("\n")
   for temp in temperature_list:
     f.write("Temperature: {} \n".format(temp))
     for atom in adf_dic.keys():
-      f.write(atom + " ")
-      for Uii in numpy.arange(6):
-        f.write("{} ".format(adf_dic[atom]["{}".format(temp)][Uii]))
+      f.write("{:>5}".format(atom + " "))
+      for Uii in range(6):
+        f.write("{:>10}".format(adf_dic[atom]["{}".format(temp)][Uii]))
       f.write("\n")
   f.close()
 
-if outputtype=="-c":
-  fill_charge_dic(castepfile,chargetype)
-elif outputtype=="-a":
-  fill_adf_dic(castepfile)
+if __name__ == '__main__':
+  parser = argparse.ArgumentParser(description='Produces a .chge_trans from an efield calculation containing \
+  mulliken/born/hirshfeld charges and/or produces a .adf file from a thermodynamics calcilation containing \
+  atomic displacement parameters/thermal factors.')
+  parser.add_argument('-c', '--charge', type=str, nargs=2, help='Type of charge wanted from efield calculation. Please enter \
+  two arguments: mulliken, hirshfeld or born followed by the path to the .castep file.')
+  parser.add_argument('-a', '--adf', type=str, help='Requesting Atomic displacement factors require only the .castep file path.')
+  args = parser.parse_args()
+  charge_dic = {} # Dictionary for charge analysis storage to produce .chge_trans file
+  adf_dic = {} #Dictionary for thermal analysis storage to produce .adf file
+
+  if args.charge != None:
+    try:
+      args.charge[0] in ['born','mulliken','hirshfeld']
+    except ValueError:
+      print("Charge type {} does not exist, please choose between hirshfeld, mulliken and born.")
+    try:
+      f=open(args.charge[1],'r')
+    except FileNotFoundError:
+      print("Cannot open {}, file does not exist.".format(args.charge[1]))
+    
+    chargetype=args.charge[0]
+    castepfile_chgetrans=args.charge[1]
+    outfile_chgetrans=castepfile_chgetrans.split(".")[0]+".chge_trans"
+    fill_charge_dic(castepfile_chgetrans,chargetype,outfile_chgetrans)
+  if args.adf != None:
+    try:
+      f=open(args.adf,'r')
+    except FileNotFoundError:
+      print("Cannot open {}, file does not exist.".format(args.charge[1]))
+    
+    castepfile_adf=args.adf 
+    outfile_adf=castepfile_adf.split(".")[0]+".adf"
+    fill_adf_dic(castepfile_adf,outfile_adf)
+  if args.charge==None and args.adf == None:
+    print("No input requests, exiting.")
+
+
