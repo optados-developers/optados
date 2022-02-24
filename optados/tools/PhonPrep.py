@@ -10,6 +10,7 @@ import argparse
 # atomic displacement parameters from a thermodynamics calculation.                        #
 ############################################################################################
 # Fill the charge_dic dictionary containing atom names and their static/dynamic charges
+
 def fill_charge_dic(castep_file,charge_type,outfile): 
   data=[]
   file_in=open(castep_file)
