@@ -3,6 +3,7 @@ import os,sys
 import argparse
 import shutil
 import datetime
+from argparse import RawTextHelpFormatter
 
 
     
@@ -201,13 +202,16 @@ def write_odi_file(infile,E_TE):
 #Main script#
 #############
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='''Calculates the Mizoguchi et al. correction to the transition energy \
-            for plane wave pseudopotential calculated EELS/XAS spectra from a .castep file.\
-            Requires castep to be on your path, and the .castep, .cell, and .param files to be\
-            in the current working directory. This calculation will perform a castep dryrun.
-            Example usage is `./miz_correction.py -e S -i LiFeS-1Li-supercell-S1-xas -t -94950.57862045 -exe castep19`\
-            Which would have output 2479.154058 eV
-            ''')
+    parser = argparse.ArgumentParser(description='''Calculates the Mizoguchi et al. correction to the transition energy
+for plane wave pseudopotential calculated EELS/XAS spectra from a .castep file.
+Requires castep to be on your path, and the .castep, .cell, and .param files to be
+in the current working directory. This calculation will perform a castep dryrun.
+Example usage is `./miz_correction -i NaGe -e Ge -t -6350.174255159 -exe /usr/bin/castep.mpi`
+In the NaGe-mizoguchi.out file this provides the calculated correction as
++----------------------------------------------------------------------------+
+|  Mizoguchi correction to E_TE              :                11130.51 eV    |
++----------------------------------------------------------------------------+
+''',formatter_class=RawTextHelpFormatter)
 
 
     #Options
