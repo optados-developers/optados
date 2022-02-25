@@ -482,6 +482,13 @@ contains
 
       dos_temp = 0.0_dp; dos_temp2 = 0.0_dp
 
+      ! Have had to reallocate this in order to do the mizoguchi_correciton below
+      if (set_efermi_zero) then
+        E_shift = E - efermi
+      else
+        E_shift = E
+      end if
+
       if (nspins == 1) then
         do loop2 = 1, edge_num_am(loop)
           dos_temp(:, 1) = dos_temp(:, 1) + weighted_dos(:, 1, edge_list(loop, loop2))/real(edge_num_am(loop), dp)
@@ -514,7 +521,7 @@ contains
         end if
       end do
 
-      ! write (core_unit, *) elnes_edge !test to write out elnes_edge
+      write (core_unit, *) elnes_edge !test to write out elnes_edge
       ! Applies mizoguchi correction if added to dos
       if (mizoguchi_correction /= -1.0_dp) then
         E_shift = E + mizoguchi_correction - elnes_edge
