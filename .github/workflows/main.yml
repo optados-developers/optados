@@ -56,5 +56,5 @@ jobs:
       - name: run tests
         run: |
           cd optados/test-suite
-          ./run_tests --category=default
+          ./run_tests -v --category=default 
 
