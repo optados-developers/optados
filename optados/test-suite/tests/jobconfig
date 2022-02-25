@@ -187,9 +187,9 @@ output = Si2.jlinear.dat
 # Drude Bdng    | | | | |@| | |
 # --------------+-+-+-+-+-+-+-+
 # odo file      |x| | | | | | |
-# epsilon file  | |x| | | | | |
+# epsilon file  | |x| |x| | | |
 # loss_fn       | | |x| | | | |
-# absorption    | | | |x| | | |
+# absorption    | | | | | | | |
 # reflection    | | | | |x| | |
 # ref inx       | | | | | |x| |
 # conductiviy   | | | | | | |x|
@@ -220,7 +220,7 @@ output = Si2_loss_fn.dat
 [testopt_optics_tensor]
 program = OPTADOS_GEN_DAT_OK
 inputs_args = ('Si2.odi', '')
-output = Si2_absorption.dat
+output = Si2_epsilon.dat
 
 #5
 [testopt_optics_drude]
