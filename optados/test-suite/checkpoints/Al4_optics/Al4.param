@@ -1,0 +1,4 @@
+TASK                   : SPECTRAL
+SPECTRAL_TASK          : optics
+PDOS_CALCULATE_WEIGHTS : TRUE
+NEXTRA_BANDS           : 10

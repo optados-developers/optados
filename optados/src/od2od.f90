@@ -66,39 +66,39 @@ contains
 
     num_arg = command_argument_count()
 
-    outseedname='optados'
+    outseedname = 'optados'
     seedname = 'optados' !! set to optados until proven otherwise
-    i=1
+    i = 1
     do while (i .le. num_arg)
       call get_command_argument(i, ctemp)
       select case (trim(ctemp))
-      case ("-i","--in_file")
-        i=i+1
+      case ("-i", "--in_file")
+        i = i + 1
         call get_command_argument(i, infile)
-      case ("-o","--out_file")
-        i=i+1
+      case ("-o", "--out_file")
+        i = i + 1
         call get_command_argument(i, outfile)
-      case ("-w","--out_seedname")
-        i=i+1
+      case ("-w", "--out_seedname")
+        i = i + 1
         call get_command_argument(i, outseedname)
       case ("--") !! End of flags
-        i=i+1
+        i = i + 1
         call get_command_argument(i, seedname)
       case default
-        if(seedname=='optados') then
-          seedname=trim(ctemp)
-          i=i+1
+        if (seedname == 'optados') then
+          seedname = trim(ctemp)
+          i = i + 1
         else !! We've already set the seedname so it can't be that again!
           call print_usage
           call io_error('Wrong command line arguments, see logfile for usage')
         end if
       end select
-      i=i+1
+      i = i + 1
     end do
 
-    if(outseedname=='optados')then
-      outseedname=seedname
-    endif
+    if (outseedname == 'optados') then
+      outseedname = seedname
+    end if
 
   end subroutine conv_get_seedname
 
