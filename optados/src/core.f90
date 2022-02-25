@@ -180,7 +180,7 @@ contains
     use xmgrace_utils
 
     integer :: N
-    real(kind=dp) ::dE, min_x, min_y, max_x, max_y, range
+    real(kind=dp) ::dE, min_x, min_y, max_x, max_y, range, elnes_edge
     integer :: core_unit, orb, ierr, loop, loop2, counter, num_edge, num_sites
     character(len=20) :: temp
     character(len=40) :: temp2
@@ -204,10 +204,6 @@ contains
     else
       E_shift = E
     end if
-    ! Applies mizoguchi correction if added to dos
-    if (mizoguchi_correction /= -1.0_dp) then
-      E_shift = E + mizoguchi_correction 
-    end if
 
     if (nspins == 1) then
       allocate (dos_temp(dos_nbins, 1), stat=ierr)
@@ -227,6 +223,7 @@ contains
     if (ierr /= 0) call io_error('Error: core_write - allocation of elnes_symbol failed')
     allocate (elnes_label(num_species), stat=ierr)
     if (ierr /= 0) call io_error('Error: core_write - allocation of elnes_label failed')
+
 
     dE = E(2) - E(1)
 
@@ -506,6 +503,21 @@ contains
             dos_temp2(:, 3) = dos_temp2(:, 3) + dos_temp2(:, 1) + dos_temp2(:, 2)
           end if
         end do
+      end if
+
+      elnes_edge = -100.0_dp
+
+      do N = 1, dos_nbins !doing this because we want to find the last 0.0000 value before the start of the peak edge
+        if (dos_temp(N,1) > 0.0_dp) then
+          elnes_edge = E_shift(N)
+          exit
+        end if
+      end do
+
+      ! write (core_unit, *) elnes_edge !test to write out elnes_edge
+      ! Applies mizoguchi correction if added to dos
+      if (mizoguchi_correction /= -1.0_dp) then
+        E_shift = E + mizoguchi_correction - elnes_edge
       end if
 
       do N = 1, dos_nbins
