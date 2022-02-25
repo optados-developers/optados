@@ -22,10 +22,8 @@ BROADENING         : adaptive # Default
 
 # The broadening parameter, A, when using adaptive smearing, 
 # set by eye to be similar to the linear smearing method
-ADAPTIVE_SMEARING  : 0.4  # Default
 
 # Specify the geometry to be used in the optics calculation
-CORE_GEOM          : polycrystalline  # Default
 
 # Include life-time and instrumentaion broadening
 CORE_LAI_BROADENING : true  # Default
@@ -33,3 +31,8 @@ CORE_LAI_BROADENING : true  # Default
 # Mizoguchi Correction calculated from miz_correction script
 # located in the tools/ folder
 mizoguchi_correction : 1500
+adaptive_smearing : 0.2
+core_type : absorption
+LAI_gaussian_width : 1
+LAI_lorentzian_width : 0.5
+LAI_lorentzian_scale : 0.1
