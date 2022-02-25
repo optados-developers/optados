@@ -2,7 +2,7 @@
 SYSTEM := gfortran
 
 # fast / debug
-BUILD := fast 
+BUILD := debug 
 
 # serial / mpi
 COMMS_ARCH :=  serial
@@ -19,6 +19,9 @@ EXE_SUFFIX := .x86_64
 #-------------------------------------------
 # T H I N G S   Y O U   M I G H T  W A N T  
 # T O   F I D D L E   W I T H
+
+export PYTHON_VER := python3
+
 ifeq ($(SYSTEM), g95)
    F90_SERIAL= g95
    F90_PARALLEL= mpif90
@@ -35,7 +38,7 @@ ifeq ($(SYSTEM), gfortran)
    FFLAGS= -fconvert=big-endian -fPIC
    FFLAGS_PARALLEL=  -DMPI
    FFLAGS_FAST= -O3
-   FFLAGS_DEBUG= -O0 -pg -g 
+   FFLAGS_DEBUG= -O0  -g -fcheck=all 
    EXTENSION=.gfortran
 endif
 
