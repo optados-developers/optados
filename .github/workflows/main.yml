@@ -44,7 +44,7 @@ jobs:
       - name: build
         run:  |
           cd optados 
-          make
+          make all
       - name: run tests
         run: |
           cd optados/test-suite
