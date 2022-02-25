@@ -1,0 +1,115 @@
+ OptaDOS: Execution started on 25 Feb 2022 at 10:27:31 
+          Parallelised over    1 thread(s)
+
+ +===========================================================================+
+ |                                                                           |
+ |                OOO   PPPP  TTTTT  AA   DDD    OOO    SSS                  |
+ |               O   O  P   P   T   A  A  D  D  O   O  S                     |
+ |               O   O  PPPP    T   AAAA  D  D  O   O   SS                   |
+ |               O   O  P       T   A  A  D  D  O   O     S                  |
+ |                OOO   P       T   A  A  DDD    OOO   SSS                   |
+ |                                                                           |
+ +---------------------------------------------------------------------------+
+ |                                                                           |
+ |                 Welcome to OptaDOS version  1.3                           | 
+ |                                                                           |
+ |         Andrew J. Morris, Rebecca Nicholls, Chris J. Pickard              |
+ |                       and Jonathan R. Yates                               |
+ |                                                                           |
+ |                       Copyright (c) 2010-2022                             |
+ |                                                                           |
+ |  Please cite:                                                             |
+ |  Andrew J. Morris, Rebecca Nicholls, Chris J. Pickard and Jonathan Yates  |
+ |              Comp. Phys. Comm. 185, 5, 1477 (2014)                        |
+ |                                                                           |
+ |  Additionally when using the linear broadening:                           |
+ | C.J. Pickard and M.C. Payne, Phys. Rev. B, 59, 7, 4685 (1999)             |
+ | C.J. Pickard and M.C. Payne, Phys. Rev. B, 62, 7, 4383 (2000)             |
+ |                                                                           |
+ |  Additionally when using the adaptive broadening:                         |
+ | J.Yates, X.Wang, D.Vanderbilt and I.Souza, Phys. Rev. B, 75, 195121 (2007)|
+ |                                                                           |
+ |      in all your publications arising from your use of OptaDOS            |
+ |                                                                           |
+ +===========================================================================+
+
+ +------------------------------ JOB CONTROL ---------------------------------+
+ |  Output Density of States                  :  False                        |
+ |  Output Partial Density of States          :  False                        |
+ |  Output Projected Bandstructure            :  False                        |
+ |  Output Joint Density of States            :  False                        |
+ |  Output Optical Response                   :  False                        |
+ |  Output Core-level Spectra                 :  True                         |
+ |  iprint level                              :    1                          |
+ |  Use CASTEP < 6.0 file format              :  False                        |
+ +-------------------------------- UNITS -------------------------------------+
+ |  Length Unit                               :   Ang                         |
+ +--------------------------SPECTRAL PARAMETERS ------------------------------+
+ |  Adaptive Width Smearing                   :  True                         |
+ |  Adaptive Smearing ratio                   :    0.40000                    |
+ |  Smearing Width                            :    0.00000                    |
+ |  Finite Bin Correction                     :  True                         |
+ |  Shift energy scale so fermi_energy=0      :  False                        |
+ |  Fermi energy                              : -990.00000                    |
+ |  Compute the band energy                   :  True                         |
+ |  Compute the band gap                      :  True                         |
+ +--------------------------------- CORE -------------------------------------+
+ |  Geometry for Core Calculation             :  Polycrystalline              |
+ |  Absorption or Emission Spectrum           :  Absorption                   |
+ |  Include lifetime and Instrument Broadening:  False                        |
+ +----------------------------------------------------------------------------+
+  
+  
+ +----------------------------------------------------------------------------+
+ |             Species                  Sites                  Total Atoms    |
+ +----------------------------------------------------------------------------+
+ |                Si                   1 to   1                   1           |
+ |                Si                   2 to   2                   1           |
+ +----------------------------------------------------------------------------+
+  
+                              Lattice Vectors (Ang)
+                    a_1     2.730000   2.730000   0.000000
+                    a_2     2.730000   0.000000   2.730000
+                    a_3     0.000000   2.730000   2.730000
+
+                        Reciprocal-Space Vectors (Ang^-1)
+                    b_1    -1.150767  -1.150767   1.150767
+                    b_2    -1.150767   1.150767  -1.150767
+                    b_3     1.150767  -1.150767  -1.150767
+
+                   Unit Cell Volume:      40.69283  (Ang^3)
+
+
+ +----------------------- Electronic Data ------------------------------------+
+ |  Number of Bands                           :            41                 |
+ |  Grid size                                 :        6 x  6 x  6            |
+ |  Number of K-points                        :            28                 |
+ |  Spin-Polarised Calculation                :           False               |
+ |  Number of electrons                       :             8.00              |
+ +----------------------------------------------------------------------------+
+
+ +============================================================================+
+ +                            Core Loss Calculation                           +
+ +============================================================================+
+ |                                                                            |
+ +--------------------------- Setting Fermi Energy  --------------------------+
+ +----------------------------- Fermi Energy Analysis ------------------------+
+ | From Adaptive broadening                                                   |
+ |   Spin Component : 1 occupation between    7.99965 and    8.00012   <- Occ |
+ |         Fermi energy (Adaptive broadening) :   4.4046 eV            <- EfA |
+ +----------------------------------------------------------------------------+
+ |                      Fermi energy from DOS :   4.4046 eV            <- EfD |
+ +----------------------------------------------------------------------------+
+
+ +----------------------------- Fermi Energy Analysis ------------------------+
+ | From Adaptive broadening                                                   |
+ |   Spin Component : 1 occupation between    7.99963 and    8.00010   <- Occ |
+ |         Fermi energy (Adaptive broadening) :   4.4037 eV            <- EfA |
+ +----------------------------------------------------------------------------+
+ |                                                                            |
+ + Time to calculate Core Level Spectra                           1.629 (sec) +
+ +============================================================================+
+  
+  
+
+ OptaDOS: Execution complete on 25 Feb 2022 at 10:27:32 
