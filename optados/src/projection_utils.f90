@@ -217,9 +217,6 @@ contains
             end if
             num_proj = num_proj + species_proj
             species_count = species_count + 1
-            write (stdout, *) "species_proj: ", species_proj
-            write (stdout, *) "species_count: ", species_count
-            write (stdout, *) "num_proj: ", num_proj
             if (pos == 0 .or. pos > len(trim(ctemp2))) exit ! There's nothing left to read
             ctemp2 = ctemp2(pos + 1:)
          end do
@@ -280,8 +277,8 @@ contains
             do loop3 = 1, max_am
                do loop2 = 1, maxval(atoms_species_num)
                   do loop = 1, num_species
-                     write (stdout, '(i4,6x,a10,6x,i4,6x,i4,8x,1a,8x,i4)') loop4, atoms_label(loop), loop, loop2, &
-                     & channel_to_am(loop3), projection_array(loop, loop2, loop3, loop4)
+                     write (stdout, '(x,a1,i4,6x,a10,4x,i4,6x,i4,8x,1a,8x,i4,15x,a1)') "|", loop4, atoms_label(loop), loop, loop2, &
+                     & channel_to_am(loop3), projection_array(loop, loop2, loop3, loop4), "|"
                   end do
                end do
             end do
@@ -644,7 +641,7 @@ contains
       !! and placed in c_am
       counter = 0
       dummy = adjustl(c_am)
-      write (stdout, '(3x,a1,a30,x,a50,19x,a1)') "|", " Ang. mom. channels found :", trim(dummy), "|"
+      if (iprint>2) write (stdout, '(3x,a1,a30,x,a20,19x,a1)') "|", " Ang. mom. channels found :", trim(dummy), "|"
       if (len_trim(dummy) > 0) then
          do
             pos3 = index(dummy, ',')
