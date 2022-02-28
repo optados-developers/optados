@@ -221,7 +221,6 @@ if __name__ == '__main__':
     fill_adf_dic(castepfile_adf,outfile_adf,args.temperature)
 
   if args.charge==None and args.adf == None:
-    # raise ValueError("No input requests, exiting. Please run PhonPrep.py -h for help and options.")
-    print("No input requests, exiting. Please run python PhonPrep.py -h for help and options.")
+    parser.error("No input requests, exiting.")
 
 
