@@ -1,5 +1,5 @@
 """
-Parser function parse() to parse the .wout output file of Wannier90.
+Parser function parse() to parse general columnar data optput files of OptaDOS and od2od
 """
 from __future__ import print_function
 
