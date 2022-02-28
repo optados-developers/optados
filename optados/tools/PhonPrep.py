@@ -2,13 +2,20 @@
 
 import os
 import argparse
-
+import sys
+sys.tracebacklimit = 0
 ############################################################################################
 # This module produces a .chge_trans and .adf file. The former contains a single           #
 # number per atom in the unit cell describing the static/dynamic charge (from an efield    #
 # calculation), whilst the latter contains (for every input k-point and temperature) the   #
 # atomic displacement parameters from a thermodynamics calculation.                        #
 ############################################################################################
+class MyParser(argparse.ArgumentParser):
+    def error(self, message):
+        sys.stderr.write('error: %s\n' % message)
+        self.print_help()
+        sys.exit(2)
+
 # Fill the charge_dic dictionary containing atom names and their static/dynamic charges
 
 def fill_charge_dic(castep_file,charge_type,outfile): 
@@ -81,18 +88,18 @@ def fill_charge_dic(castep_file,charge_type,outfile):
       charge_dic["{}".format(atom)]=hirsh
 
   else:
-    raise NameError("Please enter a valid type of charge input (mulliken, hirshfeld or born")
+    raise NameError("Please enter a valid type of charge input (mulliken, hirshfeld or born).")
 
   f=open(outfile,'w')
-  f.write("# This file contains the atomic charge analysis (mulliken, hirshfeld or born). The born charge is 1/3*Trance(Born matrix).\n")
+  f.write("# This file contains the atomic charge analysis (mulliken, hirshfeld or born). The born charge is 1/3*Trace(Born matrix).\n")
   f.write("Number of atoms: {}\n".format(number_of_species))
   f.write("Type of charge: {}\n".format(charge_type))
   for atom in charge_dic.keys():
-    f.write("{} {}\n".format(atom, charge_dic[atom]))
+    f.write("{:>5} {:>10}\n".format(atom, charge_dic[atom]))
   f.close()
 
 # Fill the adf_dic dictionary containing atom names and their thermal factors at all calculated temperatures
-def fill_adf_dic(castep_file,outfile):
+def fill_adf_dic(castep_file,outfile,temperature_val):
   data=[]
   file_in=open(castep_file)
   file_in=file_in.readlines()
@@ -142,33 +149,52 @@ def fill_adf_dic(castep_file,outfile):
       adf_dic["{}".format(atom)]["{}".format(temperature)]=data[adf_index+Uii_tempblock_index*number_of_species+Uii_atomblock_index][3:]
 
   temperature_list=list(set(temperature_list))
-  f=open(outfile,'w')
-  f.write(" # This file contains the atomic displacement parameters or thermal factors used to calculate the debye-waller factor \n")
-  f.write(" # Each line of 6 numbers is the order of U11, U22, U33, U23 U31 U12, since the matrix is symmetry.\n")
-  f.write("Number of atoms: {} \n".format(number_of_species))
-  f.write("Temperature List: ")
-  for temp in temperature_list:
-    f.write("{} ".format(temp))
-  f.write("\n")
-  for temp in temperature_list:
-    f.write("Temperature: {} \n".format(temp))
+  
+  if len(temperature_list)>1 and args.temperature==None:
+    raise ValueError("The input thermodynamics file contains {} temperature values ({}), please choose a specific one with the -t option.".format(len(temperature_list),temperature_list))
+  elif len(temperature_list)==1 and args.temperature==None:
+    f=open(outfile,'w')
+    f.write(" # This file contains the atomic displacement parameters or thermal factors used to calculate the debye-waller factor \n")
+    f.write(" # Each line contains 6 numbers in the order of U11, U22, U33, U23 U31 U12 (since the matrix is symmetric).\n")
+    f.write("Number of atoms: {} \n".format(number_of_species))
+    f.write("Temperature: {}\n".format(temperature_list[0]))
     for atom in adf_dic.keys():
       f.write("{:>5}".format(atom + " "))
       for Uii in range(6):
-        f.write("{:>10}".format(adf_dic[atom]["{}".format(temp)][Uii]))
+        f.write("{:>10}".format(adf_dic[atom]["{}".format(temperature_list[0])][Uii]))
       f.write("\n")
-  f.close()
+    f.close()
+  else:
+    if float(args.temperature) in temperature_list:
+      f=open(outfile,'w')
+      f.write(" # This file contains the atomic displacement parameters or thermal factors used to calculate the debye-waller factor \n")
+      f.write(" # Each line of 6 numbers is the order of U11, U22, U33, U23 U31 U12, since the matrix is symmetry.\n")
+      f.write("Number of atoms: {} \n".format(number_of_species))
+      f.write("Temperature: {}\n".format(float(args.temperature)))
+      for atom in adf_dic.keys():
+        f.write("{:>5}".format(atom + " "))
+        for Uii in range(6):
+          f.write("{:>10}".format(adf_dic[atom]["{}".format(float(args.temperature))][Uii]))
+        f.write("\n")
+      f.close()
+    else:
+      raise ValueError("Temperature specified does not exist in thermodynamics calculation.")
 
 if __name__ == '__main__':
-  parser = argparse.ArgumentParser(description='Produces a .chge_trans from an efield calculation containing \
+  # parser = argparse.ArgumentParser(description='This script can produce a .chge_trans from an efield calculation containing \
+  # mulliken/born/hirshfeld charges and/or a .adf file from a thermodynamics calcilation containing \
+  # atomic displacement parameters/thermal factors.')
+  parser = MyParser(description="Produces a .chge_trans from an efield calculation containing \
   mulliken/born/hirshfeld charges and/or produces a .adf file from a thermodynamics calcilation containing \
-  atomic displacement parameters/thermal factors.')
+  atomic displacement parameters/thermal factors.")
   parser.add_argument('-c', '--charge', type=str, nargs=2, help='Type of charge wanted from efield calculation. Please enter \
   two arguments: mulliken, hirshfeld or born followed by the path to the .castep file.')
   parser.add_argument('-a', '--adf', type=str, help='Requesting Atomic displacement factors require only the .castep file path.')
+  parser.add_argument('-t', '--temperature', type=float, help='The temperature at which thermodynamics calculations are performed. Please select one if multiple temeratures are considered.')
   args = parser.parse_args()
   charge_dic = {} # Dictionary for charge analysis storage to produce .chge_trans file
   adf_dic = {} #Dictionary for thermal analysis storage to produce .adf file
+
 
   if args.charge != None:
     try:
@@ -192,8 +218,10 @@ if __name__ == '__main__':
     
     castepfile_adf=args.adf 
     outfile_adf=castepfile_adf.split(".")[0]+".adf"
-    fill_adf_dic(castepfile_adf,outfile_adf)
+    fill_adf_dic(castepfile_adf,outfile_adf,args.temperature)
+
   if args.charge==None and args.adf == None:
-    print("No input requests, exiting.")
+    # raise ValueError("No input requests, exiting. Please run PhonPrep.py -h for help and options.")
+    print("No input requests, exiting. Please run python PhonPrep.py -h for help and options.")
 
 
