@@ -1,5 +1,5 @@
 # one of gfortran, g95, ifort, pfg90
-SYSTEM := gfortran
+SYSTEM := ifort
 
 # fast / debug
 BUILD := fast 
@@ -88,6 +88,26 @@ ifeq ($(SYSTEM), sun)
    FFLAGS= 
    FFLAGS_PARALLEL= -DMPI
    FFLAGS_FAST= 
+   FFLAGS_DEBUG= -O0 -C -pg -g
+   EXTENSION=.sunf95
+endif
+
+ifeq ($(SYSTEM), oneAPI)
+   F90_SERIAL= ifx
+   F90_PARALLEL= mpifx
+   FFLAGS=
+   FFLAGS_PARALLEL= -DMPI
+   FFLAGS_FAST=
+   FFLAGS_DEBUG= -O0 -C -pg -g
+   EXTENSION=.sunf95
+endif
+
+ifeq ($(SYSTEM), AOCC)
+   F90_SERIAL= flang-amd
+   F90_PARALLEL= mpflang-amd
+   FFLAGS=
+   FFLAGS_PARALLEL= -DMPI
+   FFLAGS_FAST=
    FFLAGS_DEBUG= -O0 -C -pg -g
    EXTENSION=.sunf95
 endif
