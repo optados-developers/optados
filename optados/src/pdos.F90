@@ -167,7 +167,7 @@ contains
       E_shift = E
     end if
 
-    write (string, '(I4,"(x,es14.7)")') (stop_proj - start_proj) + 1
+    write (string, '(I4,"(1x,es14.7)")') (stop_proj - start_proj) + 1
 
     pdos_file = io_file_unit()
     open (unit=pdos_file, file=trim(name), iostat=ierr)

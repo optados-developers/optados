@@ -265,6 +265,7 @@ output = Al4_refractive_index.dat
 program = OPTADOS_GEN_DAT_OK
 inputs_args = ('Al4.odi', '')
 output = Al4_conductivity.dat
+tolerance = ( (1.0e-5, 1.0e-5, 'l10_c2'), (1.0e-5, 1.0e-5, 'l20_c2'), (1.0e-5, 1.0e-5, 'l30_c2'), (1.0e-5, 1.0e-5, 'l40_c2'), (1.0e-5, 1.0e-5, 'l50_c2'), (1.0e-5, 1.0e-5, 'l60_c2'), (1.0e-5, 1.0e-5, 'l70_c2') )
 
 #--------------------------------------------------------------
 # O p t a D O S   C o r e l o s s    T e s t s
