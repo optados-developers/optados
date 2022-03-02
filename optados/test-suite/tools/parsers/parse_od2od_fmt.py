@@ -19,11 +19,16 @@ def parse(fname):
         print("[{}.{}] Parsing file '{}'".format(
             __name__, inspect.currentframe().f_code.co_name, fname))
 
+    count = len(open(fname).readlines(  ))
+
+    modulo_line = count//10
+
     line_counter=0
     with open(fname) as f:
+
         for line in f:
             # Let's only grab every 10 lines, no point going overboard
-            if (line_counter % 10) == 0:
+            if (line_counter % modulo_line) == 0:
                 elements = line.split()
                 # If there's only one element it's probably a header so lets ignore it.
                 if len(elements)>1:
@@ -40,8 +45,6 @@ def parse(fname):
                     except:
                         pass
             line_counter=line_counter+1
-            if line_counter==71:
-                break # If we've found 3, that's enough
 
     ###############################################################
 
