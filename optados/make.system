@@ -47,8 +47,8 @@ ifeq ($(SYSTEM), nag)
    F90_PARALLEL= mpif90
    FFLAGS= -DNAG 
    FFLAGS_PARALLEL=
-   FFLAGS_FAST= -O3 -Oassumed -w=all
-   FFLAGS_DEBUG= -Ddebug -g -O0 -C=all -gline -w=all 
+   FFLAGS_FAST= -O3 -Oassumed -w=all  -ieee=full 
+   FFLAGS_DEBUG= -Ddebug -g -O0 -pg -C=all -gline -w=all  -ieee=full  
    EXTENSION=.nag
 endif
 

@@ -128,7 +128,7 @@ contains
       allocate (optical_mat(nbands, nbands, 3, nkpoints, nspins))
     end if
 
-    open (unit=ome_unit, form='formatted', file=trim(seedname)//".ome_fmt")
+    open (unit=ome_unit, form='formatted',recl=1073741824,file=trim(seedname)//".ome_fmt")
 
     ! Total number of elements of ome
     write (string, '(I0,"(1x,",a,")")') 3*nbands*nbands, trim(format_precision)
@@ -178,7 +178,7 @@ contains
 
     open (unit=ome_unit, form='formatted', file=trim(outseedname)//".ome_fmt")
 
-    write (string, '(I0,"(x,",a,")")') 3*nbands*nbands, trim(format_precision)
+    write (string, '(I0,"(1x,",a,")")') 3*nbands*nbands, trim(format_precision)
     !   write(stdout,*) string
 
     write (stdout, '(a80)') omefile_header
@@ -313,7 +313,7 @@ contains
 
     open (unit=dome_unit, form='formatted', file=trim(outseedname)//".dome_fmt")
 
-    write (string, '(I0,"(x,",a,")")') 3*nbands, trim(format_precision)
+    write (string, '(I0,"(1x,",a,")")') 3*nbands, trim(format_precision)
 
     write (dome_unit, '('//trim(format_precision)//')') file_version
     write (dome_unit, '(a80)') adjustl(domefile_header)
@@ -418,9 +418,9 @@ contains
     !allocate(pdos_orbital%am_channel(pdos_mwab%norbitals),stat=ierr)
     !if(ierr/=0) call io_error(" Error : cannot allocate pdos_orbital")
 
-    write (string, '(i7,"(x,",a,")")') pdos_mwab%norbitals, "i5"
+    write (string, '(i7,"(1x,",a,")")') pdos_mwab%norbitals, "i5"
 
-    write (string2, '(i7,"(x,",a,")")') pdos_mwab%norbitals, trim(format_precision)
+    write (string2, '(i7,"(1x,",a,")")') pdos_mwab%norbitals, trim(format_precision)
 
     write (pdos_in_unit, '(a60)') " Species number for each orbital"
     write (pdos_in_unit, '('//trim(string)//')') pdos_orbital%species_no(1:pdos_mwab%norbitals)
@@ -809,8 +809,8 @@ contains
     write (elnes_unit) elnes_mwab%nkpoints
     write (elnes_unit) elnes_mwab%nspins
 
-    ! write(string,'(i7,"(x,",a,")")') elnes_mwab%norbitals,"i5"
-    ! write(string2,'(i7,"(x,",a,")")') elnes_mwab%norbitals*elnes_mwab%nbands*3, trim(format_precision)
+    ! write(string,'(i7,"(1x,",a,")")') elnes_mwab%norbitals,"i5"
+    ! write(string2,'(i7,"(1x,",a,")")') elnes_mwab%norbitals*elnes_mwab%nbands*3, trim(format_precision)
 
     write (elnes_unit) elnes_orbital%species_no(1:elnes_mwab%norbitals)
     write (elnes_unit) elnes_orbital%rank_in_species(1:elnes_mwab%norbitals)
