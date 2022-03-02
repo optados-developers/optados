@@ -59,6 +59,7 @@ module od_parameters
   logical, public, save :: compare_jdos
   logical, public, save :: optics
   logical, public, save :: core
+  logical, public, save :: phonon_eels
 
   !Broadening parameters
   logical, public, save :: fixed
@@ -117,6 +118,10 @@ module od_parameters
   real(kind=dp), public, save :: LAI_lorentzian_offset
   logical, public, save :: LAI_lorentzian
 
+  !! Phonon EELS parameters
+  character(len=maxlen), public, save :: phonon_eels_task
+  character(len=maxlen), public, save :: phonon_eels_aloof_method
+
   real(kind=dp), public, save :: lenconfac
 
   private
@@ -167,7 +172,7 @@ contains
       call io_error('Error: value of energy_unit not recognised in param_read')
 
     dos = .false.; pdos = .false.; pdis = .false.; jdos = .false.; optics = .false.
-    core = .false.; compare_dos = .false.; compare_jdos = .false.
+    core = .false.; compare_dos = .false.; compare_jdos = .false.; phonon_eels = .false.
     call param_get_vector_length('task', found, i_temp)
     if (found .and. i_temp > 0) then
       allocate (task_string(i_temp), stat=ierr)
@@ -190,6 +195,8 @@ contains
           dos = .true.; compare_dos = .true.
         elseif (index(task_string(loop), 'dos') > 0) then
           dos = .true.
+        elseif (index(task_string(loop), 'phonon_eels') > 0) then
+          phonon_eels = .true.
         elseif (index(task_string(loop), 'none') > 0) then
           dos = .false.; pdos = .false.; jdos = .false.; optics = .false.; core = .false.
         elseif (index(task_string(loop), 'all') > 0) then
@@ -308,6 +315,12 @@ contains
     if (pdis) call param_get_keyword('pdispersion', found, c_value=projectors_string)
     if (pdis .and. (len_trim(projectors_string) == 0)) &
          & call io_error('pdispersion requested but pdispersion keyword is not specified')
+
+    phonon_eels_task = ''
+    if (phonon_eels) call param_get_keyword('phonon_eels_task', found, c_value=phonon_eels_task)
+
+    phonon_eels_aloof_method = ''
+    if (phonon_eels) call param_get_keyword('phonon_eels_aloof_method', found, c_value=phonon_eels_aloof_method)
 
     jdos_max_energy = -1.0_dp !! change
     call param_get_keyword('jdos_max_energy', found, r_value=jdos_max_energy)

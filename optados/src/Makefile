@@ -28,7 +28,7 @@ endif
 EXTENSION:=.x
 
 # Put object names here
-OBJS=build.o algorithms.o cell.o comms.o constants.o core.o dos.o dos_utils.o electronic.o io.o jdos.o jdos_utils.o optics.o parameters.o pdos.o pdis.o projection_utils.o xmgrace_utils.o
+OBJS=build.o algorithms.o cell.o comms.o constants.o core.o dos.o dos_utils.o electronic.o io.o jdos.o jdos_utils.o optics.o phonon_eels.o parameters.o pdos.o pdis.o projection_utils.o xmgrace_utils.o
 
 all : optados tools
 
@@ -77,6 +77,9 @@ optics.o : optics.f90 constants.o io.o electronic.o jdos_utils.o cell.o paramete
 	$(F90) -c $(FFLAGS) $<
 
 parameters.o : parameters.f90  cell.o constants.o io.o comms.o ../make.system
+	$(F90) -c $(FFLAGS) $<
+
+phonon_eels.o : phonon_eels.f90 comms.o  electronic.o parameters.o   io.o ../make.system
 	$(F90) -c $(FFLAGS) $<
 
 pdos.o : pdos.F90 projection_utils.o cell.o comms.o constants.o io.o dos.o electronic.o ../make.system
