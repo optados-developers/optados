@@ -121,6 +121,7 @@ module od_parameters
   !! Phonon EELS parameters
   character(len=maxlen), public, save :: phonon_eels_task
   character(len=maxlen), public, save :: phonon_eels_aloof_method
+  character(len=maxlen), public, save :: thermal_noise
 
   real(kind=dp), public, save :: lenconfac
 
@@ -321,6 +322,9 @@ contains
 
     phonon_eels_aloof_method = ''
     if (phonon_eels) call param_get_keyword('phonon_eels_aloof_method', found, c_value=phonon_eels_aloof_method)
+
+    thermal_noise = ''
+    if (phonon_eels) call param_get_keyword('thermal_noise', found, c_value=thermal_noise)
 
     jdos_max_energy = -1.0_dp !! change
     call param_get_keyword('jdos_max_energy', found, r_value=jdos_max_energy)

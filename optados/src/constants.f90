@@ -61,4 +61,6 @@ module od_constants
        & 'Ac', 'Th', 'Pa', 'U ', 'Np', 'Pu', 'Am', 'Cm', 'Bk', 'Cf', 'Es', 'Fm', 'Md', 'No', 'Lr', &
        & 'Rf', 'Db', 'Sg', 'Bh', 'Hs', 'Mt'/)
 
+  real(kind=dp), parameter, dimension(109), public :: preset_debye_waller = 0.0_dp
+
 end module od_constants
