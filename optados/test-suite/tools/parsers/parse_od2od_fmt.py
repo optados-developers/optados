@@ -35,13 +35,23 @@ def parse(fname):
                     try:
                         # Maybe the header isn't a float if so, let's ignore it, and pick
                         # it up again when we're out of the header
-                        retdict["l"+str(line_counter)+"_c2"].append(float(elements[1]))
+                        retdict["col2"].append(float(elements[1]))
                     except:
                         pass
                 # Let's try another column too, if it's there.
+                if len(elements)>2:
+                    try:
+                        retdict["col3"].append(float(elements[2]))
+                    except:
+                        pass
+                if len(elements)>3:
+                    try:
+                        retdict["col4"].append(float(elements[3]))
+                    except:
+                        pass
                 if len(elements)>4:
                     try:
-                        retdict["l"+str(line_counter)+"_c5"].append(float(elements[4]))
+                        retdict["col5"].append(float(elements[3]))
                     except:
                         pass
             line_counter=line_counter+1
