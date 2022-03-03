@@ -19,29 +19,42 @@ def parse(fname):
         print("[{}.{}] Parsing file '{}'".format(
             __name__, inspect.currentframe().f_code.co_name, fname))
 
+    count = len(open(fname).readlines(  ))
+
+    modulo_line = count//10
+
     line_counter=0
     with open(fname) as f:
+
         for line in f:
             # Let's only grab every 10 lines, no point going overboard
-            if (line_counter % 10) == 0:
+            if (line_counter % modulo_line) == 0:
                 elements = line.split()
                 # If there's only one element it's probably a header so lets ignore it.
                 if len(elements)>1:
                     try:
                         # Maybe the header isn't a float if so, let's ignore it, and pick
                         # it up again when we're out of the header
-                        retdict["l"+str(line_counter)+"_c2"].append(float(elements[1]))
+                        retdict["col2"].append(float(elements[1]))
                     except:
                         pass
                 # Let's try another column too, if it's there.
+                if len(elements)>2:
+                    try:
+                        retdict["col3"].append(float(elements[2]))
+                    except:
+                        pass
+                if len(elements)>3:
+                    try:
+                        retdict["col4"].append(float(elements[3]))
+                    except:
+                        pass
                 if len(elements)>4:
                     try:
-                        retdict["l"+str(line_counter)+"_c5"].append(float(elements[4]))
+                        retdict["col5"].append(float(elements[3]))
                     except:
                         pass
             line_counter=line_counter+1
-            if line_counter==71:
-                break # If we've found 3, that's enough
 
     ###############################################################
 
