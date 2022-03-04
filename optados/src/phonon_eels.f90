@@ -49,6 +49,13 @@ module od_phonon_eels
 
   real(kind=dp), allocatable, save  :: adf(:, :)
   real(kind=dp), allocatable, save  :: debye_waller(:)
+  complex(kind=dp), allocatable, save  :: phonon_eigenvectors(:, :, :, :) ! iqpoint, ieigenvalues, iatom, i=1,3)
+  real(kind=dp), allocatable, save  :: phonon_eigenvalues(:, :)
+
+  real(kind=dp), save  :: phonon_lattice(1:3, 1:3) ! Maybe this is worth keeping
+  integer :: num_ions ! found in phonon file
+  integer :: num_eigenvalues
+  integer :: num_qpoints
 
 contains
 
@@ -76,8 +83,8 @@ contains
     call phonon_eels_read_task
 
     if (impact_scattering) then
-      call phonon_eels_get_thermal_noise()
-      call elec_read_band_energy()
+      !  call phonon_eels_get_thermal_noise()
+      !    call elec_read_band_energy()
       call phonon_eels_read_phonon_file()
       !    call elec_read_optical_mat()
       call phonon_eels_read_chge_trans()
@@ -216,10 +223,92 @@ contains
   endsubroutine phonon_eels_read_debwall
 
   subroutine phonon_eels_read_phonon_file
-    use od_io, only: stdout
+    use od_io, only: stdout, maxlen, io_file_unit, io_error
+    use od_io, only: seedname
+    use od_parameters, only: iprint
     implicit none
-    write (stdout, *) "Read phonon_eels_read_phonon_file()"
-  endsubroutine phonon_eels_read_phonon_file
+
+    integer :: phonon_in_unit, ierr, i, iatom, iqpoint, ieigenvalue
+    integer :: iqpoint_dummy, idummy
+    character(maxlen) :: dummy
+
+    real(dp), allocatable :: atomic_positions(:, :) ! one day this ought to go in the right module.
+    character(len=maxlen), allocatable :: atom_name(:)
+    real(dp), allocatable :: qpoint_positions(:, :)
+    real(dp), allocatable :: qpoint_weights(:)
+    real(dp) :: rdummy(1:6)
+
+    if (iprint > 2) write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
+
+    if (allocated(phonon_eigenvectors)) return
+
+    phonon_in_unit = io_file_unit()
+
+    open (unit=phonon_in_unit, file=trim(seedname)//".phonon", form='formatted', iostat=ierr)
+    if (ierr .ne. 0) call io_error(" ERROR: Cannot open .phonon file in phonon_eels_read_phonon_file")
+
+    read (phonon_in_unit, *) dummy ! BEGIN header
+    read (phonon_in_unit, *) dummy, dummy, dummy, num_ions
+    read (phonon_in_unit, *) dummy, dummy, dummy, num_eigenvalues
+    read (phonon_in_unit, *) dummy, dummy, dummy, num_qpoints
+    read (phonon_in_unit, '(a)') dummy ! Frequency Units
+    read (phonon_in_unit, '(a)') dummy ! IR units
+    read (phonon_in_unit, '(a)') dummy ! Raman Units
+    read (phonon_in_unit, '(a)') dummy ! Unit Cell Vs
+    read (phonon_in_unit, *) (phonon_lattice(1, i), i=1, 3) ! Is this the correct way round?
+    read (phonon_in_unit, *) (phonon_lattice(2, i), i=1, 3)
+    read (phonon_in_unit, *) (phonon_lattice(3, i), i=1, 3)
+    read (phonon_in_unit, '(a)') dummy ! Fractional Coodinates
+
+    if (iprint > 2) then
+      write (stdout, '(1x,a1,a26,1x,i5,10x,a1)') "|", " Number of Ions: ", num_ions, "|"
+      write (stdout, '(1x,a1,a26,1x,i5,10x,a1)') "|", " Number of eigenvalues: ", num_eigenvalues, "|"
+      write (stdout, '(1x,a1,a26,1x,i5,10x,a1)') "|", " Number of q-points:", num_qpoints, "|"
+    endif
+
+    allocate (atomic_positions(num_ions, 1:3), stat=ierr)
+    if (ierr /= 0) call io_error(" Error : cannot allocate atomic_positions")
+    allocate (atom_name(num_ions), stat=ierr)
+    if (ierr /= 0) call io_error(" Error : cannot allocate atom_name")
+    allocate (phonon_eigenvectors(num_qpoints, num_eigenvalues, num_ions, 1:3), stat=ierr)
+    if (ierr /= 0) call io_error(" Error : cannot allocate phonon_eigenvectors")
+    allocate (phonon_eigenvalues(num_qpoints, num_eigenvalues), stat=ierr)
+    if (ierr /= 0) call io_error(" Error : cannot allocate num_qpoints")
+    allocate (qpoint_positions(num_qpoints, 3), stat=ierr)
+    if (ierr /= 0) call io_error(" Error : cannot allocate qpoint_positions")
+    allocate (qpoint_weights(num_qpoints), stat=ierr)
+    if (ierr /= 0) call io_error(" Error : cannot allocate qpoint_weights")
+
+    do iatom = 1, num_ions
+      read (phonon_in_unit, *) dummy, (atomic_positions(iatom, i), i=1, 3), atom_name(iatom), dummy
+    enddo
+    read (phonon_in_unit, '(a)') dummy ! END header
+
+    do iqpoint = 1, num_qpoints ! Loop over k
+      read (phonon_in_unit, *) dummy, iqpoint_dummy, (qpoint_positions(iqpoint, i), i=1, 3), qpoint_weights(iqpoint)
+      if (iqpoint_dummy .ne. iqpoint) call io_error(" ERROR: Error reading q-pt in phonon_eels_read_phonon_file")
+      do ieigenvalue = 1, num_eigenvalues
+        read (phonon_in_unit, *) dummy, phonon_eigenvalues(iqpoint, ieigenvalue)
+      enddo
+      read (phonon_in_unit, '(a)') dummy ! Phonon Eigenvectors
+      read (phonon_in_unit, '(a)') dummy ! Mode, Ion, X, Y, Z
+
+      ! loop over q
+      do ieigenvalue = 1, num_eigenvalues
+        do iatom = 1, num_ions
+          ! Want to do this, but the file is not written in Fortran formatted complex numbers
+          !read(phonon_in_unit,*) idummy, idummy, (phonon_eigenvectors(iqpoint, ieigenvalue, iatom, i), i=1,3)
+          read (phonon_in_unit, *) idummy, idummy, rdummy(1:6)
+          phonon_eigenvectors(iqpoint, ieigenvalue, iatom, 1) = complex(rdummy(1), rdummy(2))
+          phonon_eigenvectors(iqpoint, ieigenvalue, iatom, 2) = complex(rdummy(3), rdummy(4))
+          phonon_eigenvectors(iqpoint, ieigenvalue, iatom, 3) = complex(rdummy(5), rdummy(6))
+        enddo
+      enddo
+    enddo
+
+    close (phonon_in_unit)
+
+  end subroutine phonon_eels_read_phonon_file
 
   subroutine phonon_eels_read_chge_trans
     use od_io, only: stdout
