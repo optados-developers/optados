@@ -277,7 +277,7 @@ contains
             do loop3 = 1, max_am
                do loop2 = 1, maxval(atoms_species_num)
                   do loop = 1, num_species
-                     write (stdout, '(x,a1,i4,6x,a10,4x,i4,6x,i4,8x,1a,8x,i4,15x,a1)') "|", loop4, atoms_label(loop), loop, loop2, &
+                     write (stdout, '(1x,a1,i4,6x,a10,4x,i4,6x,i4,8x,1a,8x,i4,15x,a1)') "|", loop4, atoms_label(loop), loop, loop2, &
                      & channel_to_am(loop3), projection_array(loop, loop2, loop3, loop4), "|"
                   end do
                end do
@@ -310,7 +310,7 @@ contains
          write (stdout, *) "+-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*+"
          write (stdout, *) "|                 projection_untils :>  projection_find_atom               |"
          write (stdout, *) "+--------------------------------------------------------------------------+"
-         write (stdout, '(x,a1,a30,x,a20,23x,a1)') "|", "  String in :", trim(cstring_in), '|'
+         write (stdout, '(1x,a1,a30,1x,a20,23x,a1)') "|", "  String in :", trim(cstring_in), '|'
       end if
 
       if (len(trim(cstring_in)) == 0) call io_error('projection_find_atom: Zero lenght string input. This is a BUG!')
@@ -324,7 +324,7 @@ contains
       ! atom
       if ((atomsep_position == 0) .and. (delimiter_position == 0)) then
          ! There's one atom and no delimiting
-         if (iprint > 2) write (stdout, '(x,a1,a30,44x,a1)') "|", " one atom, no delimiter.", "|"
+         if (iprint > 2) write (stdout, '(1x,a1,a30,44x,a1)') "|", " one atom, no delimiter.", "|"
          catom_out = cstring_in
       elseif (delimiter_position .ne. 0) then
          ! Look for the second delimiter
@@ -341,8 +341,8 @@ contains
             catom_out = cstring_in(:atomsep_position - 1)
          end if
          atom_label = .true.
-         if (iprint > 2) write (stdout, '(x,a1,a30,x,i20,23x,a1)') "|", " atom seperator position :", atomsep_position, "|"
-         if (iprint > 2) write (stdout, '(x,a1,a30,x,i10,x,i10,22x,a1)') "|", "  delimiters at position :",&
+         if (iprint > 2) write (stdout, '(1x,a1,a30,1x,i20,23x,a1)') "|", " atom seperator position :", atomsep_position, "|"
+         if (iprint > 2) write (stdout, '(1x,a1,a30,1x,i10,1x,i10,22x,a1)') "|", "  delimiters at position :",&
          & delimiter_position, delimiter_position_end, "|"
       elseif ((atomsep_position .ne. 0) .and. (delimiter_position == 0)) then
          ! If there aren't any delimiters than we just jump to the end of the atom seperator
@@ -354,8 +354,8 @@ contains
 
       catom_out = trim(catom_out)
       if (iprint > 2) then
-         if (atom_label) write (stdout, '(x,a1,a30,x,a20,23x,a1)') "|", "Atom label present  :", "TRUE", '|'
-         write (stdout, '(x,a1,a30,x,a20,23x,a1)') "|", "  String out :", trim(catom_out), '|'
+         if (atom_label) write (stdout, '(1x,a1,a30,1x,a20,23x,a1)') "|", "Atom label present  :", "TRUE", '|'
+         write (stdout, '(1x,a1,a30,1x,a20,23x,a1)') "|", "  String out :", trim(catom_out), '|'
          write (stdout, *) "+-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*+"
          write (stdout, *)
       end if
@@ -462,7 +462,7 @@ contains
          write (stdout, *) "  +-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=+"
          write (stdout, *) "  |             projection_untils :>  projection_analyse_atom            |"
          write (stdout, *) "  +----------------------------------------------------------------------+"
-         write (stdout, '(3x,a1,a30,x,a20,19x,a1)') "|", "  String in :", trim(ctemp), '|'
+         write (stdout, '(3x,a1,a30,1x,a20,19x,a1)') "|", "  String in :", trim(ctemp), '|'
       end if
 
       !! Parse for Ang Mtm string eg (s,p). The angular momentum information is
@@ -480,7 +480,7 @@ contains
          am_sum = .true.
       end if
 
-      if (iprint > 2) write (stdout, '(3x,a1,a30,x,a20,19x,a1)') "|", "  String with AM removed :", trim(ctemp), '|'
+      if (iprint > 2) write (stdout, '(3x,a1,a30,1x,a20,19x,a1)') "|", "  String with AM removed :", trim(ctemp), '|'
 
       !! Parse for inverted commas around the species name. If they are present
       !! we strip them off and send ctemp forward without them.
@@ -494,7 +494,7 @@ contains
       if (delimiter_position_start .ne. 0) then
         !! We have a delimiter. Need to find the other end.
          delimiter_position_end = index(ctemp(delimiter_position_start + 1:), c_delimiter) + delimiter_position_start
-         if (iprint > 2) write (stdout, '(3x,a1,a30,x,i10,x,i10,18x,a1)') "|", "  delimiters at position :",&
+         if (iprint > 2) write (stdout, '(3x,a1,a30,1x,i10,1x,i10,18x,a1)') "|", "  delimiters at position :",&
          & delimiter_position_start, delimiter_position_end, "|"
          if (delimiter_position_end == 0) call io_error('projection_analyse_atom: Opening " found but no closing "')
         !! Strip the atom symbol from the symbol:label
@@ -517,15 +517,15 @@ contains
          ! There isn't a label seperator
          atom_label = .false. ! Say it explicitly
          catom_label = ''
-         if (iprint > 2) write (stdout, '(3x,a1,a30,x,a4,35x,a1)') "|", "  Label found :", "None", '|'
+         if (iprint > 2) write (stdout, '(3x,a1,a30,1x,a4,35x,a1)') "|", "  Label found :", "None", '|'
          ctemp = trim(ctemp)
       elseif (label_position > 1) then
          ! There is a seperator
          atom_label = .true.
          catom_label = ctemp(label_position + 1:delimiter_position_end - 2)
-         if (iprint > 2) write (stdout, '(3x,a1,a30,x,a20,19x,a1)') "|", "  Label found :", trim(catom_label), '|'
+         if (iprint > 2) write (stdout, '(3x,a1,a30,1x,a20,19x,a1)') "|", "  Label found :", trim(catom_label), '|'
          cspecies = trim(ctemp(1:label_position - 1))
-         if (iprint > 2) write (stdout, '(3x,a1,a30,x,a20,19x,a1)') "|", "  Species found :", trim(cspecies), '|'
+         if (iprint > 2) write (stdout, '(3x,a1,a30,1x,a20,19x,a1)') "|", "  Species found :", trim(cspecies), '|'
          ctemp = trim(cspecies)//ctemp(delimiter_position_end - 1:) !Subtract 1 extra becasue we've stripped the ""
       else ! Error
          write (stderr, *) 'projection_analyse_atom: cannot understand atom &
@@ -578,8 +578,8 @@ contains
       end do
 
       if (iprint > 2) then
-         write (stdout, '(3x,a1,a30,x,i5,34x,a1)') "|", "     Species index number  :", species, "|"
-         write (stdout, '(3x,a1,a30,x,a5,34x,a1)') "|", "     Atom number in species :", trim(ctemp), "|"
+         write (stdout, '(3x,a1,a30,1x,i5,34x,a1)') "|", "     Species index number  :", species, "|"
+         write (stdout, '(3x,a1,a30,1x,a5,34x,a1)') "|", "     Atom number in species :", trim(ctemp), "|"
       end if
 
       !! Check for not matching a species
@@ -641,7 +641,7 @@ contains
       !! and placed in c_am
       counter = 0
       dummy = adjustl(c_am)
-      if (iprint>2) write (stdout, '(3x,a1,a30,x,a20,19x,a1)') "|", " Ang. mom. channels found :", trim(dummy), "|"
+      if (iprint>2) write (stdout, '(3x,a1,a30,1x,a20,19x,a1)') "|", " Ang. mom. channels found :", trim(dummy), "|"
       if (len_trim(dummy) > 0) then
          do
             pos3 = index(dummy, ',')
@@ -817,16 +817,16 @@ contains
       &- mismatch in atoms from .pdos_bin and out.cell')
 
       if (iprint > 2) then
-         write (stdout, '(x,a1,x,10x,x,a14,3x,a15,3x,a14,13x,a1)') "|", "atoms_label(:)", "atoms_symbol(:)", "proj_symbol(:)", "|"
+         write (stdout, '(1x,a1,1x,10x,1x,a14,3x,a15,3x,a14,13x,a1)') "|", "atoms_label(:)", "atoms_symbol(:)", "proj_symbol(:)", "|"
          do loop = 1, num_species
-            write (stdout, '(x,a1,x,i5,x,a14,3x,a15,3x,a14,18x,a1)') "|", loop, trim(atoms_label(loop)),&
+            write (stdout, '(1x,a1,1x,i5,1x,a14,3x,a15,3x,a14,18x,a1)') "|", loop, trim(atoms_label(loop)),&
             &trim(atoms_symbol(loop)), trim(proj_symbol(loop)), "|"
          end do
 
          do loop = 1, num_species
             do loop2 = loop + 1, num_species
                if (proj_symbol(loop) == proj_symbol(loop2)) Then
-                  write (stdout, '(x,a1,xa24,3x,a3,3x,a3,3x,i5,3x,i5,21x,a1)') "|", "duplicate species found:", &
+                  write (stdout, '(1x,a1,1x,a24,3x,a3,3x,a3,3x,i5,3x,i5,21x,a1)') "|", "duplicate species found:", &
                   &proj_symbol(loop), proj_symbol(loop2), loop, loop2, "|"
                end if
             end do
