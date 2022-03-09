@@ -65,26 +65,28 @@ output = Si2.linear.dat
 #--------------------------------------------------------------
 # Test coverage
 
-#                  +-+-+-+-+-+-+-+-+
-#                  |1|2|3|4|5|6|7|8|
-# -----------------+-+-+-+-+-+-+-+-+
-# odo file         | |x| | |x| | | |
-# pdos.dat file    |x| | | | | | | |
-# generic out file | | |x|x| |x|x|x|
-# fixed            | |x| | | | | | |
-# adaptive         |x| |x| | |x|x| |
-# linear           | | | |x|x| | |x|
-# String 1         | |x| | | | | | |
-# String 2         | | |x| | | | | |
-# String 3         | | | |x| | | | |
-# String 4         | | | | |x| | | |
-# ome_file         |x|x| |x|x| | | |
-# dome_file        | | |x| | |x|x|x|
-# no_spin          | | | |x| | | | |
-# match "Xx:yy"    | | | | | |x| | | 
-# Xx == Xx:yy + Xx | | | | | | |x| |
-# "Xx" <> Xx:yy    | | | | | | | |x|
-# -----------------+-+-+-+-+-+-+-+-+
+#                  +-+-+-+-+-+-+-+-+-+
+#                  |1|2|3|4|5|6|7|8|9|
+# -----------------+-+-+-+-+-+-+-+-+-+
+# Si               |x|x|x|x|x|x|x|x| |
+# GaAs             | | | | | | | | |x|
+# odo file         | |x| | |x| | | | |
+# pdos.dat file    |x| | | | | | | | |
+# generic out file | | |x|x| |x|x|x|x|
+# fixed            | |x| | | | | | | |
+# adaptive         |x| |x| | |x|x| |x|
+# linear           | | | |x|x| | |x| |
+# String 1         | |x| | | | | | | |
+# String 2         | | |x| | | | | | |
+# String 3         | | | |x| | | | | |
+# String 4         | | | | |x| | | | |
+# ome_file         |x|x| |x|x| | | | |
+# dome_file        | | |x| | |x|x|x|x|
+# no_spin          | | | |x| | | | | |
+# match "Xx:yy"    | | | | | |x| | |x| 
+# Xx == Xx:yy + Xx | | | | | | |x| | |
+# "Xx" <> Xx:yy    | | | | | | | |x| |
+# -----------------+-+-+-+-+-+-+-+-+-+
 
 # 1)
 # Test the PDOS using short-cut keywords, use an ome input and
@@ -145,6 +147,14 @@ output = Si2.pdos.proj-0001-0001.dat
 program = OPTADOS_GEN_DAT_OK
 inputs_args = ('Si2.odi', '')
 output = Si2.pdos.proj-0001-0002.dat
+
+# 9) Match a label in a PDOS string
+# This is a more complicated number of atoms than 6. Two species and
+# two labels
+[testopt_pdos_Ga_label]
+program = OPTADOS_GEN_DAT_OK
+inputs_args = ('GaAs.odi', '')
+output = GaAs.pdos.proj-0001-0002.dat
 
 #--------------------------------------------------------------
 # O p t a D O S   P D I S   T e s t s
