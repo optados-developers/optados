@@ -1201,17 +1201,17 @@ contains
       read (pdos_in_unit) pdos_orbital%rank_in_species(1:pdos_mwab%norbitals)
       read (pdos_in_unit) pdos_orbital%am_channel(1:pdos_mwab%norbitals)
       if (iprint > 3) then
-        write(stdout,*)
+        write (stdout, *)
         write (stdout, *) " +--------------------------------------------------------------------------+"
         write (stdout, *) "                                   pdos_orbital%                           "
         write (stdout, *) "       species_no                 rank_in_species                am_channel"
         write (stdout, *) " +--------------------------------------------------------------------------+"
         do iorbitals = 1, pdos_mwab%norbitals
-          write(stdout, '(10x,i5,25x,i5,25x,i5)') pdos_orbital%species_no(iorbitals), pdos_orbital%rank_in_species(iorbitals), &
+          write (stdout, '(10x,i5,25x,i5,25x,i5)') pdos_orbital%species_no(iorbitals), pdos_orbital%rank_in_species(iorbitals), &
           & pdos_orbital%am_channel(iorbitals)
-      end do
-      write (stdout, *) " +==========================================================================+ "
-    end if
+        end do
+        write (stdout, *) " +==========================================================================+ "
+      end if
       !-------------------------------------------------------------------------!
     end if
     call comms_bcast(pdos_mwab%norbitals, 1)

@@ -561,10 +561,10 @@ contains
         do nsp = 1, num_species
           do nat = 1, atoms_species_num(nsp)
             ! Use the atoms species unless atom label is present
-            if(trim(atoms_symbol(nsp)) .ne. trim(atoms_label(nsp))) then
-              temp_symb=atoms_label(nsp)
+            if (trim(atoms_symbol(nsp)) .ne. trim(atoms_label(nsp))) then
+              temp_symb = atoms_label(nsp)
             else
-              temp_symb=atoms_symbol(nsp)
+              temp_symb = atoms_symbol(nsp)
             endif
             write (stdout, '(1x,a1,1x,a7,1x,i3,7x,3F8.4,3x,a1,1x,3F8.4,4x,a1)') '|', trim(temp_symb), nat, &
               atoms_pos_frac(:, nat, nsp), '|', atoms_pos_cart(:, nat, nsp)*lenconfac, '|'
