@@ -526,7 +526,7 @@ contains
         end if
       end do
 
-      write (core_unit, *) elnes_edge !test to write out elnes_edge
+      ! write (core_unit, *) elnes_edge !test to write out elnes_edge
       ! Applies mizoguchi correction if added to dos
       if (mizoguchi_correction /= -1.0_dp) then
         E_shift = E + mizoguchi_correction - elnes_edge
