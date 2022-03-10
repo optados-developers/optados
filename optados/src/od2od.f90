@@ -26,7 +26,7 @@ contains
     write (stdout, '(A)')
     write (stdout, '(A)') " OptaDOS od2od "
     write (stdout, '(A)')
-    write (stdout, '(A)') " Usage: od2od <in_type> <out_type> [seedname] [seedout]"
+    write (stdout, '(A)') " Usage: od2od -i/--in_file <in_type> -o/--out_file <out_type> -w/--out_seedname [seedout] [seedname] "
     write (stdout, '(A)')
     write (stdout, '(A)') " [seedname] and [seedout] are optional input and output seednames"
     write (stdout, '(A)')
@@ -57,27 +57,48 @@ contains
   !=========================================================================
   subroutine conv_get_seedname
     !! Set the seedname from the command line
+    use od_io, only: seedname
     implicit none
 
     integer :: num_arg
+    integer :: i !! Temporary variable
     character(len=50) :: ctemp
 
     num_arg = command_argument_count()
-    if (num_arg == 2) then
-      seedname = 'optados'
-    elseif (num_arg == 3) then
-      call get_command_argument(3, seedname)
-      outseedname = trim(seedname)
-    elseif (num_arg == 4) then
-      call get_command_argument(3, seedname)
-      call get_command_argument(4, outseedname)
-    else
-      call print_usage
-      call io_error('Wrong command line arguments, see logfile for usage')
-    end if
 
-    call get_command_argument(1, infile)
-    call get_command_argument(2, outfile)
+    outseedname = 'optados'
+    seedname = 'optados' !! set to optados until proven otherwise
+    i = 1
+    do while (i .le. num_arg)
+      call get_command_argument(i, ctemp)
+      select case (trim(ctemp))
+      case ("-i", "--in_file")
+        i = i + 1
+        call get_command_argument(i, infile)
+      case ("-o", "--out_file")
+        i = i + 1
+        call get_command_argument(i, outfile)
+      case ("-w", "--out_seedname")
+        i = i + 1
+        call get_command_argument(i, outseedname)
+      case ("--") !! End of flags
+        i = i + 1
+        call get_command_argument(i, seedname)
+      case default
+        if (seedname == 'optados') then
+          seedname = trim(ctemp)
+          i = i + 1
+        else !! We've already set the seedname so it can't be that again!
+          call print_usage
+          call io_error('Wrong command line arguments, see logfile for usage')
+        end if
+      end select
+      i = i + 1
+    end do
+
+    if (outseedname == 'optados') then
+      outseedname = seedname
+    end if
 
   end subroutine conv_get_seedname
 
@@ -107,10 +128,10 @@ contains
       allocate (optical_mat(nbands, nbands, 3, nkpoints, nspins))
     end if
 
-    open (unit=ome_unit, form='formatted', file=trim(seedname)//".ome_fmt")
+    open (unit=ome_unit, form='formatted', recl=1073741824, file=trim(seedname)//".ome_fmt")
 
     ! Total number of elements of ome
-    write (string, '(I0,"(x,",a,")")') 3*nbands*nbands, trim(format_precision)
+    write (string, '(I0,"(1x,",a,")")') 3*nbands*nbands, trim(format_precision)
     ! write(stdout,*) string
 
     ! write(string,'(a)') trim(format_precision)
@@ -157,7 +178,7 @@ contains
 
     open (unit=ome_unit, form='formatted', file=trim(outseedname)//".ome_fmt")
 
-    write (string, '(I0,"(x,",a,")")') 3*nbands*nbands, trim(format_precision)
+    write (string, '(I0,"(1x,",a,")")') 3*nbands*nbands, trim(format_precision)
     !   write(stdout,*) string
 
     write (stdout, '(a80)') omefile_header
@@ -247,13 +268,13 @@ contains
     write (stdout, *) " Read a formatted dome file. "
 
     if (.not. allocated(band_gradient)) then
-      write (0, *) " Allocating band_gradient"
+      write (stdout, *) " Allocating band_gradient"
       allocate (band_gradient(nbands, 3, nkpoints, nspins))
     end if
 
     open (unit=dome_unit, form='formatted', file=trim(seedname)//".dome_fmt")
 
-    write (string, '(i0,"(x,",a,")")') 3*nbands, trim(format_precision)
+    write (string, '(i0,"(1x,",a,")")') 3*nbands, trim(format_precision)
 
     read (dome_unit, '('//trim(format_precision)//')') file_version
 
@@ -292,7 +313,7 @@ contains
 
     open (unit=dome_unit, form='formatted', file=trim(outseedname)//".dome_fmt")
 
-    write (string, '(I0,"(x,",a,")")') 3*nbands, trim(format_precision)
+    write (string, '(I0,"(1x,",a,")")') 3*nbands, trim(format_precision)
 
     write (dome_unit, '('//trim(format_precision)//')') file_version
     write (dome_unit, '(a80)') adjustl(domefile_header)
@@ -397,9 +418,9 @@ contains
     !allocate(pdos_orbital%am_channel(pdos_mwab%norbitals),stat=ierr)
     !if(ierr/=0) call io_error(" Error : cannot allocate pdos_orbital")
 
-    write (string, '(i7,"(x,",a,")")') pdos_mwab%norbitals, "i5"
+    write (string, '(i7,"(1x,",a,")")') pdos_mwab%norbitals, "i5"
 
-    write (string2, '(i7,"(x,",a,")")') pdos_mwab%norbitals, trim(format_precision)
+    write (string2, '(i7,"(1x,",a,")")') pdos_mwab%norbitals, trim(format_precision)
 
     write (pdos_in_unit, '(a60)') " Species number for each orbital"
     write (pdos_in_unit, '('//trim(string)//')') pdos_orbital%species_no(1:pdos_mwab%norbitals)
@@ -478,9 +499,9 @@ contains
     !write(stdout,'(a, i6)') "DEBUG: pdos_mwab%norbitals= ",pdos_mwab%norbitals
     !write(stdout,'(a, i6)') "DEBUG: pdos_mwab%nbands= ",pdos_mwab%nbands
 
-    write (string, '(i7,"(x,",a,")")') pdos_mwab%norbitals, "i5"
+    write (string, '(i7,"(1x,",a,")")') pdos_mwab%norbitals, "i5"
 
-    write (string2, '(i7,"(x,",a,")")') pdos_mwab%norbitals, trim(format_precision)
+    write (string2, '(i7,"(1x,",a,")")') pdos_mwab%norbitals, trim(format_precision)
 
     ! These should all be allocated!
     allocate (pdos_orbital%species_no(pdos_mwab%norbitals), stat=ierr)
@@ -641,13 +662,13 @@ contains
     read (elnes_unit, '('//trim(format_precision)//')') file_version
     read (elnes_unit, '(a80)') elnesfile_header
 
-    read (elnes_unit, '(a20,x,i5)') dummy20, elnes_mwab%norbitals
-    read (elnes_unit, '(a20,x,i5)') dummy20, elnes_mwab%nbands
-    read (elnes_unit, '(a20,x,i5)') dummy20, elnes_mwab%nkpoints
-    read (elnes_unit, '(a20,x,i5)') dummy20, elnes_mwab%nspins
+    read (elnes_unit, '(a20,1x,i5)') dummy20, elnes_mwab%norbitals
+    read (elnes_unit, '(a20,1x,i5)') dummy20, elnes_mwab%nbands
+    read (elnes_unit, '(a20,1x,i5)') dummy20, elnes_mwab%nkpoints
+    read (elnes_unit, '(a20,1x,i5)') dummy20, elnes_mwab%nspins
 
-    write (string, '(i7,"(x,",a,")")') elnes_mwab%norbitals, "i5"
-    write (string2, '(i7,"(x,",a,")")') elnes_mwab%norbitals*elnes_mwab%nbands*3, trim(format_precision)
+    write (string, '(i7,"(1x,",a,")")') elnes_mwab%norbitals, "i5"
+    write (string2, '(i7,"(1x,",a,")")') elnes_mwab%norbitals*elnes_mwab%nbands*3, trim(format_precision)
 
     allocate (elnes_orbital%ion_no(elnes_mwab%norbitals), stat=ierr)
     if (ierr /= 0) call io_error(' Error : read_elnes_fmt cannot allocate elnes_orbital%ion_no')
@@ -716,13 +737,13 @@ contains
     write (elnes_unit, '('//trim(format_precision)//')') file_version
     write (elnes_unit, '(a80)') adjustl(elnesfile_header)
 
-    write (elnes_unit, '(a20,x,i5)') "Norbitals", elnes_mwab%norbitals
-    write (elnes_unit, '(a20,x,i5)') "Nbands", elnes_mwab%nbands
-    write (elnes_unit, '(a20,x,i5)') "Nkpoints", elnes_mwab%nkpoints
-    write (elnes_unit, '(a20,x,i5)') "Nspins", elnes_mwab%nspins
+    write (elnes_unit, '(a20,1x,i5)') "Norbitals", elnes_mwab%norbitals
+    write (elnes_unit, '(a20,1x,i5)') "Nbands", elnes_mwab%nbands
+    write (elnes_unit, '(a20,1x,i5)') "Nkpoints", elnes_mwab%nkpoints
+    write (elnes_unit, '(a20,1x,i5)') "Nspins", elnes_mwab%nspins
 
-    write (string, '(i7,"(x,",a,")")') elnes_mwab%norbitals, "i5"
-    write (string2, '(i7,"(x,",a,")")') elnes_mwab%norbitals*elnes_mwab%nbands*3, trim(format_precision)
+    write (string, '(i7,"(1x,",a,")")') elnes_mwab%norbitals, "i5"
+    write (string2, '(i7,"(1x,",a,")")') elnes_mwab%norbitals*elnes_mwab%nbands*3, trim(format_precision)
 
     write (elnes_unit, '(a10,'//trim(string)//')') "Species_no", elnes_orbital%species_no(1:elnes_mwab%norbitals)
     write (elnes_unit, '(a10,'//trim(string)//')') "Rank", elnes_orbital%rank_in_species(1:elnes_mwab%norbitals)
@@ -788,8 +809,8 @@ contains
     write (elnes_unit) elnes_mwab%nkpoints
     write (elnes_unit) elnes_mwab%nspins
 
-    ! write(string,'(i7,"(x,",a,")")') elnes_mwab%norbitals,"i5"
-    ! write(string2,'(i7,"(x,",a,")")') elnes_mwab%norbitals*elnes_mwab%nbands*3, trim(format_precision)
+    ! write(string,'(i7,"(1x,",a,")")') elnes_mwab%norbitals,"i5"
+    ! write(string2,'(i7,"(1x,",a,")")') elnes_mwab%norbitals*elnes_mwab%nbands*3, trim(format_precision)
 
     write (elnes_unit) elnes_orbital%species_no(1:elnes_mwab%norbitals)
     write (elnes_unit) elnes_orbital%rank_in_species(1:elnes_mwab%norbitals)
@@ -827,7 +848,7 @@ contains
     write (stdout, *) " Slicing an ome into a dome."
 
     if (.not. allocated(band_gradient)) then
-      write (0, *) " Allocating band_gradient"
+      write (stdout, *) " Allocating band_gradient"
       allocate (band_gradient(nbands, 3, nkpoints, nspins))
     end if
 
@@ -857,7 +878,7 @@ contains
     write (stdout, *) " Padding a dome into a ome."
 
     if (.not. allocated(optical_mat)) then
-      write (0, *) " Allocating optical_mat"
+      write (stdout, *) " Allocating optical_mat"
       allocate (optical_mat(nbands, nbands, 3, nkpoints, nspins))
     end if
 
@@ -951,6 +972,7 @@ program od2od
   call comms_setup
 
   call conv_get_seedname
+
   stderr = io_file_unit()
   open (unit=stderr, file=trim(seedname)//'.opt_err')
   call io_date(cdate, ctime)

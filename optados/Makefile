@@ -1,3 +1,5 @@
+include make.system
+
 VER := 1.2.380
 
 default : optados
@@ -11,7 +13,10 @@ optados:
 	cd ./src && $(MAKE) optados
 
 # Utility targets
-.PHONY: ford clean veryclean
+.PHONY: ford clean veryclean 
+
+# These have to be phony as they're recursive makes
+.PHONY: tools optados
 
 install:
 	 cd ./src && $(MAKE) install
@@ -23,6 +28,7 @@ clean:
 	cd ./src && $(MAKE) clean 
 	cd ./documents && $(MAKE) clean
 	cd ./python  && $(MAKE) clean
+	cd ./test-suite && $(PYTHON_VER) clean_tests
 
 ford: 
 	ford -d ../src -o ../auto_doc ./ford/project.md
@@ -34,6 +40,7 @@ veryclean:
 	cd ./src && $(MAKE) veryclean
 	cd ./documents && $(MAKE) veryclean
 	cd ./python &&  $(MAKE) veryclean
+	cd ./test-suite && $(PYTHON_VER) clean_tests -i
 
 dist: optados-$(VER).tar.gz
 

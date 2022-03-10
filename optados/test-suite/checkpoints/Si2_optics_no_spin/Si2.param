@@ -1,0 +1,6 @@
+TASK                   : SPECTRAL
+SPECTRAL_TASK          : OPTICS
+PDOS_CALCULATE_WEIGHTS : TRUE
+SPIN_POLARIZED         : FALSE
+CUT_OFF_ENERGY         : 200
+IPRINT                 : 1
