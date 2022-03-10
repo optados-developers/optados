@@ -12,11 +12,7 @@ tools:
 optados: 
 	cd ./src && $(MAKE) optados
 
-# Utility targets
-.PHONY: ford clean veryclean 
-
-# These have to be phony as they're recursive makes
-.PHONY: tools optados
+.PHONY: ford clean veryclean tools optados
 
 install:
 	 cd ./src && $(MAKE) install
