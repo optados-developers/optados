@@ -52,10 +52,13 @@ module od_dos_utils
   real(kind=dp), allocatable, public, save :: intdos_linear(:, :)
 
   real(kind=dp), allocatable, public, save :: E(:)
+  real(kind=dp), public, save :: vbm_energy = 0.0_dp
+  real(kind=dp), public, save :: cbm_energy = 0.0_dp
 
   real(kind=dp), public, save :: efermi_fixed
   real(kind=dp), public, save :: efermi_adaptive
   real(kind=dp), public, save :: efermi_linear
+
   !real(kind=dp), public, save :: efermi_quad
   !-------------------------------------------------------------------------------
 
@@ -642,6 +645,9 @@ contains
 
       ! We now have enough info to calculate the average bandgap and the thermal bandgap
       average_bandgap = average_bandgap/nkpoints
+
+      vbm_energy = thermal_vbm
+      cbm_energy = thermal_cbm
       thermal_bandgap = thermal_cbm - thermal_vbm
 
       ! Don't want this array hanging around a moment longer than we need it.

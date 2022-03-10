@@ -11,7 +11,7 @@ optados:
 	cd ./src && $(MAKE) optados
 
 # Utility targets
-.PHONY: ford clean veryclean
+.PHONY: ford clean veryclean tools optados
 
 install:
 	 cd ./src && $(MAKE) install
