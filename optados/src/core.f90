@@ -72,7 +72,7 @@ contains
       if (LAI_gaussian) call core_gaussian
     end if
 
-    if (mizoguchi_correction < 0.0_dp) then
+    if (mizoguchi_correction > 0.0_dp) then
       call dos_utils_compute_bandgap
     endif
 
@@ -181,12 +181,12 @@ contains
       set_efermi_zero, mizoguchi_correction
     use od_electronic, only: elnes_mwab, elnes_orbital, efermi, efermi_set, nspins
     use od_io, only: seedname, io_file_unit, io_error
-    use od_dos_utils, only: E, dos_utils_set_efermi
+    use od_dos_utils, only: E, dos_utils_set_efermi, vbm_energy
     use od_cell, only: num_species, atoms_symbol, atoms_label, cell_volume
     use xmgrace_utils
 
     integer :: N
-    real(kind=dp) ::dE, min_x, min_y, max_x, max_y, range, elnes_edge
+    real(kind=dp) ::dE, min_x, min_y, max_x, max_y, range
     integer :: core_unit, orb, ierr, loop, loop2, counter, num_edge, num_sites
     character(len=20) :: temp
     character(len=40) :: temp2
@@ -517,19 +517,22 @@ contains
         end do
       end if
 
-      elnes_edge = 0.0_dp
 
-      do N = 1, dos_nbins !doing this because we want to find the last 0.0000 value before the start of the peak edge
-        if (dos_temp(N, 1) > 0.0_dp) then
-          elnes_edge = E_shift(N)
-          exit
-        end if
-      end do
+      !Originally written to calculate the first nonzero term in the edge
+      !elnes_edge = 0.0_dp
 
-      ! write (core_unit, *) elnes_edge !test to write out elnes_edge
+      !do N = 1, dos_nbins !doing this because we want to find the last 0.0000 value before the start of the peak edge
+      !  if (dos_temp(N, 1) > 0.0_dp) then
+      !    elnes_edge = E_shift(N)
+      !    exit
+      !  end if
+      !end do
+
+      !write (core_unit, *) elnes_edge !test to write out elnes_edge
+      !write (core_unit, *) vbm_energy ! test to see if vbm calculated
       ! Applies mizoguchi correction if added to dos
       if (mizoguchi_correction /= -1.0_dp) then
-        E_shift = E + mizoguchi_correction - elnes_edge
+        E_shift = E + mizoguchi_correction + vbm_energy
       end if
 
       do N = 1, dos_nbins
