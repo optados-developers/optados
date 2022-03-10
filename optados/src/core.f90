@@ -181,7 +181,7 @@ contains
       set_efermi_zero, mizoguchi_correction
     use od_electronic, only: elnes_mwab, elnes_orbital, efermi, efermi_set, nspins
     use od_io, only: seedname, io_file_unit, io_error
-    use od_dos_utils, only: E, dos_utils_set_efermi, vbm_energy
+    use od_dos_utils, only: E, dos_utils_set_efermi, vbm_energy, cbm_energy
     use od_cell, only: num_species, atoms_symbol, atoms_label, cell_volume
     use xmgrace_utils
 
@@ -529,10 +529,11 @@ contains
       !end do
 
       !write (core_unit, *) elnes_edge !test to write out elnes_edge
-      !write (core_unit, *) vbm_energy ! test to see if vbm calculated
+      !write (core_unit, *) cbm_energy ! test to see if cbm calculated
+      !write (core_unit, *) vbm_energy! test to see if cbm calculated
       ! Applies mizoguchi correction if added to dos
       if (mizoguchi_correction /= -1.0_dp) then
-        E_shift = E + mizoguchi_correction + vbm_energy
+        E_shift = E + mizoguchi_correction - cbm_energy
       end if
 
       do N = 1, dos_nbins
