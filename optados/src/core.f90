@@ -37,10 +37,12 @@ contains
 
   subroutine core_calculate
     use od_electronic, only: elec_read_elnes_mat, efermi_set
-    use od_dos_utils, only: dos_utils_calculate, dos_utils_set_efermi
+    use od_dos_utils, only: dos_utils_calculate, dos_utils_set_efermi, &
+    & dos_utils_compute_bandgap
     use od_comms, only: on_root
     use od_io, only: stdout
-    use od_parameters, only: core_LAI_broadening, LAI_gaussian, LAI_lorentzian, set_efermi_zero, LAI_lorentzian_scale
+    use od_parameters, only: core_LAI_broadening, LAI_gaussian, LAI_lorentzian, &
+    & set_efermi_zero, LAI_lorentzian_scale, mizoguchi_correction
 
     implicit none
 
@@ -69,6 +71,10 @@ contains
       if (LAI_lorentzian .or. (LAI_lorentzian_scale .gt. 0.00001_dp)) call core_lorentzian
       if (LAI_gaussian) call core_gaussian
     end if
+
+    if (mizoguchi_correction < 0.0_dp) then
+      call dos_utils_compute_bandgap
+    endif
 
     if (set_efermi_zero .and. .not. efermi_set) call dos_utils_set_efermi
     if (on_root) then
@@ -166,7 +172,7 @@ contains
     !*************************************************************************
     ! This subroutine writes out the Core loss function
     !-------------------------------------------------------------------------
-    ! Adapted by A F Harper to include an E_shift to account for core hole 
+    ! Adapted by A F Harper to include an E_shift to account for core hole
     !=========================================================================
 
     use od_constants, only: bohr2ang, periodic_table_name, pi
@@ -223,7 +229,6 @@ contains
     if (ierr /= 0) call io_error('Error: core_write - allocation of elnes_symbol failed')
     allocate (elnes_label(num_species), stat=ierr)
     if (ierr /= 0) call io_error('Error: core_write - allocation of elnes_label failed')
-
 
     dE = E(2) - E(1)
 
@@ -515,7 +520,7 @@ contains
       elnes_edge = 0.0_dp
 
       do N = 1, dos_nbins !doing this because we want to find the last 0.0000 value before the start of the peak edge
-        if (dos_temp(N,1) > 0.0_dp) then
+        if (dos_temp(N, 1) > 0.0_dp) then
           elnes_edge = E_shift(N)
           exit
         end if
@@ -524,7 +529,7 @@ contains
       write (core_unit, *) elnes_edge !test to write out elnes_edge
       ! Applies mizoguchi correction if added to dos
       if (mizoguchi_correction /= -1.0_dp) then
-        E_shift = E + mizoguchi_correction  - elnes_edge
+        E_shift = E + mizoguchi_correction - elnes_edge
       end if
 
       do N = 1, dos_nbins

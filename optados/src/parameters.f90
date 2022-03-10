@@ -261,7 +261,7 @@ contains
     call param_get_efermi('efermi', found, efermi_choice, efermi_user)
 
     ! Here we apply a correction to the core energy if supplied by the user
-    mizoguchi_correction = -1.0_dp ! Mizoguchi correction is always +ve 
+    mizoguchi_correction = -1.0_dp ! Mizoguchi correction is always +ve
     call param_get_keyword('mizoguchi_correction', found, r_value=mizoguchi_correction)
 
     ! Force all Gaussians to be greater than the width of a bin. When using numerical_indos
