@@ -1,0 +1,134 @@
+ OptaDOS: Execution started on  9 Feb 2022 at 11:26:26 
+          Parallelised over    1 thread(s)
+
+ +===========================================================================+
+ |                                                                           |
+ |                OOO   PPPP  TTTTT  AA   DDD    OOO    SSS                  |
+ |               O   O  P   P   T   A  A  D  D  O   O  S                     |
+ |               O   O  PPPP    T   AAAA  D  D  O   O   SS                   |
+ |               O   O  P       T   A  A  D  D  O   O     S                  |
+ |                OOO   P       T   A  A  DDD    OOO   SSS                   |
+ |                                                                           |
+ +---------------------------------------------------------------------------+
+ |                                                                           |
+ |                 Welcome to OptaDOS version  1.3                           | 
+ |                                                                           |
+ |         Andrew J. Morris, Rebecca Nicholls, Chris J. Pickard              |
+ |                       and Jonathan R. Yates                               |
+ |                                                                           |
+ |                       Copyright (c) 2010-2022                             |
+ |                                                                           |
+ |  Please cite:                                                             |
+ |  Andrew J. Morris, Rebecca Nicholls, Chris J. Pickard and Jonathan Yates  |
+ |              Comp. Phys. Comm. 185, 5, 1477 (2014)                        |
+ |                                                                           |
+ |  Additionally when using the linear broadening:                           |
+ | C.J. Pickard and M.C. Payne, Phys. Rev. B, 59, 7, 4685 (1999)             |
+ | C.J. Pickard and M.C. Payne, Phys. Rev. B, 62, 7, 4383 (2000)             |
+ |                                                                           |
+ |  Additionally when using the adaptive broadening:                         |
+ | J.Yates, X.Wang, D.Vanderbilt and I.Souza, Phys. Rev. B, 75, 195121 (2007)|
+ |                                                                           |
+ |      in all your publications arising from your use of OptaDOS            |
+ |                                                                           |
+ +===========================================================================+
+
+ +------------------------------ JOB CONTROL ---------------------------------+
+ |  Output Density of States                  :  True                         |
+ |  Output Partial Density of States          :  False                        |
+ |  Output Projected Bandstructure            :  False                        |
+ |  Output Joint Density of States            :  False                        |
+ |  Output Optical Response                   :  False                        |
+ |  Output Core-level Spectra                 :  False                        |
+ |  iprint level                              :    1                          |
+ |  Use CASTEP < 6.0 file format              :  False                        |
+ +-------------------------------- UNITS -------------------------------------+
+ |  Length Unit                               :   Ang                         |
+ |  J/P/DOS units                             :  electrons eV^-1              |
+ +--------------------------SPECTRAL PARAMETERS ------------------------------+
+ |  Linear Extrapolation                      :  True                         |
+ |  Smearing Width                            :    0.00000                    |
+ |  Finite Bin Correction                     :  True                         |
+ |  Shift energy scale so fermi_energy=0      :  True                         |
+ |  Fermi energy                              :  Calculated by OptaDOS        |
+ |  Compute the band energy                   :  True                         |
+ |  Compute the band gap                      :  True                         |
+ +----------------------------------------------------------------------------+
+  
+  
+                              Lattice Vectors (Ang)
+                    a_1     2.730000   2.730000   0.000000
+                    a_2     2.730000   0.000000   2.730000
+                    a_3     0.000000   2.730000   2.730000
+
+                        Reciprocal-Space Vectors (Ang^-1)
+                    b_1    -1.150767  -1.150767   1.150767
+                    b_2    -1.150767   1.150767  -1.150767
+                    b_3     1.150767  -1.150767  -1.150767
+
+                   Unit Cell Volume:      40.69283  (Ang^3)
+
+
+ +----------------------- Electronic Data ------------------------------------+
+ |  Number of Bands                           :            23                 |
+ |  Grid size                                 :        3 x  3 x  3            |
+ |  Number of K-points                        :             4                 |
+ |  Spin-Polarised Calculation                :           True                |
+ |  Number of up-spin electrons               :             4.00              |
+ |  Number of down-spin electrons             :             4.00              |
+ +----------------------------------------------------------------------------+
+
+ +============================================================================+
+ +                              Density of States                             +
+ +============================================================================+
+
+ +----------------------------- Fermi Energy Analysis ------------------------+
+ | From Linear broadening                                                     |
+ |   Spin Component : 1 occupation between    3.89321 and    4.02005   <- Occ |
+ |   Spin Component : 2 occupation between    3.89390 and    4.02005   <- Occ |
+ |           Fermi energy (Linear broadening) :   4.2477 eV            <- EfL |
+ +----------------------------------------------------------------------------+
+ +--------------------------- Setting Fermi Energy  --------------------------+
+ |                      Fermi energy from DOS :   4.2477 eV            <- EfD |
+ +----------------------------------------------------------------------------+
+
+ +----------------------- DOS at Fermi Energy Analysis -----------------------+
+ |                          Fermi energy used :   4.2477 eV                   |
+ | From Linear broadening                                                     |
+ |   Spin Component : 1   DOS at Fermi Energy :   0.0736 eln/cell      <- DEL |
+ |   Spin Component : 2   DOS at Fermi Energy :   0.0709 eln/cell      <- DEL |
+ +----------------------------------------------------------------------------+
+
+ +----------------------------- Bandgap Analysis -----------------------------+
+ |          Number of kpoints at       VBM       CBM                          |
+ |                   Spin :   1  :      1         1                           |
+ |                   Spin :   2  :      1         1                           |
+ |               Thermal Bandgap :   0.9919090766  eV                  <- TBg |
+ |            Between VBM kpoint :   -0.33333   -0.33333   -0.33333           |
+ |                 and CBM kpoint:    0.00000    0.00000    0.00000           |
+ |             ==> Indirect Gap                                               |
+ +----------------------------------------------------------------------------+
+ |                            Optical Bandgap                                 |
+ |                   Spin :   1  :     2.5863954635  eV                <- OBg |
+ |                   Spin :   2  :     2.5863775040  eV                <- OBg |
+ |          Number of kpoints with this gap                                   |
+ |                   Spin :   1  :           1                                |
+ |                   Spin :   2  :           1                                |
+ +----------------------------------------------------------------------------+
+ |                            Average Bandgap                                 |
+ |                   Spin :   1  :     5.2595477562  eV                <- ABg |
+ |                   Spin :   2  :     5.2595396608  eV                <- ABg |
+ |              Weighted Average :     5.2595437085  eV                <- wAB |
+ +----------------------------------------------------------------------------+
+ |                                                                            |
+ +--------------------------- Band Energy Analysis ---------------------------+
+ |            Band energy (Linear broadening) :      -5.7492 eV        <- BEL |
+ |                  Band energy (From CASTEP) :      -6.4324 eV        <- BEC |
+ +----------------------------------------------------------------------------+
+
+ + Time to calculate Density of States                            0.008 (sec) +
+ +============================================================================+
+  
+  
+
+ OptaDOS: Execution complete on  9 Feb 2022 at 11:26:26 

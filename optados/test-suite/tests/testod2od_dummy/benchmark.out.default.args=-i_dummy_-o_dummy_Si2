@@ -1,0 +1,46 @@
+
+ od2od: Execution started on  8 Feb 2022 at 16:26:13 
+
+ +============================================================================+ 
+ |                                                                            | 
+ |                         OO   DDD   222    OO   DDD                         | 
+ |                        O  O  D  D     2  O  O  D  D                        | 
+ |                        O  O  D  D   22   O  O  D  D                        | 
+ |                        O  O  D  D  2     O  O  D  D                        | 
+ |                         OO   DDD   2222   OO   DDD                         | 
+ |                                                                            | 
+ |                   For doing the odd thing to OptaDOS files                 | 
+ |                                                                            | 
+ |                      OptaDOS Developers Group 2019 (C)                     | 
+ |                             (But blame Andrew)                             | 
+ |                                                                            | 
+ +============================================================================+ 
+
+ +--------------------------------- JOB CONTROL ------------------------------+
+                      Number of nodes :     1
+                         Convert from : dummy
+                           Convert to : dummy
+                             Seedname : Si2
+                      Output Seedname : Si2
+ +----------------------------------------------------------------------------+
+
+ +----------------------------- K-point information --------------------------+
+             Time to read band energies        0.001 (sec)
+                    Number of kpoints :    10
+                      Number of bands :    23
+                      Number of spins :     1
+ +----------------------------------------------------------------------------+
+
+ +-------------------------------- Read File ---------------------------------+
+  Not reading any input file.
+ +----------------------------------------------------------------------------+
+
+ +------------------------------- Write File ---------------------------------+
+  Not writing any output file.
+
+                  Dummy in + dummy out  -- who's the dummy now ?
+ +----------------------------------------------------------------------------+
+                          Total runtime :      0.002 (sec)
+
+ od2od: Execution complete on  8 Feb 2022 at 16:26:13 
+
