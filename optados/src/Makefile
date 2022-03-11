@@ -111,7 +111,7 @@ clean:
 
 
 veryclean: clean
-	rm -f optados$(EXTENSION) optados$(EXTENSION).debug optados$(EXTENSION).mpi od2od
+	rm -f optados$(EXTENSION) optados$(EXTENSION).debug optados$(EXTENSION).mpi ../od2od ../optados.x
 
 install:
 	cp optados$(EXTENSION) $(INSTALL_DIR)
