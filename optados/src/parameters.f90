@@ -260,9 +260,13 @@ contains
     end if
     call param_get_efermi('efermi', found, efermi_choice, efermi_user)
 
+    compute_band_energy = .true.
+    call param_get_keyword('compute_band_energy', found, l_value=compute_band_energy)
+
     ! Here we apply a correction to the core energy if supplied by the user
     mizoguchi_correction = -1.0_dp ! Mizoguchi correction is always +ve
     call param_get_keyword('mizoguchi_correction', found, r_value=mizoguchi_correction)
+    if (mizoguchi_correction > 0.0_dp) compute_band_gap = .true.
 
     ! Force all Gaussians to be greater than the width of a bin. When using numerical_indos
     ! this is critical for counting all of the Gaussian DOS peaks.
@@ -283,9 +287,6 @@ contains
     call param_get_keyword('hybrid_linear', found, l_value=hybrid_linear)
     hybrid_linear_grad_tol = 0.01_dp ! Seems about right for getting semi-core states correctly integrated.
     call param_get_keyword('hybrid_linear_grad_tol', found, r_value=hybrid_linear_grad_tol)
-
-    compute_band_energy = .true.
-    call param_get_keyword('compute_band_energy', found, l_value=compute_band_energy)
 
     set_efermi_zero = .false.
     if (pdis) set_efermi_zero = .true.

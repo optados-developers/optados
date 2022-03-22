@@ -72,10 +72,6 @@ contains
       if (LAI_gaussian) call core_gaussian
     end if
 
-    if (mizoguchi_correction > 0.0_dp) then
-      call dos_utils_compute_bandgap
-    endif
-
     if (set_efermi_zero .and. .not. efermi_set) call dos_utils_set_efermi
     if (on_root) then
       call write_core
@@ -516,7 +512,6 @@ contains
           end if
         end do
       end if
-
 
       !Originally written to calculate the first nonzero term in the edge
       !elnes_edge = 0.0_dp
