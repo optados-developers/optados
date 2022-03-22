@@ -509,6 +509,8 @@ contains
       write (stdout, '(1x,a78)') '+----------------------------- Bandgap Analysis -----------------------------+'
     end if
 
+    if (.not. allocated(all_kpoints)) call io_error('Error all_kpoints not allocated in dos_utils: compute_bandgap')
+
     allocate (bandgap(1:2, 1:nspins, 1:num_kpoints_on_node(my_node_id)), stat=ierr)
     if (ierr /= 0) call io_error('Error allocating bandgap in dos_utils: compute_bandgap')
     bandgap = -200.00_dp
