@@ -32,8 +32,10 @@ OBJS=build.o algorithms.o cell.o comms.o constants.o core.o dos.o dos_utils.o el
 
 all : optados tools
 
-tools : od2od
+tools : od2od gendos
 
+gendos : gendos.f90 $(OBJS) ../make.system
+	$(F90) $(FFLAGS) $< $(OBJS) -o ../gendos
 od2od : od2od.f90 $(OBJS) ../make.system
 	$(F90) $(FFLAGS) $< $(OBJS) -o ../od2od
 
@@ -91,7 +93,7 @@ projection_utils.o : projection_utils.f90 cell.o comms.o constants.o cell.o elec
 xmgrace_utils.o : xmgrace_utils.f90 io.o constants.o ../make.system
 	$(F90) -c $(FFLAGS) $<
 
-build.f90 : 
+build.f90 :
 	./make_build_info.sh
 
 build.o : build.f90 ../make.system

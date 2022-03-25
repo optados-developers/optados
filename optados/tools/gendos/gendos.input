@@ -1,0 +1,7 @@
+filename : test_Co2+
+transitions : 16
+Energy_min : 770 
+Energy_max : 805 
+Energy_spacing : 0.01
+Gaussian : 0.5
+Lorentzian : 0.5 
