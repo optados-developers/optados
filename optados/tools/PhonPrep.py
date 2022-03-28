@@ -95,7 +95,7 @@ def fill_charge_dic(castep_file,charge_type,outfile):
   f.write("Number of atoms: {}\n".format(number_of_species))
   f.write("Type of charge: {}\n".format(charge_type))
   for atom in charge_dic.keys():
-    f.write("{:>5} {:>10}\n".format(atom, charge_dic[atom]))
+    f.write("{:>5} {:>5} {:>10}\n".format(mysplit(atom)[0], mysplit(atom)[1], charge_dic[atom]))
   f.close()
 
 # Fill the adf_dic dictionary containing atom names and their thermal factors at all calculated temperatures
@@ -159,7 +159,7 @@ def fill_adf_dic(castep_file,outfile,temperature_val):
     f.write("Number of atoms: {} \n".format(number_of_species))
     f.write("Temperature: {}\n".format(temperature_list[0]))
     for atom in adf_dic.keys():
-      f.write("{:>5}".format(atom + " "))
+      f.write("{:>5} {:>5}".format(mysplit(atom)[0],mysplit(atom)[1] + " "))
       for Uii in range(6):
         f.write("{:>10}".format(adf_dic[atom]["{}".format(temperature_list[0])][Uii]))
       f.write("\n")
@@ -179,6 +179,12 @@ def fill_adf_dic(castep_file,outfile,temperature_val):
       f.close()
     else:
       raise ValueError("Temperature specified does not exist in thermodynamics calculation.")
+
+# Function to split text into characters vs numbers (e.g. Atom H1 to H 1)
+def mysplit(text):
+  atom_name = text.rstrip('01234567890')
+  atom_number = text[len(atom_name):]
+  return atom_name, atom_number
 
 if __name__ == '__main__':
   # parser = argparse.ArgumentParser(description='This script can produce a .chge_trans from an efield calculation containing \
