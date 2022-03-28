@@ -172,7 +172,7 @@ def fill_adf_dic(castep_file,outfile,temperature_val):
       f.write("Number of atoms: {} \n".format(number_of_species))
       f.write("Temperature: {}\n".format(float(args.temperature)))
       for atom in adf_dic.keys():
-        f.write("{:>5}".format(atom + " "))
+        f.write("{:>5} {:>5}".format(mysplit(atom)[0],mysplit(atom)[1] + " "))
         for Uii in range(6):
           f.write("{:>10}".format(adf_dic[atom]["{}".format(float(args.temperature))][Uii]))
         f.write("\n")
