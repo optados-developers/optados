@@ -39,6 +39,8 @@ module od_algorithms
   private
 
   public :: gaussian
+  public :: gaussian_convolute
+  public :: lorentzian
   public :: heap_sort
   public :: utility_lowercase
   public :: utility_cart_to_frac
@@ -338,5 +340,115 @@ contains
     end if
 
   end subroutine algor_dist_array
+
+  ! ==============================================================================
+  subroutine gaussian_convolute(input, output, sigma2, gaussian_tol, fast_algor)
+    !! AJ Morris March 2022
+    use od_constants, only: dp
+    implicit none
+
+    real(dp), dimension(:), intent(in) :: input(:, :) !!
+    real(dp), dimension(:, :), intent(inout) ::  output(:, :) !! x and y values of smeared spectrum
+    real(dp), intent(in) :: sigma2 !! The variance of the Gaussain smearing
+    real(dp), intent(in) :: gaussian_tol !! The number of SDs to smear before setting
+    !! to zero (for speed)
+
+    logical, optional, intent(in) :: fast_algor !! Use the fast (*2) butterfly algorithm (at the expense of exactitude)
+
+    real(dp) :: centre_of_peak, energy_spacing, minimum_energy, temp_gaussian, nudge
+    integer :: centre_bin, start_bin, stop_bin, nbins
+
+    integer :: N, M !! Loop variables
+
+    logical :: fast
+
+    logical :: butterfly !! The butterfly method reduces the number of gaussian calls.
+    !! (At the risk of cache thrashing). It is inexact but approaches
+    !! the correct answer as nbins --> infity
+    !! It assumes that the peak of the gaussian is in the middle of
+    !! the bin and there is a small error on the RHS of the gaussian as
+    !! a result. You might care -- you might not...
+
+    !! Check for optional argument for the fast method.
+    if (present(fast_algor)) then
+      butterfly = fast_algor
+    else
+      butterfly = .false.
+    end if
+
+    !! Work out the array sizes for oursleves
+    minimum_energy = minval(output(:, 1))
+
+    !! Assume the difference between the first two output energies is the energy spacing.
+    energy_spacing = output(2, 1) - output(1, 1)
+
+    nbins = size(output(:, 1))
+
+    write (*, *) minimum_energy, energy_spacing, nbins
+
+    !! normal algorthim
+    if (.not. butterfly) then
+      do N = 1, size(input, 1)   !! Loop over each delta function
+        centre_of_peak = input(N, 1) !! centre of peak
+        centre_bin = NINT((input(N, 1) - minimum_energy)/energy_spacing)
+        start_bin = NINT((input(N, 1) - gaussian_tol - minimum_energy)/energy_spacing)
+        stop_bin = 2*centre_bin - start_bin
+
+        write (*, *) centre_of_peak, centre_bin, start_bin, stop_bin
+
+        if (start_bin < 1) start_bin = 1
+        if (stop_bin > nbins + 1) stop_bin = nbins + 1
+
+        do M = start_bin, stop_bin   !! Turn each energy value into a function
+          output(M, 2) = output(M, 2) + input(N, 2)*gaussian(input(N, 1), sigma2, output(M, 1))
+        end do
+      end do
+
+      !! fast algorithm
+    elseif (butterfly) then
+      do N = 1, size(input, 1)   !! Loop over each delta function
+        centre_of_peak = input(N, 1) !! centre of peak
+        centre_bin = NINT((input(N, 1) - minimum_energy)/energy_spacing)
+        start_bin = NINT((input(N, 1) - gaussian_tol - minimum_energy)/energy_spacing)
+
+        !! If we're too near either end of the spectrum then its not worth bothering with the
+        !! algorithm.
+        fast = .true.
+        if (start_bin < 1) Then
+          start_bin = 1
+          fast = .false.
+        end if
+        if (stop_bin > nbins + 1) Then
+          stop_bin = nbins + 1
+          fast = .false.
+        end if
+
+        if (fast) then
+          do M = start_bin, centre_bin   !! Turn each energy value into a function
+            temp_gaussian = gaussian(input(N, 1), sigma2, output(M, 1))
+            output(M, 2) = output(M, 2) + input(N, 2)*temp_gaussian
+            output(2*centre_bin - M + 1, 2) = output(2*centre_bin - M + 1, 2) + input(N, 2)*temp_gaussian
+          end do
+        else !! as before
+          stop_bin = 2*centre_bin - start_bin
+          do M = start_bin, stop_bin   !! Turn each energy value into a function
+            output(M, 2) = output(M, 2) + input(N, 2)*gaussian(input(N, 1), sigma2, output(M, 1))
+          end do
+        end if
+      end do
+    end if
+  end subroutine gaussian_convolute
+
+  ! ==============================================================================
+  function lorentzian(x0, x, l)
+    !! AJ Morris March 2022
+    use od_constants, only: dp, pi
+    implicit none
+
+    real(kind=dp)             :: lorentzian
+    real(dp), intent(in) :: x0, x, l
+
+    lorentzian = l/(pi*(((x0 - x)**2) + (l**2)))
+  end function lorentzian
 
 end module od_algorithms

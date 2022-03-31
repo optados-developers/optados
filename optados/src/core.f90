@@ -630,6 +630,7 @@ contains
 
     integer :: N, N_spin, N_energy, N_energy2
     real(kind=dp) :: G_width, g, dE
+
     real(kind=dp), allocatable, dimension(:, :, :) :: weighted_dos_temp
 
     G_width = LAI_gaussian_width          ! FWHM of Gaussian

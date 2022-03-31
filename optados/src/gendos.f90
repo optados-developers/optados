@@ -4,14 +4,12 @@
 !! R J Nicholls
 program gendos
   use od_constants, only: pi, dp
-  use od_algorithms, only: gaussian
+  use od_algorithms, only: gaussian, gaussian_convolute
   use od_io, only: stdout, maxlen, io_file_unit, io_error
 
   implicit none
 
-  real(kind=dp), allocatable, dimension(:) :: data_energy
-  real(kind=dp), allocatable, dimension(:) :: data_value
-  real(kind=dp), allocatable, dimension(:, :) :: spectrum   ! Gaussian broadened
+  real(kind=dp), allocatable, dimension(:, :) :: input_spectrum, spectrum, spectrum_tmp   ! Gaussian broadened
 
   real(kind=dp) :: E_min
   real(kind=dp) :: E_max
@@ -56,19 +54,14 @@ program gendos
   open (unit=gendos_output_unit, action='write', file='gendos.spectra')
 
 ! Read in the data
-!  allocate (data(n_transitions, 2), stat=ierr)
-  allocate (data_energy(n_transitions), stat=ierr)
-  if (ierr /= 0) call io_error('Error allocating data_energy array in gendos')
+  allocate (input_spectrum(n_transitions, 2), stat=ierr)
+  if (ierr /= 0) call io_error('Error allocating input_spectrum array in gendos')
 
-  allocate (data_value(n_transitions), stat=ierr)
-  if (ierr /= 0) call io_error('Error allocating data_value array in gendos')
-
-  data_energy = 0.0_dp
-  data_value = 0.0_dp
+  input_spectrum = 0.0_dp
 
   do N = 1, n_transitions
     !                          energies    values
-    read (gendos_case_unit, *) data_energy(N), data_value(N)
+    read (gendos_case_unit, *) input_spectrum(N, 1), input_spectrum(N, 2)
   end do
 
   ! Create spectrum
@@ -91,7 +84,7 @@ program gendos
   gaussian_tol = 2*sqrt(sigma2)
 
   ! Smear the spectrum with a guassian of width sigma2,
-  call gaussian_convolute_deltas(data_energy(:), data_value(:), spectrum(:, :), sigma2, gaussian_tol, .false.)
+  call gaussian_convolute(input_spectrum(:, :), spectrum(:, :), sigma2, gaussian_tol, .false.)
 
 ! Adds in Lorentzian broadening
   if (L_width .gt. 0.0_dp) then
@@ -106,22 +99,11 @@ program gendos
 contains
 
 ! ==============================================================================
-  function lorentzian(x0, x, l)
-    !! AJ Morris March 2022
-    use od_constants, only: dp, pi
-    implicit none
-
-    real(kind=dp)             :: lorentzian
-    real(dp), intent(in) :: x0, x, l
-
-    lorentzian = l/(pi*(((x0 - x)**2) + (l**2)))
-  end function lorentzian
-
-! ==============================================================================
   subroutine lorentzian_convolute_spectrum(spectrum, width)
     !! AJ Morris March 2022
 
     use od_constants, only: dp
+    use od_algorithms, only: lorentzian
     implicit none
 
     real(dp) :: energy_spacing
@@ -170,101 +152,5 @@ contains
     if (ierr /= 0) call io_error('Error deallocating spectrum_GaL array in gendos')
 
   end subroutine lorentzian_convolute_spectrum
-
-! ==============================================================================
-  subroutine gaussian_convolute_deltas(input_x, input_y, output, sigma2, gaussian_tol, fast_algor)
-    !! AJ Morris March 2022
-    use od_algorithms, only: gaussian
-    use od_constants, only: dp
-    implicit none
-
-    real(dp), dimension(:), intent(in) :: input_x(:) !! x-values (normally positions of delta-fns)
-    real(dp), dimension(:), intent(in) :: input_y(:) !! y-values (normally intensities of delta-fns)
-    real(dp), dimension(:, :), intent(inout) ::  output(:, :) !! x and y values of smeared spectrum
-    real(dp), intent(in) :: sigma2 !! The variance of the Gaussain smearing
-    real(dp), intent(in) :: gaussian_tol !! The number of SDs to smear before setting
-    !! to zero (for speed)
-
-    logical, optional, intent(in) :: fast_algor !! Use the fast (*2) butterfly algorithm (at the expense of exactitude)
-
-    real(dp) :: centre_of_peak, energy_spacing, minimum_energy, temp_gaussian, nudge
-    integer :: centre_bin, start_bin, stop_bin, nbins
-
-    integer :: N, M !! Loop variables
-
-    logical :: fast
-
-    logical :: butterfly !! The butterfly method reduces the number of gaussian calls.
-    !! (At the risk of cache thrashing). It is inexact but approaches
-    !! the correct answer as nbins --> infity
-    !! It assumes that the peak of the gaussian is in the middle of
-    !! the bin and there is a small error on the RHS of the gaussian as
-    !! a result. You might care -- you might not...
-
-    !! Check for optional argument for the fast method.
-    if (present(fast_algor)) then
-      butterfly = fast_algor
-    else
-      butterfly = .false.
-    end if
-
-    !! Work out the array sizes for oursleves
-    minimum_energy = minval(output(:, 1))
-
-    !! Assume the difference between the first two output energies is the energy spacing.
-    energy_spacing = output(2, 1) - output(1, 1)
-
-    nbins = size(output(:, 1))
-
-    !! normal algorthim
-    if (.not. butterfly) then
-      do N = 1, size(input_x)   !! Loop over each delta function
-        centre_of_peak = input_x(N) !! centre of peak
-        centre_bin = NINT((input_x(N) - minimum_energy)/energy_spacing)
-        start_bin = NINT((input_x(N) - gaussian_tol - minimum_energy)/energy_spacing)
-        stop_bin = 2*centre_bin - start_bin
-
-        if (start_bin < 1) start_bin = 1
-        if (stop_bin > nbins + 1) stop_bin = nbins + 1
-
-        do M = start_bin, stop_bin   !! Turn each energy value into a function
-          output(M, 2) = output(M, 2) + input_y(N)*gaussian(input_x(N), sigma2, output(M, 1))
-        end do
-      end do
-
-      !! fast algorithm
-    elseif (butterfly) then
-      do N = 1, size(input_x)   !! Loop over each delta function
-        centre_of_peak = input_x(N) !! centre of peak
-        centre_bin = NINT((input_x(N) - minimum_energy)/energy_spacing)
-        start_bin = NINT((input_x(N) - gaussian_tol - minimum_energy)/energy_spacing)
-
-        !! If we're too near either end of the spectrum then its not worth bothering with the
-        !! algorithm.
-        fast = .true.
-        if (start_bin < 1) Then
-          start_bin = 1
-          fast = .false.
-        end if
-        if (stop_bin > nbins + 1) Then
-          stop_bin = nbins + 1
-          fast = .false.
-        end if
-
-        if (fast) then
-          do M = start_bin, centre_bin   !! Turn each energy value into a function
-            temp_gaussian = gaussian(input_x(N), sigma2, output(M, 1))
-            output(M, 2) = output(M, 2) + input_y(N)*temp_gaussian
-            output(2*centre_bin - M + 1, 2) = output(2*centre_bin - M + 1, 2) + input_y(N)*temp_gaussian
-          end do
-        else !! as before
-          stop_bin = 2*centre_bin - start_bin
-          do M = start_bin, stop_bin   !! Turn each energy value into a function
-            output(M, 2) = output(M, 2) + input_y(N)*gaussian(input_x(N), sigma2, output(M, 1))
-          end do
-        end if
-      end do
-    end if
-  end subroutine gaussian_convolute_deltas
 
 end program gendos
