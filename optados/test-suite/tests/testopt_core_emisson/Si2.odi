@@ -33,6 +33,7 @@ CORE_QDIR : 0.5 0.5 0.25
 
 # Include life-time and instrumentaion broadening
 CORE_LAI_BROADENING : true  # Default
+LAI_gaussian_quality : 1000000
 LAI_gaussian_width : 0.5
 LAI_lorentzian_width : 0.0
 LAI_lorentzian_scale : 0.0

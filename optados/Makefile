@@ -2,7 +2,7 @@ include make.system
 
 VER := 1.2.380
 
-default : optados
+default : optados tools
 
 all : optados docs tools
 

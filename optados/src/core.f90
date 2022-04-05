@@ -65,9 +65,10 @@ contains
     ! Lifetime and instrumental broadening
     if (core_LAI_broadening .eqv. .true.) then
       allocate (weighted_dos_broadened(size(weighted_dos, 1), size(weighted_dos, 2), size(weighted_dos, 3)))
-      weighted_dos_broadened = 0.0_dp
-      if (LAI_lorentzian .or. (LAI_lorentzian_scale .gt. 0.00001_dp)) call core_lorentzian
-      if (LAI_gaussian) call core_gaussian
+      weighted_dos_broadened = weighted_dos
+      if (LAI_lorentzian .or. (LAI_lorentzian_scale .gt. 0.00001_dp)) &
+      & call core_lorentzian(weighted_dos_broadened, weighted_dos_broadened)
+      if (LAI_gaussian) call core_gaussian(weighted_dos_broadened, weighted_dos_broadened)
     end if
 
     if (set_efermi_zero .and. .not. efermi_set) call dos_utils_set_efermi
@@ -619,48 +620,54 @@ contains
 
   end subroutine write_core
 
-  subroutine core_gaussian
+  subroutine core_gaussian(weighted_dos_in, weighted_dos_out)
     !**************************************************************
     ! This subroutine adds in instrumental (Gaussian) broadening
 
     use od_constants, only: pi, dp, bohr2ang
     use od_parameters, only: LAI_gaussian_width, dos_nbins, LAI_lorentzian, LAI_lorentzian_scale
+    use od_parameters, only: LAI_gaussian_quality
     use od_dos_utils, only: E
     use od_electronic, only: nspins, elnes_mwab, band_energy
+    use od_algorithms, only: gaussian_convolute
 
-    integer :: N, N_spin, N_energy, N_energy2
-    real(kind=dp) :: G_width, g, dE
+    integer :: N, N_spin, N_energy, N_energy2, N_orb
+    real(kind=dp) :: sigma_2, g, dE, gaussian_tol, sigma2
 
-    real(kind=dp), allocatable, dimension(:, :, :) :: weighted_dos_temp
+    real(kind=dp), intent(in), dimension(:, :, :) :: weighted_dos_in
+    real(kind=dp), intent(out), dimension(:, :, :) :: weighted_dos_out
+    real(kind=dp), allocatable, dimension(:, :) :: temp_array, temp_array2
 
-    G_width = LAI_gaussian_width          ! FWHM of Gaussian
+    allocate (temp_array(size(E), 2))
+    allocate (temp_array2(size(E), 2))
+
+    temp_array = 0.0_dp
+    temp_array(:, 1) = E(:)
+
+    temp_array2 = 0.0_dp
+    temp_array2(:, 1) = E(:)
+
+    ! FWHM of Gaussian
+    sigma2 = LAI_gaussian_width/(2*sqrt(2*log(2.0_dp))) ! This is correct 5/4/22
+
+    ! This is quite conservative
+    gaussian_tol = LAI_gaussian_quality*sqrt(sigma2)
+
     dE = E(2) - E(1)
-    allocate (weighted_dos_temp(size(weighted_dos, 1), size(weighted_dos, 2), size(weighted_dos, 3)))
-    weighted_dos_temp = 0.0_dp
+    write (*, *) "de=", dE
 
-    if (LAI_lorentzian .or. (LAI_lorentzian_scale .gt. 0.00001_dp)) then
-      weighted_dos_temp = weighted_dos_broadened           ! In case we've already done Lorentzian broadening
-      weighted_dos_broadened = 0.0_dp
-    else
-      weighted_dos_temp = weighted_dos
-    end if
-
-    do N = 1, elnes_mwab%norbitals         ! Loop over orbitals
-      do N_spin = 1, nspins               ! Loop over spins
-        do N_energy = 1, dos_nbins       ! Loop over energy
-          do N_energy2 = 1, dos_nbins   ! Turn each energy value into a function
-            g = (((4.0_dp*log(2.0_dp))/pi)**(0.5_dp))*(1/G_width)*exp(-4.0_dp*(log(2.0_dp))* &
-                                                                      (((E(N_energy2) - E(N_energy))/G_width)**2.0_dp))  ! Gaussian
-            weighted_dos_broadened(N_energy2, N_spin, N) = weighted_dos_broadened(N_energy2, N_spin, N) &
-                                                           + (g*weighted_dos_temp(N_energy, N_spin, N)*dE)
-          end do
-        end do                        ! End loop over energy
+    do N_orb = 1, elnes_mwab%norbitals         ! Loop over orbitals
+      do N_spin = 1, nspins
+        temp_array(:, 2) = weighted_dos_in(:, N_spin, N_orb)    ! Loop over spins
+        temp_array2(:, 2) = 0.0_dp
+        call gaussian_convolute(temp_array, temp_array2, sigma2, gaussian_tol, .false.)
+        weighted_dos_out(:, N_spin, N_orb) = temp_array2(:, 2)*dE
       end do                           ! End loop over spins
     end do                              ! End loop over orbitals
 
   end subroutine core_gaussian
 
-  subroutine core_lorentzian
+  subroutine core_lorentzian(weighted_dos_in, weighted_dos_out)
     !**************************************************************
     ! This subroutine adds in life-time (Lorentzian) broadening
 
@@ -670,33 +677,50 @@ contains
     use od_dos_utils, only: E
     use od_electronic, only: nspins, elnes_mwab, efermi
     use od_dos_utils, only: efermi_fixed, efermi_adaptive, efermi_linear
+    use od_algorithms, only: lorentzian_convolute
+
+    real(kind=dp), intent(in), dimension(:, :, :) :: weighted_dos_in
+    real(kind=dp), intent(out), dimension(:, :, :) :: weighted_dos_out
+    real(kind=dp), allocatable, dimension(:, :) :: temp_array
 
     integer :: N, N_spin, N_energy, N_energy2
     real(kind=dp) :: L_width, l, dE
 
-    dE = E(2) - E(1)
+    !dE = E(2) - E(1)
+    L_width = 0.5_dp*LAI_lorentzian_width
+
+    allocate (temp_array(size(E), 1:2))
+
+    temp_array(:, 1) = E(:)
 
     do N = 1, elnes_mwab%norbitals         ! Loop over orbitals
       do N_spin = 1, nspins               ! Loop over spins
-        do N_energy = 1, dos_nbins       ! Loop over energy
-          if (E(N_energy) .ge. (LAI_lorentzian_offset + efermi)) then
-            L_width = 0.5_dp*(LAI_lorentzian_width & ! HWHW of Lorentzian
-                              + ((E(N_energy) - efermi - LAI_lorentzian_offset)*LAI_lorentzian_scale))
-          else
-            L_width = 0.5_dp*LAI_lorentzian_width
-          end if
-          if ((L_width*pi) .lt. dE) then  ! to get rid of spikes caused by L_width too small
-            L_width = dE/pi
-          end if
-          do N_energy2 = 1, dos_nbins ! Turn each energy value into a function
-            l = weighted_dos(N_energy, N_spin, N)*L_width/(pi*(((E(N_energy2) - E(N_energy))**2) + (L_width**2)))  ! Lorentzian
-            weighted_dos_broadened(N_energy2, N_spin, N) = weighted_dos_broadened(N_energy2, N_spin, N) + (l*dE)
-          end do
-          !  end if
-        end do                        ! End look over energy
+        !      do N_energy = 1, dos_nbins       ! Loop over energy
+        !        if (E(N_energy) .ge. (LAI_lorentzian_offset + efermi)) then
+        !          L_width = 0.5_dp*(LAI_lorentzian_width & ! HWHW of Lorentzian
+        !             &+ ((E(N_energy) - efermi - LAI_lorentzian_offset)*LAI_lorentzian_scale))
+        !        else
+        !          L_width = 0.5_dp*LAI_lorentzian_width
+        !        end if
+        !        if ((L_width*pi) .lt. dE) then  ! to get rid of spikes caused by L_width too small
+        !          L_width = dE/pi
+        !        end if
+        !        do N_energy2 = 1, dos_nbins ! Turn each energy value into a function
+        !      l = weighted_dos(N_energy, N_spin, N)*L_width/(pi*(((E(N_energy2) - E(N_energy))**2) + (L_width**2)))  ! Lorentzian
+        !      weighted_dos_broadened(N_energy2, N_spin, N) = weighted_dos_broadened(N_energy2, N_spin, N) + (l*dE)
+
+        !          weighted_dos_broadened(N_energy2, N_spin, N) = weighted_dos_broadened(N_energy2, N_spin, N) &
+        !          & + weighted_dos(N_energy, N_spin, N)*dE*lorentzian(E(N_energy2), E(N_energy), L_width)
+
+        temp_array(:, 2) = weighted_dos_in(:, N_spin, N)
+        call lorentzian_convolute(temp_array, L_width,&
+        & LAI_lorentzian_offset + efermi, LAI_lorentzian_scale)
+        !        end do
+        !  end if
+!        end do                        ! End look over energy
       end do                           ! End loop over spins
     end do                              ! End loop over orbitals
-
+    weighted_dos_out = weighted_dos_in
   end subroutine core_lorentzian
 
 !!$

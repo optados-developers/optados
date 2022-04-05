@@ -4,7 +4,7 @@
 !! R J Nicholls
 program gendos
   use od_constants, only: pi, dp
-  use od_algorithms, only: gaussian, gaussian_convolute
+  use od_algorithms, only: gaussian, gaussian_convolute, lorentzian_convolute
   use od_io, only: stdout, maxlen, io_file_unit, io_error
 
   implicit none
@@ -20,7 +20,7 @@ program gendos
   real(kind=dp) :: sigma2
   real(kind=dp) :: centre_of_peak
   real(kind=dp) :: gaussian_tol
-  real(kind=dp) :: energy_spacing, minimum_energy
+  real(kind=dp) :: energy_spacing, minimum_energy, tol
 
   integer :: n_transitions
   integer :: n_bins
@@ -46,6 +46,7 @@ program gendos
   read (gendos_input_unit, *) cdummy, cdummy, E_spacing
   read (gendos_input_unit, *) cdummy, cdummy, G_width
   read (gendos_input_unit, *) cdummy, cdummy, L_width
+  read (gendos_input_unit, *) cdummy, cdummy, tol
 
   gendos_output_unit = io_file_unit()
 
@@ -81,7 +82,7 @@ program gendos
   sigma2 = G_width/(2*sqrt(2*log(2.0_dp)))
 
   ! To speed up the gaussian we only do it within 2 * sigma of the peak
-  gaussian_tol = 2*sqrt(sigma2)
+  gaussian_tol = tol*sqrt(sigma2)
 
   ! Smear the spectrum with a guassian of width sigma2,
   call gaussian_convolute(input_spectrum(:, :), spectrum(:, :), sigma2, gaussian_tol, .false.)
@@ -89,68 +90,11 @@ program gendos
 ! Adds in Lorentzian broadening
   if (L_width .gt. 0.0_dp) then
     l = 0.5_dp*L_width
-    call lorentzian_convolute_spectrum(spectrum(:, :), l)
+    call lorentzian_convolute(spectrum(:, :), l)
   end if
 
   do N = 1, n_bins + 1
     write (gendos_output_unit, '(f10.6,f10.6)') spectrum(N, 1), spectrum(N, 2)
   end do
-
-contains
-
-! ==============================================================================
-  subroutine lorentzian_convolute_spectrum(spectrum, width)
-    !! AJ Morris March 2022
-
-    use od_constants, only: dp
-    use od_algorithms, only: lorentzian
-    implicit none
-
-    real(dp) :: energy_spacing
-
-    real(dp), intent(inout), dimension(:, :) :: spectrum
-    real(dp), intent(in) :: width
-    real(dp), allocatable, dimension(:, :) :: spectrum_temp
-
-    real(dp) :: l
-
-    integer :: N, M, nbins
-
-    nbins = size(spectrum(:, 1))
-
-    ! We need a temporary array to write the output to. We'll deallocate it as
-    ! soon as possible.
-    allocate (spectrum_temp(n_bins + 1, 2), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating spectrum_temp array in lorentzian_convolute_spectrum')
-
-    spectrum_temp = 0.0_dp
-    spectrum_temp(:, 1) = spectrum(:, 1)
-
-    ! Will want to modify an intent(in) locally. Probably better to do it this way
-    ! than end up changing l in the calling function. That would be non-intutive.
-    l = width
-
-    energy_spacing = spectrum(2, 1) - spectrum(1, 1)
-
-    !! to get rid of spikes caused by l too small
-    if ((l*pi) .lt. energy_spacing) l = energy_spacing/pi
-
-    do N = 1, nbins + 1       ! Loop over energy
-      do M = 1, nbins + 1 ! Turn each energy value into a function
-        !
-        !          y  l  E_spacing
-        !  -----------------------
-        !     pi (x_o - x )^2 + l^2
-
-        spectrum_temp(M, 2) = spectrum_temp(M, 2) + spectrum(N, 2)*energy_spacing*lorentzian(spectrum(M, 1), spectrum(N, 1), l)
-      end do
-    end do                        ! End look over energy
-
-    spectrum = spectrum_temp
-
-    deallocate (spectrum_temp, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating spectrum_GaL array in gendos')
-
-  end subroutine lorentzian_convolute_spectrum
 
 end program gendos

@@ -334,5 +334,6 @@ output = Si2_out.ome_fmt
 [categories]
 optados_only = testopt_*
 od2od_only = testod2od_*
+core_only = testopt_core*
 all = optados_only od2od_only
 default =  all

@@ -41,6 +41,7 @@ module od_algorithms
   public :: gaussian
   public :: gaussian_convolute
   public :: lorentzian
+  public :: lorentzian_convolute
   public :: heap_sort
   public :: utility_lowercase
   public :: utility_cart_to_frac
@@ -347,8 +348,8 @@ contains
     use od_constants, only: dp
     implicit none
 
-    real(dp), dimension(:), intent(in) :: input(:, :) !!
-    real(dp), dimension(:, :), intent(inout) ::  output(:, :) !! x and y values of smeared spectrum
+    real(dp), dimension(:, :), intent(in) :: input(:, :) !!
+    real(dp), dimension(:, :), intent(out):: output(:, :) !! x and y values of smeared spectrum
     real(dp), intent(in) :: sigma2 !! The variance of the Gaussain smearing
     real(dp), intent(in) :: gaussian_tol !! The number of SDs to smear before setting
     !! to zero (for speed)
@@ -384,7 +385,9 @@ contains
 
     nbins = size(output(:, 1))
 
-    write (*, *) minimum_energy, energy_spacing, nbins
+    do N = 1, size(input, 1)
+      write (1, *) input(N, 1), input(N, 2)
+    end do
 
     !! normal algorthim
     if (.not. butterfly) then
@@ -394,11 +397,8 @@ contains
         start_bin = NINT((input(N, 1) - gaussian_tol - minimum_energy)/energy_spacing)
         stop_bin = 2*centre_bin - start_bin
 
-        write (*, *) centre_of_peak, centre_bin, start_bin, stop_bin
-
         if (start_bin < 1) start_bin = 1
-        if (stop_bin > nbins + 1) stop_bin = nbins + 1
-
+        if (stop_bin > nbins) stop_bin = nbins
         do M = start_bin, stop_bin   !! Turn each energy value into a function
           output(M, 2) = output(M, 2) + input(N, 2)*gaussian(input(N, 1), sigma2, output(M, 1))
         end do
@@ -437,6 +437,11 @@ contains
         end if
       end do
     end if
+
+    do N = 1, size(output, 1)
+      write (3, *) output(N, 1), output(N, 2)
+    end do
+
   end subroutine gaussian_convolute
 
   ! ==============================================================================
@@ -450,5 +455,81 @@ contains
 
     lorentzian = l/(pi*(((x0 - x)**2) + (l**2)))
   end function lorentzian
+
+  ! ==============================================================================
+  subroutine lorentzian_convolute(spectrum, width, start, scale)
+    !! AJ Morris March 2022
+
+    use od_constants, only: dp, pi
+    use od_io, only: io_error
+    implicit none
+
+    real(dp) :: energy_spacing
+
+    real(dp), intent(inout), dimension(:, :) :: spectrum
+    real(dp), intent(in) :: width
+    real(dp), allocatable, dimension(:, :) :: spectrum_temp
+
+    real(dp), intent(in), optional :: start, scale
+
+    real(dp) :: l
+
+    integer :: N, M, nbins, ierr
+
+    logical :: energy_dependent_broadening
+
+    if (present(start) .and. present(scale)) then
+      energy_dependent_broadening = .true.
+    else
+      energy_dependent_broadening = .false.
+    end if
+
+    nbins = size(spectrum(:, 1))
+
+    ! We need a temporary array to write the output to. We'll deallocate it as
+    ! soon as possible.
+    allocate (spectrum_temp(1:nbins, 2), stat=ierr)
+    if (ierr /= 0) call io_error('Error allocating spectrum_temp array in lorentzian_convolute_spectrum')
+
+    spectrum_temp = 0.0_dp
+    spectrum_temp(:, 1) = spectrum(:, 1)
+
+    ! Will want to modify an intent(in) locally. Probably better to do it this way
+    ! than end up changing l in the calling function. That would be non-intutive.
+    l = width
+
+    energy_spacing = spectrum(2, 1) - spectrum(1, 1)
+
+    if (energy_dependent_broadening) then ! This keeps the if statement out of the loop
+      do N = 1, nbins        ! Loop over energy
+        do M = 1, nbins ! Turn each energy value into a function
+          if (spectrum(M, 1) .ge. (start)) l = 0.5_dp*(l + (spectrum(M, 1) - start)*scale)
+          if (l*pi .lt. energy_spacing) l = energy_spacing/pi
+          spectrum_temp(M, 2) = spectrum_temp(M, 2) + &
+          &spectrum(N, 2)*energy_spacing*lorentzian(spectrum(M, 1), spectrum(N, 1), l)
+        end do
+      end do                        ! End look over energy
+    else
+      !! to get rid of spikes caused by l too small
+      if ((l*pi) .lt. energy_spacing) l = energy_spacing/pi
+
+      do N = 1, nbins        ! Loop over energy
+        do M = 1, nbins ! Turn each energy value into a function
+          !          y  l  E_spacing
+          !  -----------------------
+          !     pi (x_o - x )^2 + l^2
+
+          spectrum_temp(M, 2) = spectrum_temp(M, 2) + &
+          &spectrum(N, 2)*energy_spacing*lorentzian(spectrum(M, 1), spectrum(N, 1), l)
+        end do
+      end do                        ! End look over energy
+    end if
+
+    spectrum = spectrum_temp
+
+    deallocate (spectrum_temp, stat=ierr)
+    if (ierr /= 0) call io_error('Error deallocating spectrum_GaL array in gendos')
+
+  end subroutine lorentzian_convolute
 
 end module od_algorithms
