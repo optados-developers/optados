@@ -654,7 +654,6 @@ contains
     gaussian_tol = LAI_gaussian_quality*sqrt(sigma2)
 
     dE = E(2) - E(1)
-    write (*, *) "de=", dE
 
     do N_orb = 1, elnes_mwab%norbitals         ! Loop over orbitals
       do N_spin = 1, nspins
@@ -684,14 +683,17 @@ contains
     real(kind=dp), allocatable, dimension(:, :) :: temp_array
 
     integer :: N, N_spin, N_energy, N_energy2
-    real(kind=dp) :: L_width, l, dE
+    real(kind=dp) :: L_width, l, dE, offset_start
 
     !dE = E(2) - E(1)
-    L_width = 0.5_dp*LAI_lorentzian_width
 
     allocate (temp_array(size(E), 1:2))
 
     temp_array(:, 1) = E(:)
+
+    L_width = 0.5_dp*LAI_lorentzian_width
+
+    offset_start = LAI_lorentzian_offset + efermi
 
     do N = 1, elnes_mwab%norbitals         ! Loop over orbitals
       do N_spin = 1, nspins               ! Loop over spins
@@ -714,13 +716,13 @@ contains
 
         temp_array(:, 2) = weighted_dos_in(:, N_spin, N)
         call lorentzian_convolute(temp_array, L_width,&
-        & LAI_lorentzian_offset + efermi, LAI_lorentzian_scale)
+        & offset_start, LAI_lorentzian_scale)
+        weighted_dos_out(:, N_spin, N) = temp_array(:, 2)
         !        end do
         !  end if
 !        end do                        ! End look over energy
       end do                           ! End loop over spins
     end do                              ! End loop over orbitals
-    weighted_dos_out = weighted_dos_in
   end subroutine core_lorentzian
 
 !!$

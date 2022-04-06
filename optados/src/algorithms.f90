@@ -467,7 +467,7 @@ contains
     real(dp) :: energy_spacing
 
     real(dp), intent(inout), dimension(:, :) :: spectrum
-    real(dp), intent(in) :: width
+    real(dp), intent(in) :: width !! Halfwidth
     real(dp), allocatable, dimension(:, :) :: spectrum_temp
 
     real(dp), intent(in), optional :: start, scale
@@ -502,14 +502,16 @@ contains
 
     if (energy_dependent_broadening) then ! This keeps the if statement out of the loop
       do N = 1, nbins        ! Loop over energy
+        !! Annoyingly this equation is for the FULLwidth hence 2.0_dp*l
+        if (spectrum(N, 1) .ge. (start)) l = 0.5_dp*(2.0_dp*width + (spectrum(N, 1) - start)*scale)
+        if (l*pi .lt. energy_spacing) l = energy_spacing/pi
         do M = 1, nbins ! Turn each energy value into a function
-          if (spectrum(M, 1) .ge. (start)) l = 0.5_dp*(l + (spectrum(M, 1) - start)*scale)
-          if (l*pi .lt. energy_spacing) l = energy_spacing/pi
           spectrum_temp(M, 2) = spectrum_temp(M, 2) + &
           &spectrum(N, 2)*energy_spacing*lorentzian(spectrum(M, 1), spectrum(N, 1), l)
         end do
       end do                        ! End look over energy
     else
+
       !! to get rid of spikes caused by l too small
       if ((l*pi) .lt. energy_spacing) l = energy_spacing/pi
 
