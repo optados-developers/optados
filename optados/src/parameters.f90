@@ -111,11 +111,12 @@ module od_parameters
   logical, public, save :: core_LAI_broadening
   character(len=20), public, save :: core_type
   real(kind=dp), public, save :: LAI_gaussian_width
-  integer, public, save :: LAI_gaussian_quality
+  real(kind=dp), public, save :: LAI_gaussian_quality
   logical, public, save :: LAI_gaussian
   real(kind=dp), public, save :: LAI_lorentzian_width
   real(kind=dp), public, save :: LAI_lorentzian_scale
   real(kind=dp), public, save :: LAI_lorentzian_offset
+  real(kind=dp), public, save :: LAI_lorentzian_quality
   logical, public, save :: LAI_lorentzian
 
   real(kind=dp), public, save :: lenconfac
@@ -397,9 +398,13 @@ contains
     if (LAI_lorentzian_width .gt. 1E-14) LAI_lorentzian = .true.
     if (LAI_lorentzian_width .lt. 0.0_dp) call io_error('Error: LAI_lorentzian_width must be positive')
 
-    LAI_gaussian_quality = 3
-    call param_get_keyword('lai_gaussian_quality', found, i_value=LAI_gaussian_quality)
+    LAI_gaussian_quality = 3.0_dp
+    call param_get_keyword('lai_gaussian_quality', found, r_value=LAI_gaussian_quality)
     if (LAI_gaussian_quality .lt. 0) call io_error('Error: LAI_gaussian_quality must be positive')
+
+    LAI_lorentzian_quality = 5.0_dp
+    call param_get_keyword('lai_lorentzian_quality', found, r_value=LAI_lorentzian_quality)
+    if (LAI_lorentzian_quality .lt. 0) call io_error('Error: LAI_lorentzian_quality must be positive')
 
     LAI_lorentzian_scale = 0.1_dp
     call param_get_keyword('lai_lorentzian_scale', found, r_value=LAI_lorentzian_scale)

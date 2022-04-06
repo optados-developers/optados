@@ -650,7 +650,6 @@ contains
     ! FWHM of Gaussian
     sigma2 = LAI_gaussian_width/(2*sqrt(2*log(2.0_dp))) ! This is correct 5/4/22
 
-    ! This is quite conservative
     gaussian_tol = LAI_gaussian_quality*sqrt(sigma2)
 
     dE = E(2) - E(1)
@@ -672,7 +671,7 @@ contains
 
     use od_constants, only: pi, dp
     use od_parameters, only: LAI_lorentzian_width, LAI_lorentzian_scale, LAI_lorentzian_offset, &
-      LAI_gaussian_width, dos_nbins, LAI_gaussian, adaptive, linear, fixed
+      LAI_gaussian_width, LAI_lorentzian_quality, dos_nbins, LAI_gaussian, adaptive, linear, fixed
     use od_dos_utils, only: E
     use od_electronic, only: nspins, elnes_mwab, efermi
     use od_dos_utils, only: efermi_fixed, efermi_adaptive, efermi_linear
@@ -684,7 +683,7 @@ contains
     real(kind=dp), allocatable, dimension(:, :) :: temp_array2
 
     integer :: N, N_spin, N_energy, N_energy2
-    real(kind=dp) :: L_width, l, dE, offset_start
+    real(kind=dp) :: L_width, l, dE, offset_start, lorentzian_tol
 
     !dE = E(2) - E(1)
 
@@ -696,35 +695,17 @@ contains
 
     L_width = 0.5_dp*LAI_lorentzian_width
 
+    lorentzian_tol = LAI_lorentzian_quality*sqrt(L_width)
+
     offset_start = LAI_lorentzian_offset + efermi
 
     do N = 1, elnes_mwab%norbitals         ! Loop over orbitals
       do N_spin = 1, nspins               ! Loop over spins
-        !      do N_energy = 1, dos_nbins       ! Loop over energy
-        !        if (E(N_energy) .ge. (LAI_lorentzian_offset + efermi)) then
-        !          L_width = 0.5_dp*(LAI_lorentzian_width & ! HWHW of Lorentzian
-        !             &+ ((E(N_energy) - efermi - LAI_lorentzian_offset)*LAI_lorentzian_scale))
-        !        else
-        !          L_width = 0.5_dp*LAI_lorentzian_width
-        !        end if
-        !        if ((L_width*pi) .lt. dE) then  ! to get rid of spikes caused by L_width too small
-        !          L_width = dE/pi
-        !        end if
-        !        do N_energy2 = 1, dos_nbins ! Turn each energy value into a function
-        !      l = weighted_dos(N_energy, N_spin, N)*L_width/(pi*(((E(N_energy2) - E(N_energy))**2) + (L_width**2)))  ! Lorentzian
-        !      weighted_dos_broadened(N_energy2, N_spin, N) = weighted_dos_broadened(N_energy2, N_spin, N) + (l*dE)
-
-        !          weighted_dos_broadened(N_energy2, N_spin, N) = weighted_dos_broadened(N_energy2, N_spin, N) &
-        !          & + weighted_dos(N_energy, N_spin, N)*dE*lorentzian(E(N_energy2), E(N_energy), L_width)
-
         temp_array(:, 2) = weighted_dos_in(:, N_spin, N)
         temp_array2(:, 2) = 0.0_dp
-        call lorentzian_convolute(temp_array, temp_array2, L_width,&
-        & offset_start, LAI_lorentzian_scale)
+        call lorentzian_convolute(temp_array, temp_array2, width=L_width,&
+        & start=offset_start, scale=LAI_lorentzian_scale, lorentzian_tol=lorentzian_tol)
         weighted_dos_out(:, N_spin, N) = temp_array2(:, 2)
-        !        end do
-        !  end if
-!        end do                        ! End look over energy
       end do                           ! End loop over spins
     end do                              ! End loop over orbitals
   end subroutine core_lorentzian

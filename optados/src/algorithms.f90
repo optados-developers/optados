@@ -452,7 +452,7 @@ contains
   end function lorentzian
 
   ! ==============================================================================
-  subroutine lorentzian_convolute(spectrum_in, spectrum_out, width, start, scale)
+  subroutine lorentzian_convolute(spectrum_in, spectrum_out, width, start, scale, lorentzian_tol)
     !! The logic is that spectrum_out is a continuously (binned) function
     !! spectrum_in may be continous or delta fucntions. We use the spectrum_out
     !! to work out what the bin width is, etc.
@@ -469,11 +469,12 @@ contains
     real(dp), intent(in) :: width !! Halfwidth
     real(dp), allocatable, dimension(:, :) :: spectrum_temp
 
-    real(dp), intent(in), optional :: start, scale
+    real(dp), intent(in), optional :: start, scale, lorentzian_tol
 
-    real(dp) :: l
+    real(dp) :: l, minimum_energy
 
     integer :: N, M, nbins, ierr
+    integer ::   centre_of_peak, centre_bin, start_bin, stop_bin
 
     logical :: energy_dependent_broadening
 
@@ -491,12 +492,25 @@ contains
 
     energy_spacing = spectrum_out(2, 1) - spectrum_out(1, 1)
 
+    !! Work out the array sizes for oursleves
+    minimum_energy = minval(spectrum_out(:, 1))
+
     if (energy_dependent_broadening) then ! This keeps the if statement out of the loop
       do N = 1, size(spectrum_in(:, 1))        ! Loop over energy
+
         !! Annoyingly this equation is for the FULLwidth hence 2.0_dp*l
         if (spectrum_in(N, 1) .ge. (start)) l = 0.5_dp*(2.0_dp*width + (spectrum_in(N, 1) - start)*scale)
         if (l*pi .lt. energy_spacing) l = energy_spacing/pi
-        do M = 1, nbins ! Turn each energy value into a function
+
+        centre_of_peak = spectrum_in(N, 1) !! centre of peak
+        centre_bin = NINT((spectrum_in(N, 1) - minimum_energy)/energy_spacing)
+        start_bin = NINT((spectrum_in(N, 1) - lorentzian_tol - minimum_energy)/energy_spacing)
+        stop_bin = 2*centre_bin - start_bin
+
+        if (start_bin < 1) start_bin = 1
+        if (stop_bin > nbins) stop_bin = nbins
+
+        do M = start_bin, stop_bin ! Turn each energy value into a function
           spectrum_out(M, 2) = spectrum_out(M, 2) + &
           &spectrum_in(N, 2)*energy_spacing*lorentzian(spectrum_out(M, 1), spectrum_in(N, 1), l)
         end do
@@ -507,7 +521,16 @@ contains
       if ((l*pi) .lt. energy_spacing) l = energy_spacing/pi
 
       do N = 1, size(spectrum_in(:, 1))  ! Loop over energy
-        do M = 1, nbins ! Turn each energy value into a function
+
+        centre_of_peak = spectrum_in(N, 1) !! centre of peak
+        centre_bin = NINT((spectrum_in(N, 1) - minimum_energy)/energy_spacing)
+        start_bin = NINT((spectrum_in(N, 1) - lorentzian_tol - minimum_energy)/energy_spacing)
+        stop_bin = 2*centre_bin - start_bin
+
+        if (start_bin < 1) start_bin = 1
+        if (stop_bin > nbins) stop_bin = nbins
+
+        do M = 1, start_bin, stop_bin  ! Turn each energy value into a function
           !          y  l  E_spacing
           !  -----------------------
           !     pi (x_o - x )^2 + l^2
