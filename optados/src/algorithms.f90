@@ -344,6 +344,9 @@ contains
 
   ! ==============================================================================
   subroutine gaussian_convolute(input, output, sigma2, gaussian_tol, fast_algor)
+    !! The logic is that spectrum_out is a continuously (binned) function
+    !! spectrum_in may be continous or delta fucntions. We use the spectrum_out
+    !! to work out what the bin width is, etc.
     !! AJ Morris March 2022
     use od_constants, only: dp
     implicit none
@@ -449,7 +452,10 @@ contains
   end function lorentzian
 
   ! ==============================================================================
-  subroutine lorentzian_convolute(spectrum, width, start, scale)
+  subroutine lorentzian_convolute(spectrum_in, spectrum_out, width, start, scale)
+    !! The logic is that spectrum_out is a continuously (binned) function
+    !! spectrum_in may be continous or delta fucntions. We use the spectrum_out
+    !! to work out what the bin width is, etc.
     !! AJ Morris March 2022
 
     use od_constants, only: dp, pi
@@ -458,7 +464,8 @@ contains
 
     real(dp) :: energy_spacing
 
-    real(dp), intent(inout), dimension(:, :) :: spectrum
+    real(dp), intent(in), dimension(:, :) :: spectrum_in
+    real(dp), intent(out), dimension(:, :) :: spectrum_out
     real(dp), intent(in) :: width !! Halfwidth
     real(dp), allocatable, dimension(:, :) :: spectrum_temp
 
@@ -476,30 +483,22 @@ contains
       energy_dependent_broadening = .false.
     end if
 
-    nbins = size(spectrum(:, 1))
-
-    ! We need a temporary array to write the output to. We'll deallocate it as
-    ! soon as possible.
-    allocate (spectrum_temp(1:nbins, 2), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating spectrum_temp array in lorentzian_convolute_spectrum')
-
-    spectrum_temp = 0.0_dp
-    spectrum_temp(:, 1) = spectrum(:, 1)
+    nbins = size(spectrum_out(:, 1))
 
     ! Will want to modify an intent(in) locally. Probably better to do it this way
     ! than end up changing l in the calling function. That would be non-intutive.
     l = width
 
-    energy_spacing = spectrum(2, 1) - spectrum(1, 1)
+    energy_spacing = spectrum_out(2, 1) - spectrum_out(1, 1)
 
     if (energy_dependent_broadening) then ! This keeps the if statement out of the loop
-      do N = 1, nbins        ! Loop over energy
+      do N = 1, size(spectrum_in(:, 1))        ! Loop over energy
         !! Annoyingly this equation is for the FULLwidth hence 2.0_dp*l
-        if (spectrum(N, 1) .ge. (start)) l = 0.5_dp*(2.0_dp*width + (spectrum(N, 1) - start)*scale)
+        if (spectrum_in(N, 1) .ge. (start)) l = 0.5_dp*(2.0_dp*width + (spectrum_in(N, 1) - start)*scale)
         if (l*pi .lt. energy_spacing) l = energy_spacing/pi
         do M = 1, nbins ! Turn each energy value into a function
-          spectrum_temp(M, 2) = spectrum_temp(M, 2) + &
-          &spectrum(N, 2)*energy_spacing*lorentzian(spectrum(M, 1), spectrum(N, 1), l)
+          spectrum_out(M, 2) = spectrum_out(M, 2) + &
+          &spectrum_in(N, 2)*energy_spacing*lorentzian(spectrum_out(M, 1), spectrum_in(N, 1), l)
         end do
       end do                        ! End look over energy
     else
@@ -507,22 +506,17 @@ contains
       !! to get rid of spikes caused by l too small
       if ((l*pi) .lt. energy_spacing) l = energy_spacing/pi
 
-      do N = 1, nbins        ! Loop over energy
+      do N = 1, size(spectrum_in(:, 1))  ! Loop over energy
         do M = 1, nbins ! Turn each energy value into a function
           !          y  l  E_spacing
           !  -----------------------
           !     pi (x_o - x )^2 + l^2
 
-          spectrum_temp(M, 2) = spectrum_temp(M, 2) + &
-          &spectrum(N, 2)*energy_spacing*lorentzian(spectrum(M, 1), spectrum(N, 1), l)
+          spectrum_out(M, 2) = spectrum_out(M, 2) + &
+          &spectrum_in(N, 2)*energy_spacing*lorentzian(spectrum_out(M, 1), spectrum_in(N, 1), l)
         end do
       end do                        ! End look over energy
     end if
-
-    spectrum = spectrum_temp
-
-    deallocate (spectrum_temp, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating spectrum_GaL array in gendos')
 
   end subroutine lorentzian_convolute
 

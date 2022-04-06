@@ -681,6 +681,7 @@ contains
     real(kind=dp), intent(in), dimension(:, :, :) :: weighted_dos_in
     real(kind=dp), intent(out), dimension(:, :, :) :: weighted_dos_out
     real(kind=dp), allocatable, dimension(:, :) :: temp_array
+    real(kind=dp), allocatable, dimension(:, :) :: temp_array2
 
     integer :: N, N_spin, N_energy, N_energy2
     real(kind=dp) :: L_width, l, dE, offset_start
@@ -688,8 +689,10 @@ contains
     !dE = E(2) - E(1)
 
     allocate (temp_array(size(E), 1:2))
+    allocate (temp_array2(size(E), 1:2))
 
     temp_array(:, 1) = E(:)
+    temp_array2(:, 1) = E(:)
 
     L_width = 0.5_dp*LAI_lorentzian_width
 
@@ -715,9 +718,10 @@ contains
         !          & + weighted_dos(N_energy, N_spin, N)*dE*lorentzian(E(N_energy2), E(N_energy), L_width)
 
         temp_array(:, 2) = weighted_dos_in(:, N_spin, N)
-        call lorentzian_convolute(temp_array, L_width,&
+        temp_array2(:, 2) = 0.0_dp
+        call lorentzian_convolute(temp_array, temp_array2, L_width,&
         & offset_start, LAI_lorentzian_scale)
-        weighted_dos_out(:, N_spin, N) = temp_array(:, 2)
+        weighted_dos_out(:, N_spin, N) = temp_array2(:, 2)
         !        end do
         !  end if
 !        end do                        ! End look over energy
