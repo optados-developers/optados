@@ -385,10 +385,6 @@ contains
 
     nbins = size(output(:, 1))
 
-    do N = 1, size(input, 1)
-      write (1, *) input(N, 1), input(N, 2)
-    end do
-
     !! normal algorthim
     if (.not. butterfly) then
       do N = 1, size(input, 1)   !! Loop over each delta function
@@ -437,10 +433,6 @@ contains
         end if
       end do
     end if
-
-    do N = 1, size(output, 1)
-      write (3, *) output(N, 1), output(N, 2)
-    end do
 
   end subroutine gaussian_convolute
 
