@@ -329,11 +329,28 @@ inputs_args = ('', '-i ome_bin -o ome_fmt -w Si2_out Si2')
 output = Si2_out.ome_fmt
 
 #--------------------------------------------------------------
+# G e n D O S   T e s t s
+#--------------------------------------------------------------
+# Generic test that GenDOS can smear. This might be a useful debug
+# for core tests #2, #3 and #4 too.
+[testgendos_gandl]
+program = GENDOS_LOG_OK
+inputs_args = ('Co2.gdi', 'Co2')
+output = Co2.gdo
+
+#--------------------------------------------------------------
 # C a t e g o r y   L i s t
 #--------------------------------------------------------------
 [categories]
 optados_only = testopt_*
 od2od_only = testod2od_*
+gendos_only = testgendos_*
+dos_only = testopt_dos*
+pdos_only = testopt_pdos*
+jdos_only = testopt_jdos*
+optics_only = testopt_optics*
 core_only = testopt_core*
-all = optados_only od2od_only
+
+all = optados_only od2od_only gendos_only
+
 default =  all

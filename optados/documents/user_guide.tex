@@ -86,6 +86,7 @@ UK\\
 
 \begin{document}
 \newcommand{\optados}{\textsc{OptaDOS}}
+\newcommand{\gendos}{\textsc{GenDOS}}
 \newcommand{\lindos}{\texttt{LinDOS}}
 \newcommand{\onetep}{\textsc{onetep}}
 \newcommand{\castep}{\textsc{castep}}
@@ -1313,13 +1314,13 @@ More can be found on EELS/ELNES here: \footnote{http://www2.tcm.phy.cam.ac.uk/on
 %A paper on PDOS in \onetep\  is in preparation.
 
 
-\chapter{GenDOS}
+\chapter{\gendos}
 \section{Overview}
-Gendos is a tool for convoluting a spectrum or set of delta functions with a Gaussian and / or Lorentzian to produce a smeared spectrum.
+\gendos\ is a tool for convoluting a spectrum or set of delta functions with a Gaussian and / or Lorentzian to produce a smeared spectrum.
 %
-Gendos uses the same smearing routines as \optados.
+\gendos\ uses the same smearing routines as \optados.
 
-Gendos is made by \verb# ./make tools#.
+\gendos\ is compiled by \verb# ./make tools#.
 %
 The input file is \verb# seedname.gdi #, the spectrum to be smeared is in  \verb# seedname.dat # and the output is found in  \verb# seedname.gdo #.
 
@@ -1366,9 +1367,9 @@ To speed up the calcualtion of the Lorentzian, set the Lorentzian to zero for an
 Default value \verb# 10.0 #.
 
 
-\section{Running GenDOS}
+\section{Running \gendos}
 
-Gendos is run \verb# ./gendos seedname#.
+\gendos\ is run \verb# ./gendos seedname#.
 %
 A \verb# seedname.gdi# must be present.
 %

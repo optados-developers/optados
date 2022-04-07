@@ -26,6 +26,11 @@ extract_fn = tools parsers.parse_od2od_log.parse
 exe = ../../od2od
 extract_fn = tools parsers.parse_od2od_fmt.parse
 
+[GENDOS_LOG_OK]
+exe = ../../gendos
+extract_fn = tools parsers.parse_od2od_fmt.parse
+
+
 [user]
 # This is the string (or list of strings) that identifies sets of tests
 # to be run - one could have multiple ones
