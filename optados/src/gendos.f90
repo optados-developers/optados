@@ -1,43 +1,60 @@
 ! -*- mode: F90 ; mode: font-lock ; column-number-mode: true -*-
-
-!! Progam to calcualte generic spectral
-!! R J Nicholls
 program gendos
+  !! Progam to calcualte generic spectral
+  !! R J Nicholls
   use od_constants, only: pi, dp
   use od_algorithms, only: gaussian, gaussian_convolute, lorentzian_convolute
-  use od_io, only: stdout, maxlen, io_file_unit, io_error, io_get_seedname, seedname
+  use od_io, only: maxlen, io_file_unit, io_error, io_get_seedname, seedname
   use od_build, only: build_info
 
   implicit none
 
-  real(kind=dp), allocatable, dimension(:, :) :: input_spectrum, spectrum, spectrum_out   ! Gaussian broadened
+  real(kind=dp), allocatable, dimension(:, :) :: spectrum_in
+  !! The spectrum read from file
+  !! (:,1) contains the energies, (:,2) the spectrum
+  !! This can be a spectrum to be smeared, or a set of delta functions
+  real(kind=dp), allocatable, dimension(:, :) :: spectrum
+  !! Intermediate array to hold the spectrum. Same scheme as spectrum_in
+  real(kind=dp), allocatable, dimension(:, :) :: spectrum_out
+  !! Final array to hold the spectrum. Same scheme as spectrum_in
 
-  character(maxlen) :: data_file
-  real(kind=dp) :: E_min
-  real(kind=dp) :: E_max
-  real(kind=dp) :: E_spacing
-  real(kind=dp) :: G_width
-  real(kind=dp) :: L_width
-  real(kind=dp) :: tol
+  real(kind=dp) :: EnergyMinimum
+  !! Beginning of spectrum_out scale
+  real(kind=dp) :: EnergyMaximum
+  !! End of spectrum_out scale
+  real(kind=dp) :: EnergySpacing
+  !! Energy wdith of each output bin
+  real(kind=dp) :: EnergyWindow
+  !! When working out EnergyMinimum and EnergyMaximum automoatically this is the
+  !! the extra energy added allow and above the highest and lowest delta function
+  !! repsectively.
+  real(kind=dp) :: GaussianWidth
+  !! FWHM of the Gaussian smearing
+  real(kind=dp) :: LorentzianWidth
+  !! FWHM of the Lorentzian smearing
+  real(kind=dp) :: GaussianTolerance
+  !! To speed up the calcualtion of the Gaussians, set the Gaussian to zero for
+  !! any value GaussianTolerance * HWHM away.
+  real(kind=dp) :: LorentzianTolerance
+  !! To speed up the calcualtion of the Lorentzian, set the Lorentzian to zero for
+  !! any value LorentzianTolerance * HWHM away.
 
-  real(kind=dp) :: l
+  real(kind=dp) :: sigma
+  !! SD of the Gaussian
+  real(kind=dp) :: LWidth
+  !! Width of Lorentizan (HWHM)
 
-  real(kind=dp) :: sigma2
-  real(kind=dp) :: centre_of_peak
-  real(kind=dp) :: gaussian_tol
-  real(kind=dp) :: energy_spacing, minimum_energy
+  real(kind=dp) :: gaussian_tol, lorentzian_tol
 
-  integer :: n_transitions, n_lines, ilines
-  integer :: n_bins
-  integer :: N
-  integer :: M
-  integer :: gendos_input_unit
-  integer :: gendos_output_unit
-  integer :: gendos_case_unit
-  integer :: ierr, iostat
-  integer :: Start_bin, stop_bin, centre_bin
+  integer :: ntransitions, nlines, nbins
+  integer :: itransitions, ibin, ilines
+  !! Loop variables
+
+  integer :: gendos_input_unit, gendos_output_unit, gendos_case_unit
+  integer :: ierr
 
   character(maxlen) :: cdummy, cdummy2, cdummy3
+  character(maxlen) :: data_file
 
   call io_get_seedname
 
@@ -51,124 +68,140 @@ program gendos
 
   ! Some defaults
   data_file = trim(seedname)//'.dat'
-  E_min = 1.0_dp  !! Impossible
-  E_max = -1.0_dp !! Impossible
-  E_spacing = 0.01    !! Seems about right (AJM)
-  G_width = 0.0_dp  !! i.e. none
-  L_width = 0.0_dp  !! i.e none
-  tol = 5       !! 5 sigma
+  EnergyMinimum = 1.0_dp    !! Impossible
+  EnergyMaximum = -1.0_dp   !! Impossible
+  EnergySpacing = 0.01      !! Seems about right (AJM)
+  GaussianWidth = 0.0_dp    !! i.e. none
+  LorentzianWidth = 0.0_dp  !! i.e none
+  GaussianTolerance = 5     !! 5 sigma
+  LorentzianTolerance = 10  !! 10x FWHM
 
-  n_lines = 0
+  ! Find the number of lines in the input file
+  nlines = 0
   do
     read (gendos_input_unit, *, iostat=ierr) cdummy
     if (ierr /= 0) then
       exit
     else
-      n_lines = n_lines + 1
+      nlines = nlines + 1
     end if
   end do
 
   rewind (gendos_input_unit)
 
-  do ilines = 1, n_lines
+  ! Now read the input file
+  do ilines = 1, nlines
     read (gendos_input_unit, *, iostat=ierr) cdummy, cdummy2, cdummy3
     select case (trim(cdummy))
     case ("data_file") ! Optional
       read (cdummy3, *) data_file
-    case ("n_transitions", "NumTransitions") ! Optional
-      read (cdummy3, *) n_transitions
+    case ("ntransitions", "NumTransitions") ! Optional
+      read (cdummy3, *) ntransitions
     case ("E_min", "EnergyMin") ! Optional
-      read (cdummy3, *) E_min
+      read (cdummy3, *) EnergyMinimum
     case ("E_max", "EnergyMax") ! Optional
-      read (cdummy3, *) E_max
+      read (cdummy3, *) EnergyMaximum
     case ("E_spacing", "EnergySpacing")
-      read (cdummy3, *) E_spacing
+      read (cdummy3, *) EnergySpacing
     case ("G_width", "GaussianWidth")
-      read (cdummy3, *) G_width
+      read (cdummy3, *) GaussianWidth
     case ("L_width", "LorentzianWidth")
-      read (cdummy3, *) L_width
-    case ("Tol", "GaussianTolerance")
-      read (cdummy3, *) tol
+      read (cdummy3, *) LorentzianWidth
+    case ("G_tol", "GaussianTolerance")
+      read (cdummy3, *) GaussianTolerance
+    case ("L_tol", "LorentzianTolerance")
+      read (cdummy3, *) LorentzianTolerance
     case default
       write (*, *) " Unknown keyword: ", trim(cdummy)
       call io_error('Unknown keyword.')
     end select
   end do
 
-  !! Open the other input and output files
+  ! Open the other input data file
   open (unit=gendos_case_unit, action='read', file=trim(data_file))    ! input data file, format energy intensity
 
   ! Read number of transitions
-  n_transitions = 0
+  ntransitions = 0
   do
     read (gendos_case_unit, *, iostat=ierr) cdummy
     if (ierr /= 0) then
       exit
     else
-      n_transitions = n_transitions + 1
+      ntransitions = ntransitions + 1
     end if
   end do
 
   rewind (gendos_case_unit)
 
   ! Read in the data
-  allocate (input_spectrum(n_transitions, 2), stat=ierr)
-  if (ierr /= 0) call io_error('Error allocating input_spectrum array in gendos')
+  allocate (spectrum_in(ntransitions, 2), stat=ierr)
+  if (ierr /= 0) call io_error('Error allocating spectrum_in array in gendos')
 
-  input_spectrum = 0.0_dp
+  spectrum_in = 0.0_dp
 
-  do N = 1, n_transitions
+  do itransitions = 1, ntransitions
     !                          energies    values
-    read (gendos_case_unit, *) input_spectrum(N, 1), input_spectrum(N, 2)
+    read (gendos_case_unit, *) spectrum_in(itransitions, 1), spectrum_in(itransitions, 2)
   end do
 
   ! Auto ranging
-  if ((E_min == 1.0_dp) .and. (E_max == -1.0_dp)) then
+  if ((EnergyMinimum == 1.0_dp) .and. (EnergyMaximum == -1.0_dp)) then
     ! They haven't been set, let's figure it our for ourselves
-    E_min = minval(input_spectrum(:, 1)) - 10.0_dp*G_width
-    E_max = maxval(input_spectrum(:, 1)) + 10.0_dp*G_width
+    if (GaussianWidth > 0.0) then
+      EnergyWindow = 10.0_dp*GaussianWidth
+    else ! we did our best
+      EnergyWindow = 10.0_dp
+    endif
+    EnergyMinimum = minval(spectrum_in(:, 1)) - EnergyWindow
+    EnergyMaximum = maxval(spectrum_in(:, 1)) + EnergyWindow
   end if
 
   gendos_output_unit = io_file_unit()
   open (unit=gendos_output_unit, action='write', file=trim(seedname)//'.gdo')
 
-  !! Write out here to catch defaults
+  ! Write out here to catch any defaults that remained unset, or any
+  ! vaules we had to work out for ourselves.
   call write_header
 
-  ! Create spectrum
-  n_bins = NINT((E_max - E_min)/E_spacing)
+  ! Create energy output spectrum
+  nbins = NINT((EnergyMaximum - EnergyMinimum)/EnergySpacing)
 
-  allocate (spectrum(n_bins + 1, 2), stat=ierr)
+  allocate (spectrum(nbins + 1, 2), stat=ierr)
   if (ierr /= 0) call io_error('Error allocating spectrum array in gendos')
-  allocate (spectrum_out(n_bins + 1, 2), stat=ierr)
+
+  allocate (spectrum_out(nbins + 1, 2), stat=ierr)
   if (ierr /= 0) call io_error('Error allocating spectrum_out array in gendos')
 
   spectrum = 0.0_dp
   spectrum_out = 0.0_dp
 
   ! Put the energies in the array
-  do N = 1, n_bins + 1
-    spectrum(N, 1) = E_min + ((N - 1.0_dp)*E_spacing)
+  do ibin = 1, nbins + 1
+    spectrum(ibin, 1) = EnergyMinimum + ((real(ibin) - 1.0_dp)*EnergySpacing)
   end do
   spectrum_out = spectrum
 
   ! Convert from FWHM notation to sigma^2 notation
-  sigma2 = G_width/(2*sqrt(2*log(2.0_dp)))
+  sigma = GaussianWidth/(2*sqrt(2*log(2.0_dp)))
 
   ! To speed up the gaussian we only do it within tol * sigma of the peak
-  gaussian_tol = tol*sqrt(sigma2)
+  gaussian_tol = GaussianTolerance*GaussianWidth*0.5_dp
 
-  ! Smear the spectrum with a guassian of width sigma2,
-  call gaussian_convolute(input_spectrum(:, :), spectrum(:, :), sigma2, gaussian_tol, .false.)
+  ! Smear the spectrum with a guassian of width sigma,
+  call gaussian_convolute(spectrum_in(:, :), spectrum(:, :), sigma, gaussian_tol, .false.)
 
   ! Adds in Lorentzian broadening
-  if (L_width .gt. 0.0_dp) then
-    l = 0.5_dp*L_width
-    call lorentzian_convolute(spectrum(:, :), spectrum_out(:, :), l)
+  if (LorentzianWidth .gt. 0.0_dp) then
+    LWidth = 0.5_dp*LorentzianWidth
+    lorentzian_tol = LWidth*LorentzianTolerance
+    call lorentzian_convolute(spectrum(:, :), spectrum_out(:, :), LWidth, lorentzian_tol=lorentzian_tol)
+  else
+    spectrum_out(:, :) = spectrum(:, :)
   end if
 
-  do N = 1, n_bins + 1
-    write (gendos_output_unit, '(f10.6,f10.6)') spectrum_out(N, 1), spectrum_out(N, 2)
+  ! Write output
+  do ibin = 1, nbins + 1
+    write (gendos_output_unit, '(f10.6,f10.6)') spectrum_out(ibin, 1), spectrum_out(ibin, 2)
   end do
 
 contains
@@ -195,14 +228,15 @@ contains
     write (gendos_output_unit, '(a78)') "# |             GGG    EEEE  N   N   DDD    OOO   SSS                        | "
     write (gendos_output_unit, '(a78)') "# |                                                                          | "
     write (gendos_output_unit, '(a78)') "# +--------------------------------------------------------------------------+ "
-    write (gendos_output_unit, '(a1,a40,a30)') "#", " Input file name :", trim(seedname)//'.gdi'
-    write (gendos_output_unit, '(a1,a40,a30)') "#", " Data file name :", trim(data_file)
-    write (gendos_output_unit, '(a1,a40,i10)') "#", " Number of transitions in input :", n_transitions
-    write (gendos_output_unit, '(a1,a40,f10.4)') "#", " Minimum energy :", E_min
-    write (gendos_output_unit, '(a1,a40,f10.4)') "#", " Maximum energy :", E_max
-    write (gendos_output_unit, '(a1,a40,f10.4)') "#", " Energy spacing :", E_spacing
-    write (gendos_output_unit, '(a1,a40,f10.4)') "#", " Gaussian FWHM smearing :", G_width
-    write (gendos_output_unit, '(a1,a40,f10.4)') "#", " Lorentzian FWHM smearing :", L_width
-    write (gendos_output_unit, '(a1,a40,f10.4)') "#", " Gaussian precision (in SDs) :", Tol
+    write (gendos_output_unit, '(a1,a45,a30)') "#", " Input file name :", trim(seedname)//'.gdi'
+    write (gendos_output_unit, '(a1,a45,a30)') "#", " Data file name :", trim(data_file)
+    write (gendos_output_unit, '(a1,a45,i10)') "#", " Number of transitions in input :", ntransitions
+    write (gendos_output_unit, '(a1,a45,f10.4)') "#", " Minimum energy :", EnergyMinimum
+    write (gendos_output_unit, '(a1,a45,f10.4)') "#", " Maximum energy :", EnergyMaximum
+    write (gendos_output_unit, '(a1,a45,f10.4)') "#", " Energy spacing :", EnergySpacing
+    write (gendos_output_unit, '(a1,a45,f10.4)') "#", " Gaussian FWHM smearing :", GaussianWidth
+    write (gendos_output_unit, '(a1,a45,f10.4)') "#", " Lorentzian FWHM smearing :", LorentzianWidth
+    write (gendos_output_unit, '(a1,a45,f10.4)') "#", " Gaussian precision (in HWHM) :", GaussianTolerance
+    write (gendos_output_unit, '(a1,a45,f10.4)') "#", " Lorentzian precision (in HWHM) :", LorentzianTolerance
   end subroutine write_header
 end program gendos

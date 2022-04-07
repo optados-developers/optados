@@ -343,7 +343,7 @@ contains
   end subroutine algor_dist_array
 
   ! ==============================================================================
-  subroutine gaussian_convolute(input, output, sigma2, gaussian_tol, fast_algor)
+  subroutine gaussian_convolute(input, output, sigma, gaussian_tol, fast_algor)
     !! The logic is that spectrum_out is a continuously (binned) function
     !! spectrum_in may be continous or delta fucntions. We use the spectrum_out
     !! to work out what the bin width is, etc.
@@ -351,20 +351,23 @@ contains
     use od_constants, only: dp
     implicit none
 
-    real(dp), dimension(:, :), intent(in) :: input(:, :) !!
-    real(dp), dimension(:, :), intent(out):: output(:, :) !! x and y values of smeared spectrum
-    real(dp), intent(in) :: sigma2 !! The variance of the Gaussain smearing
-    real(dp), intent(in) :: gaussian_tol !! The number of SDs to smear before setting
-    !! to zero (for speed)
+    real(dp), dimension(:, :), intent(in) :: input(:, :)
+    !! x and y values of smeared spectrum
+    real(dp), dimension(:, :), intent(out):: output(:, :)
+    !! x and y values of smeared spectrum
+    real(dp), intent(in) :: sigma
+    !! The SD of the Gaussain smearing
+    real(dp), intent(in) :: gaussian_tol
+    !! The number of SDs to smear before setting to zero (for speed)
 
-    logical, optional, intent(in) :: fast_algor !! Use the fast (*2) butterfly algorithm (at the expense of exactitude)
+    logical, optional, intent(in) :: fast_algor
+    !! Use the fast (*2) butterfly algorithm (at the expense of exactitude)
 
-    real(dp) :: centre_of_peak, energy_spacing, minimum_energy, temp_gaussian, nudge
+    real(dp) :: centre_of_peak, energy_spacing, minimum_energy, temp_gaussian
     integer :: centre_bin, start_bin, stop_bin, nbins
 
-    integer :: N, M !! Loop variables
-
-    logical :: fast
+    integer :: N, M
+    !! Loop variables
 
     logical :: butterfly !! The butterfly method reduces the number of gaussian calls.
     !! (At the risk of cache thrashing). It is inexact but approaches
@@ -372,6 +375,8 @@ contains
     !! It assumes that the peak of the gaussian is in the middle of
     !! the bin and there is a small error on the RHS of the gaussian as
     !! a result. You might care -- you might not...
+
+    logical :: fast
 
     !! Check for optional argument for the fast method.
     if (present(fast_algor)) then
@@ -399,7 +404,7 @@ contains
         if (start_bin < 1) start_bin = 1
         if (stop_bin > nbins) stop_bin = nbins
         do M = start_bin, stop_bin   !! Turn each energy value into a function
-          output(M, 2) = output(M, 2) + input(N, 2)*gaussian(input(N, 1), sigma2, output(M, 1))
+          output(M, 2) = output(M, 2) + input(N, 2)*gaussian(input(N, 1), sigma, output(M, 1))
         end do
       end do
 
@@ -424,14 +429,14 @@ contains
 
         if (fast) then
           do M = start_bin, centre_bin   !! Turn each energy value into a function
-            temp_gaussian = gaussian(input(N, 1), sigma2, output(M, 1))
+            temp_gaussian = gaussian(input(N, 1), sigma, output(M, 1))
             output(M, 2) = output(M, 2) + input(N, 2)*temp_gaussian
             output(2*centre_bin - M + 1, 2) = output(2*centre_bin - M + 1, 2) + input(N, 2)*temp_gaussian
           end do
         else !! as before
           stop_bin = 2*centre_bin - start_bin
           do M = start_bin, stop_bin   !! Turn each energy value into a function
-            output(M, 2) = output(M, 2) + input(N, 2)*gaussian(input(N, 1), sigma2, output(M, 1))
+            output(M, 2) = output(M, 2) + input(N, 2)*gaussian(input(N, 1), sigma, output(M, 1))
           end do
         end if
       end do
@@ -462,19 +467,25 @@ contains
     use od_io, only: io_error
     implicit none
 
+    real(dp), intent(in), dimension(:, :) :: spectrum_in
+    !! x and y values of smeared spectrum
+    real(dp), intent(out), dimension(:, :) :: spectrum_out
+    !! x and y values of smeared spectrum
+    real(dp), intent(in) :: width
+    !! Halfwidth
+
+    real(dp), intent(in), optional :: start
+    !! Energy to start energy dependent broadening
+    real(dp), intent(in), optional :: scale
+    !! Scaling for energy dependent broadening
+    real(dp), intent(in), optional :: lorentzian_tol
+    !! Number of HWHM before we set Lorentzian to zero
+
+    real(dp) :: l, minimum_energy, tol
     real(dp) :: energy_spacing
 
-    real(dp), intent(in), dimension(:, :) :: spectrum_in
-    real(dp), intent(out), dimension(:, :) :: spectrum_out
-    real(dp), intent(in) :: width !! Halfwidth
-    real(dp), allocatable, dimension(:, :) :: spectrum_temp
-
-    real(dp), intent(in), optional :: start, scale, lorentzian_tol
-
-    real(dp) :: l, minimum_energy
-
-    integer :: N, M, nbins, ierr
-    integer ::   centre_of_peak, centre_bin, start_bin, stop_bin
+    integer :: N, M, nbins
+    integer :: centre_of_peak, centre_bin, start_bin, stop_bin
 
     logical :: energy_dependent_broadening
 
@@ -483,6 +494,12 @@ contains
     else
       energy_dependent_broadening = .false.
     end if
+
+    if (.not. present(lorentzian_tol)) then
+      tol = 1000.0_dp
+    else
+      tol = lorentzian_tol
+    endif
 
     nbins = size(spectrum_out(:, 1))
 
@@ -504,7 +521,7 @@ contains
 
         centre_of_peak = spectrum_in(N, 1) !! centre of peak
         centre_bin = NINT((spectrum_in(N, 1) - minimum_energy)/energy_spacing)
-        start_bin = NINT((spectrum_in(N, 1) - lorentzian_tol - minimum_energy)/energy_spacing)
+        start_bin = NINT((spectrum_in(N, 1) - tol - minimum_energy)/energy_spacing)
         stop_bin = 2*centre_bin - start_bin
 
         if (start_bin < 1) start_bin = 1
@@ -515,7 +532,7 @@ contains
           &spectrum_in(N, 2)*energy_spacing*lorentzian(spectrum_out(M, 1), spectrum_in(N, 1), l)
         end do
       end do                        ! End look over energy
-    else
+    elseif (.not. energy_dependent_broadening) then
 
       !! to get rid of spikes caused by l too small
       if ((l*pi) .lt. energy_spacing) l = energy_spacing/pi
@@ -524,13 +541,13 @@ contains
 
         centre_of_peak = spectrum_in(N, 1) !! centre of peak
         centre_bin = NINT((spectrum_in(N, 1) - minimum_energy)/energy_spacing)
-        start_bin = NINT((spectrum_in(N, 1) - lorentzian_tol - minimum_energy)/energy_spacing)
+        start_bin = NINT((spectrum_in(N, 1) - tol - minimum_energy)/energy_spacing)
         stop_bin = 2*centre_bin - start_bin
 
         if (start_bin < 1) start_bin = 1
         if (stop_bin > nbins) stop_bin = nbins
 
-        do M = 1, start_bin, stop_bin  ! Turn each energy value into a function
+        do M = start_bin, stop_bin  ! Turn each energy value into a function
           !          y  l  E_spacing
           !  -----------------------
           !     pi (x_o - x )^2 + l^2

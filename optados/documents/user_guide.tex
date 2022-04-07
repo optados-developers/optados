@@ -82,7 +82,7 @@ UK\\
 }
 
 
-\date{February 2019}
+\date{April 2022}
 
 \begin{document}
 \newcommand{\optados}{\textsc{OptaDOS}}
@@ -1312,6 +1312,78 @@ More can be found on EELS/ELNES here: \footnote{http://www2.tcm.phy.cam.ac.uk/on
 
 %A paper on PDOS in \onetep\  is in preparation.
 
+
+\chapter{GenDOS}
+\section{Overview}
+Gendos is a tool for convoluting a spectrum or set of delta functions with a Gaussian and / or Lorentzian to produce a smeared spectrum.
+%
+Gendos uses the same smearing routines as \optados.
+
+Gendos is made by \verb# ./make tools#.
+%
+The input file is \verb# seedname.gdi #, the spectrum to be smeared is in  \verb# seedname.dat # and the output is found in  \verb# seedname.gdo #.
+
+\section{Input Paremeters}
+
+\subsection[data\_file]{\tt character(maxlen) :: data\_file}
+File contining data to be smeared.
+
+Default value \verb# seedname.dat #.
+
+\subsection[EnergyMinimum]{\tt real(kind=dp) :: EnergyMinimum}
+Minimum energy of output spectrum.
+
+Default value \verb# minval(spectrum_in)-10.0_dp*GaussianWidth #.
+
+\subsection[EnergyMaximum]{\tt real(kind=dp) :: EnergyMaximum}
+Maximum energy of output spectrum.
+
+Default value \verb# minval(spectrum_in)+10.0_dp*GaussianWidth #.
+
+\subsection[EnergySpacing]{\tt real(kind=dp) :: EnergySpacing}
+Width of energy bins in output spectrum.
+
+Default value \verb# 0.01 #.
+
+\subsection[GaussianWidth]{\tt real(kind=dp) :: GaussianWidth}
+FWHM of Gaussian to convolute.
+
+Default value \verb# 0.0 #.
+
+\subsection[LorentzianWidth]{\tt real(kind=dp) :: LorentzianWidth}
+FWHM of Lorentzian to convolute.
+
+Default value \verb# 0.0 #.
+
+\subsection[GaussianTolerance]{\tt real(kind=dp) :: GaussianTolerance}
+To speed up the calcualtion of the Gaussians, set the Gaussian to zero for any value GaussianTolerance * HWHM away
+
+Default value \verb# 5.0 #.
+
+\subsection[LorentzianTolerance]{\tt real(kind=dp) :: LorentzianTolerance}
+To speed up the calcualtion of the Lorentzian, set the Lorentzian to zero for any value LorentzianTolerance * HWHM away.
+
+Default value \verb# 10.0 #.
+
+
+\section{Running GenDOS}
+
+Gendos is run \verb# ./gendos seedname#.
+%
+A \verb# seedname.gdi# must be present.
+%
+The format of a \verb#gdi# is \verb#VariableName = VariableValue#. An example of a \verb#gdi# file is provided below.
+\begin{verbatim}
+EnergyMin            = 770
+EnergyMax            = 805
+EnergySpacing        = 0.01
+GaussianWidth        = 0.5
+LorentzianWidth      = 0.5
+LorentzianTolerance  = 10.0
+GaussianTolerance    = 3.0
+\end{verbatim}
+%
+The smeared spectrum can be viewed for example using xmgrace: \verb# xmgrace seedname.gdo#
 
 \chapter{Frequently Asked Questions}
 

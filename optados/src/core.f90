@@ -625,14 +625,13 @@ contains
     ! This subroutine adds in instrumental (Gaussian) broadening
 
     use od_constants, only: pi, dp, bohr2ang
-    use od_parameters, only: LAI_gaussian_width, dos_nbins, LAI_lorentzian, LAI_lorentzian_scale
-    use od_parameters, only: LAI_gaussian_quality
+    use od_parameters, only: LAI_gaussian_width, LAI_gaussian_quality
     use od_dos_utils, only: E
-    use od_electronic, only: nspins, elnes_mwab, band_energy
+    use od_electronic, only: nspins, elnes_mwab
     use od_algorithms, only: gaussian_convolute
 
-    integer :: N, N_spin, N_energy, N_energy2, N_orb
-    real(kind=dp) :: sigma_2, g, dE, gaussian_tol, sigma2
+    integer :: N_spin, N_orb
+    real(kind=dp) :: dE, gaussian_tol, sigma
 
     real(kind=dp), intent(in), dimension(:, :, :) :: weighted_dos_in
     real(kind=dp), intent(out), dimension(:, :, :) :: weighted_dos_out
@@ -648,9 +647,9 @@ contains
     temp_array2(:, 1) = E(:)
 
     ! FWHM of Gaussian
-    sigma2 = LAI_gaussian_width/(2*sqrt(2*log(2.0_dp))) ! This is correct 5/4/22
+    sigma = LAI_gaussian_width/(2*sqrt(2*log(2.0_dp))) ! This is correct 5/4/22
 
-    gaussian_tol = LAI_gaussian_quality*sqrt(sigma2)
+    gaussian_tol = LAI_gaussian_quality*LAI_gaussian_width*0.5_dp
 
     dE = E(2) - E(1)
 
@@ -658,7 +657,7 @@ contains
       do N_spin = 1, nspins
         temp_array(:, 2) = weighted_dos_in(:, N_spin, N_orb)    ! Loop over spins
         temp_array2(:, 2) = 0.0_dp
-        call gaussian_convolute(temp_array, temp_array2, sigma2, gaussian_tol, .false.)
+        call gaussian_convolute(temp_array, temp_array2, sigma, gaussian_tol, .false.)
         weighted_dos_out(:, N_spin, N_orb) = temp_array2(:, 2)*dE
       end do                           ! End loop over spins
     end do                              ! End loop over orbitals
@@ -671,10 +670,9 @@ contains
 
     use od_constants, only: pi, dp
     use od_parameters, only: LAI_lorentzian_width, LAI_lorentzian_scale, LAI_lorentzian_offset, &
-      LAI_gaussian_width, LAI_lorentzian_quality, dos_nbins, LAI_gaussian, adaptive, linear, fixed
+      LAI_lorentzian_quality
     use od_dos_utils, only: E
     use od_electronic, only: nspins, elnes_mwab, efermi
-    use od_dos_utils, only: efermi_fixed, efermi_adaptive, efermi_linear
     use od_algorithms, only: lorentzian_convolute
 
     real(kind=dp), intent(in), dimension(:, :, :) :: weighted_dos_in
@@ -682,10 +680,8 @@ contains
     real(kind=dp), allocatable, dimension(:, :) :: temp_array
     real(kind=dp), allocatable, dimension(:, :) :: temp_array2
 
-    integer :: N, N_spin, N_energy, N_energy2
-    real(kind=dp) :: L_width, l, dE, offset_start, lorentzian_tol
-
-    !dE = E(2) - E(1)
+    integer :: N, N_spin
+    real(kind=dp) :: L_width, offset_start, lorentzian_tol
 
     allocate (temp_array(size(E), 1:2))
     allocate (temp_array2(size(E), 1:2))
@@ -695,7 +691,7 @@ contains
 
     L_width = 0.5_dp*LAI_lorentzian_width
 
-    lorentzian_tol = LAI_lorentzian_quality*sqrt(L_width)
+    lorentzian_tol = LAI_lorentzian_quality*L_width
 
     offset_start = LAI_lorentzian_offset + efermi
 
