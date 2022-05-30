@@ -48,11 +48,9 @@ def get_Ecore(element,infile,exe,outfile):
 '''.format(E_exc_all))
     outfile.write('''|  E excited valence electrons               : {:>23.2f} eV    |
 '''.format(E_exc_val))
-    outfile.write('''|  E ground state valence electrons          : {:>23.2f} eV    |
-'''.format(E_gs_val))
     
     # Check to be sure all values are supplied
-    if E_exc_all == 0 or E_exc_val == 0 or E_gs_val == 0:
+    if E_exc_all == 0 or E_exc_val == 0:
         outfile.write('One or more values above is 0 eV')
         outfile.write('\nFailed to find all values for Ecore with element %s in %s.castep'%(element,infile))
         outfile.write('\n...EXITING...')
@@ -93,16 +91,24 @@ def get_Ecore(element,infile,exe,outfile):
         outfile.write('CASTEP --dryrun execution failed...check your castep binary is on your path')
         outfile.write('\n...EXITING...')
         exit()
+
+
     # If the dryrun is successful, get the E_gs_all
     for i,line in enumerate(newcastepfile):
         if ('Atomic calculation' in line) and ('%s:'%element in line):
             E_gs_all = float(newcastepfile[i+2].split(' ')[-2])
+        if ('Pseudo atomic' in line) and ('%s:'%element in line):
+            if E_gs_val == 0:
+                E_gs_val = float(newcastepfile[i+2].split(' ')[-2])
 
+    outfile.write('''|  E ground state valence electrons          : {:>23.2f} eV    |
+'''.format(E_gs_val))
     outfile.write('''|  E ground state all electrons              : {:>23.2f} eV    |
 '''.format(E_gs_all))
 
-    if E_gs_all == 0:
-        outfile.write('\nFailed to find E ground state all electrons in %s-dryrun.castep'%infile)
+    if E_gs_all == 0 or E_gs_val == 0:
+        outfile.write('One or more values above is 0 eV')
+        outfile.write('\nFailed to find all values for Ecore with element %s in %s.castep or %s-dryrun.castep'%(element,infile,infile))
         outfile.write('\n...EXITING...')
         exit()
 
@@ -209,7 +215,7 @@ in the current working directory. This calculation will perform a castep dryrun.
 Example usage is `./miz_correction -i NaGe -e Ge -t -6348.264726871 -exe /usr/bin/castep.mpi`
 In the NaGe-mizoguchi.out file this provides the calculated correction as
 +----------------------------------------------------------------------------+
-|  Mizoguchi correction to E_TE              :                 11128.60 eV    |
+|  Mizoguchi correction to E_TE              :                 5642.05 eV    |
 +----------------------------------------------------------------------------+
 ''',formatter_class=RawTextHelpFormatter)
 
