@@ -1,0 +1,7 @@
+EnergyMin            =  770
+EnergyMax            =  805
+EnergySpacing        =  0.01
+GaussianWidth        =  0.5
+LorentzianWidth      =  0.5
+LorentzianTolerance  = 10.0
+GaussianTolerance    =  3.0

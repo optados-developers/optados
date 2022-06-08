@@ -1316,9 +1316,9 @@ More can be found on EELS/ELNES here: \footnote{http://www2.tcm.phy.cam.ac.uk/on
 
 \chapter{\gendos}
 \section{Overview}
-\gendos\ is a tool for convoluting a spectrum or set of delta functions with a Gaussian and / or Lorentzian to produce a smeared spectrum.
+\gendos\ is a tool for convoluting a spectrum or set of delta functions with a Gaussian and / or Lorentzian to produce a broadened spectrum.
 %
-\gendos\ uses the same smearing routines as \optados.
+\gendos\ uses the same broadening routines as \optados.
 
 \gendos\ is compiled by \verb# ./make tools#.
 %
@@ -1357,34 +1357,44 @@ FWHM of Lorentzian to convolute.
 Default value \verb# 0.0 #.
 
 \subsection[GaussianTolerance]{\tt real(kind=dp) :: GaussianTolerance}
-To speed up the calcualtion of the Gaussians, set the Gaussian to zero for any value GaussianTolerance * HWHM away
+To speed up the calculation of the Gaussians, set the Gaussian to zero for any value GaussianTolerance * HWHM away
 
 Default value \verb# 5.0 #.
 
 \subsection[LorentzianTolerance]{\tt real(kind=dp) :: LorentzianTolerance}
-To speed up the calcualtion of the Lorentzian, set the Lorentzian to zero for any value LorentzianTolerance * HWHM away.
+To speed up the calculation of the Lorentzian, set the Lorentzian to zero for any value LorentzianTolerance * HWHM away.
 
 Default value \verb# 10.0 #.
 
 
 \section{Running \gendos}
 
-\gendos\ is run \verb# ./gendos seedname#.
+\gendos\ is executed on the command line using,
+
+ \verb# gendos seedname#
+
+
+The input file \verb#seedname.gdi# must be present.
 %
-A \verb# seedname.gdi# must be present.
+The format of a \verb#gdi# is \verb#VariableName = VariableValue#.
 %
-The format of a \verb#gdi# is \verb#VariableName = VariableValue#. An example of a \verb#gdi# file is provided below.
-\begin{verbatim}
-EnergyMin            = 770
-EnergyMax            = 805
-EnergySpacing        = 0.01
-GaussianWidth        = 0.5
-LorentzianWidth      = 0.5
-LorentzianTolerance  = 10.0
-GaussianTolerance    = 3.0
-\end{verbatim}
+\gendos\ reads the data to be broadened from the corresponding \verb#seedname.dat# data file.
 %
-The smeared spectrum can be viewed for example using xmgrace: \verb# xmgrace seedname.gdo#
+The data file comprises two columns, the first containing the position of the delta functions and the second containing their value.
+
+
+\section{Example of \gendos}
+
+ See \verb#/examples/gendos# which contains: the \gendos\ input file, \verb#examples.gdi#; and the file containing the data, \verb#examples.dat#.
+
+Execute \gendos\ on the command line
+
+ \verb#gendos seedname#
+
+If \gendos\ has run successfully an output file called \verb#seedname.gdo# will have been generated containing the broadened spectrum.
+
+ The broadened spectrum can be viewed for example using xmgrace: \verb#xmgrace seedname.gdo#
+
 
 \chapter{Frequently Asked Questions}
 
