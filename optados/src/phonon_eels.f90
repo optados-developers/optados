@@ -47,12 +47,17 @@ module od_phonon_eels
 
   public :: phonon_eels_calculate
 
-  real(kind=dp), allocatable, save  :: adf(:, :)
-  real(kind=dp), allocatable, save  :: debye_waller(:)
+  real(kind=dp), allocatable, save  :: adf(:, :) !(iatom,1:6)
+  real(kind=dp), allocatable, save  :: debye_waller(:) !(iatom)
   complex(kind=dp), allocatable, save  :: phonon_eigenvectors(:, :, :, :) ! iqpoint, ieigenvalues, iatom, i=1,3)
   real(kind=dp), allocatable, save  :: phonon_eigenvalues(:, :)
 
+    real(kind=dp), allocatable, save  :: lf_dielectric_tensor(1:3, 1:3, :) ! low frequency dielectric tensor
+
   real(kind=dp), save  :: phonon_lattice(1:3, 1:3) ! Maybe this is worth keeping
+
+  real(kind=dp), save  :: inf_dielectric_tensor(1:3, 1:3) !  dielectric tensor  ^ infinity
+
   integer :: num_ions ! found in phonon file
   integer :: num_eigenvalues
   integer :: num_qpoints
@@ -80,33 +85,109 @@ contains
     end if
 
     ! read what task we're supposed to be doing.
-    call phonon_eels_read_task
+    call phonon_eels_read_task ! Completed
+
+    ! Need to think about the frequency scale freq(1,nomega)
+    ! O to maximum mode frequency+10%
 
     if (impact_scattering) then
-      !  call phonon_eels_get_thermal_noise()
-      !    call elec_read_band_energy()
-      call phonon_eels_read_phonon_file()
-      !    call elec_read_optical_mat()
-      call phonon_eels_read_chge_trans()
+      !  call phonon_eels_get_thermal_noise() ! PE_read_adf && PE_make_dewall or PE_read_debwall
+                                              !  Completed       DUMMY             DUMMY
+      !    call elec_read_band_energy()   ! Completed
+      call phonon_eels_read_phonon_file() ! Completed
+      !    call elec_read_optical_mat()   ! Completed
+      call phonon_eels_read_chge_trans()  ! DUMMY Subroutine
     endif
 
     if (aloof_scattering) then
-      call phonon_eels_read_aloof_method
+      call phonon_eels_read_aloof_method   ! Completed
       if (dipole_aloof) then
         call io_error(' phonon_eels_calculate : Dipole Aloof Not yet implememnted.')
       elseif (semiclassical_aloof) then
-        call phonon_eels_read_phonon_file()
-        call phonon_eels_read_chge_trans()
+        call phonon_eels_read_phonon_file() ! Completed
+
+        allocate(freq(1:nbins), stat=ierr)
+        if (ierr /= 0) call io_error(" Error : cannot allocate lf_dielectric_tensor")
+
+        call phonon_eels_set_frequency_scale(freq, nbins)
+
+        broadening=0.01_dp ! probably needs to be in the input file
+        kx=0.01_dp
+        ky=0.01_dp
+
+        ! Populate the lf_dielectric_tensor
+        allocate(lf_dielectric_tensor(1:3, 1:3, 1:nbins), stat=ierr)
+        if (ierr /= 0) call io_error(" Error : cannot allocate lf_dielectric_tensor")
+
+        call phonon_eels_calculate_lf_dielectric_tensor(lf_dielectric_tensor, inf_dielectric_tensor, broadening)
+
+        write(*,*) polarizability(ibin, kx, ky)
+
       else
         call io_error(' phonon_eels_calculate : Unknown aloof method.')
       endif
     endif
 
-    ! Do the Maths
-
-    ! Write it out
 
   end subroutine phonon_eels_calculate
+
+  subroutine phonon_eels_set_frequency_scale(freq, nbins)
+    use od_io, only: stdout
+    implicit none
+    write (stdout, *) "Read phonon_eels_set_frequency_scale not implemented yet"
+
+  end subroutine  phonon_eels_set_frequency_scale
+
+  subroutine phonon_eels_calculate_lf_dielectric_tensor(lf_dielectric_tensor, inf_dielectric_tensor, broadening)
+    implict none
+    use od_constants, only: pi
+    use od_cell, only: cell_volume
+
+    real(dp), intent(inout) :: lf_dielectric_tensor(1:3, 1:3, 1:nomega)
+    real(dp), intent(in) :: inf_dielectric_tensor(1:3, 1:3) ! epsilon^infinity
+    real(dp), intent(in) :: broadening
+    complex(dp) :: ctemp
+
+    integer :: gamma_qpoint ! the index for the qpoint at gamma
+    integer :: iomega, ir, jr, imode
+
+    ! still need
+    ! born_effective
+    ! freq
+    ! broadening <-- just a number
+    ! iqpoint <-- just a the gamma point
+
+    gamma_qpoint=phonon_eels_find_gamma_qpoint ! function
+
+    do iomega=1,nomega
+      do ir=1,3
+        do jr=1,3
+          do imode=1,num_eigenvalues
+            ! is this the right way to do i*broadening
+            ctemp = born_effective(imode,ir)*born_effective(imode,jr)/(phonon_eigenvalues(gamma_qpoint,imode)^2- (freq(iomega)+(0, 1)*broadening)^2)
+          end do
+          lf_dielectric_tensor(ir,jr,iomega)=inf_dielectric_tensor(ir,jr)+ 4*pi*ctemp/cell_volume
+        end do
+      end do
+    end do
+
+  end subroutine phonon_eels_calculate_lf_dielectric_tensor()
+
+  complex function polarizability(ibin, kx, ky)
+    implicit none
+    real, intent(in) ::  kx, ky
+    integer, intent(in):: ibin
+
+    real(dp) :: K ! Normalisation
+    real(dp) :: rtemp ! temporary real
+
+    K=sqrt(kx^2+ky^2)
+
+    rtemp = sqrt(lf_dielectric_tensor(3:3,ibin)(kx^2*lf_dielectric_tensor(1:1,ibin) + ky^2*lf_dielectric_tensor(2:2,ibin))/ K^2)
+
+    polarizability= (rtemp-1.0_dp)/(rtemp+1.0_dp)
+
+  end function polarizability
 
   subroutine phonon_eels_get_thermal_noise
     use od_io, only: stdout, io_error
@@ -360,5 +441,32 @@ contains
     end select
 
   end subroutine phonon_eels_read_aloof_method
+
+
+  integer, function phonon_eels_find_gamma_qpoint
+      implicit None
+
+      integer :: gamma_count
+      integer :: iqpoints ! loop varibale
+
+      gamma_count=0
+
+      do iqpoints=1,num_qpoints
+        if(abs(qpoint_positions(iqpoints, 1)) .le. epsilon(qpoint_positions(iqpoints, 1))) then
+          if(abs(qpoint_positions(iqpoints, 2)) .le. epsilon(qpoint_positions(iqpoints, 2))) then
+            if(abs(qpoint_positions(iqpoints, 3)) .le. epsilon(qpoint_positions(iqpoints, 3))) then
+                gamma_count=gamma_count+1
+                phonon_eels_find_gamma_qpoint=iqpoints
+            endif
+          endif
+        endif
+      enddo
+
+      if(gamma_count=0) then
+        call io_error(' phonon_eels_find_gamma_qpoint : Cannot find a qpoint at gamma.')
+      elseif(gamma_count>1) then
+        call io_error(' phonon_eels_find_gamma_qpoint : Can find multiple qpoints at gamma.')
+      endif
+  end function phonon_eels_find_gamma_qpoint
 
 end module od_phonon_eels
