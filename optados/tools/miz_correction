@@ -176,6 +176,8 @@ def flags(args,outfile):
 
     outfile.write('''|  Element with core hole                    :      {:20}     |
 '''.format(args.element))
+    outfile.write('''|  Core hole flag                            :      {:20}     |
+'''.format(args.flag))
     
     outfile.write('''|  Input file to read from                   :      {:20}     |
 '''.format(args.inputfile))
@@ -222,7 +224,9 @@ In the NaGe-mizoguchi.out file this provides the calculated correction as
 
     #Options
     parser.add_argument('-e','--element',type=str,required=True,
-                        help='Element on which the core loss calculation has been performed. This is the elment that should have the core hole placed on it')
+                        help='Element on which the core loss calculation has been performed ("-e Ge"). This is the element that should have the core hole placed on it')
+    parser.add_argument('-f','--flag',type=str,
+                        help='Flag used to denote the core hole in the cell file. Default is "exc". Usage is "--flag 2" or "--flag core"')
 
     parser.add_argument('-i', '--inputfile', type=str,required=True,
                         help='Name of the input file (<input>.castep only) in which the core loss calculation has been performed')
@@ -259,6 +263,10 @@ In the NaGe-mizoguchi.out file this provides the calculated correction as
         outfile.write('Cannot find a castep executable on your path please supply one with the -exe flag')
         outfile.write('\n...EXITING...')
         exit()
+
+    # If no flag is supplied for the core hole use the default "exc"
+    if args.flag is None:
+        args.flag = 'exc'
 
     # Write out which options we are using
     flags(args,outfile)
