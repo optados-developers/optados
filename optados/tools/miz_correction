@@ -7,7 +7,7 @@ from argparse import RawTextHelpFormatter
 
 
     
-def get_Ecore(element,flag,infile,exe,outfile):
+def get_Ecore(element,label,infile,exe,outfile):
     """Calculate the energy difference between the excited and valence states for the pseudopotentials
     used in the coreloss calculation"""
     
@@ -30,11 +30,11 @@ def get_Ecore(element,flag,infile,exe,outfile):
     E_gs_val = 0
     # Read through the castep file to get each variable needed for Ecore
     for i,line in enumerate(castepfile):
-        if ('Atomic calculation' in line) and ('%s:%s'%(element,flag) in line):
+        if ('Atomic calculation' in line) and ('%s:%s'%(element,label) in line):
             E_exc_all = float(castepfile[i+2].split(' ')[-2])
-        if ('Pseudo atomic' in line) and ('%s:%s'%(element,flag) in line):
+        if ('Pseudo atomic' in line) and ('%s:%s'%(element,label) in line):
             E_exc_val = float(castepfile[i+2].split(' ')[-2])
-        if ('Pseudo atomic' in line) and ('%s'%element in line) and ('%s:%s'%(element,flag) not in line):
+        if ('Pseudo atomic' in line) and ('%s'%element in line) and ('%s:%s'%(element,label) not in line):
             E_gs_val = float(castepfile[i+2].split(' ')[-2])
 
         #this linesearching cannot distinguish between multiple castep runs in one file and will just find the last energy supplied
@@ -61,7 +61,7 @@ def get_Ecore(element,flag,infile,exe,outfile):
     cellfile = open('%s.cell'%infile).readlines()
     newcellfile = open('%s-dryrun.cell'%infile,'w')
     for line in cellfile:
-        if '%s:%s'%(element,flag) in line and '{' in line:
+        if '%s:%s'%(element,label) in line and '{' in line:
             newline = line.split('{')[0]
             newcellfile.write('%s\n'%newline)
         else:
@@ -95,9 +95,9 @@ def get_Ecore(element,flag,infile,exe,outfile):
 
     # If the dryrun is successful, get the E_gs_all
     for i,line in enumerate(newcastepfile):
-        if ('Atomic calculation' in line) and ('%s:%s'%(element,flag) in line):
+        if ('Atomic calculation' in line) and ('%s:%s'%(element,label) in line):
             E_gs_all = float(newcastepfile[i+2].split(' ')[-2])
-        if ('Pseudo atomic' in line) and ('%s:%s'%(element,flag) in line):
+        if ('Pseudo atomic' in line) and ('%s:%s'%(element,label) in line):
             if E_gs_val == 0:
                 E_gs_val = float(newcastepfile[i+2].split(' ')[-2])
 
@@ -179,8 +179,8 @@ def flags(args,outfile):
 
     outfile.write('''|  Element with core hole                    :      {:20}     |
 '''.format(args.element))
-    outfile.write('''|  Core hole flag                            :      {:20}     |
-'''.format(args.flag))
+    outfile.write('''|  Core hole label                            :      {:20}     |
+'''.format(args.label))
     
     outfile.write('''|  Input file to read from                   :      {:20}     |
 '''.format(args.inputfile))
@@ -233,8 +233,8 @@ In the NaGe-mizoguchi.out file this provides the calculated correction as
     #Options
     parser.add_argument('-e','--element',type=str,required=True,
                         help='Element on which the core loss calculation has been performed ("-e Ge"). This is the element that should have the core hole placed on it')
-    parser.add_argument('-f','--flag',type=str,
-                        help='Flag used to denote the core hole in the cell file. Default is "exc". Usage is "--flag 2" or "--flag core"')
+    parser.add_argument('-l','--label',type=str,
+                        help='Flag used to denote the core hole in the cell file. Default is "exc". Usage is "--label 2" or "--label core"')
 
     parser.add_argument('-i', '--inputfile', type=str,required=True,
                         help='Name of the input file (<input>.castep only) in which the core loss calculation has been performed')
@@ -272,15 +272,15 @@ In the NaGe-mizoguchi.out file this provides the calculated correction as
         outfile.write('\n...EXITING...')
         exit()
 
-    # If no flag is supplied for the core hole use the default "exc"
-    if args.flag is None:
-        args.flag = 'exc'
+    # If no label is supplied for the core hole use the default "exc"
+    if args.label is None:
+        args.label = 'exc'
 
     # Write out which options we are using
     flags(args,outfile)
 
     # Get the second term of E_TE the core orbitals difference in energy between excited and ground state
-    Ecore = get_Ecore(element=args.element,flag=args.flag,infile=args.inputfile,exe=args.executable,outfile=outfile)
+    Ecore = get_Ecore(element=args.element,label=args.label,infile=args.inputfile,exe=args.executable,outfile=outfile)
 
     if args.totalenergy:
         E_gs_cell = args.totalenergy
