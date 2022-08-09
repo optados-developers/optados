@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 import os,sys
+import re
 import argparse
 import shutil
 import datetime
@@ -30,11 +31,11 @@ def get_Ecore(element,label,infile,exe,outfile):
     E_gs_val = 0
     # Read through the castep file to get each variable needed for Ecore
     for i,line in enumerate(castepfile):
-        if ('Atomic calculation' in line) and ('%s:%s'%(element,label) in line):
+        if ('Atomic calculation' in line) and ('%s:%s:'%(element,label) in line):
             E_exc_all = float(castepfile[i+2].split(' ')[-2])
-        if ('Pseudo atomic' in line) and ('%s:%s'%(element,label) in line):
+        if ('Pseudo atomic' in line) and ('%s:%s '%(element,label) in line):
             E_exc_val = float(castepfile[i+2].split(' ')[-2])
-        if ('Pseudo atomic' in line) and ('%s'%element in line) and ('%s:%s'%(element,label) not in line):
+        if ('Pseudo atomic' in line) and ('%s'%element in line) and ('%s:%s '%(element,label) not in line):
             E_gs_val = float(castepfile[i+2].split(' ')[-2])
 
         #this linesearching cannot distinguish between multiple castep runs in one file and will just find the last energy supplied
@@ -61,8 +62,9 @@ def get_Ecore(element,label,infile,exe,outfile):
     cellfile = open('%s.cell'%infile).readlines()
     newcellfile = open('%s-dryrun.cell'%infile,'w')
     for line in cellfile:
-        if '%s:%s'%(element,label) in line and '{' in line:
-            newline = line.split('{')[0]
+        if '%s:%s '%(element,label) in line and '{' in line:
+            #newline = line.replace('{.*}','',regex=True)
+            newline = re.sub('{.*}','',line)
             newcellfile.write('%s\n'%newline)
         else:
             newcellfile.write(line)
