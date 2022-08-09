@@ -130,10 +130,10 @@ def plot_pdis(infile):
         if kpoint == [0.0,0.0,0.0]:
             k_point_list_str.append(r'$\Gamma$')
         else:
-            k_point_list_str.append(None)
+            k_point_list_str.append('')
 
     for i,kpoint in enumerate(k_point_list_str):
-        if kpoint is not None:
+        if kpoint != '':
             ax.plot([pdis_data[0]['kpoints'][i],pdis_data[0]['kpoints'][i]],[min(pdis_data[0]['energies'][0]),max(pdis_data[0]['energies'][0])],color='k',linestyle='--')
 
     ax.tick_params(which='major', length=0)
@@ -166,7 +166,7 @@ if __name__ == '__main__':
             args.seedname = args.seedname.split('.pdis.dat')[0]
     else:
         # look for a .pdis.dat file
-        for file in os.listdir():
+        for file in os.listdir('.'):
             if file.endswith('.pdis.dat'):
                 args.seedname = file.split('.pdis.dat')[0]
 
