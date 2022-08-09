@@ -1,7 +1,6 @@
-#!/usr/bin/python
+#! python
 import os,sys
 import matplotlib.pyplot as plt
-import random
 import argparse
 
 
@@ -151,24 +150,24 @@ def plot_pdis(infile):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='''Generates a quick plot for analysing output from a \
             pdis OptaDOS calculation. 
-            Example usage is `pdis_plotter.py -i <filename>\
+            Example usage is `pdis_plot.py -i <filename>\
             ''')
 
 
     #Options
-    parser.add_argument('-i', '--inputfile', type=str,
-                        help='Name of the input file (<input>.pdis.dat only) from OptaDOS')
+    parser.add_argument('-i', '--seedname', type=str,
+                        help='Name of the seed file (<seedname>.pdis.dat only) from OptaDOS')
 
     args = parser.parse_args()
 
-    if args.inputfile is not None:
+    if args.seedname is not None:
         # remove the .pdis.dat ending if the user has supplied it
-        if args.inputfile.endswith('.pdis.dat'):
-            args.inputfile = args.inputfile.split('.pdis.dat')[0]
+        if args.seedname.endswith('.pdis.dat'):
+            args.seedname = args.seedname.split('.pdis.dat')[0]
     else:
         # look for a .pdis.dat file
         for file in os.listdir():
             if file.endswith('.pdis.dat'):
-                args.inputfile = file.split('.pdis.dat')[0]
+                args.seedname = file.split('.pdis.dat')[0]
 
-    plot_pdis(args.inputfile)
+    plot_pdis(args.seedname)
