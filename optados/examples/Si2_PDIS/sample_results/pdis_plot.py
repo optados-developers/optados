@@ -1,4 +1,4 @@
-#! python
+#!/usr/bin/python
 import os,sys
 import matplotlib.pyplot as plt
 import argparse
