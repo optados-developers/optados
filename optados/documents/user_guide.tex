@@ -1109,7 +1109,7 @@ The header shows that there are four projectors described below. The first conta
 \begin{enumerate}
 \item Run \castep\ in the same way as previous examples, ensuring that \verb#PDOS_CALCULATE_WEIGHTS: TRUE# is set in the CASTEP parameter file.
 \item Run \optados\ with the desired projections, following the same format as \verb#PDOS# in \verb#Si2_pdis.odi#.
-\item The output can be found in \verb#Si2_pdis.dat#, which contains the weight of each projector at each eigenvalue, for each k-point. Plotting this data in an attractive way is tricky; you might consider trying the Python package \verb#matador# (www.matador.science).
+\item The output can be found in \verb#Si2_pdis.dat#, which contains the weight of each projector at each eigenvalue, for each k-point. Plotting this data in an attractive way is tricky, and therefore we have provided a python script in \verb#tools/pdis_plot.py# which plots the output from a \verb#_pdis.dat# file for quick visualisation. For publication level plotting, you might consider trying the Python package \verb#matador# (www.matador.science).
 \end{enumerate}
 
 \section{JDOS}
