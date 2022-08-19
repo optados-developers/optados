@@ -142,7 +142,10 @@ def get_exc_cell(element,infile):
     E_exc_cell = 0
     for i,line in enumerate(castepfile):
         if 'NB est. 0K energy' in line:
-            E_exc_cell = float(line.split('=  ')[1].split(' ')[0])
+            try:
+                E_exc_cell = float(line.split('=  ')[1].split(' ')[0])
+            except:
+                E_exc_cell = float(line.split('=    ')[1].split(' ')[0])
         #This is only useful if you haven't used the dm method so there is no estimated 0K energy
         elif 'Final energy = ' in line:
             E_exc_cell = float(line.split('=  ')[1].split(' ')[0])
