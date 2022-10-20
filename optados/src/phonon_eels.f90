@@ -233,7 +233,9 @@ contains
     real(kind=dp), allocatable :: mode_eff_charge(:, :)
     integer :: N, M, a, j
     real(kind=dp), allocatable :: norm(:)
+    real(kind=dp) :: one_debye_to_eV ! might need to move this further up, is it used anywhere else?
 
+    one_debye_to_eV = 0.2081943_dp
     
     allocate(mode_osc_1(3,1:num_eigenvalues))
     mode_osc_1=0.0_dp
@@ -249,24 +251,25 @@ contains
              do j=1,3
               !  write(*,*) a, N, j, mode_osc_1(a,1)
              !   mode_osc_1(a,M) = mode_osc_1(a,M) + born_effective(a,j,N)*real(phonon_eigenvectors(1,M,N,j))
-                mode_osc_1(a,M) = mode_osc_1(a,M) + born_effective(a,j,N)*(real(phonon_eigenvectors(1,M,N,j)))/sqrt(atomic_positions(N,4))
+                mode_osc_1(a,M) = mode_osc_1(a,M) + &
+                born_effective(a,j,N)*(real(phonon_eigenvectors(1,M,N,j),dp))/sqrt(atomic_positions(N,4))
                  !                  write(*,*) a, N, j, mode_osc_1(a,1)
              end do
-          norm(M)=norm(M)+(real(phonon_eigenvectors(1,M,N,a))*(real(phonon_eigenvectors(1,M,N,a)))/atomic_positions(N,4))
+ !!         norm(M)=norm(M)+(real(phonon_eigenvectors(1,M,N,a),dp)*(real(phonon_eigenvectors(1,M,N,a),dp))/atomic_positions(N,4))
           end do
        end do
-       do a=1,3
-          mode_eff_charge(a,M) = mode_osc_1(a,M)/sqrt(norm(M))
-       end do
+ !!      do a=1,3
+  !!        mode_eff_charge(a,M) = mode_osc_1(a,M)/sqrt(norm(M))
+  !!     end do
        do a=1,3
           do j=1,3
              !         mode_osc(a,j,M) = mode_osc_1(a,M) * mode_osc_1(j,M)
-             mode_osc(a,j,M) = mode_osc_1(a,M) * mode_osc_1(j,M)
+             mode_osc(a,j,M) = mode_osc_1(a,M) * mode_osc_1(j,M) / (one_debye_to_eV**2.0_dp)
              !           write(*,*) a, mode_osc(a,a,M)
           end do
        end do
 !       write(*,*) M, phonon_eigenvalues(1,M), mode_osc(1,1,M)+mode_osc(1,2,M)+mode_osc(1,3,M)+mode_osc(2,1,M)+mode_osc(2,2,M)+mode_osc(2,3,M)+mode_osc(3,1,M)+mode_osc(3,2,M)+mode_osc(3,3,M)
-       write(*,*) M, phonon_eigenvalues(1,M), mode_osc(1,1,M)+mode_osc(2,2,M)+mode_osc(3,3,M)
+       write(*,'(i5,1x,f15.10,6f15.10)') M, phonon_eigenvalues(1,M), mode_osc(1,1,M), mode_osc(2,2,M), mode_osc(3,3,M), mode_osc(2,3,M), mode_osc(3,1,M), mode_osc(1,2,M)
     end do
     
   endsubroutine phonon_eels_calculate_mode_osc
@@ -294,9 +297,9 @@ contains
 
 !    gamma_qpoint=phonon_eels_find_gamma_qpoint ! function
 
-    do iomega=1,nomega
-           lf_dielectric_tensor(ir,jr,iomega)=inf_dielectric_tensor(ir,jr)
-    end do 
+!    do iomega=1,nomega
+!           lf_dielectric_tensor(ir,jr,iomega)=inf_dielectric_tensor(ir,jr)
+!    end do 
            
 !    do iomega=1,nomega
 !      do ir=1,3
@@ -382,7 +385,8 @@ contains
     if (ierr /= 0) call io_error(" Error : cannot allocate qpoint_positions")
     allocate (qpoint_weights(num_qpoints), stat=ierr)
     if (ierr /= 0) call io_error(" Error : cannot allocate qpoint_weights")
-
+    atomic_positions = 0.0_dp
+    
     do iatom = 1, num_ions
       read (phonon_in_unit, *) dummy, (atomic_positions(iatom, i), i=1, 3), atom_name(iatom), atomic_positions(iatom, 4)
     enddo
