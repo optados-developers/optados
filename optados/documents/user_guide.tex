@@ -1317,7 +1317,7 @@ Here we have commented out the line for charge inclusion, and changed the task k
 \begin{verbatim}
 ../../tools/miz_correction -i NaGe -e Ge -t -6350.174255159
 \end{verbatim}
-Where we have specified the location of the \verb#miz_correction# script, the name of the coreloss file that we want to use to calculate this on, the Ge atom as our site of the core-hole and the ground state energy as specified from our singlepoint calculation. Run this command and take a look at your \verb#NaGe.odi# file. You will see a line has been added:
+Where we have specified the location of the \verb#miz_correction# script, the name of the coreloss file that we want to use to calculate this on, the Ge atom as our site of the core-hole and the ground state energy as specified from our singlepoint calculation. \textbf{NOTE:} The \verb#miz_correction# script is written assuming that you are providing the \castep\ \verb#NB est. 0K energy#. If it cannot find the \verb#NB est. 0K energy# then it will look for the \verb#Final energy#. Therefore it is important if for example your calculation includes a dispersion correction or Hubbard U parameter which affects the final ground state energy to provide the energy before that correction is applied. This way the \verb#-t# flag will reflect the same energy as the core-hole final energy. Run this command and take a look at your \verb#NaGe.odi# file. You will see a line has been added:
 \begin{verbatim}
 mizoguchi_correction : 11130.507406
 \end{verbatim}
