@@ -8,7 +8,7 @@ from argparse import RawTextHelpFormatter
 
 
     
-def get_Egs(infile,outfile):
+def get_Egs(infile,outfile,numatoms):
     """Get the singlepoint energy from a file
     """
     
@@ -28,6 +28,13 @@ def get_Egs(infile,outfile):
             j = i+1
             newline = castepfile[i+1]
             while 'Calculation time' not in newline:
+                if 'Total number of ions in cell' in newline:
+                    numatoms_sp = newline.split('=  ')[1].split(' ')[0]
+                    if numatoms != numatoms_sp:
+                        outfile.write('\nWARNING the number of atoms used in your singlepoint calculation %s.castep file'%infile)
+                        outfile.write('\ndoes not match that in your core-hole calculation castep file. Fix this, or scale up total')
+                        outfile.write('\nenergy and use the -t flag')
+                        exit()
                 if 'NB est. 0K energy' in newline:
                     try:
                         E_gs_cell = float(newline.split('=  ')[1].split(' ')[0])
@@ -188,11 +195,14 @@ def get_exc_cell(element,infile):
         exit()
 
     E_exc_cell = 0
+    numatoms = 0
     for i,line in enumerate(castepfile):
         if 'Electronic Spectroscopy' in line:
             j = i+1
             newline = castepfile[i+1]
             while 'Calculation time' not in newline:
+                if 'Total number of ions in cell' in newline:
+                    numatoms = newline.split('=  ')[1].split(' ')[0]
                 if 'NB est. 0K energy' in newline:
                     try:
                         E_exc_cell = float(newline.split('=  ')[1].split(' ')[0])
@@ -212,7 +222,7 @@ def get_exc_cell(element,infile):
     outfile.write('''|  Core hole total energy                    : {:>23.2f} eV    |
 '''.format(E_exc_cell))
 
-    return E_exc_cell
+    return E_exc_cell,numatoms
 
 
 def write_header(outfile,e):
@@ -346,17 +356,19 @@ In the NaGe-mizoguchi.out file this provides the calculated correction as
     # Get the second term of E_TE the core orbitals difference in energy between excited and ground state
     Ecore = get_Ecore(element=args.element,label=args.label,infile=args.inputfile,exe=args.executable,outfile=outfile)
 
+    # Get excited state singlepoint energy and number of atoms
+    E_exc_cell,numatoms = get_exc_cell(element=args.element,infile=args.inputfile)
+
     # Get singlepoint total energy either as supplied or from file
     if args.totalenergy:
         E_gs_cell = args.totalenergy
     elif args.singlepoint:
-        E_gs_cell = get_Egs(infile=args.singlepoint,outfile=outfile)
+        E_gs_cell = get_Egs(infile=args.singlepoint,outfile=outfile,numatoms=numatoms)
     else:
         outfile.write('No ground state energy supplied, exiting without calculating full Mizoguchi correction.')
         outfile.write('\n...EXITING...')
         exit()
 
-    E_exc_cell = get_exc_cell(element=args.element,infile=args.inputfile)
     outfile.write('''|  Singlepoint total energy                  : {:>23.2f} eV    |
 '''.format(E_gs_cell))
     E_TE = (E_exc_cell - E_gs_cell)+Ecore
