@@ -8,6 +8,54 @@ from argparse import RawTextHelpFormatter
 
 
     
+def get_Egs(infile,outfile):
+    """Get the singlepoint energy from a file
+    """
+    
+    # First open the castep file in <infile>.castep
+    try:
+        castepfile = open('%s.castep'%infile).readlines()
+    except:
+        outfile.write(('\n%s.castep not found in folder for singlepoint calculation'%infile))
+        outfile.write(('\n...EXITING...'))
+        exit()
+    
+
+    E_gs_cell = 0
+    # Read through the castep file to find the groundstate energy of the singlepoint calculation
+    for i,line in enumerate(castepfile):
+        if 'single point' in line:
+            j = i+1
+            newline = castepfile[i+1]
+            while 'Calculation time' not in newline:
+                if 'NB est. 0K energy' in newline:
+                    try:
+                        E_gs_cell = float(newline.split('=  ')[1].split(' ')[0])
+                    except:
+                        E_gs_cell = float(newline.split('=    ')[1].split(' ')[0])
+                #This is only useful if you haven't used the dm method so there is no estimated 0K energy
+                elif 'Final energy = ' in newline:
+                    E_gs_cell = float(newline.split('=  ')[1].split(' ')[0])
+                j += 1
+                newline = castepfile[j]
+
+        #this linesearching cannot distinguish between multiple castep runs in one file and will just find the last energy supplied
+        if 'DRYRUN' in line: 
+            outfile.write('\nWARNING you have already run a DRYRUN calculation within this %s.castep file'%infile)
+            outfile.write('\nFinal correction may not be accurate, remove this dryrun calculation from the %s.castep file'%infile)
+            outfile.write('\n...EXITING...')
+            exit()
+    
+
+    # Check that the Final energy of the singlepoint calc was found
+    if E_gs_cell == 0:
+        outfile.write('The signlepoint energy is 0 eV')
+        outfile.write('\nFailed to find Final energy in file %s.castep '%(infile))
+        outfile.write('\n...EXITING...')
+        exit()
+
+    return E_gs_cell
+
 def get_Ecore(element,label,infile,exe,outfile):
     """Calculate the energy difference between the excited and valence states for the pseudopotentials
     used in the coreloss calculation"""
@@ -141,14 +189,20 @@ def get_exc_cell(element,infile):
 
     E_exc_cell = 0
     for i,line in enumerate(castepfile):
-        if 'NB est. 0K energy' in line:
-            try:
-                E_exc_cell = float(line.split('=  ')[1].split(' ')[0])
-            except:
-                E_exc_cell = float(line.split('=    ')[1].split(' ')[0])
-        #This is only useful if you haven't used the dm method so there is no estimated 0K energy
-        elif 'Final energy = ' in line:
-            E_exc_cell = float(line.split('=  ')[1].split(' ')[0])
+        if 'Electronic Spectroscopy' in line:
+            j = i+1
+            newline = castepfile[i+1]
+            while 'Calculation time' not in newline:
+                if 'NB est. 0K energy' in newline:
+                    try:
+                        E_exc_cell = float(newline.split('=  ')[1].split(' ')[0])
+                    except:
+                        E_exc_cell = float(newline.split('=    ')[1].split(' ')[0])
+                #This is only useful if you haven't used the dm method so there is no estimated 0K energy
+                elif 'Final energy = ' in newline:
+                    E_exc_cell = float(newline.split('=  ')[1].split(' ')[0])
+                j += 1
+                newline = castepfile[j]        
         
     if E_exc_cell == 0:
         outfile.write('Final energy in %s.castep not found'%infile) 
@@ -184,7 +238,7 @@ def flags(args,outfile):
 
     outfile.write('''|  Element with core hole                    :      {:20}     |
 '''.format(args.element))
-    outfile.write('''|  Core hole label                            :      {:20}     |
+    outfile.write('''|  Core hole label                           :      {:20}     |
 '''.format(args.label))
     
     outfile.write('''|  Input file to read from                   :      {:20}     |
@@ -193,9 +247,12 @@ def flags(args,outfile):
     if args.totalenergy:
         outfile.write('''|  Non core hole ground state energy         : {:>23.2f} eV    |
 '''.format(args.totalenergy))
+    elif args.singlepoint:
+        outfile.write('''|  Non core hole gr. state energy from file  :      {:20}     |
+'''.format(args.singlepoint))
     else:
         outfile.write('''|  Non core hole ground state energy         :                      None     |
-'''%args.totalenergy)
+''')
 
     outfile.write('''|  CASTEP Executable                         :      {:20}     |
 '''.format(args.executable))
@@ -243,6 +300,8 @@ In the NaGe-mizoguchi.out file this provides the calculated correction as
 
     parser.add_argument('-i', '--inputfile', type=str,required=True,
                         help='Name of the input file (<input>.castep only) in which the core loss calculation has been performed')
+    parser.add_argument('-s', '--singlepoint', type=str,
+                        help='Name of the file where the singlepoint energy was calculated. NOTE that the singlepoint energy must be calculated on the same supercell as the core hole calc')
     parser.add_argument('-t', '--totalenergy', type=float,
                         help='Total energy of unit cell without a core hole. If included this will calculate the full Mizoguchi corrected transition energy using this value as the total singlepoint free energy (E-0.5TS)')
     parser.add_argument('-exe', '--executable', type=str,
@@ -287,20 +346,25 @@ In the NaGe-mizoguchi.out file this provides the calculated correction as
     # Get the second term of E_TE the core orbitals difference in energy between excited and ground state
     Ecore = get_Ecore(element=args.element,label=args.label,infile=args.inputfile,exe=args.executable,outfile=outfile)
 
+    # Get singlepoint total energy either as supplied or from file
     if args.totalenergy:
         E_gs_cell = args.totalenergy
-        E_exc_cell = get_exc_cell(element=args.element,infile=args.inputfile)
-        E_TE = (E_exc_cell - E_gs_cell)+Ecore
-        outfile.write('''+----------------------------------------------------------------------------+''')
-        outfile.write('''
-|  Mizoguchi correction to E_TE              : {:>23.2f} eV    |'''.format(E_TE))
-        outfile.write('''
-+----------------------------------------------------------------------------+''')
-
+    elif args.singlepoint:
+        E_gs_cell = get_Egs(infile=args.singlepoint,outfile=outfile)
     else:
         outfile.write('No ground state energy supplied, exiting without calculating full Mizoguchi correction.')
         outfile.write('\n...EXITING...')
         exit()
+
+    E_exc_cell = get_exc_cell(element=args.element,infile=args.inputfile)
+    outfile.write('''|  Singlepoint total energy                  : {:>23.2f} eV    |
+'''.format(E_gs_cell))
+    E_TE = (E_exc_cell - E_gs_cell)+Ecore
+    outfile.write('''+----------------------------------------------------------------------------+''')
+    outfile.write('''
+|  Mizoguchi correction to E_TE              : {:>23.2f} eV    |'''.format(E_TE))
+    outfile.write('''
++----------------------------------------------------------------------------+''')
     
 
     write_odi_file(args.inputfile,E_TE)
