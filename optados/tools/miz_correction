@@ -85,13 +85,20 @@ def get_Ecore(element,label,infile,exe,outfile):
     E_exc_val = 0
     E_gs_val = 0
     # Read through the castep file to get each variable needed for Ecore
+    # First find that we are doing the electronic spectroscopy calculation then search backwards
     for i,line in enumerate(castepfile):
-        if ('Atomic calculation' in line) and ('%s:%s:'%(element,label) in line):
-            E_exc_all = float(castepfile[i+2].split(' ')[-2])
-        if ('Pseudo atomic' in line) and ('%s:%s '%(element,label) in line):
-            E_exc_val = float(castepfile[i+2].split(' ')[-2])
-        if ('Pseudo atomic' in line) and ('%s'%element in line) and ('%s:%s '%(element,label) not in line):
-            E_gs_val = float(castepfile[i+2].split(' ')[-2])
+        if 'Electronic Spectroscopy' in line:
+            j = i-1
+            newline = castepfile[i-1]
+            while 'Run started:' not in newline:
+                if ('Atomic calculation' in newline) and ('%s:%s:'%(element,label) in newline):
+                    E_exc_all = float(castepfile[j+2].split(' ')[-2])
+                if ('Pseudo atomic' in newline) and ('%s:%s '%(element,label) in newline):
+                    E_exc_val = float(castepfile[j+2].split(' ')[-2])
+                if ('Pseudo atomic' in newline) and ('%s'%element in newline) and ('%s:%s '%(element,label) not in newline):
+                    E_gs_val = float(castepfile[j+2].split(' ')[-2])
+                j -= 1
+                newline = castepfile[j]        
 
         #this linesearching cannot distinguish between multiple castep runs in one file and will just find the last energy supplied
         if 'DRYRUN' in line: 
