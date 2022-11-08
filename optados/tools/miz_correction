@@ -36,7 +36,7 @@ def get_Egs(infile,outfile,numatoms):
                         outfile.write('\nenergy and use the -t flag')
                         exit()
                 if 'NB est. 0K energy' in newline:
-                    outfile.write('''|  Groundstate energy from "NB est. 0K energy"                               |
+                    outfile.write('''|                Groundstate energy from "NB est. 0K energy"                 |
 ''')
                     try:
                         E_gs_cell = float(newline.split('=  ')[1].split(' ')[0])
@@ -44,7 +44,7 @@ def get_Egs(infile,outfile,numatoms):
                         E_gs_cell = float(newline.split('=    ')[1].split(' ')[0])
                 #This is only useful if you haven't used the dm method so there is no estimated 0K energy
                 elif 'Final energy = ' in newline:
-                    outfile.write('''|  Groundstate energy from "Final energy"                                    |
+                    outfile.write('''|                Groundstate energy from "Final energy"                      |
 ''')
                     E_gs_cell = float(newline.split('=  ')[1].split(' ')[0])
                 j += 1
@@ -91,7 +91,7 @@ def get_Ecore(element,label,infile,exe,outfile):
     # Read through the castep file to get each variable needed for Ecore
     # First find that we are doing the electronic spectroscopy calculation then search backwards
     for i,line in enumerate(castepfile):
-        if 'Electronic Spectroscopy' and 'type of calculation' in line:
+        if 'Electronic Spectroscopy' in line and 'type of calculation' in line:
             j = i-1
             newline = castepfile[i-1]
             while 'Run started:' not in newline:
@@ -208,24 +208,23 @@ def get_exc_cell(element,infile):
     E_exc_cell = 0
     numatoms = 0
     for i,line in enumerate(castepfile):
-        if 'Electronic Spectroscopy' and 'type of calculation' in line:
+        if 'Electronic Spectroscopy' in line and 'type of calculation' in line:
             j = i+1
             newline = castepfile[i+1]
+            #FIXME WHY IS THIS WRITING OUT THREE TIMES IN MIZ.OUT FILE
             while 'Calculation time' not in newline:
                 if 'Total number of ions in cell' in newline:
                     numatoms = newline.split('=  ')[1].split(' ')[0]
                 if 'NB est. 0K energy' in newline:
+                    outfile.write('''|                Exc state energy from "NB est. 0K energy"                   |
+''')
                     try:
                         E_exc_cell = float(newline.split('=  ')[1].split(' ')[0])
-                        outfile.write('''|  Exc state energy from "NB est. 0K energy"                                 |
-''')
                     except:
                         E_exc_cell = float(newline.split('=    ')[1].split(' ')[0])
-                        outfile.write('''|  Exc state energy from "NB est. 0K energy"                                 |
-''')
                 #This is only useful if you haven't used the dm method so there is no estimated 0K energy
                 elif 'Final energy = ' in newline:
-                    outfile.write('''|  Exc state energy from "Final energy"                                      |
+                    outfile.write('''|                Exc state energy from "Final energy"                        |
 ''')
                     E_exc_cell = float(newline.split('=  ')[1].split(' ')[0])
                 j += 1
