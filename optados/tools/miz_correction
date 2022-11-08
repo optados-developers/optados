@@ -177,6 +177,7 @@ def get_Ecore(element,label,infile,exe,outfile):
     if E_gs_all == 0 or E_gs_val == 0:
         outfile.write('One or more values above is 0 eV')
         outfile.write('\nFailed to find all values for Ecore with element %s in %s.castep or %s-dryrun.castep'%(element,infile,infile))
+        outfile.write('\nTry deleting all of the dryrun files and running the command again')
         outfile.write('\n...EXITING...')
         exit()
 
