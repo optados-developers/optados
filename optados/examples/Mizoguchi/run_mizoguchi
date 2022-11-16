@@ -3,18 +3,30 @@
 # Here we are using all of the miz_correction flags in order to
 # calculate the correction to the absorption energy for a file
 # named NaGe on a core hole on a Ge atom. We have previously done
-# a singlepoint calculation (files not shown) to determine that the 
-# E-TS groundstate energy is -6348.26472687 and are using that as 
-# our groundstate energy. The executable we are using is called 
+# a singlepoint calculation to determine that the 
+# E-TS groundstate energy is -11848.48889250 and are using that as 
+# our groundstate energy. This is also shown in the file
+# NaGe-singlepoint.castep. The executable we are using is called 
 # castep.serial and is on our $PATH. This will run a castep
 # DRYRUN calculation and then write a file called NaGe-mizoguchi.out
 # Which has all the details of the calculation including if it failed
 # 
-# The singlepoint energy of -6348.26472687 eV is calculated from a 
+# The singlepoint energy of -11848.48889250 eV is calculated from a 
 # singlepoint calculation without a charge and without a core hole
-# on the same cell as in NaGe.cell
+# on the same cell as in NaGe.cell. See the NaGe-singlepoint.* files 
+# for details
 #
 
 
-../../tools/miz_correction -i NaGe -e Ge -t -6348.264726871
+../../tools/miz_correction -i NaGe -e Ge -t -11848.48889250
 
+# Alternatively we could uncomment the following and search for the 
+# groundstate energy in our file NaGe-singlepoint.castep
+# 
+# ../../tools/miz_correction -i NaGe -e Ge -s NaGe-singlepoint
+
+# Both of the above methods should yield the following Mizoguchi 
+# Correciton in the last line of NaGe-mizoguchi.out
+#+----------------------------------------------------------------------------+
+#|  Mizoguchi correction to E_TE              :                11142.28 eV    |
+#+----------------------------------------------------------------------------+                                                                                                                                                            
