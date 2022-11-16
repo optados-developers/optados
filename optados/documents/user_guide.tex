@@ -145,7 +145,7 @@ September 2013
 
 \begin{itemize}
 \item Matthew L. Evans, University of Cambridge: projected bandstructures and bug fixes.
-\item Angela F. Harper, University of Cambridge: Mizoguchi correction for coreloss calculations.
+\item Angela F. Harper, University of Cambridge: Mizoguchi chemical shift for coreloss calculations.
 \end{itemize}
 
 \chapter{Introduction}\label{chap:introduction}
@@ -1270,11 +1270,11 @@ Run \optados\ and compare the spectrum from the face-centred unit cell with that
 \end{itemize}
 \end{enumerate}
 
-\section{CORE with Mizoguchi Correction}
-In the previous section we discussed including a core-hole in the \verb@seedname.cell@ file. In order to account for the energetic contribution of the core-hole to the absorption or emission edge users may find it useful to include an energy correction term as described by Mizoguchi $et$ $al.$ \cite{mizoguchi}. This correction shifts the energy scale by calculating the energy difference between the ground state energy with and without the core-hole included in the input \verb@seedname.cell@ file.  See \verb#examples/Mizoguchi# for input files described here.
+\section{CORE with Mizoguchi Chemical Shift}
+In the previous section we discussed including a core-hole in the \verb@seedname.cell@ file. In order to account for the energetic contribution of the core-hole to the absorption or emission edge users may find it useful to include the chemical shift of the energy term as described by Mizoguchi $et$ $al.$ \cite{mizoguchi}. The Mizoguchi shift, rescales the absorption or emission energy by calculating the energy difference between the ground state energy with and without the core-hole included in the input \verb@seedname.cell@ file.  See \verb#examples/Mizoguchi# for input files described here.
 
 \begin{enumerate}
-\item We begin by running a \castep\ calculation using the files provided in \verb#examples/Mizoguchi#. We have included a core hole on the \verb#Ge# atom in the cell in order to obtain a K edge spectrum. This is specified by adding a \verb#Ge:exc# label in the \verb#% BLOCK POSITIONS_FRAC# and by including a core hole in the pseudopotential string as shown here:
+\item We begin by running a \castep\ calculation using the files provided in \verb#examples/Mizoguchi#. We have included a 1s core hole on the \verb#Ge# atom in the cell in order to obtain a K-edge spectrum. This is specified by adding a \verb#Ge:exc# label in the \verb#% BLOCK POSITIONS_FRAC# and by including a core hole in the pseudopotential string as shown here:
 \begin{verbatim}
 %BLOCK positions_frac
 Na  0.620573953121250       0.758852093757499       0.836258492531341
@@ -1289,8 +1289,8 @@ Ge:exc 3|1.5|13|15|17|30U:31U:32:40:41(qc=6){1s1}
 Na 2|1.3|14|16|18|20U:30:21(qc=7)
 %ENDBLOCK species_pot
 \end{verbatim}
-Run \optados\ and look at the output. You will see that the energy range of the spectrum is from 0 eV to 30 eV, as we have not yet applied the Mizoguchi correction term
-\item Next, we want to add in the correction which accounts for the relative energy of our cell with a core-hole to that without a core hole. It is best to rename your \verb#NaGe.cell# and \verb#NaGe.param# files so that they are not overwritten in the next \castep\ calculation. We will now get the ground state energy of the cell without a core hole included. To do this, we will remove the specification for our pseudopotential which included a core hole so that your cell file (renamed to something like \verb#NaGe-singlepoint.cell#) looks like this:
+Once the \castep\ calculation is completed, run \optados\ and look at the output. You will see that the energy range of the spectrum is from 0 eV to 30 eV, as we have not yet applied the Mizoguchi chemical shift term
+\item Next, we want to add in the shift which accounts for the relative energy of our cell with a core-hole to that without a core hole. It is best to rename your \verb#NaGe.cell# and \verb#NaGe.param# files so that they are not overwritten in the next \castep\ calculation. We will now get the ground state energy of the cell without a core hole included. To do this, we will remove the specification for our pseudopotential which included a core hole so that your cell file (renamed to something like \verb#NaGe-singlepoint.cell#) looks like this:
 \begin{verbatim}
 %BLOCK positions_frac
 Na  0.620573953121250       0.758852093757499       0.836258492531341
@@ -1314,15 +1314,15 @@ xc_functional : PBE
 write_checkpoint : None
 \end{verbatim}
 Here we have commented out the line for charge inclusion, and changed the task keyword. Run the \castep\ calculation and compare the ground state total energies of your two different files. You should see that the groundstate energy of -11848.48889250 eV is less than the core hole groundstate energy. 
-\item Now we want to calculate the Mizoguchi correction associated with this difference in energies. To do this, we will use the code located at \verb#tools/miz_correction#. This code is written in \python\ and you can see the different keywords it takes using the \verb#--help# flag. To calculate the correction for our system we will use the command:
+\item Now we want to calculate the Mizoguchi chemical shift associated with this difference in energies. To do this, we will use the code located at \verb#tools/miz_shift#. This code is written in \python\ and you can see the different keywords it takes using the \verb#--help# flag. To calculate the shift for our system we will use the command:
 \begin{verbatim}
-../../tools/miz_correction -i NaGe -e Ge -s NaGe-singlepoint
+../../tools/miz_shift -i NaGe -e Ge -s NaGe-singlepoint
 \end{verbatim}
 Or alternatively:
 \begin{verbatim}
-../../tools/miz_correction -i NaGe -e Ge -t -11848.48889250
+../../tools/miz_shift -i NaGe -e Ge -t -11848.48889250
 \end{verbatim}
-Where we have specified the location of the \verb#miz_correction# script, the name of the file we performed the core-hole calculation on \verb#-i NaGe#, the element we performed our calculation on \verb#-e Ge# and either the file with the singlepoint calculation \verb#-s NaGe-singlepoint# or the value of the singlepoint energy without a core hole \verb#-t -11848.48889250#. \textbf{NOTE:} The \verb#miz_correction# script is written assuming that you are providing the \castep\ \verb#NB est. 0K energy#. If it cannot find the \verb#NB est. 0K energy# then it will look for the \verb#Final energy#. Therefore it is important if for example your calculation includes a dispersion correction or Hubbard U parameter which affects the final ground state energy to provide the energy before that correction is applied. This way the \verb#-t# flag will reflect the same energy as the core-hole final energy. If you use the \verb#-s# flag and get the final ground state energy from a file, \verb#miz_correction# will explicitly state which energy it is using in the output \verb#mizoguchi.out# file. Run this command and take a look at your \verb#NaGe.odi# file. You will see a line has been added:
+Where we have specified the location of the \verb#miz_shift# script, the name of the file we performed the core-hole calculation on \verb#-i NaGe#, the element we performed our calculation on \verb#-e Ge# and either the file with the singlepoint calculation \verb#-s NaGe-singlepoint# or the value of the singlepoint energy without a core hole \verb#-t -11848.48889250#. \textbf{NOTE:} The \verb#miz_shift# script is written assuming that you are providing the \castep\ \verb#NB est. 0K energy#. If it cannot find the \verb#NB est. 0K energy# then it will look for the \verb#Final energy#. Therefore it is important if for example your calculation includes a dispersion correction or Hubbard U parameter which affects the final ground state energy to provide the energy before that correction is applied. This way the \verb#-t# flag will reflect the same energy as the core-hole final energy. If you use the \verb#-s# flag and get the final ground state energy from a file, \verb#miz_shift# will explicitly state which energy it is using in the output \verb#mizoguchi.out# file. Run this command and take a look at your \verb#NaGe.odi# file. You will see a line has been added:
 \begin{verbatim}
 mizoguchi_correction : 11142.275218
 \end{verbatim}
