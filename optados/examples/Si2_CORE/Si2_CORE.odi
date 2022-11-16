@@ -28,9 +28,9 @@ BROADENING         : adaptive # Default
 # Include life-time and instrumentaion broadening
 CORE_LAI_BROADENING : true  # Default
 
-# Mizoguchi Correction calculated from miz_correction script
+# Mizoguchi core_chemical_shift calculated from miz_chemical_shift script
 # located in the tools/ folder
-mizoguchi_correction : 1500
+core_chemical_shift : 1500
 adaptive_smearing : 0.2
 core_type : absorption
 LAI_gaussian_width : 1

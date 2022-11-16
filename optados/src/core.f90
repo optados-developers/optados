@@ -42,7 +42,7 @@ contains
     use od_comms, only: on_root
     use od_io, only: stdout
     use od_parameters, only: core_LAI_broadening, LAI_gaussian, LAI_lorentzian, &
-    & set_efermi_zero, LAI_lorentzian_scale, mizoguchi_correction
+    & set_efermi_zero, LAI_lorentzian_scale, core_chemical_shift 
 
     implicit none
 
@@ -174,7 +174,7 @@ contains
     use od_constants, only: bohr2ang, periodic_table_name, pi
     use od_parameters, only: dos_nbins, core_LAI_broadening, LAI_gaussian, LAI_gaussian_width, &
       LAI_lorentzian, LAI_lorentzian_scale, LAI_lorentzian_width, LAI_lorentzian_offset, output_format, &
-      set_efermi_zero, mizoguchi_correction
+      set_efermi_zero, core_chemical_shift 
     use od_electronic, only: elnes_mwab, elnes_orbital, efermi, efermi_set, nspins
     use od_io, only: seedname, io_file_unit, io_error
     use od_dos_utils, only: E, dos_utils_set_efermi, vbm_energy, cbm_energy
@@ -483,7 +483,7 @@ contains
 
       dos_temp = 0.0_dp; dos_temp2 = 0.0_dp
 
-      ! Have had to reallocate this in order to do the mizoguchi_correciton below
+      ! Have had to reallocate this in order to do the core_chemical_shift below
       if (set_efermi_zero) then
         E_shift = E - efermi
       else
@@ -526,9 +526,9 @@ contains
       !write (core_unit, *) elnes_edge !test to write out elnes_edge
       !write (core_unit, *) cbm_energy ! test to see if cbm calculated
       !write (core_unit, *) vbm_energy! test to see if cbm calculated
-      ! Applies mizoguchi correction if added to dos
-      if (mizoguchi_correction /= -1.0_dp) then
-        E_shift = E + mizoguchi_correction - cbm_energy
+      ! Applies mizoguchi chemical shift if added to dos
+      if (core_chemical_shift /= -1.0_dp) then
+        E_shift = E + core_chemical_shift - cbm_energy
       end if
 
       do N = 1, dos_nbins

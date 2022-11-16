@@ -292,13 +292,13 @@ def write_odi_file(infile,E_TE):
     outfile = open('%s-miz.odi'%infile,'w')
     write_mizo = True
     for line in odifile:
-        if 'mizoguchi_correction' in line:
-            outfile.write('mizoguchi_correction : %f'%E_TE)
+        if 'core_chemical_shift' in line:
+            outfile.write('core_chemical_shift : %f'%E_TE)
             write_mizo = False
         else:
             outfile.write(line)
     if write_mizo: 
-        outfile.write('mizoguchi_correction : %f'%E_TE)
+        outfile.write('core_chemical_shift : %f'%E_TE)
     outfile.close()
     os.system('cp %s-miz.odi %s.odi'%(infile,infile))
     os.system('rm %s-miz.odi '%(infile))
@@ -311,13 +311,13 @@ if __name__ == '__main__':
 for plane wave pseudopotential calculated EELS/XAS spectra from a .castep file.
 Requires castep to be on your path, and the .castep, .cell, and .param files to be
 in the current working directory. This calculation will perform a castep dryrun.
-Example usage is `./miz_shift -i NaGe -e Ge -t -11848.48889250 -exe /usr/bin/castep.mpi`
+Example usage is `./miz_chemical_shift -i NaGe -e Ge -t -11848.48889250 -exe /usr/bin/castep.mpi`
 In the NaGe-mizoguchi.out file this provides the calculated shift as
 +----------------------------------------------------------------------------+
 |  Mizoguchi chemical shift of E_TE              :            11142.28 eV    |
 +----------------------------------------------------------------------------+
 
-IMPORTANT NOTE: miz_shift looks for the Free energy of the core-hole calculation i.e.
+IMPORTANT NOTE: miz_chemical_shift looks for the Free energy of the core-hole calculation i.e.
 NB est. 0K energy (E-0.5TS)      =  -11848.48889652     eV
 
 If it cannot find this it looks for the final energy i.e.
