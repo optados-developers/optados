@@ -282,7 +282,7 @@ def flags(args,outfile):
 ''')
 
     outfile.write('''|  CASTEP Executable                         :      {:20}     |
-'''.format(args.executable))
+'''.format(args.executable.split('/')[-1]))
     outfile.write('''+----------------------------------------------------------------------------+
 ''')
 
