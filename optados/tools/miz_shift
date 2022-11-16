@@ -53,7 +53,7 @@ def get_Egs(infile,outfile,numatoms):
         #this linesearching cannot distinguish between multiple castep runs in one file and will just find the last energy supplied
         if 'DRYRUN' in line: 
             outfile.write('\nWARNING you have already run a DRYRUN calculation within this %s.castep file'%infile)
-            outfile.write('\nFinal correction may not be accurate, remove this dryrun calculation from the %s.castep file'%infile)
+            outfile.write('\nFinal shift may not be accurate, remove this dryrun calculation from the %s.castep file'%infile)
             outfile.write('\n...EXITING...')
             exit()
     
@@ -107,7 +107,7 @@ def get_Ecore(element,label,infile,exe,outfile):
         #this linesearching cannot distinguish between multiple castep runs in one file and will just find the last energy supplied
         if 'DRYRUN' in line: 
             outfile.write('\nWARNING you have already run a DRYRUN calculation within this %s.castep file'%infile)
-            outfile.write('\nFinal correction may not be accurate, remove this dryrun calculation from the %s.castep file'%infile)
+            outfile.write('\nFinal shift may not be accurate, remove this dryrun calculation from the %s.castep file'%infile)
             outfile.write('\n...EXITING...')
             exit()
 
@@ -195,7 +195,7 @@ def get_exc_cell(element,infile):
     '''
 
     outfile.write('''
-+-------------------------- MIZOGUCHI CORRECTION ----------------------------+
++---------------------------- MIZOGUCHI SHIFT -------------------------------+
 ''')
 
     # First open the castep file in <infile>.castep
@@ -244,7 +244,7 @@ def get_exc_cell(element,infile):
 
 def write_header(outfile,e):
      
-    outfile.write('Mizoguchi Correction: Execution started on %s/%s/%s at %s:%s:%s\n'%(e.day,e.month,e.year,e.hour,e.minute,e.second))
+    outfile.write('Mizoguchi Shift: Execution started on %s/%s/%s at %s:%s:%s\n'%(e.day,e.month,e.year,e.hour,e.minute,e.second))
     
     outfile.write('''+============================================================================+
 |                                                                            |
@@ -307,29 +307,29 @@ def write_odi_file(infile,E_TE):
 #Main script#
 #############
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='''Calculates the Mizoguchi et al. correction to the transition energy
+    parser = argparse.ArgumentParser(description='''Calculates the Mizoguchi et al. chemical shift to the transition energy
 for plane wave pseudopotential calculated EELS/XAS spectra from a .castep file.
 Requires castep to be on your path, and the .castep, .cell, and .param files to be
 in the current working directory. This calculation will perform a castep dryrun.
-Example usage is `./miz_correction -i NaGe -e Ge -t -6348.264726871 -exe /usr/bin/castep.mpi`
-In the NaGe-mizoguchi.out file this provides the calculated correction as
+Example usage is `./miz_shift -i NaGe -e Ge -t -11848.48889250 -exe /usr/bin/castep.mpi`
+In the NaGe-mizoguchi.out file this provides the calculated shift as
 +----------------------------------------------------------------------------+
-|  Mizoguchi correction to E_TE              :                 5642.05 eV    |
+|  Mizoguchi chemical shift of E_TE              :            11142.28 eV    |
 +----------------------------------------------------------------------------+
 
-IMPORTANT NOTE: miz_correction looks for the Free energy of the core-hole calculation i.e.
-NB est. 0K energy (E-0.5TS)      =  -145368.4497426     eV
+IMPORTANT NOTE: miz_shift looks for the Free energy of the core-hole calculation i.e.
+NB est. 0K energy (E-0.5TS)      =  -11848.48889652     eV
 
 If it cannot find this it looks for the final energy i.e.
 Final energy, E             =  -145368.4497361     eV
 
 Therefore you must also supply a singlepoint calculation with the same settings or energy
-from the same Final energ value to get accurate results. This is printed in the .out file as
-+-------------------------- MIZOGUCHI CORRECTION ----------------------------+
-|  Exc state energy from "NB est. 0K energy"                                 |
-|  Core hole total energy                    :               -77701.75 eV    |
-|  Groundstate energy from "NB est. 0K energy"                               |
-|  Singlepoint total energy                  :               -77486.46 eV    |
+from the same Final energy value to get accurate results. This is printed in the .out file as
++---------------------------- MIZOGUCHI SHIFT -------------------------------+
+|                Exc state energy from "NB est. 0K energy"                   |
+|  Core hole total energy                    :               -12847.52 eV    |
+|                Groundstate energy from "NB est. 0K energy"                 |
+|  Singlepoint total energy                  :               -11848.49 eV    |
 +----------------------------------------------------------------------------+
 ''',formatter_class=RawTextHelpFormatter)
 
@@ -348,7 +348,7 @@ Default is "exc". Usage is "--label 2" or "--label core"')
 NOTE that the singlepoint energy must be calculated on the same supercell as the core hole calc')
     parser.add_argument('-t', '--totalenergy', type=float,
                         help='Total energy of unit cell without a core hole.\n\
-If included this will calculate the full Mizoguchi corrected transition energy using this value as\n\
+If included this will calculate the full Mizoguchi chemical shift of the transition energy using this value as\n\
 the total singlepoint free energy (E-0.5TS)')
     parser.add_argument('-exe', '--executable', type=str,
                         help='This is the castep binary name e.g. castep.mpi or castep19.1\n\
@@ -364,7 +364,7 @@ or path to castep binary. This will look for a castep binary on your $PATH if no
     outfile = open('%s-mizoguchi.out'%args.inputfile,'w')
 
 
-    # Create the output file for the Mizoguchi correction
+    # Create the output file for the Mizoguchi shift
     write_header(outfile,starttime)
 
     # Check for CASTEP on the path and if found then use first exe found
@@ -402,7 +402,7 @@ or path to castep binary. This will look for a castep binary on your $PATH if no
     elif args.singlepoint:
         E_gs_cell = get_Egs(infile=args.singlepoint,outfile=outfile,numatoms=numatoms)
     else:
-        outfile.write('No ground state energy supplied, exiting without calculating full Mizoguchi correction.')
+        outfile.write('No ground state energy supplied, exiting without calculating full Mizoguchi chemical shift.')
         outfile.write('\n...EXITING...')
         exit()
 
@@ -411,7 +411,7 @@ or path to castep binary. This will look for a castep binary on your $PATH if no
     E_TE = (E_exc_cell - E_gs_cell)+Ecore
     outfile.write('''+----------------------------------------------------------------------------+''')
     outfile.write('''
-|  Mizoguchi correction to E_TE              : {:>23.2f} eV    |'''.format(E_TE))
+|  Mizoguchi chemical shift of E_TE          : {:>23.2f} eV    |'''.format(E_TE))
     outfile.write('''
 +----------------------------------------------------------------------------+''')
     
@@ -426,6 +426,6 @@ or path to castep binary. This will look for a castep binary on your $PATH if no
     outfile.write('''
 +----------------------------------------------------------------------------+''')
     e = datetime.datetime.now()
-    outfile.write('\nMizoguchi Correction: Execution finished on %s/%s/%s at %s:%s:%s'%(e.day,e.month,e.year,e.hour,e.minute,e.second))
+    outfile.write('\nMizoguchi Shift: Execution finished on %s/%s/%s at %s:%s:%s'%(e.day,e.month,e.year,e.hour,e.minute,e.second))
     outfile.write('''\n ''')
 

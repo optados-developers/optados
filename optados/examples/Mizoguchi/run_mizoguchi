@@ -1,7 +1,7 @@
-# This is a file that runs the miz_correction script
+# This is a file that runs the miz_shift script
 #
-# Here we are using all of the miz_correction flags in order to
-# calculate the correction to the absorption energy for a file
+# Here we are using all of the miz_shift flags in order to
+# calculate the chemical shift to the absorption energy for a file
 # named NaGe on a core hole on a Ge atom. We have previously done
 # a singlepoint calculation to determine that the 
 # E-TS groundstate energy is -11848.48889250 and are using that as 
@@ -18,15 +18,15 @@
 #
 
 
-../../tools/miz_correction -i NaGe -e Ge -t -11848.48889250
+../../tools/miz_shift -i NaGe -e Ge -t -11848.48889250
 
 # Alternatively we could uncomment the following and search for the 
 # groundstate energy in our file NaGe-singlepoint.castep
 # 
-# ../../tools/miz_correction -i NaGe -e Ge -s NaGe-singlepoint
+# ../../tools/miz_shift -i NaGe -e Ge -s NaGe-singlepoint
 
 # Both of the above methods should yield the following Mizoguchi 
-# Correciton in the last line of NaGe-mizoguchi.out
+# chemical shift in the last line of NaGe-mizoguchi.out
 #+----------------------------------------------------------------------------+
-#|  Mizoguchi correction to E_TE              :                11142.28 eV    |
+#|  Mizoguchi shift of  E_TE              :                11142.28 eV    |
 #+----------------------------------------------------------------------------+                                                                                                                                                            
