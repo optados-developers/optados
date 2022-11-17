@@ -1,0 +1,6 @@
+task : spectral
+spectral_task : coreloss
+cut_off_energy : 250 eV
+xc_functional : PBE
+charge : +1
+write_checkpoint : None
