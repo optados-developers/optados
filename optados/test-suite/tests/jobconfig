@@ -304,6 +304,12 @@ program = OPTADOS_GEN_DAT_OK
 inputs_args = ('NaGe.odi', '')
 output = NaGe_core_edge.dat
 
+#6
+[testopt_miz_chemical_shift]
+program = OPTADOS_MIZ_OUT_OK
+inputs_args = ('NaGe.castep','-e Ge -s NaGe-singlepoint -i')
+output = NaGe-mizoguchi.out
+
 #--------------------------------------------------------------
 # O p t a D O S   I n t e r n a l   S t u f f    T e s t s
 #--------------------------------------------------------------
