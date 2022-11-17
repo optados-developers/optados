@@ -5,8 +5,8 @@
 # Choose the task to perform
 TASK               : core
 
-# Sample the DOS at 0.01 eV intervals
-DOS_SPACING       : 0.01 
+# Sample the DOS at 0.1 eV intervals
+DOS_SPACING       : 0.1 
 
 ###########################################################
 #            A D V A N C E D   K E Y W O R D S 

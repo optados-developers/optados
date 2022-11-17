@@ -1,4 +1,5 @@
 task : core
+dos_spacing : 0.1
 broadening : adaptive
 adaptive_smearing : 0.2
 core_type : absorption
