@@ -315,7 +315,7 @@ output = NaGe_core_edge.dat
 #1
 [testopt_miz_chemical_shift]
 program = OPTADOS_MIZ_OUT_OK
-inputs_args = ('NaGe.castep','-e Ge -s NaGe-singlepoint -i')
+inputs_args = ('NaGe.castep','-e Ge -exe castep -s NaGe-singlepoint -i')
 output = NaGe-mizoguchi.out
 
 #--------------------------------------------------------------
