@@ -42,7 +42,7 @@ contains
     use od_comms, only: on_root
     use od_io, only: stdout
     use od_parameters, only: core_LAI_broadening, LAI_gaussian, LAI_lorentzian, &
-    & set_efermi_zero, LAI_lorentzian_scale, core_chemical_shift 
+    & set_efermi_zero, LAI_lorentzian_scale, core_chemical_shift
 
     implicit none
 
@@ -174,7 +174,7 @@ contains
     use od_constants, only: bohr2ang, periodic_table_name, pi
     use od_parameters, only: dos_nbins, core_LAI_broadening, LAI_gaussian, LAI_gaussian_width, &
       LAI_lorentzian, LAI_lorentzian_scale, LAI_lorentzian_width, LAI_lorentzian_offset, output_format, &
-      set_efermi_zero, core_chemical_shift 
+      set_efermi_zero, core_chemical_shift
     use od_electronic, only: elnes_mwab, elnes_orbital, efermi, efermi_set, nspins
     use od_io, only: seedname, io_file_unit, io_error
     use od_dos_utils, only: E, dos_utils_set_efermi, vbm_energy, cbm_energy
