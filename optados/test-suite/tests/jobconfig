@@ -287,24 +287,26 @@ tolerance = ( (1.0e-5, 1.0e-5, 'col2'), (1.0e-5, 1.0e-5, 'col3'))
 # 2 testopt_core_emisson
 # 3 testopt_core_polarised
 # 4 testopt_core_all
+# 5 testopt_core_chemical_shift
 
-#                           |1|2|3|4|
-# --------------------------+-+-+-+-+
-# Si                        |x|x|x|x|
-# absorbtion                |x| | | |
-# emision                   | |x|x| |
-# all                       | | | |x|
-# poly                      |x| |x|x|
-# polarised                 | |x|x| |
-# core broadening           | |x|x|x|
-# LAI gaussian width        | |@| |@|
-# LAI lorentzian width      | | |@|@|
-# LAI lorentzian scale      | | |@|@|
-# LAI lorentzian offset     | | |@|@|
-# --------------------------+-+-+-+-+
-# odo file                  |x| | | |
-# core_edge file            | |x|x|x|
-# --------------------------+-+-+-+-+
+#                           |1|2|3|4|5|
+# --------------------------+-+-+-+-+-+
+# Si                        |x|x|x|x| |
+# NaGe                      | | | | |x|
+# absorbtion                |x| | | |x|
+# emision                   | |x|x| | |
+# all                       | | | |x| |
+# poly                      |x| |x|x| |
+# polarised                 | |x|x| | |
+# core broadening           | |x|x|x|x|
+# LAI gaussian width        | |@| |@|@|
+# LAI lorentzian width      | | |@|@|@|
+# LAI lorentzian scale      | | |@|@|@|
+# LAI lorentzian offset     | | |@|@|@|
+# --------------------------+-+-+-+-+-+
+# odo file                  |x| | | | |
+# core_edge file            | |x|x|x|x|
+# --------------------------+-+-+-+-+-+
 #
 # @= change from default
 
@@ -331,6 +333,26 @@ output = Si2_core_edge.dat
 program = OPTADOS_GEN_DAT_OK
 inputs_args = ('Si2.odi', '')
 output = Si2_core_edge.dat
+
+#5
+[testopt_core_chemical_shift]
+program = OPTADOS_GEN_DAT_OK
+inputs_args = ('NaGe.odi', '')
+output = NaGe_core_edge.dat
+
+#--------------------------------------------------------------
+# miz_chemical_shift Tests
+#--------------------------------------------------------------
+
+# Test that miz_chemical_shift produces a NaGe-mizoguchi.out file and
+# that the "Mizoguchi chemical shift" has the same value as in our
+# input for the test
+
+#1
+[testopt_miz_chemical_shift]
+program = OPTADOS_MIZ_OUT_OK
+inputs_args = ('NaGe.castep','-e Ge -exe castep -s NaGe-singlepoint -i')
+output = NaGe-mizoguchi.out
 
 #--------------------------------------------------------------
 # O p t a D O S   I n t e r n a l   S t u f f    T e s t s

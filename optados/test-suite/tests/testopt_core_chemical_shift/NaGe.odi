@@ -5,8 +5,8 @@
 # Choose the task to perform
 TASK               : core
 
-# Sample the DOS at 0.01 eV intervals
-DOS_SPACING       : 0.01 
+# Sample the DOS at 0.1 eV intervals
+DOS_SPACING       : 0.1 
 
 ###########################################################
 #            A D V A N C E D   K E Y W O R D S 
@@ -17,22 +17,20 @@ DOS_SPACING       : 0.01
 # workings of OptaDOS and allow you to tweak the 
 # output
 
+CORE_TYPE : absorption
+
 # The broadening used, (also try linear, or fixed)
 BROADENING         : adaptive # Default
 
 # The broadening parameter, A, when using adaptive smearing, 
 # set by eye to be similar to the linear smearing method
-
-# Specify the geometry to be used in the optics calculation
+ADAPTIVE_SMEARING  : 0.2  
 
 # Include life-time and instrumentaion broadening
 CORE_LAI_BROADENING : true  # Default
-
-# Mizoguchi core_chemical_shift calculated from miz_chemical_shift script
-# located in the tools/ folder
-core_chemical_shift : 1500
-adaptive_smearing : 0.2
-core_type : absorption
 LAI_gaussian_width : 1
 LAI_lorentzian_width : 0.5
 LAI_lorentzian_scale : 0.1
+
+# Include Mizoguchi chemical shift
+core_chemical_shift : 11142.275222

@@ -584,7 +584,7 @@ contains
       else
         call cell_find_MP_grid(all_kpoints, nkpoints, kpoint_grid_dim)
       end if
-      if (.not. compute_band_gap) then
+      if ((.not. compute_band_gap)) then
         deallocate (all_kpoints, stat=ierr)
         if (ierr /= 0) call io_error('Error: Problem deallocating all_kpoints in read_band_energy')
       end if
