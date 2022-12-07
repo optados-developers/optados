@@ -1,4 +1,4 @@
-# CELL file written 10:53:50 (GMT-0.0) 7th December 2022 from run Si2
+# CELL file written 11:11:43 (GMT-0.0) 7th December 2022 from run Si2
 
 %BLOCK lattice_cart
    ANG
@@ -34,15 +34,15 @@ SYMMETRY_TOL :     0.001000
           0.000000000000000       0.000000000000000       0.000000000000000
 %ENDBLOCK symmetry_ops
 
-kpoint_mp_grid :    6   6   6
+kpoint_mp_grid :    3   3   3
 
-bs_kpoint_mp_grid :    4   4   4
+bs_kpoint_mp_grid :    2   2   2
 
-optics_kpoint_mp_grid :    4   4   4
+optics_kpoint_mp_grid :    2   2   2
 
-elnes_kpoint_mp_grid :    4   4   4
+elnes_kpoint_mp_grid :    2   2   2
 
-magres_kpoint_mp_grid :    4   4   4
+magres_kpoint_mp_grid :    2   2   2
 
-phonon_kpoint_mp_grid :    4   4   4
+phonon_kpoint_mp_grid :    2   2   2
 
