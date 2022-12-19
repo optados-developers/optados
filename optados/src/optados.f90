@@ -47,6 +47,7 @@ program optados
   use od_pdos, only: pdos_calculate
   use od_pdis, only: pdis_calculate
   use od_optics, only: optics_calculate
+  use od_optics, only: photo_calculate
   use od_build, only: build_info
   implicit none
 
@@ -194,6 +195,23 @@ program optados
       write (stdout, '(1x,a78)') '|                                                                            |'
       write (stdout, '(1x,a59,f11.3,a8)') &
         '+ Time to calculate Optical properties                         ', time1 - time0, ' (sec) +'
+      write (stdout, '(1x,a78)') '+============================================================================+'
+      write (stdout, *) ' '
+      write (stdout, *) ' '
+    end if
+  end if
+  !-------------------------------------------------------------------------!
+
+  !-------------------------------------------------------------------------!
+  ! C A L L   P H O T O E M I S S I O N   R O U T I N E S
+  if (photo) then
+    time0 = io_time()
+    call photo_calculate
+    time1 = io_time()
+    if (on_root) then
+      write (stdout, '(1x,a78)') '|                                                                            |'
+      write (stdout, '(1x,a59,f11.3,a8)') &
+        '+ Time to calculate Photoemission                              ', time1 - time0, ' (sec) +'
       write (stdout, '(1x,a78)') '+============================================================================+'
       write (stdout, *) ' '
       write (stdout, *) ' '

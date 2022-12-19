@@ -59,6 +59,7 @@ module od_parameters
   logical, public, save :: compare_jdos
   logical, public, save :: optics
   logical, public, save :: core
+  logical, public, save :: photo
 
   !Broadening parameters
   logical, public, save :: fixed
@@ -118,6 +119,27 @@ module od_parameters
   logical, public, save :: LAI_lorentzian
   real(kind=dp), public, save :: core_chemical_shift ! used in conjunction with miz_chemical_shift script in tools
 
+  ! Photoemission parameters - V.Chang, et al. Dec-2022
+  character(len=20), public, save :: photo_model
+  character(len=20), public, save :: write_photo_matrix
+  character(len=20), public, save :: photo_momentum
+  !logical,           public, save :: angle_resolution
+  !character(len=20), public, save :: resolution_type
+  real(kind=dp)    , public, save :: photo_phi_lower
+  real(kind=dp)    , public, save :: photo_phi_upper
+  real(kind=dp)    , public, save :: photo_theta_lower
+  real(kind=dp)    , public, save :: photo_theta_upper
+  real(kind=dp)    , public, save :: photo_photon_energy
+  real(kind=dp)    , public, save :: bulk_length
+  real(kind=dp)    , public, save :: photo_temperature
+  real(kind=dp)    , public, save :: photo_elec_field
+  real(kind=dp)    , public, save :: photo_imfp_const
+  logical, public, save :: photo_e_units
+  !logical, public, save :: photo_mte
+  real(kind=dp),     public, save :: photo_work_function
+  real(kind=dp),     public, save :: photo_surface_area
+  real(kind=dp),     public, save :: photo_slab_volume 
+
   real(kind=dp), public, save :: lenconfac
 
   private
@@ -168,7 +190,7 @@ contains
       call io_error('Error: value of energy_unit not recognised in param_read')
 
     dos = .false.; pdos = .false.; pdis = .false.; jdos = .false.; optics = .false.
-    core = .false.; compare_dos = .false.; compare_jdos = .false.
+    core = .false.; compare_dos = .false.; compare_jdos = .false.; photo = .false.
     call param_get_vector_length('task', found, i_temp)
     if (found .and. i_temp > 0) then
       allocate (task_string(i_temp), stat=ierr)
@@ -191,6 +213,8 @@ contains
           dos = .true.; compare_dos = .true.
         elseif (index(task_string(loop), 'dos') > 0) then
           dos = .true.
+        elseif(index(task_string(loop), 'photoemission') > 0) then
+          photo=.true.
         elseif (index(task_string(loop), 'none') > 0) then
           dos = .false.; pdos = .false.; jdos = .false.; optics = .false.; core = .false.
         elseif (index(task_string(loop), 'all') > 0) then
@@ -411,10 +435,62 @@ contains
     call param_get_keyword('lai_lorentzian_offset', found, r_value=LAI_lorentzian_offset)
     if (LAI_lorentzian_offset .lt. 0.0_dp) call io_error('Error: LAI_lorentzian_offset must be positive')
 
+   ! Photoemission parameters - V.Chang Nov-2020
+    photo_momentum = 'crystal'
+    call param_get_keyword('photo_momentum',found,c_value=photo_momentum)
+    if(index(photo_momentum,'kp')==0 .and. index(photo_momentum,'crystal')==0 .and. index(photo_momentum,'operator')==0) &
+         call io_error('Error: value of momentum not recognised in param_read')
+
+    write_photo_matrix = 'slab'
+    call param_get_keyword('write_photo_matrix',found,c_value=write_photo_matrix)
+    if(index(write_photo_matrix,'slab')==0 .and. index(write_photo_matrix,'all')==0 ) &
+         call io_error('Error: value of photoemission output not recognised in param_read')
+
+    photo_model = '1step'
+    call param_get_keyword('photo_model',found,c_value=photo_model)
+    if(index(photo_model,'3step')==0 .and. index(photo_model,'1step')==0 ) &
+         call io_error('Error: value of photoemission model not recognised in param_read')
+
+    call param_get_keyword('photo_work_function',found,r_value=photo_work_function)
+     if(photo .and. .not. found) &
+         call io_error('Error: please set workfunction for photoemission calculation')
+
+    photo_theta_lower = 0.0_dp
+    call param_get_keyword('photo_theta_lower',found,r_value=photo_theta_lower)
+    photo_theta_upper = 90.0_dp
+    call param_get_keyword('photo_theta_upper',found,r_value=photo_theta_upper)
+    photo_phi_lower = 0.0_dp
+    call param_get_keyword('photo_phi_lower',found,r_value=photo_phi_lower)
+    photo_phi_upper = 90.0_dp
+    call param_get_keyword('photo_phi_upper',found,r_value=photo_phi_upper)
+     call param_get_keyword('photo_photon_energy',found,r_value=photo_photon_energy)
+     if(photo .and. .not. found) &
+         call io_error('Error: please set photon energy for photoemission calculation')
+    bulk_length = 10.0_dp
+    call param_get_keyword('photo_bulk_length',found,r_value=bulk_length)
+    photo_temperature = 298.0_dp
+    call param_get_keyword('photo_temperature',found,r_value=photo_temperature)
+
+    call param_get_keyword('photo_surface_area',found,r_value=photo_surface_area)
+     if(photo .and. .not. found) &
+         call io_error('Error: please set surface area for photoemission calculation')
+
+    call param_get_keyword('photo_slab_volume',found,r_value=photo_slab_volume)
+     if(photo .and. .not. found) &
+         call io_error('Error: please set volume of the slab for photoemission calculation')
+
+    photo_elec_field          = 0.00_dp
+    call param_get_keyword('photo_elec_field',found,r_value=photo_elec_field)
+
+    photo_imfp_const=0.0_dp
+    call param_get_keyword('photo_imfp_const',found,r_value=photo_imfp_const)
+     if(photo .and. .not. found) &
+         call io_error('Error: constant imfp, but photo_imfp_const is not set')
+
     num_atoms = 0
     num_species = 0
     num_crystal_symmetry_operations = 0
-    if (pdos .or. pdis .or. core .or. optics) then
+    if (pdos .or. pdis .or. core .or. optics .or. photo) then
       ! try to read in the atoms from the cell file.
       ! We don't need them otherwise, so let's not bother
       !  if(index(devel_flag,'old_filename')>0) then
@@ -675,6 +751,12 @@ contains
     else
       write (stdout, '(1x,a78)') '|  Output Core-level Spectra                 :  False                        |'
     end if
+    !Photoemission
+    if(photo) then
+      write (stdout, '(1x,a78)') '|  Photoemission Calculation                 :   True                        |'
+    else
+      write (stdout, '(1x,a78)') '|  Photoemission Calculation                 :   False                       |'
+    endif
     write (stdout, '(1x,a46,2x,i3,26x,a1)') '|  iprint level                              :', iprint, '|'
     if (legacy_file_format) then
       write (stdout, '(1x,a78)') '|  Use CASTEP < 6.0 file format              :  True                         |'
@@ -692,7 +774,7 @@ contains
       end if
     end if
 
-    write (stdout, '(1x,a78)') '+--------------------------SPECTRAL PARAMETERS ------------------------------+'
+    write (stdout, '(1x,a78)') '+-------------------------- SPECTRAL PARAMETERS -----------------------------+'
     if (fixed) then
       write (stdout, '(1x,a78)') '|  Fixed Width Smearing                      :  True                         |'
       write (stdout, '(1x,a46,1x,1F10.5,20x,a1)') '|  Smearing Width                            :', fixed_smearing, '|'
@@ -709,7 +791,7 @@ contains
     if (finite_bin_correction) &
       write (stdout, '(1x,a78)') '|  Finite Bin Correction                     :  True                         |'
     if (hybrid_linear) then
-      write (stdout, '(1x,a78)') '|  Hybrid Linear Correction                     :  True                         |'
+      write (stdout, '(1x,a78)') '|  Hybrid Linear Correction                     :  True                      |'
       write (stdout, '(1x,a46,2x,F10.8,19x,a1)') '|  Hybrid Linear Gradient Tolerance             :', hybrid_linear_grad_tol, '|'
     end if
     if (numerical_intdos) &
@@ -808,6 +890,40 @@ contains
       else
         write (stdout, '(1x,a78)') '|  Include lifetime and Instrument Broadening:  False                        |'
       end if
+    end if
+    ! Added for Photoemission output - F. Mildner, 12/2022
+    if(photo) then
+      write (stdout, '(1x,a78)') '+----------------------- PHOTOEMISSION PARAMETERS ---------------------------+'
+      if (index(photo_model, '1step') > 0) then
+        write (stdout, '(1x,a78)') '|  Photoemission Model                       :     1-Step Model              |'
+        write (stdout, '(1x,a78)') '|  Photoemission Final State                 :     Free Electron State       |'
+      elseif (index(photo_model, '1step') > 0) then
+        write (stdout, '(1x,a78)') '|  Photoemission Model                       :     3-Step Model              |'
+        write (stdout, '(1x,a78)') '|  Photoemission Final State                 :     Bloch State               |'
+      end if
+      write (stdout, '(1x,a46,1x,1f10.4,20x,a1)')   '|  Photon Energy              (eV)           :', photo_photon_energy, '|'
+      write (stdout, '(1x,a46,1x,1f10.4,20x,a1)')   '|  Work Function              (eV)           :', photo_work_function, '|'
+      write (stdout, '(1x,a46,1x,1f10.4,20x,a1)')   '|  Surface Area               (Ang**2)       :', photo_surface_area, '|'
+      write (stdout, '(1x,a46,1x,1f10.4,20x,a1)')   '|  Slab Volume                (Ang**3)       :', photo_slab_volume, '|'
+      write (stdout, '(1x,a46,1x,1f10.4,20x,a1)')   '|  IMFP Constant              (Ang)          :', photo_imfp_const, '|'
+      if ((photo_elec_field .gt. 1.0E-4_dp) .or. (photo_elec_field .lt. 1.0E-25_dp)) then
+        write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Electric Field Strength    (V/Ang)        :', photo_elec_field, '|'
+      else
+        write (stdout, '(1x,a46,1x,E17.9,13x,a1)')  '|  Electric Field Strength    (V/Ang)        :', photo_elec_field, '|'
+      end if
+      write (stdout, '(1x,a46,1x,1f8.2,22x,a1)')    '|  Smearing Temperature       (K)            :', photo_temperature, '|'
+      if (index(write_photo_matrix, 'slab') > 0) then
+        write (stdout, '(1x,a78)') '|  Writing Photoemission Matrix Elements     :     Atom Sites                |'
+        write (stdout, '(1x,a78)') '|          to *SEED*_matrix.dat ---------------------------------------------|'
+      elseif (index(write_photo_matrix, 'all' )> 0) then
+        write (stdout, '(1x,a78)') '|  Writing Photoemission Matrix Elements     :     All Elements              |'
+        write (stdout, '(1x,a78)') '|          to *SEED*_matrix.dat ---------------------------------------------|'
+      end if
+      write (stdout, '(1x,a78)') '|  Emission Angle Bounds for writing to *SEED*_binding_energy.dat -----------|'
+      write (stdout, '(1x,a46,1x,1f8.2,22x,a1)')  '|  Theta    -lower -          (deg)          :', photo_theta_lower, '|'
+      write (stdout, '(1x,a46,1x,1f8.2,22x,a1)')  '|  Theta    -upper -          (deg)          :', photo_theta_upper, '|'
+      write (stdout, '(1x,a46,1x,1f8.2,22x,a1)')  '|  Phi      -lower -          (deg)          :', photo_phi_lower, '|'
+      write (stdout, '(1x,a46,1x,1f8.2,22x,a1)')  '|  Phi      -upper -          (deg)          :', photo_phi_upper, '|'
     end if
 
     write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
@@ -1535,6 +1651,10 @@ contains
     call comms_bcast(projectors_string, len(projectors_string))
     call comms_bcast(set_efermi_zero, 1)
     !
+    ! Photoemission
+    call comms_bcast(photo_model,len(photo_model))
+    call comms_bcast(photo_momentum,len(photo_momentum))
+    
     call comms_bcast(num_exclude_bands, 1)
     if (num_exclude_bands > 1) then
       if (.not. on_root) then

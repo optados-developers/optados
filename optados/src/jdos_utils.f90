@@ -48,6 +48,7 @@ module od_jdos_utils
   !-------------------------------------------------------------------------------
   ! P U B L I C   F U N C T I O N S
   public :: jdos_utils_calculate
+  public :: setup_energy_scale
   !-------------------------------------------------------------------------------
 
   real(kind=dp), save                   :: delta_bins ! Width of bins
@@ -104,7 +105,7 @@ contains
     ! Now everything is set up, we can perform the dos accumulation in parellel
     time0 = io_time()
 
-    call setup_energy_scale
+    call setup_energy_scale(E)
 
     if (fixed) then
       if (calc_weighted_jdos) then
@@ -174,7 +175,7 @@ contains
   end subroutine jdos_utils_calculate
 
   !===============================================================================
-  subroutine setup_energy_scale
+  subroutine setup_energy_scale(E)
     !===============================================================================
     ! Sets up all broadening independent DOS concerns
     ! Calls the relevant dos calculator.
@@ -189,6 +190,7 @@ contains
 
     integer       :: idos, ierr
     real(kind=dp) :: max_band_energy
+    real(kind=dp), intent(out), allocatable, optional    :: E(:)
 
     if (jdos_max_energy < 0.0_dp) then ! we have to work it out ourselves
       max_band_energy = maxval(band_energy)

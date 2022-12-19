@@ -28,6 +28,14 @@ module od_optics
   implicit none
   private
   public :: optics_calculate
+  public :: make_weights
+  public :: calc_epsilon_2
+  public :: calc_epsilon_1
+  public :: calc_conduct
+  public :: calc_refract
+  public :: calc_loss_fn
+  public :: calc_absorp
+  public :: calc_reflect
 
   type :: graph_labels
     character(20) :: name
@@ -101,7 +109,7 @@ contains
     call elec_read_optical_mat
 
     ! Form matrix element
-    call make_weights
+    call make_weights(matrix_weights)
 
     ! Send matrix element to jDOS routine and get weighted jDOS back
     call jdos_utils_calculate(matrix_weights, weighted_jdos)
@@ -124,7 +132,7 @@ contains
 
     if (on_root) then
       ! Calculate epsilon_2
-      call calc_epsilon_2
+      call calc_epsilon_2(weighted_jdos, weighted_dos_at_e)
 
       ! Calculate epsilon_1
       call calc_epsilon_1
@@ -154,7 +162,7 @@ contains
   ! Subroutines go here
 
   !***************************************************************
-  subroutine make_weights
+  subroutine make_weights(matrix_weights)
     !***************************************************************
     use od_constants, only: dp
     use od_electronic, only: nbands, nspins, optical_mat, num_electrons, &
@@ -164,6 +172,8 @@ contains
     use od_parameters, only: optics_geom, optics_qdir, legacy_file_format, scissor_op, devel_flag
     use od_io, only: io_error, stdout
     use od_comms, only: my_node_id
+
+    real(kind=dp), intent(out), allocatable, dimension(:, :, :, :, :) :: matrix_weights
 
     real(kind=dp), dimension(3) :: qdir
     real(kind=dp), dimension(3) :: qdir1
@@ -492,7 +502,7 @@ contains
   end subroutine make_weights
 
   !***************************************************************
-  subroutine calc_epsilon_2
+  subroutine calc_epsilon_2(weighted_jdos, weighted_dos_at_e)
     !***************************************************************
     ! This subroutine calculates epsilon_2
 
@@ -500,12 +510,19 @@ contains
     use od_cell, only: nkpoints, cell_volume
     use od_electronic, only: nspins, electrons_per_state, nbands
     use od_jdos_utils, only: E, jdos_nbins
-    use od_parameters, only: optics_intraband, optics_drude_broadening
+    use od_parameters, only: optics_intraband, optics_drude_broadening, iprint
+    use od_io, only: stdout
+    use od_comms, only: on_root
+
+    real(kind=dp), intent(in), allocatable, dimension(:, :, :) :: weighted_jdos
+    real(kind=dp), intent(in), allocatable, dimension(:, :) :: weighted_dos_at_e
 
     integer :: N_energy
     integer :: N
     integer :: N_spin
     integer :: N2
+    integer :: jdos_bin
+    integer :: i,j
 
     real(kind=dp) ::dE
     real(kind=dp) :: x
@@ -563,6 +580,16 @@ contains
       N_eff = (x*e_mass*cell_volume*1E-30*epsilon_0*2)/(pi)
     end if
 
+    if (iprint .eq. 4 .and. on_root) then
+      write (stdout, '(1x,a78)') '+----------------------------- Printing Epsilon-2 ---------------------------+'
+      if (.not. optics_intraband) then
+        write(stdout,'(99999(es13.5))') (((epsilon(jdos_bin, j, N2, 1),N2=1,N_geom),j=1,2),jdos_bin=1,jdos_nbins)
+      else
+        write(stdout,'(99999(es13.5))') ((((epsilon(jdos_bin, j, N2, i),i=1,3),N2=1,N_geom),j=1,2),jdos_bin=1,jdos_nbins)
+      end if
+      write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
+    end if
+
   end subroutine calc_epsilon_2
 
   !***************************************************************
@@ -572,7 +599,9 @@ contains
 
     use od_constants, only: dp, pi
     use od_jdos_utils, only: E, jdos_nbins
-    use od_parameters, only: optics_intraband, optics_drude_broadening
+    use od_parameters, only: optics_intraband, optics_drude_broadening, iprint
+    use od_comms, only: on_root
+    use od_io, only: stdout
 
     integer :: N_energy
     integer :: N_energy2
@@ -581,6 +610,8 @@ contains
     real(kind=dp) :: energy1
     real(kind=dp) :: energy2
     real(kind=dp) :: dE
+
+    integer :: i,jdos_bin,j
 
     dE = E(2) - E(1)
     if (.not. optics_intraband) then
@@ -617,6 +648,16 @@ contains
         end if
       end do
     end do
+
+    if (iprint .eq. 4 .and. on_root) then
+      write (stdout, '(1x,a78)') '+----------------------------- Printing Epsilon-1 ---------------------------+'
+      if (.not. optics_intraband) then
+        write(stdout,'(99999(es13.5))') (((epsilon(jdos_bin, j, N2, 1),N2=1,N_geom),j=1,2),jdos_bin=1,jdos_nbins)
+      else
+        write(stdout,'(99999(es13.5))') ((((epsilon(jdos_bin, j, N2, i),i=1,3),N2=1,N_geom),j=1,2),jdos_bin=1,jdos_nbins)
+      end if
+      write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
+    end if
 
   end subroutine calc_epsilon_1
 
@@ -765,20 +806,20 @@ contains
     refract = 0.0_dp
 
     if (.not. optics_intraband) then
-      do N_energy = 1, jdos_nbins
+      do N_energy = 2, jdos_nbins
         refract(N_energy, 1) = (0.5_dp*((((epsilon(N_energy, 1, 1, 1)**2) +&
              &(epsilon(N_energy, 2, 1, 1)**2))**0.5_dp) + epsilon(N_energy, 1, 1, 1)))**(0.5_dp)
       end do
-      do N_energy = 1, jdos_nbins
+      do N_energy = 2, jdos_nbins
         refract(N_energy, 2) = (0.5_dp*((((epsilon(N_energy, 1, 1, 1)**2) +&
              &(epsilon(N_energy, 2, 1, 1)**2))**0.5_dp) - epsilon(N_energy, 1, 1, 1)))**(0.5_dp)
       end do
     else
-      do N_energy = 1, jdos_nbins
+      do N_energy = 2, jdos_nbins
         refract(N_energy, 1) = (0.5_dp*((((epsilon(N_energy, 1, 1, 3)**2) +&
              &((epsilon(N_energy, 2, 1, 3)/(E(N_energy)*e_charge))**2))**0.5_dp) + epsilon(N_energy, 1, 1, 1)))**(0.5_dp)
       end do
-      do N_energy = 1, jdos_nbins
+      do N_energy = 2, jdos_nbins
         refract(N_energy, 2) = (0.5_dp*((((epsilon(N_energy, 1, 1, 1)**2) +&
              &((epsilon(N_energy, 2, 1, 3)/(E(N_energy)*e_charge))**2))**0.5_dp) - epsilon(N_energy, 1, 1, 1)))**(0.5_dp)
       end do
