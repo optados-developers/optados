@@ -23,7 +23,7 @@
 !===============================================================================
 module od_optics
 
-  use od_constants, only: dp
+  use od_constants, only: dp, epsilon_0, e_charge, e_mass, hbar, c_speed
 
   implicit none
   private
@@ -72,12 +72,6 @@ module od_optics
   real(kind=dp) :: e_fermi
   integer :: N
   integer :: N2
-
-  real(kind=dp), parameter :: epsilon_0 = 8.8541878176E-12_dp
-  real(kind=dp), parameter :: e_charge = 1.602176487E-19_dp
-  real(kind=dp), parameter :: e_mass = 9.10938215E-31_dp
-  real(kind=dp), parameter :: hbar = 1.054571628E-34_dp
-  real(kind=dp), parameter :: c_speed = 299792458.0_dp
 
 contains
 

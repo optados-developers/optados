@@ -1915,7 +1915,7 @@ contains
     use od_electronic, only: efermi, band_energy, nbands, nspins
     use od_io, only: io_error
     use od_comms, only: my_node_id
-    use od_constants, only: pi, epsilon_zero, ge, kB, e_charge, b_factor, p1, p2, p3, p4, q1, q2, q3, q4
+    use od_constants, only: pi, epsilon_zero, kB, e_charge, b_factor, p1, p2, p3, p4, q1, q2, q3, q4
     implicit none
     integer :: ierr
     real(kind=dp), allocatable, dimension(:, :, :) :: field_energy
