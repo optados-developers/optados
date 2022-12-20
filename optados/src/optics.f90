@@ -81,12 +81,12 @@ contains
     !
 
     use od_electronic, only: optical_mat, elec_read_optical_mat, nbands, nspins, &
-      efermi, efermi_set, elec_dealloc_optical
+                             efermi, efermi_set, elec_dealloc_optical
     use od_cell, only: cell_volume, num_kpoints_on_node, kpoint_r
     use od_jdos_utils, only: jdos_utils_calculate
     use od_comms, only: on_root, my_node_id
     use od_parameters, only: optics_geom, adaptive, linear, fixed, optics_intraband, &
-      optics_drude_broadening
+                             optics_drude_broadening
     use od_dos_utils, only: dos_utils_calculate_at_e, dos_utils_set_efermi
     use od_io, only: stdout
 
@@ -160,9 +160,9 @@ contains
     !***************************************************************
     use od_constants, only: dp
     use od_electronic, only: nbands, nspins, optical_mat, num_electrons, &
-      electrons_per_state, band_energy, efermi
+                             electrons_per_state, band_energy, efermi
     use od_cell, only: nkpoints, cell_volume, num_kpoints_on_node, cell_get_symmetry, &
-      num_crystal_symmetry_operations, crystal_symmetry_operations, kpoint_r
+                       num_crystal_symmetry_operations, crystal_symmetry_operations, kpoint_r
     use od_parameters, only: optics_geom, optics_qdir, legacy_file_format, scissor_op, devel_flag
     use od_io, only: io_error, stdout
     use od_comms, only: my_node_id
@@ -516,7 +516,7 @@ contains
     integer :: N_spin
     integer :: N2
     integer :: jdos_bin
-    integer :: i,j
+    integer :: i, j
 
     real(kind=dp) ::dE
     real(kind=dp) :: x
@@ -577,9 +577,9 @@ contains
     if (iprint .eq. 4 .and. on_root) then
       write (stdout, '(1x,a78)') '+----------------------------- Printing Epsilon-2 ---------------------------+'
       if (.not. optics_intraband) then
-        write(stdout,'(99999(es13.5))') (((epsilon(jdos_bin, j, N2, 1),N2=1,N_geom),j=1,2),jdos_bin=1,jdos_nbins)
+        write (stdout, '(99999(es13.5))') (((epsilon(jdos_bin, j, N2, 1), N2=1, N_geom), j=1, 2), jdos_bin=1, jdos_nbins)
       else
-        write(stdout,'(99999(es13.5))') ((((epsilon(jdos_bin, j, N2, i),i=1,3),N2=1,N_geom),j=1,2),jdos_bin=1,jdos_nbins)
+        write (stdout, '(99999(es13.5))') ((((epsilon(jdos_bin, j, N2, i), i=1, 3), N2=1, N_geom), j=1, 2), jdos_bin=1, jdos_nbins)
       end if
       write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
     end if
@@ -605,7 +605,7 @@ contains
     real(kind=dp) :: energy2
     real(kind=dp) :: dE
 
-    integer :: i,jdos_bin,j
+    integer :: i, jdos_bin, j
 
     dE = E(2) - E(1)
     if (.not. optics_intraband) then
@@ -646,9 +646,9 @@ contains
     if (iprint .eq. 4 .and. on_root) then
       write (stdout, '(1x,a78)') '+----------------------------- Printing Epsilon-1 ---------------------------+'
       if (.not. optics_intraband) then
-        write(stdout,'(99999(es13.5))') (((epsilon(jdos_bin, j, N2, 1),N2=1,N_geom),j=1,2),jdos_bin=1,jdos_nbins)
+        write (stdout, '(99999(es13.5))') (((epsilon(jdos_bin, j, N2, 1), N2=1, N_geom), j=1, 2), jdos_bin=1, jdos_nbins)
       else
-        write(stdout,'(99999(es13.5))') ((((epsilon(jdos_bin, j, N2, i),i=1,3),N2=1,N_geom),j=1,2),jdos_bin=1,jdos_nbins)
+        write (stdout, '(99999(es13.5))') ((((epsilon(jdos_bin, j, N2, i), i=1, 3), N2=1, N_geom), j=1, 2), jdos_bin=1, jdos_nbins)
       end if
       write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
     end if
@@ -1002,7 +1002,7 @@ contains
 
     use od_cell, only: nkpoints, cell_volume
     use od_parameters, only: optics_geom, optics_qdir, jdos_max_energy, scissor_op, output_format, &
-      optics_intraband, optics_lossfn_broadening
+                             optics_intraband, optics_lossfn_broadening
     use od_electronic, only: nbands, num_electrons, nspins
     use od_jdos_utils, only: jdos_nbins, E
     use od_io, only: seedname, io_file_unit, stdout

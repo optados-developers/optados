@@ -83,7 +83,7 @@ module od_cell
   public :: cell_read_cell
   public :: cell_get_symmetry
   public :: cell_dist
-  ! Added for photoemission 
+  ! Added for photoemission
   public :: cell_get_real_lattice
   public :: cell_calc_kpoint_r_cart
   !-------------------------------------------------------------------------!
@@ -609,7 +609,7 @@ contains
     if (ierr /= 0) call io_error('Error allocating atoms_pos_cart in cell_get_atoms')
     allocate (atoms_pos_cart_photo(3, num_atoms), stat=ierr)
     if (ierr /= 0) call io_error('Error allocating atoms_pos_cart_photo in cell_get_atoms')
-    
+
     ! Making a copy to use in the photo.f90 subroutine "calc_layer"
     atoms_pos_cart_photo = atoms_pos_cart_tmp
 
@@ -959,7 +959,7 @@ contains
     implicit none
 
     ! THESE ARE IN BOHR, DON'T GET TRIPPED UP AGAIN!
-    real_lattice=real_lattice*bohr2ang
+    real_lattice = real_lattice*bohr2ang
 
     call cell_get_real_lattice
 

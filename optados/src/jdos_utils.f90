@@ -66,7 +66,7 @@ contains
     !===============================================================================
     use od_parameters, only: linear, fixed, adaptive, quad, iprint, dos_per_volume
     use od_electronic, only: elec_read_band_gradient, band_gradient, nspins, electrons_per_state, &
-      num_electrons, efermi_set
+                             num_electrons, efermi_set
     use od_comms, only: on_root
     use od_io, only: stdout, io_error, io_time
     use od_cell, only: cell_volume
