@@ -69,10 +69,10 @@ module od_cell
   character(len=2), allocatable, public, save :: atoms_symbol(:)
   integer, public, save :: num_atoms
   integer, public, save :: num_species
+  character(len=maxlen), allocatable, public, save  :: atoms_label_tmp(:)
 
   ! Added for photoemission
   real(kind=dp), allocatable, public, save :: atoms_pos_cart_photo(:, :)
-  character(len=maxlen), allocatable, public, save  :: atoms_label_tmp(:)
 
   !-------------------------------------------------------------------------!
   ! G L O B A L L Y   A V A I L A B L E   F U N C T I O N S
@@ -425,7 +425,7 @@ contains
     logical           :: found_e, found_s, frac
     character(len=maxlen) :: dummy
     character(len=maxlen), allocatable :: ctemp(:)
-    character(len=maxlen), allocatable :: atoms_label_tmp(:)
+    !character(len=maxlen), allocatable :: atoms_label_tmp(:)
     logical           :: lconvert
 
     character(len=maxlen), allocatable :: in_data(:)
@@ -561,7 +561,7 @@ contains
       atoms_pos_cart_tmp = atoms_pos_cart_tmp*bohr2ang
     end if
 
-    !!!call cell_get_real_lattice
+    call cell_get_real_lattice
     if (frac) then
       do loop = 1, num_atoms
         call utility_frac_to_cart(atoms_pos_frac_tmp(:, loop), atoms_pos_cart_tmp(:, loop), real_lattice)
@@ -862,7 +862,7 @@ contains
       atoms_pos_cart_tmp = atoms_pos_cart_tmp*bohr2ang
     end if
 
-    !!!call cell_get_real_lattice
+    call cell_get_real_lattice
 
     if (frac) then
       do loop = 1, num_atoms
@@ -961,7 +961,7 @@ contains
     ! THESE ARE IN BOHR, DON'T GET TRIPPED UP AGAIN!
     real_lattice=real_lattice*bohr2ang
 
-    !!!call cell_get_real_lattice
+    call cell_get_real_lattice
 
     recip_lattice(1, 1) = real_lattice(2, 2)*real_lattice(3, 3) - &
                           real_lattice(3, 2)*real_lattice(2, 3)
