@@ -504,7 +504,7 @@ contains
     use od_cell, only: nkpoints, cell_volume
     use od_electronic, only: nspins, electrons_per_state, nbands
     use od_jdos_utils, only: E, jdos_nbins
-    use od_parameters, only: optics_intraband, optics_drude_broadening, iprint
+    use od_parameters, only: optics_intraband, optics_drude_broadening, photo,photo_slab_volume, iprint
     use od_io, only: stdout
     use od_comms, only: on_root
 
@@ -523,7 +523,12 @@ contains
     real(kind=dp) :: epsilon2_const
 
     dE = E(2) - E(1)
-    epsilon2_const = (e_charge*pi*1E-20)/(cell_volume*1E-30*epsilon_0)
+    if (photo) then
+      epsilon2_const = (e_charge*pi*1E-20)/(photo_slab_volume*1E-30*epsilon_0)
+    else
+      epsilon2_const = (e_charge*pi*1E-20)/(cell_volume*1E-30*epsilon_0)
+    end if
+    !epsilon2_const = (e_charge*pi*1E-20)/(cell_volume*1E-30*epsilon_0)
 
     if (optics_intraband) then
       allocate (intra(N_geom))
@@ -533,7 +538,12 @@ contains
           intra(N) = intra(N) + weighted_dos_at_e(N_spin, N)
         end do
       end do
-      intra = intra*e_charge/(cell_volume*1E-10*epsilon_0)
+      if (photo) then
+        intra = intra*e_charge/(photo_slab_volume*1E-10*epsilon_0)
+      else
+        intra = intra*e_charge/(cell_volume*1E-10*epsilon_0)
+      end if
+      ! intra = intra*e_charge/(cell_volume*1E-10*epsilon_0)
     end if
 
     if (.not. optics_intraband) then
@@ -571,7 +581,12 @@ contains
           x = x + ((N*(dE**2)*epsilon(N, 2, 1, 3))/((hbar**2)*E(N)*e_charge))
         end if
       end do
-      N_eff = (x*e_mass*cell_volume*1E-30*epsilon_0*2)/(pi)
+      if (photo) then
+        N_eff = (x*e_mass*photo_slab_volume*1E-30*epsilon_0*2)/(pi)
+      else
+        N_eff = (x*e_mass*cell_volume*1E-30*epsilon_0*2)/(pi)
+      end if
+      ! N_eff = (x*e_mass*cell_volume*1E-30*epsilon_0*2)/(pi)
     end if
 
     if (iprint .eq. 4 .and. on_root) then
