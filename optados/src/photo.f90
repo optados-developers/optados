@@ -2056,27 +2056,26 @@ contains
 
     time1 = io_time()
     if (on_root .and. iprint > 1) then
-      write (stdout, '(1x,a59,f11.3,a8)') &
-           '+ Time to calculate Joint Density of States              &
-           &      ', time1 - time0, ' (sec) +'
+      write (stdout, '(1x,a43,16x,f11.3,1x,a7)') &
+           '+ Time to calculate Joint Density of States', time1 - time0, '(sec) +'
     end if
     !-------------------------------------------------------------------------------
 
     if (dos_per_volume) then
-    if (fixed) then
-      jdos_fixed = jdos_fixed/cell_volume
-    end if
-    if (adaptive) then
-      jdos_adaptive = jdos_adaptive/cell_volume
-    end if
-    if (linear) then
-      jdos_linear = jdos_linear/cell_volume
-    end if
+      if (fixed) then
+        jdos_fixed = jdos_fixed/cell_volume
+      end if
+      if (adaptive) then
+        jdos_adaptive = jdos_adaptive/cell_volume
+      end if
+      if (linear) then
+        jdos_linear = jdos_linear/cell_volume
+      end if
 
-    ! if(quad) then
-    !    dos_quad=dos_quad/cell_volume
-    !    intdos_quad=intdos_quad/cell_volume
-    ! endif
+      ! if(quad) then
+      !    dos_quad=dos_quad/cell_volume
+      !    intdos_quad=intdos_quad/cell_volume
+      ! endif
     end if
 
   end subroutine jdos_utils_calculate_delta
