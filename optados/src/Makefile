@@ -38,7 +38,7 @@ od2od : od2od.f90 $(OBJS) ../make.system
 	$(F90) $(FFLAGS) $< $(OBJS) -o ../od2od
 
 optados : optados.f90 $(OBJS) ../make.system
-	$(F90) $(FFLAGS) $< $(OBJS) -o ../optados$(EXTENSION)
+	$(F90) $(FFLAGS) $< $(OBJS) -o $(PREFIX)optados$(EXTENSION)
 
 algorithms.o : algorithms.f90 io.o constants.o ../make.system
 	$(F90) -c $(FFLAGS) $<

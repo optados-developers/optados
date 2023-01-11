@@ -897,7 +897,7 @@ contains
       if (index(photo_model, '1step') > 0) then
         write (stdout, '(1x,a78)') '|  Photoemission Model                       :     1-Step Model              |'
         write (stdout, '(1x,a78)') '|  Photoemission Final State                 :     Free Electron State       |'
-      elseif (index(photo_model, '1step') > 0) then
+      elseif (index(photo_model, '3step') > 0) then
         write (stdout, '(1x,a78)') '|  Photoemission Model                       :     3-Step Model              |'
         write (stdout, '(1x,a78)') '|  Photoemission Final State                 :     Bloch State               |'
       end if
