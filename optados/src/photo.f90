@@ -150,6 +150,7 @@ contains
     if (index(photo_model, '1step') > 0) then !One-step-model
       call elec_read_foptical_mat !Read the one-step matrix elements
       call make_foptical_weights !Calculate the one-step optical matrix
+      
       call calc_one_step_model !Calculate QE
     end if
 
@@ -612,8 +613,10 @@ contains
     do atom = 1, max_atoms
       !attenuation_layer(index_energy, atom) = exp(-(absorp_photo(index_energy, atom)*light_path(atom))*1E-10)
       absorption_layer(atom) = absorp_photo(atom)*thickness_atom(atom)*1E-10
-      write (stdout, *) "Absorption for the layer #", atom
-      write (stdout, *) absorption_layer(atom)
+      if (iprint .gt. 3) then
+        write (stdout, *) "Absorption for the layer #", atom
+        write (stdout, *) absorption_layer(atom)
+      end if
     end do
 
     I_0 = 1.0_dp
@@ -696,7 +699,7 @@ contains
 
     real(kind=dp), allocatable, dimension(:, :, :):: E_x
     real(kind=dp), allocatable, dimension(:, :, :):: E_y
-
+    real(kind=dp) :: tol = 1.0E-10_dp
     allocate (E_x(nbands, num_kpoints_on_node(my_node_id), nspins), stat=ierr)
     if (ierr /= 0) call io_error('Error: calc_angle - allocation of E_x failed')
     E_x = 0.0_dp
@@ -731,7 +734,7 @@ contains
 
     call cell_calc_kpoint_r_cart
 
-    if ((iprint .eq. 6 .and. on_root) .or. (iprint .eq. 7 .and. on_root)) then
+    if ((iprint .eq. 5 .and. on_root) .or. (iprint .eq. 6 .and. on_root) .or. (iprint .eq. 7 .and. on_root)) then
       write (stdout, '(a78)') "+---------------- Printing K-Points in Cartesian Coordinates ----------------+"
       do N = 1, num_kpoints_on_node(my_node_id)
         write (stdout, '(3(1x,E22.15))') kpoint_r_cart(:, N)
@@ -770,9 +773,9 @@ contains
     do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
       do N_spin = 1, nspins                    ! Loop over spins
         do n_eigen = 1, nbands
-          if ((E_x(n_eigen, N, N_spin) .eq. 0.0_dp) .and. (E_y(n_eigen, N, N_spin) .eq. 0.0_dp)) then
-            phi_arpes(n_eigen, N, N_spin) = atan(1.0_dp)*rad_to_deg
-          elseif (E_y(n_eigen, N, N_spin) .eq. 0.0_dp) then
+          if ((abs(E_x(n_eigen, N, N_spin)) .lt. tol) .and. (abs(E_y(n_eigen, N, N_spin)) .lt. tol)) then
+            phi_arpes(n_eigen, N, N_spin) = 0.0_dp
+          elseif ((abs(E_y(n_eigen, N, N_spin)) .lt. tol)) then
             phi_arpes(n_eigen, N, N_spin) = 90.0_dp
           else
             phi_arpes(n_eigen, N, N_spin) = atan(E_x(n_eigen, N, N_spin)/E_y(n_eigen, N, N_spin))*rad_to_deg
@@ -1066,15 +1069,14 @@ contains
       write (stdout, '(1x,a261)') 'calced_qe_value - initial_state_energy - final_state_energy - matrix_weights - delta_temp -&
       & electron_esc - electrons_per_state - kpoint_weight - I_layer - qe_factor - transverse_g - vac_g - fermi_dirac -&
       & pdos_weights_atoms - pdos_weights_k_band - field_emission'
-      write (stdout, '(1x,a10,E26.15E3)') 'E_Fermi = ', efermi
       write (stdout, '(1x,a11,6(1x,I4))') 'Array Shape', max_atoms, nbands, nbands, nspins, num_kpoints_on_node(my_node_id), i
     end if
 
     do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
       do N_spin = 1, nspins                    ! Loop over spins
         do n_eigen = 1, nbands
-          argument = (band_energy(n_eigen, N_spin, N) - efermi)/(kB*photo_temperature)
 
+          argument = (band_energy(n_eigen, N_spin, N) - efermi)/(kB*photo_temperature)
           ! This is a bit of an arbitrary condition, but it turns out
           ! that this corresponds to a an exponent value of ~1E+/-250
           ! and this cutoff condition saves us from running into arithmetic
@@ -1115,7 +1117,7 @@ contains
                   pdos_weights_k_band(n_eigen, N, N_spin)))* &
                 (1.0_dp + field_emission(n_eigen, N_spin, N))
               if (iprint .eq. 5 .and. on_root) then
-                write (stdout, '(1x,a1,5(1x,I4),a2)') '(', atom, n_eigen, n_eigen2, N_spin, N, ' )'
+                write (stdout, '(5(1x,I4))') atom, n_eigen, n_eigen2, N_spin, N
                 write (stdout, '(16(1x,E17.9E3))') qe_tsm(n_eigen, n_eigen2, N, N_spin, atom), band_energy(n_eigen, N_spin, N), &
                   band_energy(n_eigen2, N_spin, N), matrix_weights(n_eigen, n_eigen2, N, N_spin, 1), &
                   delta_temp(n_eigen, n_eigen2, N, N_spin), electron_esc(n_eigen, N, N_spin, atom), electrons_per_state, &
@@ -1259,10 +1261,10 @@ contains
     qe_osm = 0.0_dp
 
     if (iprint .eq. 5 .and. on_root) then
-      i = 12 ! Defines the number of columns printed in the loop - needed for reshaping the data array during postprocessing
+      i = 13 ! Defines the number of columns printed in the loop - needed for reshaping the data array during postprocessing
       write (stdout, '(1x,a78)') '+------------ Printing list of values going into 1step QE Values ------------+'
-      write (stdout, '(1x,a195)') 'foptical_matrix_weights - electron_esc - electrons_per_state - kpoint_weight - I_layer -&
-      & qe_factor - transverse_g - vac_g - fermi_dirac - pdos_weights_atoms - pdos_weights_k_band - field_emission'
+      write (stdout, '(1x,a211)') 'calculated_QE - foptical_matrix_weights - electron_esc - electrons_per_state - kpoint_weight -&
+      & I_layer - qe_factor - transverse_g - vac_g - fermi_dirac - pdos_weights_atoms - pdos_weights_k_band - field_emission'
       write (stdout, '(1x,a11,6(1x,I4))') 'Array Shape', i, max_atoms, nbands, nspins, num_kpoints_on_node(my_node_id)
     end if
 
@@ -1305,7 +1307,9 @@ contains
                 pdos_weights_k_band(n_eigen, N, N_spin)))* &
               (1.0_dp + field_emission(n_eigen, N_spin, N))
             if (iprint .eq. 5 .and. on_root) then
-              write (stdout, '(12(1x,E16.8E4))') foptical_matrix_weights(n_eigen, n_eigen2, N, N_spin, 1), &
+              write (stdout,'(4(1x,I4))') atom, n_eigen, N_spin, N
+              write (stdout, '(13(1x,E16.8E4))') qe_osm(n_eigen, N, N_spin, atom), &
+                foptical_matrix_weights(n_eigen, n_eigen2, N, N_spin, 1), &
                 electron_esc(n_eigen, N, N_spin, atom), electrons_per_state, kpoint_weight(N), I_layer(layer(atom)), &
                 qe_factor, transverse_g, vac_g, fermi_dirac, pdos_weights_atoms(atom_order(atom), n_eigen, N, N_spin), &
                 pdos_weights_k_band(n_eigen, N, N_spin), field_emission(n_eigen, N_spin, N)
@@ -1344,7 +1348,7 @@ contains
       close (unit=matrix_unit)
     end if
 
-    if ((iprint .eq. 4 .and. on_root) .or. (iprint .eq. 6 .and. on_root)) then
+    if ((iprint .eq. 4 .and. on_root) .or. (iprint .eq. 6 .and. on_root) .or. (iprint .eq. 7 .and. on_root)) then
       write (stdout, '(1x,a78)') '+------------------------- Printing 1step QE Matrix -------------------------+'
       write (stdout, 125) shape(qe_osm)
       write (stdout, 125) nbands, num_kpoints_on_node(my_node_id), nspins, max_atoms + 1
@@ -1385,7 +1389,7 @@ contains
     real(kind=dp), dimension(3) :: qdir, qdir1, qdir2
     real(kind=dp), dimension(2) :: num_occ
     real(kind=dp) :: q_weight1, q_weight2, factor
-    integer :: N, i, j, N_in, N_spin, N2, N3, n_eigen, n_eigen2, num_symm, ierr
+    integer :: N, i, j, N_in, N_spin, N2, N3, n_eigen, n_eigen2, num_symm, ierr,na,nb
 
     if (.not. legacy_file_format .and. index(devel_flag, 'old_filename') > 0) then
       num_symm = 0
@@ -1401,7 +1405,19 @@ contains
     if (electrons_per_state == 2) then
       num_occ(1) = num_occ(1)/2.0_dp
     end if
-
+    if (on_root .and. iprint .gt. 2) then
+      do N_spin=1,nspins
+        do N=1,num_kpoints_on_node(my_node_id)
+          do i=1,3
+            do na=1,nbands + 1
+                  write(stdout,*) na,i,N,N_spin
+                  write(stdout,*) foptical_mat(na, na, i, N, N_spin)
+                end do
+              end do
+            end do
+          end do
+    end if
+    ! Can I also allocate this to fome(nbands+1, num_kpts, nspins, N_geom) since there is only column of values set to > 0
     allocate (foptical_matrix_weights(nbands + 1, nbands + 1, num_kpoints_on_node(my_node_id), nspins, N_geom), stat=ierr)
     if (ierr /= 0) call io_error('Error: make_foptical_weights - allocation of foptical_matrix_weights failed')
     foptical_matrix_weights = 0.0_dp
@@ -1452,11 +1468,11 @@ contains
             else ! begin unpolar symmetric
               do N2 = 1, num_symm
                 do N3 = 1, 1 + N_in
+                  ! Calculating foptical_matrix_weights contribution for qdir1
                   do i = 1, 3
                     qdir(i) = 0.0_dp
                     do j = 1, 3
-                      qdir(i) = qdir(i) + ((-1.0_dp)**(N3 + 1))* &
-                                (crystal_symmetry_operations(j, i, N2)*qdir1(j))
+                      qdir(i) = qdir(i) + ((-1.0_dp)**(N3 + 1))*(crystal_symmetry_operations(j, i, N2)*qdir1(j))
                     end do
                   end do
                   g(1) = (((qdir(1)*foptical_mat(n_eigen, nbands + 1, 1, N, N_spin)) + &
@@ -1466,11 +1482,11 @@ contains
                     foptical_matrix_weights(n_eigen, nbands + 1, N, N_spin, N_geom) + &
                     (0.5_dp/Real((num_symm*(N_in + 1)), dp))*real(g(1)*conjg(g(1)), dp)*factor
                   g(1) = 0.0_dp
+                  ! Calculating foptical_matrix_weights contribution for qdir2
                   do i = 1, 3 ! if I include an extra variable I can merge this and the last do loops
                     qdir(i) = 0.0_dp
                     do j = 1, 3
-                      qdir(i) = qdir(i) + ((-1.0_dp)**(N3 + 1))* &
-                                (crystal_symmetry_operations(j, i, N2)*qdir2(j))
+                      qdir(i) = qdir(i) + ((-1.0_dp)**(N3 + 1))*(crystal_symmetry_operations(j, i, N2)*qdir2(j))
                     end do
                   end do
                   g(1) = (((qdir(1)*foptical_mat(n_eigen, nbands + 1, 1, N, N_spin)) + &
@@ -1528,6 +1544,7 @@ contains
       end do
       write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
     end if
+    
   end subroutine make_foptical_weights
 
   !===============================================================================
