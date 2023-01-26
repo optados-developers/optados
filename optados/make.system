@@ -5,7 +5,7 @@ SYSTEM := gfortran
 BUILD := fast
 
 # serial / mpi
-COMMS_ARCH :=  serial
+COMMS_ARCH := serial
 
 # Where would you like the executables?
 PREFIX:=../
