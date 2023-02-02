@@ -568,7 +568,7 @@ contains
     if (max_layer .lt. 2) then
       thickness_atom = 1.5
     else
-
+      ! Setting thickness_atom for the first atom in layer # 1 and finding the first atom in the second layer
       do atom = 2, max_atoms
         if (layer(atom) .gt. 1) then
           thickness_atom(1) = ((atoms_pos_cart_photo(3, atom_order(1)) - atoms_pos_cart_photo(3, atom_order(atom)))/2)*2
@@ -576,12 +576,12 @@ contains
           exit
         end if
       end do
-
+      ! Setting thickness_atom for the rest of the atoms in the first layer
       do i = 2, first_atom_second_l - 1
         thickness_atom(i) = ((atoms_pos_cart_photo(3, atom_order(i)) - &
                               atoms_pos_cart_photo(3, atom_order(first_atom_second_l)))/2)*2
       end do
-
+      ! Setting thickness_atom for the last atom in the last layer and finding the last atom in the second to last layer
       do i = 1, max_atoms
         if (layer(max_atoms - i) .lt. layer(max_atoms)) then
           thickness_atom(max_atoms) = (ABS(atoms_pos_cart_photo(3, atom_order(max_atoms)) - &
@@ -590,12 +590,13 @@ contains
           exit
         end if
       end do
-
+      ! Setting thickness_atom for the atoms in the last layer, but not for the last atom
       do i = last_atom_secondlast_l + 1, max_atoms - 1
         thickness_atom(i) = (ABS(atoms_pos_cart_photo(3, atom_order(i)) - &
                                  atoms_pos_cart_photo(3, atom_order(last_atom_secondlast_l)))/2)*2
       end do
-
+      ! Setting thickness_atom for the atoms in between the first and last layers
+      ! Formula -> abs( (z(last atom in n-1th layer) - z(atom) )/2 ) + abs( (z(first atom in n+1th layer) - z(atom) )/2 )
       do atom = first_atom_second_l, last_atom_secondlast_l
         thickness_atom(atom) = abs((atoms_pos_cart_photo(3, atom_order(sum(atoms_per_layer(1:layer(atom) - 1)))) &
                                     - atoms_pos_cart_photo(3, atom_order(atom)))/2) + &
