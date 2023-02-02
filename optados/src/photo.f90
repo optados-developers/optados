@@ -610,14 +610,14 @@ contains
 
     !attenuation_layer = 1.0_dp
 
-    do atom = 1, max_atoms
-      !attenuation_layer(index_energy, atom) = exp(-(absorp_photo(index_energy, atom)*light_path(atom))*1E-10)
-      absorption_layer(atom) = absorp_photo(atom)*thickness_atom(atom)*1E-10
-      if (iprint .gt. 3) then
-        write (stdout, *) "Absorption for the layer #", atom
-        write (stdout, *) absorption_layer(atom)
-      end if
-    end do
+    ! do atom = 1, max_atoms
+    !   !attenuation_layer(index_energy, atom) = exp(-(absorp_photo(index_energy, atom)*light_path(atom))*1E-10)
+    !   absorption_layer(atom) = absorp_photo(atom)*thickness_atom(atom)*1E-10
+    !   if (iprint .gt. 3) then
+    !     write (stdout, *) "Absorption for the layer #", atom
+    !     write (stdout, *) absorption_layer(atom)
+    !   end if
+    ! end do
 
     I_0 = 1.0_dp
     I_layer = 1.0_dp
@@ -1405,18 +1405,18 @@ contains
     if (electrons_per_state == 2) then
       num_occ(1) = num_occ(1)/2.0_dp
     end if
-    if (on_root .and. iprint .gt. 2) then
-      do N_spin=1,nspins
-        do N=1,num_kpoints_on_node(my_node_id)
-          do i=1,3
-            do na=1,nbands + 1
-                  write(stdout,*) na,i,N,N_spin
-                  write(stdout,*) foptical_mat(na, na, i, N, N_spin)
-                end do
-              end do
-            end do
-          end do
-    end if
+    ! if (on_root .and. iprint .gt. 2) then
+    !   do N_spin=1,nspins
+    !     do N=1,num_kpoints_on_node(my_node_id)
+    !       do i=1,3
+    !         do na=1,nbands + 1
+    !               write(stdout,*) na,i,N,N_spin
+    !               write(stdout,*) foptical_mat(na, na, i, N, N_spin)
+    !             end do
+    !           end do
+    !         end do
+    !       end do
+    ! end if
     ! Can I also allocate this to fome(nbands+1, num_kpts, nspins, N_geom) since there is only column of values set to > 0
     allocate (foptical_matrix_weights(nbands + 1, nbands + 1, num_kpoints_on_node(my_node_id), nspins, N_geom), stat=ierr)
     if (ierr /= 0) call io_error('Error: make_foptical_weights - allocation of foptical_matrix_weights failed')
