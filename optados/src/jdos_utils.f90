@@ -64,7 +64,7 @@ contains
     ! Main routine in dos module, drives the calculation of Density of states for
     ! both task : dos and also if it is required elsewhere.
     !===============================================================================
-    use od_parameters, only: linear, fixed, adaptive, quad, iprint, dos_per_volume
+    use od_parameters, only: linear, fixed, adaptive, quad, iprint, dos_per_volume, photo, photo_slab_volume
     use od_electronic, only: elec_read_band_gradient, band_gradient, nspins, electrons_per_state, &
                              num_electrons, efermi_set
     use od_comms, only: on_root
@@ -156,14 +156,26 @@ contains
     !-------------------------------------------------------------------------------
 
     if (dos_per_volume) then
-      if (fixed) then
-        jdos_fixed = jdos_fixed/cell_volume
-      end if
-      if (adaptive) then
-        jdos_adaptive = jdos_adaptive/cell_volume
-      end if
-      if (linear) then
-        jdos_linear = jdos_linear/cell_volume
+      if (photo) then
+        if (fixed) then
+          jdos_fixed = jdos_fixed/photo_slab_volume
+        end if
+        if (adaptive) then
+          jdos_adaptive = jdos_adaptive/photo_slab_volume
+        end if
+        if (linear) then
+          jdos_linear = jdos_linear/photo_slab_volume
+        end if
+      else
+        if (fixed) then
+          jdos_fixed = jdos_fixed/cell_volume
+        end if
+        if (adaptive) then
+          jdos_adaptive = jdos_adaptive/cell_volume
+        end if
+        if (linear) then
+          jdos_linear = jdos_linear/cell_volume
+        end if
       end if
 
       ! if(quad) then

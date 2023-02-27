@@ -363,7 +363,7 @@ contains
 
     index_energy = int(photo_photon_energy/jdos_spacing)
 
-    call make_weights(matrix_weights)
+    call make_wekights(matrix_weights)
     N_geom = size(matrix_weights, 5)
 
     if (iprint .eq. 4 .and. on_root) then
@@ -1605,42 +1605,6 @@ contains
         if (ierr /= 0) call io_error('Error: weighted_mean_te - failed to deallocate te_tsm_temp')
       end if
 
-    end if
-
-    if (index(photo_model, '1step') > 0) then
-
-      allocate (te_osm_temp(nbands, num_kpoints_on_node(my_node_id), nspins, max_atoms + 1), stat=ierr)
-      if (ierr /= 0) call io_error('Error: weighted_mean_te - allocation of te_osm_temp failed')
-      te_osm_temp = 0.0_dp
-
-      do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
-        do N_spin = 1, nspins                    ! Loop over spins
-          do n_eigen = 1, nbands
-!                if(band_energy(n_eigen,N_spin,N).ge.efermi) cycle
-            do atom = 1, max_atoms
-              te_osm_temp(n_eigen, N, N_spin, atom) = &
-                E_transverse(n_eigen, N, N_spin)*qe_osm(n_eigen, N, N_spin, atom)
-            end do
-            te_osm_temp(n_eigen, N, N_spin, max_atoms + 1) = &
-              E_transverse(n_eigen, N, N_spin)*qe_osm(n_eigen, N, N_spin, max_atoms + 1)
-          end do
-        end do
-      end do
-
-      if (sum(qe_osm(1:nbands, 1:num_kpoints_on_node(my_node_id), 1:nspins, 1:max_atoms + 1)) .gt. 0.0_dp) then
-        mean_te = sum(te_osm_temp(1:nbands, 1:num_kpoints_on_node(my_node_id), 1:nspins, 1:max_atoms + 1))/ &
-                  sum(qe_osm(1:nbands, 1:num_kpoints_on_node(my_node_id), 1:nspins, 1:max_atoms + 1))
-      else
-        mean_te = 0.0_dp
-      end if
-
-      if (allocated(te_osm_temp)) then
-        deallocate (te_osm_temp, stat=ierr)
-        if (ierr /= 0) call io_error('Error: weighted_mean_te - failed to deallocate te_osm_temp')
-      end if
-
-    end if
-    if (index(photo_model, '3step') > 0) then
       write (stdout, '(1x,a78)') '+------------------------------ Photoemission -------------------------------+'
       write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
       write (stdout, 223) '| Work Function     ', photo_work_function, &
@@ -1663,6 +1627,37 @@ contains
     end if
 
     if (index(photo_model, '1step') > 0) then
+
+      allocate (te_osm_temp(nbands, num_kpoints_on_node(my_node_id), nspins, max_atoms + 1), stat=ierr)
+      if (ierr /= 0) call io_error('Error: weighted_mean_te - allocation of te_osm_temp failed')
+      te_osm_temp = 0.0_dp
+
+      do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
+        do N_spin = 1, nspins                    ! Loop over spins
+          do n_eigen = 1, nbands
+            ! if(band_energy(n_eigen,N_spin,N).ge.efermi) cycle
+            do atom = 1, max_atoms
+              te_osm_temp(n_eigen, N, N_spin, atom) = &
+                E_transverse(n_eigen, N, N_spin)*qe_osm(n_eigen, N, N_spin, atom)
+            end do
+            te_osm_temp(n_eigen, N, N_spin, max_atoms + 1) = &
+              E_transverse(n_eigen, N, N_spin)*qe_osm(n_eigen, N, N_spin, max_atoms + 1)
+          end do
+        end do
+      end do
+
+      if (sum(qe_osm(1:nbands, 1:num_kpoints_on_node(my_node_id), 1:nspins, 1:max_atoms + 1)) .gt. 0.0_dp) then
+        mean_te = sum(te_osm_temp(1:nbands, 1:num_kpoints_on_node(my_node_id), 1:nspins, 1:max_atoms + 1))/ &
+                  sum(qe_osm(1:nbands, 1:num_kpoints_on_node(my_node_id), 1:nspins, 1:max_atoms + 1))
+      else
+        mean_te = 0.0_dp
+      end if
+
+      if (allocated(te_osm_temp)) then
+        deallocate (te_osm_temp, stat=ierr)
+        if (ierr /= 0) call io_error('Error: weighted_mean_te - failed to deallocate te_osm_temp')
+      end if
+
       write (stdout, '(1x,a78)') '+------------------------------ Photoemission -------------------------------+'
       write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
       write (stdout, 223) '| Work Function     ', photo_work_function, &
@@ -1683,10 +1678,13 @@ contains
         sum(qe_osm(1:nbands, 1:num_kpoints_on_node(my_node_id), 1:nspins, 1:max_atoms + 1)), '      |'
 
     end if
+
     write (stdout, 228) '| Weighted Mean Transverse Energy (eV):', mean_te, '      |'
+
     if (photo_elec_field .gt. 0.0_dp) then
       write (stdout, 229) '| Total field emission (electrons/A^2):', total_field_emission, '      |'
     end if
+
     write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
 
 223 format(1x, a20, f15.4, 1x, a24, f11.4, a7)
@@ -1825,7 +1823,7 @@ contains
                 theta_arpes(n_eigen, N, N_spin) .le. photo_theta_upper) then
               if (phi_arpes(n_eigen, N, N_spin) .ge. photo_phi_lower .and. &
                   phi_arpes(n_eigen, N, N_spin) .le. photo_phi_upper) then
-!                  if(band_energy(n_eigen,N_spin,N).ge.efermi) cycle
+                  ! if(band_energy(n_eigen,N_spin,N).ge.efermi) cycle
                 do e_scale = 1, max_energy
                   do atom = 1, max_atoms + 1
                     weighted_temp(e_scale, N, N_spin, n_eigen, atom) = &
@@ -2025,7 +2023,7 @@ contains
     ! It is required to evaluate the delta funcion.
     ! Victor Chang, 7th February 2020
     !===============================================================================
-    use od_parameters, only: linear, fixed, adaptive, quad, iprint, dos_per_volume
+    use od_parameters, only: linear, fixed, adaptive, quad, iprint, dos_per_volume, photo_slab_volume
     use od_electronic, only: elec_read_band_gradient, band_gradient, efermi_set
     use od_comms, only: on_root
     use od_io, only: stdout, io_error, io_time
@@ -2079,22 +2077,22 @@ contains
     end if
     !-------------------------------------------------------------------------------
 
-    if (dos_per_volume) then
-      if (fixed) then
-        jdos_fixed = jdos_fixed/cell_volume
-      end if
-      if (adaptive) then
-        jdos_adaptive = jdos_adaptive/cell_volume
-      end if
-      if (linear) then
-        jdos_linear = jdos_linear/cell_volume
-      end if
+    ! if (dos_per_volume) then
+    !   if (fixed) then
+    !     jdos_fixed = jdos_fixed/photo_slab_volume
+    !   end if
+    !   if (adaptive) then
+    !     jdos_adaptive = jdos_adaptive/photo_slab_volume
+    !   end if
+    !   if (linear) then
+    !     jdos_linear = jdos_linear/photo_slab_volume
+    !   end if
 
       ! if(quad) then
       !    dos_quad=dos_quad/cell_volume
       !    intdos_quad=intdos_quad/cell_volume
       ! endif
-    end if
+    ! end if
 
   end subroutine jdos_utils_calculate_delta
 
@@ -2158,7 +2156,7 @@ contains
     if (ierr /= 0) call io_error('Error: calculate_delta - allocation of delta_temp failed')
     delta_temp = 0.0_dp
     if (iprint > 1 .and. on_root) then
-      write (stdout, '(1x,a78)') '+------------------------------ Calculate JDOS ------------------------------+'
+      write (stdout, '(1x,a78)') '+---------------------- Calculate JDOS DELTA FUNCTION -----------------------+'
     end if
 
     do ik = 1, num_kpoints_on_node(my_node_id)
