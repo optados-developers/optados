@@ -735,8 +735,8 @@ contains
 
     call cell_calc_kpoint_r_cart
 
-    if ((index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) .or. (index(devel_flag, 'print_full_qe_matrix') > 0.and.&
-    & on_root) .or. (index(devel_flag, 'print_reduced_qe_matrix') > 0 .and. on_root)) then
+    if ((index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) .or. (index(devel_flag, 'print_qe_matrix_full') > 0.and.&
+    & on_root) .or. (index(devel_flag, 'print_qe_matrix_reduced') > 0 .and. on_root)) then
       write (stdout, '(a78)') "+---------------- Printing K-Points in Cartesian Coordinates ----------------+"
       do N = 1, num_kpoints_on_node(my_node_id)
         write (stdout, '(3(1x,E22.15))') kpoint_r_cart(:, N)
@@ -1173,7 +1173,7 @@ contains
       close (unit=matrix_unit)
     end if
 
-    if ((index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) .or. (index(devel_flag, 'print_full_qe_matrix') > 0.and.&
+    if ((index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) .or. (index(devel_flag, 'print_qe_matrix_full') > 0.and.&
     & on_root)) then
       write (stdout, '(1x,a78)') '+----------------------- Printing Full 3step QE Matrix ----------------------+'
       write (stdout, '(5(1x,I4))') shape(qe_tsm)
@@ -1187,7 +1187,7 @@ contains
       end do
       write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
     end if
-    if (index(devel_flag, 'print_reduced_qe_matrix') > 0 .and. on_root) then
+    if (index(devel_flag, 'print_qe_matrix_reduced') > 0 .and. on_root) then
       write (stdout, '(1x,a78)') '+--------------------- Printing Reduced 3step QE Matrix ---------------------+'
       write (stdout, '(5(1x,I4))') shape(qe_tsm)
       write (stdout, '(5(1x,I4))') nbands, num_kpoints_on_node(my_node_id), nspins, max_atoms + 1
@@ -1351,8 +1351,8 @@ contains
       close (unit=matrix_unit)
     end if
 
-    if ((index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) .or. (index(devel_flag, 'print_full_qe_matrix') > 0&
-    & .and. on_root) .or. (index(devel_flag, 'print_reduced_qe_matrix') > 0 .and. on_root)) then
+    if ((index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) .or. (index(devel_flag, 'print_qe_matrix_full') > 0&
+    & .and. on_root) .or. (index(devel_flag, 'print_qe_matrix_reduced') > 0 .and. on_root)) then
       write (stdout, '(1x,a78)') '+------------------------- Printing 1step QE Matrix -------------------------+'
       write (stdout, 125) shape(qe_osm)
       write (stdout, 125) nbands, num_kpoints_on_node(my_node_id), nspins, max_atoms + 1
