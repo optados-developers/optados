@@ -264,7 +264,7 @@ contains
     use od_cell, only: num_kpoints_on_node, num_atoms
     use od_comms, only: my_node_id, on_root
     use od_io, only: io_error, stdout
-    use od_parameters, only: iprint
+    use od_parameters, only: iprint, devel_flag
     implicit none
     integer :: N, N_spin, n_eigen, np, ierr, atom, i, i_max
 
@@ -313,7 +313,7 @@ contains
       end do
     end do
 
-    if (iprint .eq. 4 .and. on_root) then
+    if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) then
       write (stdout, '(1x,a78)') '+------------------------ Printing pDOS_weights_atoms -----------------------+'
       write (stdout, 125) shape(pdos_weights_atoms)
       write (stdout, 125) i_max, pdos_mwab%nbands, num_kpoints_on_node(my_node_id), nspins
@@ -343,7 +343,7 @@ contains
     use od_cell, only: num_kpoints_on_node, num_kpoints_on_node
     use od_jdos_utils, only: jdos_utils_calculate, jdos_nbins, E, setup_energy_scale
     use od_comms, only: on_root, my_node_id
-    use od_parameters, only: optics_intraband, jdos_spacing, photo_photon_energy, iprint
+    use od_parameters, only: optics_intraband, jdos_spacing, photo_photon_energy, iprint, devel_flag
     use od_dos_utils, only: dos_utils_calculate_at_e
     use od_constants, only: epsilon_0, e_charge
 
@@ -363,10 +363,10 @@ contains
 
     index_energy = int(photo_photon_energy/jdos_spacing)
 
-    call make_wekights(matrix_weights)
+    call make_weights(matrix_weights)
     N_geom = size(matrix_weights, 5)
 
-    if (iprint .eq. 4 .and. on_root) then
+    if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) then
       write (stdout, '(1x,a78)') '+-------------------------- Printing Matrix Weights -------------------------+'
       write (stdout, 126) shape(matrix_weights)
       write (stdout, 126) nbands, nbands, num_kpoints_on_node(my_node_id), nspins, N_geom
@@ -396,7 +396,7 @@ contains
         end do                                    ! Loop over kpoints
       end do
 
-      if (iprint .eq. 4 .and. on_root) then
+      if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) then
         write (stdout, '(1x,a37,I3,a38)') '+-------------------------------Atom-', atom, '-------------------------------------+'
         write (stdout, '(1x,a78)') '+--------------------- Printing Projected Matrix Weights --------------------+'
         write (stdout, 126) shape(projected_matrix_weights)
@@ -410,7 +410,7 @@ contains
       ! Send matrix element to jDOS routine and get weighted jDOS back
       call jdos_utils_calculate(projected_matrix_weights, weighted_jdos)
 
-      if (iprint .eq. 4 .and. on_root) then
+      if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) then
         write (stdout, '(1x,a78)') '+------------------------ Printing Weighted Joint-DOS -----------------------+'
         write (stdout, 124) shape(weighted_jdos)
         write (stdout, 124) jdos_nbins, nspins, N_geom
@@ -441,7 +441,7 @@ contains
         end do
         call dos_utils_calculate_at_e(efermi, dos_at_e, dos_matrix_weights, weighted_dos_at_e)
 
-        if (iprint .eq. 4 .and. on_root) then
+        if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) then
           write (stdout, '(1x,a36,f8.4,a34)') '+------------------------ E_Fermi = ', efermi, '---------------------------------+'
           write (stdout, '(1x,a78)') '+------------------------ Printing DOS Matrix Weights -----------------------+'
           write (stdout, 125) shape(dos_matrix_weights)
@@ -478,7 +478,7 @@ contains
 
       reflect_photo(atom) = reflect(index_energy)
 
-      if (iprint .eq. 4 .and. on_root) then
+      if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) then
         write (stdout, '(1x,a78)') '+-------------------- Printing Material Optical Properties ------------------+'
         write (stdout, '(1x,a78)') '+--------------------------- Printing Epsilon Array -------------------------+'
         write (stdout, 125) shape(epsilon)
@@ -531,7 +531,7 @@ contains
 
     use od_cell, only: atoms_pos_cart_photo
     use od_jdos_utils, only: jdos_nbins
-    use od_parameters, only: iprint
+    use od_parameters, only: iprint, devel_flag
     use od_io, only: stdout, io_error
     use od_comms, only: on_root
     implicit none
@@ -644,7 +644,7 @@ contains
       if (ierr /= 0) call io_error('Error: calc_absorp_layer - failed to deallocate attenuation_layer')
     end if
 
-    if (iprint .eq. 4 .and. on_root) then
+    if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) then
       write (stdout, '(1x,a78)') '+----------------------- Printing Intensity per Layer -----------------------+'
       write (stdout, '(1x,I4,1x,I4,1x)') jdos_nbins, max_layer
       write (stdout, '(9999(es15.8))') (I_layer(num_layer), num_layer=1, max_layer)
@@ -689,7 +689,7 @@ contains
     use od_electronic, only: nbands, nspins, band_energy, band_gradient, elec_read_band_gradient, elec_read_band_curvature, &
     & band_curvature
     use od_comms, only: my_node_id, on_root
-    use od_parameters, only: photo_photon_energy, iprint, photo_momentum
+    use od_parameters, only: photo_photon_energy, iprint, photo_momentum, devel_flag
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
     use od_io, only: stdout, io_error, io_file_unit, stdout
@@ -735,7 +735,8 @@ contains
 
     call cell_calc_kpoint_r_cart
 
-    if ((iprint .eq. 5 .and. on_root) .or. (iprint .eq. 6 .and. on_root) .or. (iprint .eq. 7 .and. on_root)) then
+    if ((index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) .or. (index(devel_flag, 'print_full_qe_matrix') > 0.and.&
+    & on_root) .or. (index(devel_flag, 'print_reduced_qe_matrix') > 0 .and. on_root)) then
       write (stdout, '(a78)') "+---------------- Printing K-Points in Cartesian Coordinates ----------------+"
       do N = 1, num_kpoints_on_node(my_node_id)
         write (stdout, '(3(1x,E22.15))') kpoint_r_cart(:, N)
@@ -817,7 +818,7 @@ contains
       if (ierr /= 0) call io_error('Error: calc_angle - failed to deallocate kpoint_r_cart')
     end if
 
-    if (iprint .eq. 4 .and. on_root) then
+    if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) then
       write (stdout, '(1x,a78)') '+------------------------ Printing Transverse Energy ------------------------+'
       write (stdout, '(3(1x,I4))') shape(E_transverse)
       write (stdout, '(3(1x,I4))') nbands, num_kpoints_on_node(my_node_id), nspins
@@ -838,7 +839,7 @@ contains
     use od_cell, only: num_kpoints_on_node, atoms_pos_cart_photo
     use od_io, only: io_error, stdout
     use od_comms, only: my_node_id, on_root
-    use od_parameters, only: photo_imfp_const, iprint
+    use od_parameters, only: photo_imfp_const, iprint, devel_flag
     implicit none
     integer :: atom, N, N_spin, n_eigen, ierr
     real(kind=dp) :: exponent
@@ -875,7 +876,7 @@ contains
       end do
     end do
 
-    if (iprint .eq. 4 .and. on_root) then
+    if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) then
       write (stdout, '(1x,a78)') '+----------------------- Printing P(Escape) per Layer -----------------------+'
       write (stdout, 125) shape(electron_esc)
       write (stdout, 125) nbands, num_kpoints_on_node(my_node_id), nspins, max_atoms
@@ -994,7 +995,7 @@ contains
                              elec_read_band_curvature
     use od_comms, only: my_node_id, on_root
     use od_parameters, only: photo_photon_energy, iprint, photo_elec_field, photo_surface_area, scissor_op, &
-    & photo_temperature, write_photo_matrix
+    & photo_temperature, write_photo_matrix, devel_flag
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
     use od_io, only: stdout, io_error, seedname, io_file_unit, stdout
@@ -1036,7 +1037,7 @@ contains
     if (ierr /= 0) call io_error('Error: calc_three_step_model - allocation of qe_tsm failed')
     qe_tsm = 0.0_dp
 
-    if (iprint .eq. 4 .and. on_root) then
+    if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) then
       write (stdout, '(1x,a78)') '+----------------- Printing Matrix Weights in 3Step Function ----------------+'
       write (stdout, '(5(1x,I4))') shape(matrix_weights)
       write (stdout, '(5(1x,I4))') nbands, nbands, num_kpoints_on_node(my_node_id), nspins, N_geom
@@ -1052,7 +1053,7 @@ contains
 
     call jdos_utils_calculate_delta(delta_temp)
 
-    if (iprint .eq. 4 .and. on_root) then
+    if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) then
       write (stdout, '(1x,a78)') '+---------------------- Printing Delta Function Values ----------------------+'
       write (stdout, '(5(1x,I4))') shape(delta_temp)
       write (stdout, '(5(1x,I4))') nbands, nbands, num_kpoints_on_node(my_node_id), nspins
@@ -1064,7 +1065,7 @@ contains
       write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
     end if
 
-    if (iprint .eq. 5 .and. on_root) then
+    if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) then
       i = 16 ! Defines the number of columns printed in the loop - needed for reshaping the data array during postprocessing
       write (stdout, '(1x,a78)') '+------------ Printing list of values going into 3step QE Values ------------+'
       write (stdout, '(1x,a261)') 'calced_qe_value - initial_state_energy - final_state_energy - matrix_weights - delta_temp -&
@@ -1117,7 +1118,7 @@ contains
                  (pdos_weights_atoms(atom_order(atom), n_eigen, N, N_spin)/ &
                   pdos_weights_k_band(n_eigen, N, N_spin)))* &
                 (1.0_dp + field_emission(n_eigen, N_spin, N))
-              if (iprint .eq. 5 .and. on_root) then
+              if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) then
                 write (stdout, '(5(1x,I4))') atom, n_eigen, n_eigen2, N_spin, N
                 write (stdout, '(16(1x,E17.9E3))') qe_tsm(n_eigen, n_eigen2, N, N_spin, atom), band_energy(n_eigen, N_spin, N), &
                   band_energy(n_eigen2, N_spin, N), matrix_weights(n_eigen, n_eigen2, N, N_spin, 1), &
@@ -1141,7 +1142,7 @@ contains
       end do
     end do
 
-    if (iprint .eq. 5 .and. on_root) then
+    if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) then
       write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
     end if
 
@@ -1172,7 +1173,8 @@ contains
       close (unit=matrix_unit)
     end if
 
-    if ((iprint .eq. 4 .and. on_root) .or. (iprint .eq. 6 .and. on_root)) then
+    if ((index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) .or. (index(devel_flag, 'print_full_qe_matrix') > 0.and.&
+    & on_root)) then
       write (stdout, '(1x,a78)') '+----------------------- Printing Full 3step QE Matrix ----------------------+'
       write (stdout, '(5(1x,I4))') shape(qe_tsm)
       write (stdout, '(5(1x,I4))') nbands, nbands, num_kpoints_on_node(my_node_id), nspins, max_atoms + 1
@@ -1185,7 +1187,7 @@ contains
       end do
       write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
     end if
-    if ((iprint .eq. 7 .and. on_root)) then
+    if (index(devel_flag, 'print_reduced_qe_matrix') > 0 .and. on_root) then
       write (stdout, '(1x,a78)') '+--------------------- Printing Reduced 3step QE Matrix ---------------------+'
       write (stdout, '(5(1x,I4))') shape(qe_tsm)
       write (stdout, '(5(1x,I4))') nbands, num_kpoints_on_node(my_node_id), nspins, max_atoms + 1
@@ -1213,7 +1215,7 @@ contains
     & elec_read_band_curvature
     use od_comms, only: my_node_id
     use od_parameters, only: photo_photon_energy, iprint, photo_elec_field, photo_surface_area, scissor_op, &
-    & photo_temperature, write_photo_matrix
+    & photo_temperature, write_photo_matrix, devel_flag
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
     use od_comms, only: on_root
@@ -1261,7 +1263,7 @@ contains
     if (ierr /= 0) call io_error('Error: calc_one_step_model - allocation of qe_osm failed')
     qe_osm = 0.0_dp
 
-    if (iprint .eq. 5 .and. on_root) then
+    if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) then
       i = 13 ! Defines the number of columns printed in the loop - needed for reshaping the data array during postprocessing
       write (stdout, '(1x,a78)') '+------------ Printing list of values going into 1step QE Values ------------+'
       write (stdout, '(1x,a211)') 'calculated_QE - foptical_matrix_weights - electron_esc - electrons_per_state - kpoint_weight -&
@@ -1307,7 +1309,7 @@ contains
                (pdos_weights_atoms(atom_order(atom), n_eigen, N, N_spin)/ &
                 pdos_weights_k_band(n_eigen, N, N_spin)))* &
               (1.0_dp + field_emission(n_eigen, N_spin, N))
-            if (iprint .eq. 5 .and. on_root) then
+            if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) then
               write (stdout,'(4(1x,I4))') atom, n_eigen, N_spin, N
               write (stdout, '(13(1x,E16.8E4))') qe_osm(n_eigen, N, N_spin, atom), &
                 foptical_matrix_weights(n_eigen, n_eigen2, N, N_spin, 1), &
@@ -1328,7 +1330,7 @@ contains
       end do
     end do
 
-    if (iprint .eq. 5 .and. on_root) then
+    if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) then
       write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
     end if
 
@@ -1349,7 +1351,8 @@ contains
       close (unit=matrix_unit)
     end if
 
-    if ((iprint .eq. 4 .and. on_root) .or. (iprint .eq. 6 .and. on_root) .or. (iprint .eq. 7 .and. on_root)) then
+    if ((index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) .or. (index(devel_flag, 'print_full_qe_matrix') > 0&
+    & .and. on_root) .or. (index(devel_flag, 'print_reduced_qe_matrix') > 0 .and. on_root)) then
       write (stdout, '(1x,a78)') '+------------------------- Printing 1step QE Matrix -------------------------+'
       write (stdout, 125) shape(qe_osm)
       write (stdout, 125) nbands, num_kpoints_on_node(my_node_id), nspins, max_atoms + 1
@@ -1530,7 +1533,7 @@ contains
       end do           ! Loop over spins
     end do               ! Loop over kpoints
 
-    if (iprint .eq. 4 .and. on_root) then
+    if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) then
       write (stdout, '(1x,a78)') '+------------------------- Printing Free OM Weights -------------------------+'
       write (stdout, 126) shape(foptical_matrix_weights)
       write (stdout, 126) nbands + 1, nbands + 1, num_kpoints_on_node(my_node_id), nspins, N_geom

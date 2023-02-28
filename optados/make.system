@@ -2,13 +2,13 @@
 SYSTEM := gfortran
 
 # fast / debug
-BUILD := debug
+BUILD := fast
 
 # serial / mpi
 COMMS_ARCH := serial
 
 # Where would you like the executables?
-PREFIX:=../debug/
+PREFIX:=../devel_flag/
 
 SYSTEM := $(strip $(SYSTEM))
 BUILD  := $(strip $(BUILD))
