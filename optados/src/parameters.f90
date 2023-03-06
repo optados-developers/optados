@@ -778,23 +778,23 @@ contains
     write (stdout, '(1x,a78)') '+-------------------------- SPECTRAL PARAMETERS -----------------------------+'
     if (fixed) then
       write (stdout, '(1x,a78)') '|  Fixed Width Smearing                      :  True                         |'
-      write (stdout, '(1x,a46,1x,1F10.5,20x,a1)') '|  Smearing Width                            :', fixed_smearing, '|'
+      write (stdout, '(1x,a46,1x,F10.5,20x,a1)') '|  Smearing Width                            :', fixed_smearing, '|'
     end if
     if (adaptive) then
       write (stdout, '(1x,a78)') '|  Adaptive Width Smearing                   :  True                         |'
-      write (stdout, '(1x,a46,1x,1F10.5,20x,a1)') '|  Adaptive Smearing ratio                   :', adaptive_smearing, '|'
+      write (stdout, '(1x,a46,1x,F10.5,20x,a1)') '|  Adaptive Smearing ratio                   :', adaptive_smearing, '|'
     end if
     if (linear) then
       write (stdout, '(1x,a78)') '|  Linear Extrapolation                      :  True                         |'
-      write (stdout, '(1x,a46,1x,1F10.5,20x,a1)') '|  Smearing Width                            :', linear_smearing, '|'
+      write (stdout, '(1x,a46,1x,F10.5,20x,a1)') '|  Smearing Width                            :', linear_smearing, '|'
     end if
     if (quad) &
       write (stdout, '(1x,a78)') '|  Quadratic Extrapolation                   :  True                         |'
     if (finite_bin_correction) &
       write (stdout, '(1x,a78)') '|  Finite Bin Correction                     :  True                         |'
     if (hybrid_linear) then
-      write (stdout, '(1x,a78)') '|  Hybrid Linear Correction                     :  True                      |'
-      write (stdout, '(1x,a46,2x,F10.8,19x,a1)') '|  Hybrid Linear Gradient Tolerance             :', hybrid_linear_grad_tol, '|'
+      write (stdout, '(1x,a78)') '|  Hybrid Linear Correction                  :  True                         |'
+      write (stdout, '(1x,a46,1x,F10.5,20x,a1)') '|  Hybrid Linear Gradient Tolerance          :', hybrid_linear_grad_tol, '|'
     end if
     if (numerical_intdos) &
       write (stdout, '(1x,a78)') '|  Numerical Integration of P/DOS            :  True                         |'
