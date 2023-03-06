@@ -8,7 +8,7 @@ BUILD := fast
 COMMS_ARCH := serial
 
 # Where would you like the executables?
-PREFIX:=../devel_flag/
+PREFIX:=../
 
 SYSTEM := $(strip $(SYSTEM))
 BUILD  := $(strip $(BUILD))

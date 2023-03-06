@@ -1836,9 +1836,9 @@ contains
 
     use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_r_cart
     use od_electronic, only: nbands, nspins, band_energy
-    use od_comms, only: my_node_id
+    use od_comms, only: my_node_id, on_root
     use od_io, only: io_error, seedname, io_file_unit
-    use od_parameters, only: write_photo_matrix, photo_model
+    use od_parameters, only: write_photo_matrix, photo_model, photo_photon_energy, devel_flag, iprint
     implicit none
     integer :: atom, ierr, e_scale, binding_unit = 12
     integer :: N, N_spin, n_eigen, matrix_unit=25
