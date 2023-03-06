@@ -270,7 +270,7 @@ program optados
     write (stdout, *) 'OptaDOS: Execution complete on ', cdate, ' at ', ctime
 
     close (stdout)
-    close (stderr, status='delete')
+    if (.not. index(devel_flag,'multi_out') > 0) close (stderr, status='delete')
   end if
 
   call comms_end
