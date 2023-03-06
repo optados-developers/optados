@@ -276,7 +276,7 @@ contains
     linear_smearing = 0.0_dp
     call param_get_keyword('linear_smearing', found, r_value=linear_smearing)
 
-    efermi_user = -990.0_dp
+    efermi_user = -999.0_dp
     if (.not. pdis) then
       efermi_choice = "optados"
     else
@@ -784,9 +784,10 @@ contains
       write (stdout, '(1x,a78)') '|  Adaptive Width Smearing                   :  True                         |'
       write (stdout, '(1x,a46,1x,1F10.5,20x,a1)') '|  Adaptive Smearing ratio                   :', adaptive_smearing, '|'
     end if
-    if (linear) &
+    if (linear) then
       write (stdout, '(1x,a78)') '|  Linear Extrapolation                      :  True                         |'
-    write (stdout, '(1x,a46,1x,1F10.5,20x,a1)') '|  Smearing Width                            :', linear_smearing, '|'
+      write (stdout, '(1x,a46,1x,1F10.5,20x,a1)') '|  Smearing Width                            :', linear_smearing, '|'
+    end if
     if (quad) &
       write (stdout, '(1x,a78)') '|  Quadratic Extrapolation                   :  True                         |'
     if (finite_bin_correction) &

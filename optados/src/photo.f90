@@ -2124,7 +2124,7 @@ contains
     time1 = io_time()
     if (on_root .and. iprint > 1) then
       write (stdout, '(1x,a43,16x,f11.3,1x,a7)') &
-           '+ Time to calculate Joint Density of States', time1 - time0, '(sec) +'
+           '+ Time to calculate Delta Function', time1 - time0, '(sec) +'
     end if
     !-------------------------------------------------------------------------------
 
@@ -2212,8 +2212,8 @@ contains
 
     do ik = 1, num_kpoints_on_node(my_node_id)
       if (iprint > 1 .and. on_root) then
-        if (mod(real(ik, dp), 10.0_dp) == 0.0_dp) write (stdout, '(1x,a1,a38,i4,a3,i4,1x,a14,3x,a10)') ',', &
-             &"Calculating k-point ", ik, " of", num_kpoints_on_node(my_node_id), 'on this node.', "<-- JDOS |"
+        if (mod(real(ik, dp), 10.0_dp) == 0.0_dp) write (stdout, '(1x,a1,a38,i4,a3,i4,1x,a14,2x,a11)') '^', &
+             &"Calculating k-point ", ik, " of", num_kpoints_on_node(my_node_id), 'on this node.', "<-- Delta |"
       end if
       do is = 1, nspins
         occ_states: do ib = 1, nbands

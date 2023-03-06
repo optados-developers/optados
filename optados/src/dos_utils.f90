@@ -1754,16 +1754,17 @@ contains
       do is = 1, nspins
 
         do ib = 1, nbands
-
-          if (linear .or. adaptive) grad(:) = band_gradient(ib, :, ik, is)
-          ! If the band is very flat linear broadening can have problems describing it. In this case, fall back to
-          ! adaptive smearing (and take advantage of FBCS if required).
-          force_adaptive = .false.
-          if (hybrid_linear .and. (hybrid_linear_grad_tol > sqrt(dot_product(grad, grad)))) force_adaptive = .true.
-          if (linear .and. .not. force_adaptive) call doslin_sub_cell_corners(grad, step, band_energy(ib, is, ik), EV)
-          if (adaptive .or. force_adaptive) width = sqrt(dot_product(grad, grad))*adaptive_smearing_temp
-          ! Hybrid Adaptive -- This way we don't lose weight at very flat parts of the
-          ! band. It's a kind of fudge that we wouldn't need if we had infinitely small bins.
+          if (.not. fixed) then
+            if (linear .or. adaptive) grad(:) = band_gradient(ib, :, ik, is)
+            ! If the band is very flat linear broadening can have problems describing it. In this case, fall back to
+            ! adaptive smearing (and take advantage of FBCS if required).
+            force_adaptive = .false.
+            if (hybrid_linear .and. (hybrid_linear_grad_tol > sqrt(dot_product(grad, grad)))) force_adaptive = .true.
+            if (linear .and. .not. force_adaptive) call doslin_sub_cell_corners(grad, step, band_energy(ib, is, ik), EV)
+            if (adaptive .or. force_adaptive) width = sqrt(dot_product(grad, grad))*adaptive_smearing_temp
+          end if
+            ! Hybrid Adaptive -- This way we don't lose weight at very flat parts of the
+            ! band. It's a kind of fudge that we wouldn't need if we had infinitely small bins.
           if (finite_bin_correction) then ! Force the compiler to do this the right way around
             if (width < delta_bins) then
               width = delta_bins
