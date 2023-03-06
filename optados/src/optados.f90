@@ -38,7 +38,8 @@ program optados
   use od_io, only: io_get_seedname, io_time, io_date, io_file_unit,&! Functions
        & stdout, stderr, seedname                                            ! Variables
   use od_parameters, only: param_read, param_write_header, param_Dist, param_write, &
-                           param_dealloc, pdos, pdis, dos, jdos, core, optics, photo, iprint, param_write_atomic_coord
+                           param_dealloc, pdos, pdis, dos, jdos, core, optics, photo, iprint, param_write_atomic_coord,&
+                           devel_flag, photo_photon_energy, photo_model
   use od_cell, only: cell_calc_lattice, cell_report_parameters, cell_dist
   use od_electronic, only: elec_read_band_energy, elec_read_band_energy_ordered, elec_report_parameters
   use od_dos, only: dos_calculate
@@ -56,6 +57,8 @@ program optados
   character(len=9) :: stat, pos          ! Status and position of .odo file
   character(len=9) :: ctime             ! Temp. time string
   character(len=11):: cdate             ! Temp. date string
+  character(len=10):: char_iprint, char_e ! Added by Felix Mildner, 03/23 for multi file output
+  character(len=99):: filename            ! Added by Felix Mildner, 03/23 for multi file output
 
   time0 = io_time()
 
@@ -69,7 +72,15 @@ program optados
     !-------------------------------------------------------------------------!
     ! O R G A N I S E   T H E   E R R O R   F I L E
     stderr = io_file_unit()
-    open (unit=stderr, file=trim(seedname)//'.opt_err')
+    ! This is to allow multiple OptaDOS photoemission runs to be performed in the same directory.
+    if ((index(devel_flag, 'multi_out') /= 0) .and. (photo)) then
+      write(char_iprint, '(I2)') iprint
+      write(char_e, '(F7.3)') photo_photon_energy
+      filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_'//trim(adjustl(char_iprint))//'.opt_err'
+      open (unit=stderr, file=filename)
+    else
+      open (unit=stderr, file=trim(seedname)//'.opt_err')
+    end if
     call io_date(cdate, ctime)
     write (stderr, *) 'OptaDOS: Execution started on ', cdate, ' at ', ctime
     !-------------------------------------------------------------------------!
@@ -78,8 +89,15 @@ program optados
     ! O R G A N I S E   T H E   O U T P U T   F I L E  A N D
     ! R E A D   A N D   W R I T E   U S E R   P A R A M E T E R S
     call param_read()
-
-    inquire (file=trim(seedname)//'.odo', exist=odo_found)
+    ! This is to allow multiple OptaDOS photoemission runs to be performed in the same directory.
+    if ((index(devel_flag, 'multi_out') /= 0) .and. (photo)) then
+      write(char_iprint, '(I2)') iprint
+      write(char_e, '(F7.3)') photo_photon_energy
+      filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_'//trim(adjustl(char_iprint))//'.odo'
+      inquire (file=filename, exist=odo_found)
+    else
+      inquire (file=trim(seedname)//'.odo', exist=odo_found)
+    end if
     if (odo_found) then
       stat = 'old'
     else
@@ -88,7 +106,12 @@ program optados
     pos = 'append'
 
     stdout = io_file_unit()
-    open (unit=stdout, file=trim(seedname)//'.odo', status=trim(stat), position=trim(pos))
+    ! This is to allow multiple OptaDOS photoemission runs to be performed in the same directory.
+    if ((index(devel_flag, 'multi_out') /= 0) .and. (photo)) then
+      open (unit=stdout, file=filename, status=trim(stat), position=trim(pos))
+    else
+      open (unit=stdout, file=trim(seedname)//'.odo', status=trim(stat), position=trim(pos))
+    end if
     write (stdout, *) 'OptaDOS: Execution started on ', cdate, ' at ', ctime
     write (stdout, '(1x,a26,i5,a10)') 'Parallelised over', num_nodes, ' thread(s)'
     if (iprint > 0) call param_write_header()

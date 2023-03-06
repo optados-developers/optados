@@ -1198,7 +1198,7 @@ contains
     & elec_read_band_curvature
     use od_comms, only: my_node_id
     use od_parameters, only: photo_photon_energy, iprint, photo_elec_field, photo_surface_area, scissor_op, &
-    & photo_temperature, write_photo_matrix, devel_flag
+    & photo_temperature, devel_flag
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
     use od_comms, only: on_root
@@ -1844,6 +1844,8 @@ contains
     integer :: N, N_spin, n_eigen, matrix_unit=25
 
     real(kind=dp), allocatable, dimension(:, :) :: qe_atom
+    character(len=99)                           :: filename
+    character(len=10)                           :: char_e, char_i
 
     allocate (qe_atom(max_energy, max_atoms + 1), stat=ierr)
     if (ierr /= 0) call io_error('Error: write_qe_output_files - allocation of qe_atom failed')
@@ -1856,11 +1858,58 @@ contains
       end do
     end do
 
-    open (unit=binding_unit, action='write', file=trim(seedname)//'_binding_energy.dat')
+    if (index(write_photo_matrix, 'slab') > 0) then
+      call cell_calc_kpoint_r_cart
+
+      if ((index(devel_flag, 'multi_out') /= 0) .and. (on_root)) then
+        write (char_i, '(I2)') iprint
+        write(char_e, '(F7.3)') photo_photon_energy
+        filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_'//trim(adjustl(char_i))//'_matrix.dat'
+        open (unit=matrix_unit, action='write', file=filename)
+      else
+        open (unit=matrix_unit, action='write', file=trim(seedname)//'_matrix.dat')
+      end if
+
+      if (index(photo_model, '3step') > 0) then
+        do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
+          do N_spin = 1, nspins                    ! Loop over spins
+            do n_eigen = 1, nbands
+              write (matrix_unit, *) sum(qe_tsm(n_eigen, 1:nbands, N, N_spin, 1:max_atoms + 1)), &
+                (kpoint_r_cart(1, N)), (kpoint_r_cart(2, N)), &
+                band_energy(n_eigen, N_spin, N)
+            end do
+          end do
+        end do
+      end if
+
+      if (index(photo_model, '1step') > 0) then
+        do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
+          do N_spin = 1, nspins                    ! Loop over spins
+            do n_eigen = 1, nbands
+              write (matrix_unit, *) sum(qe_osm(n_eigen, N, N_spin, 1:max_atoms)), &
+                (kpoint_r_cart(1, N)), (kpoint_r_cart(2, N)), &
+                band_energy(n_eigen, N_spin, N)
+            end do
+          end do
+        end do
+      end if
+    end if
+
+    if ((index(devel_flag, 'multi_out') /= 0) .and. (on_root)) then
+      write (char_i, '(I1)') iprint
+      write (char_e, '(F7.3)') photo_photon_energy
+      filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_'//trim(adjustl(char_i))//&
+      &'_binding_energy.dat'
+      open (unit=binding_unit, action='write', file=filename)
+    else
+      open (unit=binding_unit, action='write', file=trim(seedname)//'_binding_energy.dat')
+    end if
+
     do e_scale = 1, max_energy
       write (binding_unit, *) t_energy(e_scale), sum(qe_atom(e_scale, 1:max_atoms + 1)), &
         qe_atom(e_scale, 1:max_atoms + 1)
     end do
+
     close (unit=binding_unit)
 
     if (index(write_photo_matrix, 'slab') > 0) then
@@ -2023,11 +2072,11 @@ contains
     ! It is required to evaluate the delta funcion.
     ! Victor Chang, 7th February 2020
     !===============================================================================
-    use od_parameters, only: linear, fixed, adaptive, quad, iprint, dos_per_volume, photo_slab_volume
+    use od_parameters, only: linear, fixed, adaptive, quad, iprint
     use od_electronic, only: elec_read_band_gradient, band_gradient, efermi_set
     use od_comms, only: on_root
     use od_io, only: stdout, io_error, io_time
-    use od_cell, only: cell_volume
+    ! use od_cell, only: cell_volume
     use od_dos_utils, only: dos_utils_set_efermi
     use od_jdos_utils, only: setup_energy_scale
 
@@ -2036,9 +2085,9 @@ contains
     real(kind=dp) :: time0, time1
 
     real(kind=dp), intent(out), allocatable, optional    :: delta_temp(:, :, :, :)  !I've added this
-    real(kind=dp), allocatable :: jdos_adaptive(:, :)
-    real(kind=dp), allocatable :: jdos_fixed(:, :)
-    real(kind=dp), allocatable :: jdos_linear(:, :)
+    ! real(kind=dp), allocatable :: jdos_adaptive(:, :)
+    ! real(kind=dp), allocatable :: jdos_fixed(:, :)
+    ! real(kind=dp), allocatable :: jdos_linear(:, :)
 
     !-------------------------------------------------------------------------------
     ! R E A D   B A N D   G R A D I E N T S
