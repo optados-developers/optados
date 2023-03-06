@@ -1768,11 +1768,6 @@ contains
         end do
       end do
 
-      if (allocated(qe_tsm)) then
-        deallocate (qe_tsm, stat=ierr)
-        if (ierr /= 0) call io_error('Error: binding_energy_spread - failed to deallocate qe_tsm')
-      end if
-
       do e_scale = 1, max_energy
         do atom = 1, max_atoms + 1
           do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
@@ -1858,11 +1853,6 @@ contains
           end do
         end do
       end do
-
-      if (allocated(qe_osm)) then
-        deallocate (qe_osm, stat=ierr)
-        if (ierr /= 0) call io_error('Error: binding_energy_spread - failed to deallocate qe_osm')
-      end if
     end if
 
     if (allocated(binding_temp)) then
@@ -1919,6 +1909,16 @@ contains
     if (allocated(t_energy)) then
       deallocate (t_energy, stat=ierr)
       if (ierr /= 0) call io_error('Error: write_qe_output_files - failed to deallocate t_energy')
+    end if
+
+    if (allocated(qe_osm)) then
+      deallocate (qe_osm, stat=ierr)
+      if (ierr /= 0) call io_error('Error: binding_energy_spread - failed to deallocate qe_osm')
+    end if
+
+    if (allocated(qe_tsm)) then
+      deallocate (qe_tsm, stat=ierr)
+      if (ierr /= 0) call io_error('Error: binding_energy_spread - failed to deallocate qe_tsm')
     end if
 
   end subroutine write_qe_output_files
@@ -2321,6 +2321,11 @@ contains
     if (allocated(theta_arpes)) then
       deallocate (theta_arpes, stat=ierr)
       if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate theta_arpes')
+    end if
+
+    if (allocated(qe_osm)) then
+      deallocate (qe_osm, stat=ierr)
+      if (ierr /= 0) call io_error('Error: binding_energy_spread - failed to deallocate qe_osm')
     end if
 
   end subroutine photo_deallocate
