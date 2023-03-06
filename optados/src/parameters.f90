@@ -441,10 +441,11 @@ contains
     if (index(photo_momentum, 'kp') == 0 .and. index(photo_momentum, 'crystal') == 0 .and. index(photo_momentum, 'operator') == 0) &
       call io_error('Error: value of momentum not recognised in param_read')
 
-    write_photo_matrix = 'slab'
+    write_photo_matrix = 'off'
     call param_get_keyword('write_photo_matrix', found, c_value=write_photo_matrix)
-    if (index(write_photo_matrix, 'slab') == 0 .and. index(write_photo_matrix, 'all') == 0) &
-      call io_error('Error: value of photoemission output not recognised in param_read')
+    if (index(write_photo_matrix, 'slab') == 0 .and. index(write_photo_matrix, 'all') == 0 .and. &
+      & index(write_photo_matrix, 'off') == 0) &
+      call io_error('Error: value of write_photo_matrix output not recognised in param_read')
 
     photo_model = '1step'
     call param_get_keyword('photo_model', found, c_value=photo_model)

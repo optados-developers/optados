@@ -1894,23 +1894,24 @@ contains
         end do
       end if
     end if
+    if (.not. index(write_photo_matrix, 'none') > 0) then
+      if ((index(devel_flag, 'multi_out') /= 0) .and. (on_root)) then
+        write (char_i, '(I1)') iprint
+        write (char_e, '(F7.3)') photo_photon_energy
+        filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_'//trim(adjustl(char_i))//&
+        &'_binding_energy.dat'
+        open (unit=binding_unit, action='write', file=filename)
+      else
+        open (unit=binding_unit, action='write', file=trim(seedname)//'_binding_energy.dat')
+      end if
 
-    if ((index(devel_flag, 'multi_out') /= 0) .and. (on_root)) then
-      write (char_i, '(I1)') iprint
-      write (char_e, '(F7.3)') photo_photon_energy
-      filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_'//trim(adjustl(char_i))//&
-      &'_binding_energy.dat'
-      open (unit=binding_unit, action='write', file=filename)
-    else
-      open (unit=binding_unit, action='write', file=trim(seedname)//'_binding_energy.dat')
-    end if
+      do e_scale = 1, max_energy
+        write (binding_unit, *) t_energy(e_scale), sum(qe_atom(e_scale, 1:max_atoms + 1)), &
+          qe_atom(e_scale, 1:max_atoms + 1)
+      end do
 
-    do e_scale = 1, max_energy
-      write (binding_unit, *) t_energy(e_scale), sum(qe_atom(e_scale, 1:max_atoms + 1)), &
-        qe_atom(e_scale, 1:max_atoms + 1)
-    end do
-
-    close (unit=binding_unit)
+      close (unit=binding_unit)
+    end if 
 
     if (index(write_photo_matrix, 'slab') > 0) then
       call cell_calc_kpoint_r_cart
