@@ -1897,7 +1897,7 @@ contains
     end if
 
     if ((index(devel_flag, 'multi_out') /= 0) .and. (on_root)) then
-      WRITE(char_e, '(F2.4)') photo_photon_energy
+      write (char_e, '(F2.4)') photo_photon_energy
       filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(char_e)//'_'//trim(char(iprint))//'_binding_energy.dat'
       open (unit=binding_unit, action='write', file=filename)
     else
