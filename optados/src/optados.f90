@@ -72,7 +72,15 @@ program optados
     !-------------------------------------------------------------------------!
     ! O R G A N I S E   T H E   E R R O R   F I L E
     stderr = io_file_unit()
-    open (unit=stderr, file=trim(seedname)//'.opt_err')
+    ! This is to allow multiple OptaDOS photoemission runs to be performed in the same directory.
+    if ((index(devel_flag, 'multi_out') /= 0) .and. (photo)) then
+      write(char_iprint, '(I2)') iprint
+      write(char_e, '(F7.3)') photo_photon_energy
+      filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_'//trim(adjustl(char_iprint))//'.opt_err'
+      open (unit=stderr, file=filename)
+    else
+      open (unit=stderr, file=trim(seedname)//'.opt_err')
+    end if
     call io_date(cdate, ctime)
     write (stderr, *) 'OptaDOS: Execution started on ', cdate, ' at ', ctime
     !-------------------------------------------------------------------------!
@@ -83,9 +91,9 @@ program optados
     call param_read()
     ! This is to allow multiple OptaDOS photoemission runs to be performed in the same directory.
     if ((index(devel_flag, 'multi_out') /= 0) .and. (photo)) then
-      char_iprint = char(iprint)
-      WRITE(char_e, '(F2.4)') photo_photon_energy
-      filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(char_e)//'_'//trim(char_iprint)//'.odo'
+      write(char_iprint, '(I2)') iprint
+      write(char_e, '(F7.3)') photo_photon_energy
+      filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_'//trim(adjustl(char_iprint))//'.odo'
       inquire (file=filename, exist=odo_found)
     else
       inquire (file=trim(seedname)//'.odo', exist=odo_found)

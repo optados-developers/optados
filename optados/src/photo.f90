@@ -1847,7 +1847,7 @@ contains
 
     real(kind=dp), allocatable, dimension(:, :) :: qe_atom
     character(len=99)                           :: filename
-    character(len=10)                           :: char_e
+    character(len=10)                           :: char_e, char_i
 
     allocate (qe_atom(max_energy, max_atoms + 1), stat=ierr)
     if (ierr /= 0) call io_error('Error: write_qe_output_files - allocation of qe_atom failed')
@@ -1864,8 +1864,9 @@ contains
       call cell_calc_kpoint_r_cart
 
       if ((index(devel_flag, 'multi_out') /= 0) .and. (on_root)) then
-        WRITE(char_e, '(F2.4)') photo_photon_energy
-        filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(char_e)//'_'//trim(char(iprint))//'_matrix.dat'
+        write (char_i, '(I2)') iprint
+        write(char_e, '(F7.3)') photo_photon_energy
+        filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_'//trim(adjustl(char_i))//'_matrix.dat'
         open (unit=matrix_unit, action='write', file=filename)
       else
         open (unit=matrix_unit, action='write', file=trim(seedname)//'_matrix.dat')
@@ -1897,8 +1898,10 @@ contains
     end if
 
     if ((index(devel_flag, 'multi_out') /= 0) .and. (on_root)) then
-      write (char_e, '(F2.4)') photo_photon_energy
-      filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(char_e)//'_'//trim(char(iprint))//'_binding_energy.dat'
+      write (char_i, '(I1)') iprint
+      write (char_e, '(F7.3)') photo_photon_energy
+      filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_'//trim(adjustl(char_i))//&
+      &'_binding_energy.dat'
       open (unit=binding_unit, action='write', file=filename)
     else
       open (unit=binding_unit, action='write', file=trim(seedname)//'_binding_energy.dat')
