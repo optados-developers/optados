@@ -1894,7 +1894,8 @@ contains
         end do
       end if
     end if
-    if (.not. index(write_photo_matrix, 'none') > 0) then
+
+    if (.not. index(write_photo_matrix, 'off') > 0) then
       if ((index(devel_flag, 'multi_out') /= 0) .and. (on_root)) then
         write (char_i, '(I1)') iprint
         write (char_e, '(F7.3)') photo_photon_energy
