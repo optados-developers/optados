@@ -990,21 +990,21 @@ contains
     ! Victor Chang, 7th February 2020
     !===============================================================================
 
-    use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_r_cart, kpoint_weight
+    use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_weight
     use od_electronic, only: nbands, nspins, band_energy, efermi, electrons_per_state, elec_read_band_gradient, &
                              elec_read_band_curvature
     use od_comms, only: my_node_id, on_root
     use od_parameters, only: photo_photon_energy, iprint, photo_elec_field, photo_surface_area, scissor_op, &
-    & photo_temperature, write_photo_matrix, devel_flag
+    & photo_temperature, devel_flag
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
-    use od_io, only: stdout, io_error, seedname, io_file_unit, stdout
+    use od_io, only: stdout, io_error, io_file_unit, stdout
     use od_jdos_utils, only: jdos_utils_calculate
     use od_constants, only: pi, kB
     implicit none
     real(kind=dp), allocatable, dimension(:, :, :, :) :: delta_temp
     real(kind=dp) :: width, norm_vac, vac_g, transverse_g, fermi_dirac, qe_factor, argument
-    integer :: N, N2, N_spin, n_eigen, n_eigen2, atom, ierr, i, matrix_unit = 23
+    integer :: N, N2, N_spin, n_eigen, n_eigen2, atom, ierr, i
 
     width = (1.0_dp/11604.45_dp)*photo_temperature
     qe_factor = 1.0_dp/(2*pi*photo_surface_area)
@@ -1156,23 +1156,6 @@ contains
       if (ierr /= 0) call io_error('Error: calc_three_step_model - failed to deallocate optical_matrix_weights')
     end if
 
-    if (index(write_photo_matrix, 'slab') > 0) then
-      call cell_calc_kpoint_r_cart
-
-      open (unit=matrix_unit, action='write', file=trim(seedname)//'_matrix.dat')
-      do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
-        do N_spin = 1, nspins                    ! Loop over spins
-          do n_eigen = 1, nbands
-            write (matrix_unit, *) sum(qe_tsm(n_eigen, 1:nbands, N, N_spin, 1:max_atoms + 1)), &
-              (kpoint_r_cart(1, N)), (kpoint_r_cart(2, N)), &
-              band_energy(n_eigen, N_spin, N)
-          end do
-        end do
-      end do
-
-      close (unit=matrix_unit)
-    end if
-
     if ((index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) .or. (index(devel_flag, 'print_qe_matrix_full') > 0.and.&
     & on_root)) then
       write (stdout, '(1x,a78)') '+----------------------- Printing Full 3step QE Matrix ----------------------+'
@@ -1210,21 +1193,20 @@ contains
     ! Victor Chang, 7th February 2020
     !===============================================================================
 
-    use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_r_cart, kpoint_weight
+    use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_weight
     use od_electronic, only: nbands, nspins, band_energy, efermi, electrons_per_state, elec_read_band_gradient,&
     & elec_read_band_curvature
     use od_comms, only: my_node_id
     use od_parameters, only: photo_photon_energy, iprint, photo_elec_field, photo_surface_area, scissor_op, &
-    & photo_temperature, write_photo_matrix, devel_flag
+    & photo_temperature, devel_flag
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
     use od_comms, only: on_root
-    use od_io, only: stdout, io_error, seedname, io_file_unit, stdout
+    use od_io, only: stdout, io_error, io_file_unit, stdout
     use od_jdos_utils, only: jdos_utils_calculate
     use od_constants, only: pi, kB
     implicit none
     integer :: N, N_spin, n_eigen, n_eigen2, atom, ierr, i
-    integer :: matrix_unit = 25
     real(kind=dp) :: width, norm_vac, vac_g, transverse_g, fermi_dirac, qe_factor, argument
 
     width = (1.0_dp/11604.45_dp)*photo_temperature
@@ -1332,23 +1314,6 @@ contains
 
     if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) then
       write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
-    end if
-
-    if (index(write_photo_matrix, 'slab') > 0) then
-      call cell_calc_kpoint_r_cart
-
-      open (unit=matrix_unit, action='write', file=trim(seedname)//'_matrix.dat')
-      do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
-        do N_spin = 1, nspins                    ! Loop over spins
-          do n_eigen = 1, nbands
-            write (matrix_unit, *) sum(qe_osm(n_eigen, N, N_spin, 1:max_atoms)), &
-              (kpoint_r_cart(1, N)), (kpoint_r_cart(2, N)), &
-              band_energy(n_eigen, N_spin, N)
-          end do
-        end do
-      end do
-
-      close (unit=matrix_unit)
     end if
 
     if ((index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) .or. (index(devel_flag, 'print_qe_matrix_full') > 0&
@@ -1768,11 +1733,6 @@ contains
         end do
       end do
 
-      if (allocated(qe_tsm)) then
-        deallocate (qe_tsm, stat=ierr)
-        if (ierr /= 0) call io_error('Error: binding_energy_spread - failed to deallocate qe_tsm')
-      end if
-
       do e_scale = 1, max_energy
         do atom = 1, max_atoms + 1
           do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
@@ -1859,10 +1819,7 @@ contains
         end do
       end do
 
-      if (allocated(qe_osm)) then
-        deallocate (qe_osm, stat=ierr)
-        if (ierr /= 0) call io_error('Error: binding_energy_spread - failed to deallocate qe_osm')
-      end if
+      
     end if
 
     if (allocated(binding_temp)) then
@@ -1879,14 +1836,18 @@ contains
     ! after the Gaussian broadening has been applied.
     ! Victor Chang, 7 February 2020
 
-    use od_cell, only: num_kpoints_on_node
-    use od_electronic, only: nbands, nspins
-    use od_comms, only: my_node_id
+    use od_cell, only: num_kpoints_on_node, kpoint_r_cart, cell_calc_kpoint_r_cart
+    use od_electronic, only: nbands, nspins, band_energy
+    use od_comms, only: my_node_id, on_root
     use od_io, only: io_error, seedname, io_file_unit
+    use od_parameters, only: iprint, devel_flag, photo_photon_energy, photo_model, write_photo_matrix, photo_model
     implicit none
     integer :: atom, ierr, e_scale, binding_unit = 12
+    integer :: N, N_spin, n_eigen, matrix_unit = 23
 
     real(kind=dp), allocatable, dimension(:, :) :: qe_atom
+    character(len=99)                           :: filename
+    character(len=10)                           :: char_e
 
     allocate (qe_atom(max_energy, max_atoms + 1), stat=ierr)
     if (ierr /= 0) call io_error('Error: write_qe_output_files - allocation of qe_atom failed')
@@ -1899,11 +1860,55 @@ contains
       end do
     end do
 
-    open (unit=binding_unit, action='write', file=trim(seedname)//'_binding_energy.dat')
+    if (index(write_photo_matrix, 'slab') > 0) then
+      call cell_calc_kpoint_r_cart
+
+      if ((index(devel_flag, 'multi_out') /= 0) .and. (on_root)) then
+        WRITE(char_e, '(F2.4)') photo_photon_energy
+        filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(char_e)//'_'//trim(char(iprint))//'_matrix.dat'
+        open (unit=matrix_unit, action='write', file=filename)
+      else
+        open (unit=matrix_unit, action='write', file=trim(seedname)//'_matrix.dat')
+      end if
+
+      if (index(photo_model, '3step') > 0) then
+        do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
+          do N_spin = 1, nspins                    ! Loop over spins
+            do n_eigen = 1, nbands
+              write (matrix_unit, *) sum(qe_tsm(n_eigen, 1:nbands, N, N_spin, 1:max_atoms + 1)), &
+                (kpoint_r_cart(1, N)), (kpoint_r_cart(2, N)), &
+                band_energy(n_eigen, N_spin, N)
+            end do
+          end do
+        end do
+      end if
+
+      if (index(photo_model, '1step') > 0) then
+        do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
+          do N_spin = 1, nspins                    ! Loop over spins
+            do n_eigen = 1, nbands
+              write (matrix_unit, *) sum(qe_osm(n_eigen, N, N_spin, 1:max_atoms)), &
+                (kpoint_r_cart(1, N)), (kpoint_r_cart(2, N)), &
+                band_energy(n_eigen, N_spin, N)
+            end do
+          end do
+        end do
+      end if
+    end if
+
+    if ((index(devel_flag, 'multi_out') /= 0) .and. (on_root)) then
+      WRITE(char_e, '(F2.4)') photo_photon_energy
+      filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(char_e)//'_'//trim(char(iprint))//'_binding_energy.dat'
+      open (unit=binding_unit, action='write', file=filename)
+    else
+      open (unit=binding_unit, action='write', file=trim(seedname)//'_binding_energy.dat')
+    end if
+
     do e_scale = 1, max_energy
       write (binding_unit, *) t_energy(e_scale), sum(qe_atom(e_scale, 1:max_atoms + 1)), &
         qe_atom(e_scale, 1:max_atoms + 1)
     end do
+
     close (unit=binding_unit)
 
     if (allocated(weighted_temp)) then
@@ -1919,6 +1924,16 @@ contains
     if (allocated(t_energy)) then
       deallocate (t_energy, stat=ierr)
       if (ierr /= 0) call io_error('Error: write_qe_output_files - failed to deallocate t_energy')
+    end if
+
+    if (allocated(qe_osm)) then
+      deallocate (qe_osm, stat=ierr)
+      if (ierr /= 0) call io_error('Error: binding_energy_spread - failed to deallocate qe_osm')
+    end if
+
+    if (allocated(qe_tsm)) then
+      deallocate (qe_tsm, stat=ierr)
+      if (ierr /= 0) call io_error('Error: binding_energy_spread - failed to deallocate qe_tsm')
     end if
 
   end subroutine write_qe_output_files
@@ -2026,11 +2041,11 @@ contains
     ! It is required to evaluate the delta funcion.
     ! Victor Chang, 7th February 2020
     !===============================================================================
-    use od_parameters, only: linear, fixed, adaptive, quad, iprint, dos_per_volume, photo_slab_volume
+    use od_parameters, only: linear, fixed, adaptive, quad, iprint
     use od_electronic, only: elec_read_band_gradient, band_gradient, efermi_set
     use od_comms, only: on_root
     use od_io, only: stdout, io_error, io_time
-    use od_cell, only: cell_volume
+    ! use od_cell, only: cell_volume
     use od_dos_utils, only: dos_utils_set_efermi
     use od_jdos_utils, only: setup_energy_scale
 
@@ -2039,9 +2054,9 @@ contains
     real(kind=dp) :: time0, time1
 
     real(kind=dp), intent(out), allocatable, optional    :: delta_temp(:, :, :, :)  !I've added this
-    real(kind=dp), allocatable :: jdos_adaptive(:, :)
-    real(kind=dp), allocatable :: jdos_fixed(:, :)
-    real(kind=dp), allocatable :: jdos_linear(:, :)
+    ! real(kind=dp), allocatable :: jdos_adaptive(:, :)
+    ! real(kind=dp), allocatable :: jdos_fixed(:, :)
+    ! real(kind=dp), allocatable :: jdos_linear(:, :)
 
     !-------------------------------------------------------------------------------
     ! R E A D   B A N D   G R A D I E N T S
@@ -2321,6 +2336,16 @@ contains
     if (allocated(theta_arpes)) then
       deallocate (theta_arpes, stat=ierr)
       if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate theta_arpes')
+    end if
+
+    if (allocated(qe_osm)) then
+      deallocate (qe_osm, stat=ierr)
+      if (ierr /= 0) call io_error('Error: binding_energy_spread - failed to deallocate qe_osm')
+    end if
+
+    if (allocated(qe_tsm)) then
+      deallocate (qe_tsm, stat=ierr)
+      if (ierr /= 0) call io_error('Error: binding_energy_spread - failed to deallocate qe_tsm')
     end if
 
   end subroutine photo_deallocate
