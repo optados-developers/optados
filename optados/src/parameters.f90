@@ -754,9 +754,9 @@ contains
     end if
     !Photoemission
     if (photo) then
-      write (stdout, '(1x,a78)') '|  Photoemission Calculation                 :   True                        |'
+      write (stdout, '(1x,a78)') '|  Photoemission Calculation                 :  True                         |'
     else
-      write (stdout, '(1x,a78)') '|  Photoemission Calculation                 :   False                       |'
+      write (stdout, '(1x,a78)') '|  Photoemission Calculation                 :  False                        |'
     end if
     write (stdout, '(1x,a46,2x,i3,26x,a1)') '|  iprint level                              :', iprint, '|'
     if (legacy_file_format) then
@@ -767,7 +767,7 @@ contains
     write (stdout, '(1x,a78)') '+-------------------------------- UNITS -------------------------------------+'
     write (stdout, '(1x,a46,2x,a4,25x,a1)') '|  Length Unit                               :', trim(length_unit), '|'
 
-    if (dos .or. pdos) then
+    if (dos .or. pdos .or. photo) then
       if (dos_per_volume) then
         write (stdout, '(1x,a78)') '|  J/P/DOS units                             :  electrons eV^-1 Ang^-3       |'
       else
@@ -829,7 +829,7 @@ contains
       write (stdout, '(1x,a78)') '|  Compute the band gap                      :  False                        |'
     end if
 
-    if (optics) then
+    if (optics .or. photo) then
       write (stdout, '(1x,a78)') '+-------------------------------- OPTICS ------------------------------------+'
       if (index(optics_geom, 'polycrys') > 0) then
         write (stdout, '(1x,a78)') '|  Geometry for Optics Calculation           :  Polycrystalline              |'
@@ -960,7 +960,7 @@ contains
     ! to lowercase characters               !
     !=======================================!
 
-    use od_io, only: io_file_unit, io_error, seedname
+    use od_io, only: io_file_unit, io_error, seedname, multi_num, options
     use od_algorithms, only: utility_lowercase
 
     implicit none
@@ -969,8 +969,12 @@ contains
     character(len=maxlen) :: dummy
 
     in_unit = io_file_unit()
-    open (in_unit, file=trim(seedname)//'.odi', form='formatted', status='old', err=101)
-
+    ! Added by F. Mildner to allow multiple simultaneous runs
+    if (index(options, 'multi_out') > 0) then
+      open (in_unit, file=trim(seedname)//'_'//trim(adjustl(multi_num))//'.odi', form='formatted', status='old', err=101)
+    else
+      open (in_unit, file=trim(seedname)//'.odi', form='formatted', status='old', err=101)
+    end if
     num_lines = 0; tot_num_lines = 0
     do
       read (in_unit, '(a)', iostat=ierr, err=200, end=210) dummy

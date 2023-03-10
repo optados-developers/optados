@@ -94,7 +94,7 @@ contains
     & efermi, efermi_set, elec_dealloc_optical, elec_read_foptical_mat
     use od_jdos_utils, only: jdos_utils_calculate, setup_energy_scale
     use od_comms, only: on_root
-    use od_parameters, only: photo_work_function, photo_model, photo_elec_field
+    use od_parameters, only: photo_work_function, photo_model, photo_elec_field, write_photo_matrix
     use od_dos_utils, only: dos_utils_set_efermi, dos_utils_calculate_at_e
     use od_io, only: stdout, io_error
     use od_pdos, only: pdos_calculate
@@ -156,10 +156,13 @@ contains
 
     call weighted_mean_te !Weight the contribution of each electron
     !to the transverse energy spread according to their QE
-    !Broaden ouputs using a gaussian function
-    call binding_energy_spread
-    !Write either a binding energy output with after Gaussian broadening
-    call write_qe_output_files
+    ! Only call the binding energy gaussian broadening and file printing if necessary
+    if (.not. index(write_photo_matrix, 'off') > 0) then
+      !Broaden ouputs using a gaussian function
+      call binding_energy_spread
+      !Write either a binding energy output with after Gaussian broadening
+      call write_qe_output_files
+    end if
 
     !Deallocate everything
     call photo_deallocate
@@ -424,7 +427,7 @@ contains
         deallocate (projected_matrix_weights, stat=ierr)
         if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate projected_matrix_weights')
       end if
-
+      ! Why only in the case of optics_intraband?
       if (optics_intraband) then
         allocate (dos_matrix_weights(size(matrix_weights, 5), nbands, num_kpoints_on_node(my_node_id), nspins), stat=ierr)
         if (ierr /= 0) call io_error('Error: calc_photo_optics - allocation of dos_matrix_weights failed')
@@ -497,13 +500,17 @@ contains
         write (stdout, '(99(E17.8E3))') reflect_photo(atom)
         write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
       end if
-
-      deallocate (dos_matrix_weights, stat=ierr)
-      if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate dos_matrix_weights')
-      deallocate (dos_at_e, stat=ierr)
-      if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate dos_at_e')
-      deallocate (weighted_dos_at_e, stat=ierr)
-      if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate weighted_dos_at_e')
+      ! Deallocate extra arrays produced in the case of using optics_intraband
+      if (optics_intraband) then
+        deallocate (dos_matrix_weights, stat=ierr)
+        if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate dos_matrix_weights')
+        deallocate (dos_at_e, stat=ierr)
+        if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate dos_at_e')
+        deallocate (weighted_dos_at_e, stat=ierr)
+        if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate weighted_dos_at_e')
+        deallocate (intra, stat=ierr)
+        if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate intra')
+      end if
       deallocate (weighted_jdos, stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate weighted_jdos')
       deallocate (epsilon, stat=ierr)
@@ -516,10 +523,6 @@ contains
       if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate reflect')
       deallocate (E, stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate E')
-      if (allocated(intra)) then
-        deallocate (intra, stat=ierr)
-        if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate intra')
-      end if
     end do                                        ! Loop over atoms
 
   end subroutine calc_photo_optics
@@ -1837,7 +1840,7 @@ contains
     use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_r_cart
     use od_electronic, only: nbands, nspins, band_energy
     use od_comms, only: my_node_id, on_root
-    use od_io, only: io_error, seedname, io_file_unit
+    use od_io, only: io_error, seedname, io_file_unit, options
     use od_parameters, only: write_photo_matrix, photo_model, photo_photon_energy, devel_flag, iprint
     implicit none
     integer :: atom, ierr, e_scale, binding_unit = 12
@@ -1861,7 +1864,7 @@ contains
     if (index(write_photo_matrix, 'slab') > 0) then
       call cell_calc_kpoint_r_cart
 
-      if ((index(devel_flag, 'multi_out') /= 0) .and. (on_root)) then
+      if ((index(options, 'multi_out') /= 0) .and. (on_root)) then
         write (char_i, '(I2)') iprint
         write(char_e, '(F7.3)') photo_photon_energy
         filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_'//trim(adjustl(char_i))//'_matrix.dat'
@@ -1896,7 +1899,7 @@ contains
     end if
 
     if (.not. index(write_photo_matrix, 'off') > 0) then
-      if ((index(devel_flag, 'multi_out') /= 0) .and. (on_root)) then
+      if ((index(options, 'multi_out') /= 0) .and. (on_root)) then
         write (char_i, '(I1)') iprint
         write (char_e, '(F7.3)') photo_photon_energy
         filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_'//trim(adjustl(char_i))//&
@@ -1961,12 +1964,12 @@ contains
 
     if (allocated(qe_osm)) then
       deallocate (qe_osm, stat=ierr)
-      if (ierr /= 0) call io_error('Error: binding_energy_spread - failed to deallocate qe_osm')
+      if (ierr /= 0) call io_error('Error: write_qe_output_files - failed to deallocate qe_osm')
     end if
 
     if (allocated(qe_tsm)) then
       deallocate (qe_tsm, stat=ierr)
-      if (ierr /= 0) call io_error('Error: binding_energy_spread - failed to deallocate qe_tsm')
+      if (ierr /= 0) call io_error('Error: write_qe_output_files - failed to deallocate qe_tsm')
     end if
 
   end subroutine write_qe_output_files
