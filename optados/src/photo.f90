@@ -1896,6 +1896,7 @@ contains
           end do
         end do
       end if
+      close (unit=matrix_unit)
     end if
 
     if (.not. index(write_photo_matrix, 'off') > 0) then
@@ -1915,36 +1916,6 @@ contains
       end do
 
       close (unit=binding_unit)
-    end if 
-
-    if (index(write_photo_matrix, 'slab') > 0) then
-      call cell_calc_kpoint_r_cart
-
-      open (unit=matrix_unit, action='write', file=trim(seedname)//'_matrix.dat')
-
-      if (index(photo_model, '3step') > 0) then
-        do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
-          do N_spin = 1, nspins                    ! Loop over spins
-            do n_eigen = 1, nbands
-              write (matrix_unit, *) sum(qe_tsm(n_eigen, 1:nbands, N, N_spin, 1:max_atoms + 1)), &
-                (kpoint_r_cart(1, N)), (kpoint_r_cart(2, N)), &
-                band_energy(n_eigen, N_spin, N)
-            end do
-          end do
-        end do
-      end if
-
-      if (index(photo_model, '1step') > 0) then
-        do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
-          do N_spin = 1, nspins                    ! Loop over spins
-            do n_eigen = 1, nbands
-              write (matrix_unit, *) sum(qe_osm(n_eigen, N, N_spin, 1:max_atoms)), &
-                (kpoint_r_cart(1, N)), (kpoint_r_cart(2, N)), &
-                band_energy(n_eigen, N_spin, N)
-            end do
-          end do
-        end do
-      end if
     end if
 
     if (allocated(weighted_temp)) then
