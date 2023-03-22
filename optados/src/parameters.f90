@@ -130,6 +130,9 @@ module od_parameters
   real(kind=dp), public, save :: photo_theta_lower
   real(kind=dp), public, save :: photo_theta_upper
   real(kind=dp), public, save :: photo_photon_energy
+  logical, public, save       :: photo_photon_sweep
+  real(kind=dp), public, save :: photo_photon_min
+  real(kind=dp), public, save :: photo_photon_max
   real(kind=dp), public, save :: bulk_length
   real(kind=dp), public, save :: photo_temperature
   real(kind=dp), public, save :: photo_elec_field
@@ -190,7 +193,7 @@ contains
       call io_error('Error: value of energy_unit not recognised in param_read')
 
     dos = .false.; pdos = .false.; pdis = .false.; jdos = .false.; optics = .false.
-    core = .false.; compare_dos = .false.; compare_jdos = .false.; photo = .false.
+    core = .false.; compare_dos = .false.; compare_jdos = .false.; photo = .false.; photo_photon_sweep = .false.
     call param_get_vector_length('task', found, i_temp)
     if (found .and. i_temp > 0) then
       allocate (task_string(i_temp), stat=ierr)
@@ -215,6 +218,9 @@ contains
           dos = .true.
         elseif (index(task_string(loop), 'photoemission') > 0) then
           photo = .true.
+        elseif (index(task_string(loop), 'photon_sweep') >0) then
+          photo = .true.
+          photo_photon_sweep = .true.
         elseif (index(task_string(loop), 'none') > 0) then
           dos = .false.; pdos = .false.; jdos = .false.; optics = .false.; core = .false.
         elseif (index(task_string(loop), 'all') > 0) then
@@ -464,6 +470,12 @@ contains
     call param_get_keyword('photo_phi_lower', found, r_value=photo_phi_lower)
     photo_phi_upper = 90.0_dp
     call param_get_keyword('photo_phi_upper', found, r_value=photo_phi_upper)
+    photo_photon_min = 1.0_dp
+    call param_get_keyword('photo_photon_min', found, r_value=photo_photon_min)
+    photo_photon_max = 2.0_dp
+    call param_get_keyword('photo_photon_max', found, r_value=photo_photon_max)
+    if (photo_photon_max < photo_photon_min) &
+    call io_error('Error: max photon value is lower than min photon value')
     call param_get_keyword('photo_photon_energy', found, r_value=photo_photon_energy)
     if (photo .and. .not. found) &
       call io_error('Error: please set photon energy for photoemission calculation')
