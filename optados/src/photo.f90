@@ -2161,7 +2161,7 @@ contains
     case ("f")
       fixed = .true.
     case default
-      call io_error(" ERROR : unknown jdos_type in jcalculate_dos ")
+      call io_error(" ERROR : unknown jdos_type in calculate_delta ")
     end select
 
     width = 0.0_dp
