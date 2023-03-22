@@ -168,7 +168,7 @@ contains
       do is = 1, nspins
         write (wjdos_unit, *) 'Spin Channel :', is
         do idos = 1, jdos_nbins
-          write (wjdos_unit, *) sum(weighted_jdos(idos, is, 1:N_geom))
+          write (wjdos_unit, *) idos*jdos_spacing, ' , ',sum(weighted_jdos(idos, is, 1:N_geom))
         end do
       end do
       close (unit=wjdos_unit)
