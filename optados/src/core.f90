@@ -103,6 +103,9 @@ contains
     end if
     num_sym = num_crystal_symmetry_operations
 
+    if (num_sym > 1) call io_error('Error: Core loss not currently able to deal with symmetry. Please &
+          &re-run CASTEP without symmetry.')
+
     allocate (matrix_weights(elnes_mwab%norbitals, elnes_mwab%nbands, num_kpoints_on_node(my_node_id), nspins), stat=ierr)
     if (ierr /= 0) call io_error('Error: core_prepare_matrix_elements - allocation failed for matrix_weights')
     matrix_weights = 0.0_dp

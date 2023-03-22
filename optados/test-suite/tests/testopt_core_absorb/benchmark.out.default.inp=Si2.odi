@@ -1,4 +1,4 @@
- OptaDOS: Execution started on 25 Feb 2022 at 10:27:31 
+ OptaDOS: Execution started on  7 Dec 2022 at 11:17:07 
           Parallelised over    1 thread(s)
 
  +===========================================================================+
@@ -56,6 +56,7 @@
  +--------------------------------- CORE -------------------------------------+
  |  Geometry for Core Calculation             :  Polycrystalline              |
  |  Absorption or Emission Spectrum           :  Absorption                   |
+ |  Core chemical shift                       :  None                         |
  |  Include lifetime and Instrument Broadening:  False                        |
  +----------------------------------------------------------------------------+
   
@@ -82,8 +83,8 @@
 
  +----------------------- Electronic Data ------------------------------------+
  |  Number of Bands                           :            41                 |
- |  Grid size                                 :        6 x  6 x  6            |
- |  Number of K-points                        :            28                 |
+ |  Grid size                                 :        3 x  3 x  3            |
+ |  Number of K-points                        :            14                 |
  |  Spin-Polarised Calculation                :           False               |
  |  Number of electrons                       :             8.00              |
  +----------------------------------------------------------------------------+
@@ -95,21 +96,21 @@
  +--------------------------- Setting Fermi Energy  --------------------------+
  +----------------------------- Fermi Energy Analysis ------------------------+
  | From Adaptive broadening                                                   |
- |   Spin Component : 1 occupation between    7.99965 and    8.00012   <- Occ |
- |         Fermi energy (Adaptive broadening) :   4.4046 eV            <- EfA |
+ |   Spin Component : 1 occupation between    7.97155 and    8.00150   <- Occ |
+ |         Fermi energy (Adaptive broadening) :   4.3195 eV            <- EfA |
  +----------------------------------------------------------------------------+
- |                      Fermi energy from DOS :   4.4046 eV            <- EfD |
+ |                      Fermi energy from DOS :   4.3195 eV            <- EfD |
  +----------------------------------------------------------------------------+
 
  +----------------------------- Fermi Energy Analysis ------------------------+
  | From Adaptive broadening                                                   |
- |   Spin Component : 1 occupation between    7.99963 and    8.00010   <- Occ |
- |         Fermi energy (Adaptive broadening) :   4.4037 eV            <- EfA |
+ |   Spin Component : 1 occupation between    7.96499 and    8.00074   <- Occ |
+ |         Fermi energy (Adaptive broadening) :   4.3173 eV            <- EfA |
  +----------------------------------------------------------------------------+
  |                                                                            |
- + Time to calculate Core Level Spectra                           1.629 (sec) +
+ + Time to calculate Core Level Spectra                           2.281 (sec) +
  +============================================================================+
   
   
 
- OptaDOS: Execution complete on 25 Feb 2022 at 10:27:32 
+ OptaDOS: Execution complete on  7 Dec 2022 at 11:17:09 
