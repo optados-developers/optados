@@ -16,6 +16,8 @@
 \def\red{\textcolor{red}}
 \usepackage{lscape}
 
+\usepackage{hyperref}
+
 %\parskip=2mm
 \newcommand{\kbf}{\mathbf{k}}
 \renewcommand{\d}{\mathrm{d}}
@@ -415,12 +417,18 @@ where $\Gamma$ denotes the relaxation rate.
 
 Choose which compiler to use to make \optados. The valid values are:
 \begin{itemize}
-\item[{\bf --}]  \verb#g95# (default)
-\item[{\bf --}]  \verb#gfortran#
+\item[{\bf --}]  \verb#gfortran# (default)
 \item[{\bf --}]  \verb#ifort#
 \item[{\bf --}]  \verb#nag#
-\item[{\bf --}]  \verb#pathscale#
 \item[{\bf --}]  \verb#pgf90#
+\item[{\bf --}]  \verb#AOOC#
+\item[{\bf --}]  \verb#oneAPI#
+\end{itemize}
+
+The following are no longer supported but are provided for legacy systems:
+\begin{itemize}
+\item[{\bf --}]  \verb#g95# 
+\item[{\bf --}]  \verb#pathscale#
 \item[{\bf --}]  \verb#sun#
 \end{itemize}
 
@@ -741,6 +749,9 @@ Defines which components to include in the pdos analysis:
 \item[{\bf --}]  \verb#Si1(s;d)#     (decompose onto 's' and 'd' channels for
   atom Si1)
 \item[{\bf --}]  \verb#sum:C1:C3:C4-C8#  (decompose onto atoms C1, C2 and C4,C5,C6,C7,C8 and combine into the single projection)
+\item[{\bf --}]  \verb#``C:Exi'':H#  (decompose only onto site labelled C:Exi in \verb#seedname-out.cell# and Hydrogen sites)
+\item[{\bf --}]  \verb#``C'':H#  (decompose only onto Carbon sites that \textit{are not labelled} in \verb#seedname-out.cell# and Hydrogen sites. \textit{N.B} this is the same as  \verb#C:H# if no sites are labelled.)
+
 
 \end{itemize}
 
