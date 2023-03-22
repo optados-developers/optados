@@ -970,7 +970,7 @@ contains
 
     in_unit = io_file_unit()
     ! Added by F. Mildner to allow multiple simultaneous runs
-    if (index(options, 'multi_out') > 0) then
+    if (index(options, '-multi_out') > 0) then
       open (in_unit, file=trim(seedname)//'_'//trim(adjustl(multi_num))//'.odi', form='formatted', status='old', err=101)
     else
       open (in_unit, file=trim(seedname)//'.odi', form='formatted', status='old', err=101)

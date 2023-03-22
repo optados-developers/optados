@@ -73,7 +73,7 @@ program optados
     ! O R G A N I S E   T H E   E R R O R   F I L E
     stderr = io_file_unit()
     ! This is to allow multiple OptaDOS photoemission runs to be performed in the same directory.
-    if ((index(options, 'multi_out') /= 0)) then
+    if ((index(options, '-multi_out') > 0)) then
       filename = trim(seedname)//'_'//trim(adjustl(multi_num))//'.opt_err'
       open (unit=stderr, file=filename)
     else
@@ -88,7 +88,7 @@ program optados
     ! R E A D   A N D   W R I T E   U S E R   P A R A M E T E R S
     call param_read()
     ! This is to allow multiple simultaneous OptaDOS photoemission runs to be performed in the same directory.
-    if ((index(options, 'multi_out') /= 0) .and. (photo)) then
+    if ((index(options, '-multi_out') /= 0) .and. (photo)) then
       write(char_iprint, '(I2)') iprint
       write(char_e, '(F7.3)') photo_photon_energy
       filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_'//trim(adjustl(char_iprint))//'.odo'
@@ -105,7 +105,7 @@ program optados
 
     stdout = io_file_unit()
     ! This is to allow multiple OptaDOS photoemission runs to be performed in the same directory.
-    if ((index(options, 'multi_out') /= 0) .and. (photo)) then
+    if ((index(options, '-multi_out') /= 0) .and. (photo)) then
       open (unit=stdout, file=filename, status=trim(stat), position=trim(pos))
     else
       open (unit=stdout, file=trim(seedname)//'.odo', status=trim(stat), position=trim(pos))
