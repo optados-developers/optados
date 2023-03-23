@@ -175,7 +175,7 @@ contains
       end do
     else
       temp_photon_energy = photo_photon_energy
-      current_index = i
+      current_index = 1
       current_energy_index = index_energy(1)
       !Calculate the photoemission angles theta/phi and transverse energy
       call calc_angle
