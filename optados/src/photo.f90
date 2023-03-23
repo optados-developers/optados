@@ -1644,7 +1644,7 @@ contains
       write (stdout, '(1x,a78)') '+------------------------------ Photoemission -------------------------------+'
       write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
       write (stdout, 223) '| Work Function     ', photo_work_function, &
-        'eV         Photon Energy', photo_photon_energy, 'eV   |'
+        'eV         Photon Energy', temp_photon_energy, 'eV   |'
       write (stdout, 224) '| Effective Work Function', work_function_eff, &
         'eV         Electric Field', photo_elec_field, 'V/A  |'
       write (stdout, '(1x,a78)') '| Final State : Bloch State                                                  |'
