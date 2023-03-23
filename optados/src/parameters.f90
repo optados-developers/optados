@@ -477,7 +477,7 @@ contains
     if (photo_photon_max < photo_photon_min) &
     call io_error('Error: max photon value is lower than min photon value')
     call param_get_keyword('photo_photon_energy', found, r_value=photo_photon_energy)
-    if (photo .and. .not. found) &
+    if (photo .and. .not. found .and. .not. photo_photon_sweep) &
       call io_error('Error: please set photon energy for photoemission calculation')
     bulk_length = 10.0_dp
     call param_get_keyword('photo_bulk_length', found, r_value=bulk_length)
