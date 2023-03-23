@@ -276,7 +276,7 @@ contains
     linear_smearing = 0.0_dp
     call param_get_keyword('linear_smearing', found, r_value=linear_smearing)
 
-    efermi_user = -990.0_dp
+    efermi_user = -999.0_dp
     if (.not. pdis) then
       efermi_choice = "optados"
     else
@@ -441,10 +441,11 @@ contains
     if (index(photo_momentum, 'kp') == 0 .and. index(photo_momentum, 'crystal') == 0 .and. index(photo_momentum, 'operator') == 0) &
       call io_error('Error: value of momentum not recognised in param_read')
 
-    write_photo_matrix = 'slab'
+    write_photo_matrix = 'off'
     call param_get_keyword('write_photo_matrix', found, c_value=write_photo_matrix)
-    if (index(write_photo_matrix, 'slab') == 0 .and. index(write_photo_matrix, 'all') == 0) &
-      call io_error('Error: value of photoemission output not recognised in param_read')
+    if (index(write_photo_matrix, 'slab') == 0 .and. index(write_photo_matrix, 'all') == 0 .and. &
+      & index(write_photo_matrix, 'off') == 0) &
+      call io_error('Error: value of write_photo_matrix output not recognised in param_read')
 
     photo_model = '1step'
     call param_get_keyword('photo_model', found, c_value=photo_model)
@@ -753,9 +754,9 @@ contains
     end if
     !Photoemission
     if (photo) then
-      write (stdout, '(1x,a78)') '|  Photoemission Calculation                 :   True                        |'
+      write (stdout, '(1x,a78)') '|  Photoemission Calculation                 :  True                         |'
     else
-      write (stdout, '(1x,a78)') '|  Photoemission Calculation                 :   False                       |'
+      write (stdout, '(1x,a78)') '|  Photoemission Calculation                 :  False                        |'
     end if
     write (stdout, '(1x,a46,2x,i3,26x,a1)') '|  iprint level                              :', iprint, '|'
     if (legacy_file_format) then
@@ -766,7 +767,7 @@ contains
     write (stdout, '(1x,a78)') '+-------------------------------- UNITS -------------------------------------+'
     write (stdout, '(1x,a46,2x,a4,25x,a1)') '|  Length Unit                               :', trim(length_unit), '|'
 
-    if (dos .or. pdos) then
+    if (dos .or. pdos .or. photo) then
       if (dos_per_volume) then
         write (stdout, '(1x,a78)') '|  J/P/DOS units                             :  electrons eV^-1 Ang^-3       |'
       else
@@ -777,22 +778,23 @@ contains
     write (stdout, '(1x,a78)') '+-------------------------- SPECTRAL PARAMETERS -----------------------------+'
     if (fixed) then
       write (stdout, '(1x,a78)') '|  Fixed Width Smearing                      :  True                         |'
-      write (stdout, '(1x,a46,1x,1F10.5,20x,a1)') '|  Smearing Width                            :', fixed_smearing, '|'
+      write (stdout, '(1x,a46,1x,F10.5,20x,a1)') '|  Smearing Width                            :', fixed_smearing, '|'
     end if
     if (adaptive) then
       write (stdout, '(1x,a78)') '|  Adaptive Width Smearing                   :  True                         |'
-      write (stdout, '(1x,a46,1x,1F10.5,20x,a1)') '|  Adaptive Smearing ratio                   :', adaptive_smearing, '|'
+      write (stdout, '(1x,a46,1x,F10.5,20x,a1)') '|  Adaptive Smearing ratio                   :', adaptive_smearing, '|'
     end if
-    if (linear) &
+    if (linear) then
       write (stdout, '(1x,a78)') '|  Linear Extrapolation                      :  True                         |'
-    write (stdout, '(1x,a46,1x,1F10.5,20x,a1)') '|  Smearing Width                            :', linear_smearing, '|'
+      write (stdout, '(1x,a46,1x,F10.5,20x,a1)') '|  Smearing Width                            :', linear_smearing, '|'
+    end if
     if (quad) &
       write (stdout, '(1x,a78)') '|  Quadratic Extrapolation                   :  True                         |'
     if (finite_bin_correction) &
       write (stdout, '(1x,a78)') '|  Finite Bin Correction                     :  True                         |'
     if (hybrid_linear) then
-      write (stdout, '(1x,a78)') '|  Hybrid Linear Correction                     :  True                      |'
-      write (stdout, '(1x,a46,2x,F10.8,19x,a1)') '|  Hybrid Linear Gradient Tolerance             :', hybrid_linear_grad_tol, '|'
+      write (stdout, '(1x,a78)') '|  Hybrid Linear Correction                  :  True                         |'
+      write (stdout, '(1x,a46,1x,F10.5,20x,a1)') '|  Hybrid Linear Gradient Tolerance          :', hybrid_linear_grad_tol, '|'
     end if
     if (numerical_intdos) &
       write (stdout, '(1x,a78)') '|  Numerical Integration of P/DOS            :  True                         |'
@@ -827,7 +829,7 @@ contains
       write (stdout, '(1x,a78)') '|  Compute the band gap                      :  False                        |'
     end if
 
-    if (optics) then
+    if (optics .or. photo) then
       write (stdout, '(1x,a78)') '+-------------------------------- OPTICS ------------------------------------+'
       if (index(optics_geom, 'polycrys') > 0) then
         write (stdout, '(1x,a78)') '|  Geometry for Optics Calculation           :  Polycrystalline              |'
@@ -958,7 +960,7 @@ contains
     ! to lowercase characters               !
     !=======================================!
 
-    use od_io, only: io_file_unit, io_error, seedname
+    use od_io, only: io_file_unit, io_error, seedname, multi_num, options
     use od_algorithms, only: utility_lowercase
 
     implicit none
@@ -967,8 +969,12 @@ contains
     character(len=maxlen) :: dummy
 
     in_unit = io_file_unit()
-    open (in_unit, file=trim(seedname)//'.odi', form='formatted', status='old', err=101)
-
+    ! Added by F. Mildner to allow multiple simultaneous runs
+    if (index(options, '-multi_out') > 0) then
+      open (in_unit, file=trim(seedname)//'_'//trim(adjustl(multi_num))//'.odi', form='formatted', status='old', err=101)
+    else
+      open (in_unit, file=trim(seedname)//'.odi', form='formatted', status='old', err=101)
+    end if
     num_lines = 0; tot_num_lines = 0
     do
       read (in_unit, '(a)', iostat=ierr, err=200, end=210) dummy

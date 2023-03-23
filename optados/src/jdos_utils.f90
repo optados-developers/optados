@@ -64,11 +64,12 @@ contains
     ! Main routine in dos module, drives the calculation of Density of states for
     ! both task : dos and also if it is required elsewhere.
     !===============================================================================
-    use od_parameters, only: linear, fixed, adaptive, quad, iprint, dos_per_volume, photo, photo_slab_volume
+    use od_parameters, only: linear, fixed, adaptive, quad, iprint, dos_per_volume, photo, photo_slab_volume,&
+                            &jdos_max_energy, jdos_spacing
     use od_electronic, only: elec_read_band_gradient, band_gradient, nspins, electrons_per_state, &
                              num_electrons, efermi_set
     use od_comms, only: on_root
-    use od_io, only: stdout, io_error, io_time
+    use od_io, only: stdout, io_error, io_time, seedname
     use od_cell, only: cell_volume
     use od_dos_utils, only: dos_utils_set_efermi
 
@@ -78,6 +79,8 @@ contains
 
     real(kind=dp), intent(out), allocatable, optional    :: weighted_jdos(:, :, :)  !I've added this
     real(kind=dp), intent(in), optional  :: matrix_weights(:, :, :, :, :)               !I've added this
+
+    integer :: N_geom ,is, idos, wjdos_unit = 25
 
     calc_weighted_jdos = .false.
     if (present(matrix_weights)) calc_weighted_jdos = .true.
@@ -154,7 +157,22 @@ contains
            &      ', time1 - time0, ' (sec) +'
     end if
     !-------------------------------------------------------------------------------
-
+    if (calc_weighted_jdos .and. .not. photo) then
+      N_geom = size(matrix_weights, 5)
+      open (unit=wjdos_unit, action='write', file=trim(seedname)//'_weighted_jdos.dat')
+      write (wjdos_unit, '(1x,a28)') '############################'
+      write (wjdos_unit, '(1x,a19,1x,a99)') '# Weighted JDOS for' , seedname
+      write (wjdos_unit, '(1x,a23,1x,F10.4,1x,a4)') '# maximum JDOS energy :' , jdos_max_energy , '[eV]'
+      write (wjdos_unit, '(1x,a23,1x,F10.4,1x,a4)') '# JDOS step size      :' , jdos_spacing , '[eV]'
+      write (wjdos_unit, '(1x,a28)') '############################'
+      do is = 1, nspins
+        write (wjdos_unit, *) 'Spin Channel :', is
+        do idos = 1, jdos_nbins
+          write (wjdos_unit, *) idos*jdos_spacing, ' , ',sum(weighted_jdos(idos, is, 1:N_geom))
+        end do
+      end do
+      close (unit=wjdos_unit)
+    end if
     if (dos_per_volume) then
       if (photo) then
         if (fixed) then
@@ -332,7 +350,7 @@ contains
     case ("f")
       fixed = .true.
     case default
-      call io_error(" ERROR : unknown jdos_type in jcalculate_dos ")
+      call io_error(" ERROR : unknown jdos_type in calculate_jdos ")
     end select
 
     width = 0.0_dp
@@ -376,10 +394,12 @@ contains
             ! If the band is very flat linear broadening can have problems describing it. In this case, fall back to
             ! adaptive smearing (and take advantage of FBCS if required).
             force_adaptive = .false.
-            if (hybrid_linear .and. (hybrid_linear_grad_tol > sqrt(dot_product(grad, grad)))) force_adaptive = .true.
-            if (linear .and. .not. force_adaptive) call doslin_sub_cell_corners(grad, step, band_energy(jb, is, ik) -&
-&band_energy(ib, is, ik) + scissor_op, EV)
-            if (adaptive .or. force_adaptive) width = sqrt(dot_product(grad, grad))*adaptive_smearing_temp
+            if (.not. fixed) then
+              if (hybrid_linear .and. (hybrid_linear_grad_tol > sqrt(dot_product(grad, grad)))) force_adaptive = .true.
+              if (linear .and. .not. force_adaptive) call doslin_sub_cell_corners(grad, step, band_energy(jb, is, ik) -&
+  &band_energy(ib, is, ik) + scissor_op, EV)
+              if (adaptive .or. force_adaptive) width = sqrt(dot_product(grad, grad))*adaptive_smearing_temp
+            end if
 
             ! Hybrid Adaptive -- This way we don't lose weight at very flat parts of the
             ! band. It's a kind of fudge that we wouldn't need if we had infinitely small bins.

@@ -2,13 +2,13 @@
 SYSTEM := gfortran
 
 # fast / debug
-BUILD := debug
+BUILD := fast
 
 # serial / mpi
 COMMS_ARCH := serial
 
 # Where would you like the executables?
-PREFIX:=../debug/
+PREFIX:=../
 
 SYSTEM := $(strip $(SYSTEM))
 BUILD  := $(strip $(BUILD))
@@ -38,7 +38,7 @@ ifeq ($(SYSTEM), gfortran)
    FFLAGS= -fconvert=big-endian -fPIC
    FFLAGS_PARALLEL=  -DMPI
    FFLAGS_FAST= -O3
-   FFLAGS_DEBUG= -O0  -g -fcheck=all 
+   FFLAGS_DEBUG= -O0  -g -fcheck=all -ffpe-trap=denormal,invalid,underflow
    EXTENSION=.gfortran
 endif
 
