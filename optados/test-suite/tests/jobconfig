@@ -358,3 +358,14 @@ optados_only = testopt_*
 od2od_only = testod2od_*
 all = optados_only od2od_only
 default =  all
+
+
+#--------------------------------------------------------------
+# P h o t o e m i s s i o n   T e s t s 
+#--------------------------------------------------------------
+# This is a general test of the OptaDOS photoemission module.
+[testopt_photo_general]
+program = OPTADOS_ODO_OK
+max_nprocs = 0
+inputs_args = ('Cu_photo.odi','')
+output = Cu.odo
