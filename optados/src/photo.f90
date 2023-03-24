@@ -1914,15 +1914,17 @@ contains
     use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_r_cart
     use od_electronic, only: nbands, nspins, band_energy
     use od_comms, only: my_node_id, on_root
-    use od_io, only: io_error, seedname, io_file_unit, options
+    use od_io, only: io_error, seedname, io_file_unit, options, io_date
     use od_parameters, only: write_photo_matrix, photo_model, photo_photon_energy, devel_flag, iprint
     implicit none
     integer :: atom, ierr, e_scale, binding_unit = 12
-    integer :: N, N_spin, n_eigen, matrix_unit = 25
+    integer :: N, N_spin, i, n_eigen, matrix_unit = 25
 
     real(kind=dp), allocatable, dimension(:, :) :: qe_atom
     character(len=99)                           :: filename
-    character(len=10)                           :: char_e, char_i
+    character(len=10)                           :: char_e
+    character(len=9)                            :: ctime             ! Temp. time string
+    character(len=11)                           :: cdate             ! Temp. date string
 
     allocate (qe_atom(max_energy, max_atoms + 1), stat=ierr)
     if (ierr /= 0) call io_error('Error: write_qe_output_files - allocation of qe_atom failed')
@@ -1935,49 +1937,61 @@ contains
       end do
     end do
 
-    if (index(write_photo_matrix, 'slab') > 0) then
+    if (index(write_photo_matrix, 'QE_matrix') > 0) then
       call cell_calc_kpoint_r_cart
 
       if ((index(options, 'multi_out') /= 0) .and. (on_root)) then
-        write (char_i, '(I2)') iprint
-        write (char_e, '(F7.3)') photo_photon_energy
-        filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_'//trim(adjustl(char_i))//'_matrix.dat'
+        write (char_e, '(F7.3)') temp_photon_energy
+        filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_qe_matrix.dat'
         open (unit=matrix_unit, action='write', file=filename)
       else
-        open (unit=matrix_unit, action='write', file=trim(seedname)//'_matrix.dat')
+        open (unit=matrix_unit, action='write', file=trim(seedname)//'_qe_matrix.dat')
       end if
+      call io_date(cdate, ctime)
+      write (matrix_unit, *) '## OptaDOS Photoemission: Printing QE Matrix on ', cdate, ' at ', ctime
+      write (matrix_unit, *) '## Seedname: ',trim(seedname)
+      write (matrix_unit, *) '## Photoemission Model: ', trim(photo_model)
+      write (matrix_unit, *) '## Photon Energy: ', trim(adjustl(char_e))
+      write (matrix_unit, '(1x,a31,4(1x,I5))') '## (Reduced) QE Matrix Shape: (', nbands, num_kpoints_on_node(my_node_id), nspins,& 
+                                              & max_atoms,')'
+      do N = 1, num_kpoints_on_node(my_node_id)
+        write (matrix_unit, '(1x,a13,3(1x,F16.8),a1)') '## K-point: (',(kpoint_r_cart(i, N),i=1,3),')'
+        do N_spin = 1, nspins
+          write (matrix_unit, *) '## Spin comp: (',N_spin,')'
+          write (matrix_unit, *) (band_energy(n_eigen, N_spin, N),n_eigen=1,nbands)
+        end do
+      end do
 
       if (index(photo_model, '3step') > 0) then
-        do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
-          do N_spin = 1, nspins                    ! Loop over spins
-            do n_eigen = 1, nbands
-              write (matrix_unit, *) sum(qe_tsm(n_eigen, 1:nbands, N, N_spin, 1:max_atoms + 1)), &
-                (kpoint_r_cart(1, N)), (kpoint_r_cart(2, N)), &
-                band_energy(n_eigen, N_spin, N)
+        do atom = 1, max_atoms
+          do N_spin = 1, nspins
+            do N = 1, num_kpoints_on_node(my_node_id)
+              write (matrix_unit, '(9999(ES16.8E3))') (sum(qe_tsm(n_eigen, 1:nbands, N, N_spin, atom)), n_eigen=1, nbands)
             end do
           end do
         end do
+        write (matrix_unit, *) '## Bulk Contribution:'
+        write (matrix_unit, '(9999(ES16.8E3))') (sum(qe_tsm(n_eigen, 1:nbands, N, N_spin, max_atoms+1)), n_eigen=1, nbands)
       end if
 
       if (index(photo_model, '1step') > 0) then
-        do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
-          do N_spin = 1, nspins                    ! Loop over spins
-            do n_eigen = 1, nbands
-              write (matrix_unit, *) sum(qe_osm(n_eigen, N, N_spin, 1:max_atoms)), &
-                (kpoint_r_cart(1, N)), (kpoint_r_cart(2, N)), &
-                band_energy(n_eigen, N_spin, N)
+        do atom = 1, max_atoms
+          do N_spin = 1, nspins
+            do N = 1, num_kpoints_on_node(my_node_id)
+              write (matrix_unit, '(9999(ES16.8E3))') (qe_osm(n_eigen, N, N_spin, atom), n_eigen=1, nbands)
             end do
           end do
         end do
+        write (matrix_unit, *) '## Bulk Contribution:'
+        write (matrix_unit, '(9999(ES16.8E3))') (qe_osm(n_eigen, N, N_spin, max_atoms + 1), n_eigen=1, nbands)
       end if
       close (unit=matrix_unit)
     end if
 
-    if (.not. index(write_photo_matrix, 'off') > 0) then
+    if (index(write_photo_matrix, 'E_binding') > 0) then
       if ((index(options, 'multi_out') /= 0) .and. (on_root)) then
-        write (char_i, '(I1)') iprint
-        write (char_e, '(F7.3)') photo_photon_energy
-        filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_'//trim(adjustl(char_i))//&
+        write (char_e, '(F7.3)') temp_photon_energy
+        filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//&
         &'_binding_energy.dat'
         open (unit=binding_unit, action='write', file=filename)
       else
@@ -1990,7 +2004,7 @@ contains
       end do
 
       close (unit=binding_unit)
-    end if
+    end if 
 
     if (allocated(weighted_temp)) then
       deallocate (weighted_temp, stat=ierr)
