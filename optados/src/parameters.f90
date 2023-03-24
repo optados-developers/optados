@@ -449,9 +449,10 @@ contains
 
     write_photo_matrix = 'off'
     call param_get_keyword('write_photo_matrix', found, c_value=write_photo_matrix)
-    if (index(write_photo_matrix, 'slab') == 0 .and. index(write_photo_matrix, 'all') == 0 .and. &
-      & index(write_photo_matrix, 'off') == 0) &
-      call io_error('Error: value of write_photo_matrix output not recognised in param_read')
+    if (index(write_photo_matrix, 'qe_matrix') == 0 .and. index(write_photo_matrix, 'e_bind') == 0 .and. &
+      & index(write_photo_matrix, 'off') == 0) then
+        call io_error('Error: value of write_photo_matrix output not recognised in param_read')
+    end if
 
     photo_model = '1step'
     call param_get_keyword('photo_model', found, c_value=photo_model)
