@@ -2,7 +2,7 @@
 SYSTEM := gfortran
 
 # fast / debug
-BUILD := debug
+BUILD := fast
 
 # serial / mpi
 COMMS_ARCH := serial
