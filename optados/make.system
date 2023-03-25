@@ -9,6 +9,7 @@ COMMS_ARCH := serial
 
 # Where would you like the executables?
 PREFIX:=../photon_sweep/
+#PREFIX:=../../../compiled_programs/optados_photon_sweep/
 
 SYSTEM := $(strip $(SYSTEM))
 BUILD  := $(strip $(BUILD))
