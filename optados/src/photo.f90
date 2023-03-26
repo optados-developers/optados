@@ -94,12 +94,12 @@ contains
     !
 
     use od_electronic, only: elec_dealloc_optical, elec_pdos_read, elec_read_optical_mat, &
-    & efermi, efermi_set, elec_dealloc_optical, elec_read_foptical_mat
+    & efermi, efermi_set, elec_read_foptical_mat, elec_dealloc_pdos
     use od_jdos_utils, only: jdos_utils_calculate, setup_energy_scale
     use od_comms, only: on_root
     use od_parameters, only: photo_work_function, photo_model, photo_elec_field, write_photo_matrix, photo_photon_sweep,&
                             &photo_photon_min, jdos_spacing, photo_photon_energy
-    use od_dos_utils, only: dos_utils_set_efermi, dos_utils_calculate_at_e
+    use od_dos_utils, only: dos_utils_set_efermi, dos_utils_calculate_at_e, dos_utils_deallocate
     use od_io, only: stdout, io_error
     use od_pdos, only: pdos_calculate
 
@@ -114,7 +114,10 @@ contains
       write (stdout, '(1x,a78)') '|                                                                            |'
     end if
 
-    if (.not. efermi_set) call dos_utils_set_efermi
+    if (.not. efermi_set) then 
+      call dos_utils_set_efermi
+      call dos_utils_deallocate
+    end if
 
     !Identify layers
 
@@ -125,6 +128,7 @@ contains
     ! read in the pdos weights
     call elec_pdos_read
     call make_pdos_weights_atoms
+    call elec_dealloc_pdos
 
     ! Calculate the optical properties of the slab
     call calc_photo_optics
@@ -436,6 +440,7 @@ contains
     
     call make_weights(matrix_weights)
     N_geom = size(matrix_weights, 5)
+    call elec_dealloc_optical
 
     if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) then
       write (stdout, '(1x,a78)') '+-------------------------- Printing Matrix Weights -------------------------+'
@@ -1380,21 +1385,6 @@ contains
     width = (1.0_dp/11604.45_dp)*photo_temperature
     qe_factor = 1.0_dp/(2*pi*photo_surface_area)
     norm_vac = gaussian(0.0_dp, width, 0.0_dp)
-
-    if (allocated(epsilon)) then
-      deallocate (epsilon, stat=ierr)
-      if (ierr /= 0) call io_error('Error: calc_three_step_model - failed to deallocate epsilon')
-    end if
-
-    if (allocated(epsilon_sum)) then
-      deallocate (epsilon_sum, stat=ierr)
-      if (ierr /= 0) call io_error('Error: calc_three_step_model - failed to deallocate epsilon_sum')
-    end if
-
-    if (allocated(refract)) then
-      deallocate (refract, stat=ierr)
-      if (ierr /= 0) call io_error('Error: calc_three_step_model - failed to deallocate refract')
-    end if
     
     if (.not. allocated(field_emission)) then
       allocate (field_emission(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
@@ -1569,11 +1559,12 @@ contains
     use od_io, only: stdout, io_error, io_time
     ! use od_cell, only: cell_volume
     use od_dos_utils, only: dos_utils_set_efermi
-    use od_jdos_utils, only: setup_energy_scale
+    use od_jdos_utils, only: setup_energy_scale, jdos_deallocate
 
     implicit none
 
     real(kind=dp) :: time0, time1
+    integer       :: ierr
 
     real(kind=dp), intent(out), allocatable, optional    :: delta_temp(:, :, :, :)  !I've added this
     ! real(kind=dp), allocatable :: jdos_adaptive(:, :)
@@ -1608,6 +1599,18 @@ contains
 
     if (quad) then
       call io_error("quadratic broadening not implemented")
+    end if
+
+    call jdos_deallocate
+
+    if (allocated(E)) then
+      deallocate(E, stat=ierr)
+      if (ierr /= 0) call io_error('Error: jdos_utils_calculate_delta - failed to deallocate E')
+    end if
+
+    if (allocated(band_gradient)) then
+      deallocate(band_gradient, stat=ierr)
+      if (ierr /= 0) call io_error('Error: jdos_utils_calculate_delta - failed to deallocate band_gradient')
     end if
 
     time1 = io_time()
@@ -1757,10 +1760,7 @@ contains
       write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
     end if
 
-    if (allocated(band_gradient)) then
-      deallocate(band_gradient, stat=ierr)
-      if (ierr /= 0) call io_error('Error: calc_angle - failed to deallocate band_gradient')
-    end if
+    
 
   end subroutine calculate_delta
 
