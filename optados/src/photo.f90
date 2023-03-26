@@ -394,7 +394,7 @@ contains
     use od_electronic, only: elec_read_optical_mat, nbands, nspins, efermi, elec_dealloc_optical, elec_read_band_gradient,&
     & nbands, nspins, band_energy
     use od_cell, only: num_kpoints_on_node, num_kpoints_on_node
-    use od_jdos_utils, only: jdos_utils_calculate, jdos_nbins, E, setup_energy_scale
+    use od_jdos_utils, only: jdos_utils_calculate, jdos_nbins, E, setup_energy_scale, jdos_deallocate
     use od_comms, only: on_root, my_node_id
     use od_parameters, only: optics_intraband, jdos_spacing, photo_model, photo_photon_energy, photo_photon_sweep, &
     photo_photon_min, photo_photon_max, devel_flag
@@ -581,6 +581,9 @@ contains
       end if
       deallocate (weighted_jdos, stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate weighted_jdos')
+      deallocate (E, stat=ierr)
+      if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate E')
+      call jdos_deallocate
       deallocate (epsilon, stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate epsilon')
       deallocate (refract, stat=ierr)
@@ -589,8 +592,7 @@ contains
       if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate absorp')
       deallocate (reflect, stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate reflect')
-      deallocate (E, stat=ierr)
-      if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate E')
+      
     end do                                        ! Loop over atoms
     
     ! Deallocating this out of the loop to reduce memory operations - could lead to higher memory consumption
@@ -651,6 +653,7 @@ contains
     !         end do
     !       end do
     ! end if
+
     ! Can I also allocate this to fome(nbands+1, num_kpts, nspins, N_geom)?
     allocate (foptical_matrix_weights(nbands + 1, nbands + 1, num_kpoints_on_node(my_node_id), nspins, N_geom), stat=ierr)
     if (ierr /= 0) call io_error('Error: make_foptical_weights - allocation of foptical_matrix_weights failed')
@@ -762,6 +765,11 @@ contains
         end do       ! Loop over state 1
       end do           ! Loop over spins
     end do               ! Loop over kpoints
+
+    if (allocated(foptical_mat)) then
+      deallocate(foptical_mat, stat=ierr)
+      if (ierr /= 0) call io_error('Error: make_foptical_weights - failed to deallocate foptical_mat')
+    end if
 
     if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root .and. .not. photo_photon_sweep) then
       write (stdout, '(1x,a78)') '+------------------------- Printing Free OM Weights -------------------------+'
@@ -1790,20 +1798,20 @@ contains
     qe_factor = 1.0_dp/(2*pi*photo_surface_area)
     norm_vac = gaussian(0.0_dp, width, 0.0_dp)
 
-    if (allocated(epsilon)) then
-      deallocate (epsilon, stat=ierr)
-      if (ierr /= 0) call io_error('Error: calc_one_step_model - failed to deallocate epsilon')
-    end if
+    ! if (allocated(epsilon)) then
+    !   deallocate (epsilon, stat=ierr)
+    !   if (ierr /= 0) call io_error('Error: calc_one_step_model - failed to deallocate epsilon')
+    ! end if
 
-    if (allocated(epsilon_sum)) then
-      deallocate (epsilon_sum, stat=ierr)
-      if (ierr /= 0) call io_error('Error: calc_one_step_model - failed to deallocate epsilon_sum')
-    end if
+    ! if (allocated(epsilon_sum)) then
+    !   deallocate (epsilon_sum, stat=ierr)
+    !   if (ierr /= 0) call io_error('Error: calc_one_step_model - failed to deallocate epsilon_sum')
+    ! end if
 
-    if (allocated(refract)) then
-      deallocate (refract, stat=ierr)
-      if (ierr /= 0) call io_error('Error: calc_one_step_model - failed to deallocate refract')
-    end if
+    ! if (allocated(refract)) then
+    !   deallocate (refract, stat=ierr)
+    !   if (ierr /= 0) call io_error('Error: calc_one_step_model - failed to deallocate refract')
+    ! end if
 
     if (.not. allocated(field_emission)) then
       allocate (field_emission(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
