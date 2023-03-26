@@ -45,9 +45,9 @@ module od_photo
   ! real(kind=dp), dimension(:), allocatable :: total_absorption
   ! real(kind=dp), dimension(:), allocatable :: total_transmittance
   real(kind=dp), allocatable, public, save :: E(:)
-  real(kind=dp), allocatable, public, dimension(:, :) :: weighted_dos_at_e_photo
+  ! real(kind=dp), allocatable, public, dimension(:, :) :: weighted_dos_at_e_photo
   real(kind=dp), allocatable, dimension(:, :, :, :) :: epsilon
-  real(kind=dp), allocatable, dimension(:, :) :: epsilon_sum
+  ! real(kind=dp), allocatable, dimension(:, :) :: epsilon_sum
   real(kind=dp), allocatable, dimension(:, :)  :: reflect_photo
   real(kind=dp), allocatable, dimension(:, :) :: absorp_photo
 
@@ -177,8 +177,6 @@ contains
           !Write either a binding energy output with after Gaussian broadening
           call write_qe_output_files
         end if
-        ! Deallocate the created arrays to clean up
-        call photo_deallocate
       end do
     else
       temp_photon_energy = photo_photon_energy
@@ -210,11 +208,9 @@ contains
         !Write either a binding energy output with after Gaussian broadening
         call write_qe_output_files
       end if
-      ! Deallocate the created arrays to clean up
-      call photo_deallocate
     end if
     ! Deallocate the rest that was needed for the photoemission calcs
-    call photo_final_deallocate
+    call photo_deallocate
 
     write (stdout, '(1x,a78)') '| End of Photoemission Calculation                                           |'
 
@@ -2340,20 +2336,15 @@ contains
 
   end subroutine write_qe_output_files
 
-  !***************************************************************
   subroutine photo_deallocate
     !***************************************************************
     ! This subroutine deallocates all the quantities which have not
     ! been deallocated yet
 
     use od_io, only: io_error
+    use od_electronic, only: foptical_mat
     implicit none
     integer :: ierr
-
-    ! if (allocated(optical_matrix_weights)) then
-    !   deallocate (optical_matrix_weights, stat=ierr)
-    !   if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate optical_matrix_weights')
-    ! end if
 
     if (allocated(phi_arpes)) then
       deallocate (phi_arpes, stat=ierr)
@@ -2365,56 +2356,44 @@ contains
       if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate theta_arpes')
     end if
 
-  end subroutine photo_deallocate
+    ! if (allocated(epsilon)) then
+    !   deallocate (epsilon, stat=ierr)
+    !   if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate epsilon')
+    ! end if
 
-  subroutine photo_final_deallocate
-    !***************************************************************
-    ! This subroutine deallocates all the quantities which have not
-    ! been deallocated yet
-
-    use od_io, only: io_error
-    use od_electronic, only: foptical_mat
-    implicit none
-    integer :: ierr
-
-    if (allocated(epsilon)) then
-      deallocate (epsilon, stat=ierr)
-      if (ierr /= 0) call io_error('Error: photo_final_deallocate - failed to deallocate epsilon')
-    end if
-
-    if (allocated(epsilon_sum)) then
-      deallocate (epsilon_sum, stat=ierr)
-      if (ierr /= 0) call io_error('Error: photo_final_deallocate - failed to deallocate epsilon_sum')
-    end if
+    ! if (allocated(epsilon_sum)) then
+    !   deallocate (epsilon_sum, stat=ierr)
+    !   if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate epsilon_sum')
+    ! end if
 
     if (allocated(refract)) then
       deallocate (refract, stat=ierr)
-      if (ierr /= 0) call io_error('Error: photo_final_deallocate - failed to deallocate refract')
+      if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate refract')
     end if
 
     if (allocated(absorp)) then
       deallocate (absorp, stat=ierr)
-      if (ierr /= 0) call io_error('Error: photo_final_deallocate - failed to deallocate absorp')
+      if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate absorp')
     end if
 
     if (allocated(electron_esc)) then
       deallocate (electron_esc, stat=ierr)
-      if (ierr /= 0) call io_error('Error: photo_final_deallocate - failed to deallocate electron_esc')
+      if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate electron_esc')
     end if
 
     if (allocated(layer)) then
       deallocate (layer, stat=ierr)
-      if (ierr /= 0) call io_error('Error: photo_final_deallocate - failed to deallocate layer')
+      if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate layer')
     end if
 
     if (allocated(imfp_val)) then
       deallocate (imfp_val, stat=ierr)
-      if (ierr /= 0) call io_error('Error: photo_final_deallocate - failed to deallocate imfp_val')
+      if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate imfp_val')
     end if
 
     if (allocated(reflect)) then
       deallocate (reflect, stat=ierr)
-      if (ierr /= 0) call io_error('Error: photo_final_deallocate - failed to deallocate reflect')
+      if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate reflect')
     end if
 
     if (allocated(matrix_weights)) then
@@ -2434,62 +2413,62 @@ contains
 
     if (allocated(E_transverse)) then
       deallocate (E_transverse, stat=ierr)
-      if (ierr /= 0) call io_error('Error: photo_final_deallocate - failed to deallocate E_transverse')
+      if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate E_transverse')
     end if
 
     if (allocated(absorp_photo)) then
       deallocate (absorp_photo, stat=ierr)
-      if (ierr /= 0) call io_error('Error: photo_final_deallocate - failed to deallocate absorp_photo')
+      if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate absorp_photo')
     end if
 
     if (allocated(atom_order)) then
       deallocate (atom_order, stat=ierr)
-      if (ierr /= 0) call io_error('Error: photo_final_deallocate - failed to deallocate atom_order')
+      if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate atom_order')
     end if
 
     if (allocated(atoms_per_layer)) then
       deallocate (atoms_per_layer, stat=ierr)
-      if (ierr /= 0) call io_error('Error: photo_final_deallocate - failed to deallocate atoms_per_layer')
+      if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate atoms_per_layer')
     end if
 
     if (allocated(thickness_atom)) then
       deallocate (thickness_atom, stat=ierr)
-      if (ierr /= 0) call io_error('Error: photo_final_deallocate - failed to deallocate thickness_atom')
+      if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate thickness_atom')
     end if
 
     if (allocated(pdos_weights_atoms)) then
       deallocate (pdos_weights_atoms, stat=ierr)
-      if (ierr /= 0) call io_error('Error: photo_final_deallocate - failed to deallocate pdos_weights_atoms')
+      if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate pdos_weights_atoms')
     end if
 
     if (allocated(pdos_weights_k_band)) then
       deallocate (pdos_weights_k_band, stat=ierr)
-      if (ierr /= 0) call io_error('Error: photo_final_deallocate - failed to deallocate pdos_weights_k_band')
+      if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate pdos_weights_k_band')
     end if
 
     if (allocated(index_energy)) then
       deallocate (index_energy, stat=ierr)
-      if (ierr /= 0) call io_error('Error: photo_final_deallocate - failed to deallocate index_energy')
+      if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate index_energy')
     end if
 
     if (allocated(I_layer)) then
       deallocate (I_layer, stat=ierr)
-      if (ierr /= 0) call io_error('Error: photo_final_deallocate - failed to deallocate I_layer')
+      if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate I_layer')
     end if
     
     if (allocated(field_emission)) then
       deallocate (field_emission, stat=ierr)
-      if (ierr /= 0) call io_error('Error: photo_final_deallocate - failed to deallocate field_emission')
+      if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate field_emission')
     end if
 
     if (allocated(bulk_prob)) then
       deallocate (bulk_prob, stat=ierr)
-      if (ierr /= 0) call io_error('Error: photo_final_deallocate - failed to deallocate bulk_prob')
+      if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate bulk_prob')
     end if
 
     if (allocated(qe_tsm)) then
       deallocate (qe_tsm, stat=ierr)
-      if (ierr /= 0) call io_error('Error: photo_final_deallocate - failed to deallocate qe_tsm')
+      if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate qe_tsm')
     end if
 
     if (allocated(qe_osm)) then
@@ -2507,6 +2486,6 @@ contains
       if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate foptical_matrix_weights')
     end if
 
-  end subroutine photo_final_deallocate
+  end subroutine photo_deallocate
 
 end module od_photo
