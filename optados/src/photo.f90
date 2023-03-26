@@ -133,11 +133,6 @@ contains
     ! Calculate the optical properties of the slab
     call calc_photo_optics
 
-    if (index(photo_model, '1step') > 0) then
-      call elec_read_foptical_mat !Read the one-step matrix elements
-      call make_foptical_weights !Calculate the one-step optical matrix
-    end if
-
     call calc_absorp_layer
 
     !Electric field and field emission
@@ -149,6 +144,8 @@ contains
       work_function_eff = photo_work_function
     end if
 
+    if (index(photo_model, '1step') > 0) call elec_read_foptical_mat !Read the one-step matrix elements
+    
     if (photo_photon_sweep) then
       do i = 1, number_energies
         temp_photon_energy = photo_photon_min + (i - 1)*jdos_spacing
@@ -166,6 +163,7 @@ contains
         if (index(photo_model, '3step') > 0) then !Three-step-model
           call calc_three_step_model
         elseif (index(photo_model, '1step') > 0) then !One-step-model
+          call make_foptical_weights !Calculate the one-step optical matrix
           call calc_one_step_model !Calculate QE
         end if
 
@@ -198,6 +196,7 @@ contains
       if (index(photo_model, '3step') > 0) then !Three-step-model
         call calc_three_step_model
       elseif (index(photo_model, '1step') > 0) then !One-step-model
+        call make_foptical_weights !Calculate the one-step optical matrix
         call calc_one_step_model !Calculate QE
       end if
 
@@ -2374,6 +2373,7 @@ contains
     ! been deallocated yet
 
     use od_io, only: io_error
+    use od_electronic, only: foptical_mat
     implicit none
     integer :: ierr
 
@@ -2497,9 +2497,14 @@ contains
       if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate qe_osm')
     end if
 
+    if (allocated(foptical_mat)) then
+      deallocate (foptical_mat, stat=ierr)
+      if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate foptical_mat')
+    end if
+
     if (allocated(foptical_matrix_weights)) then
       deallocate (foptical_matrix_weights, stat=ierr)
-      if (ierr /= 0) call io_error('Error: calc_one_step_model - failed to deallocate foptical_matrix_weights')
+      if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate foptical_matrix_weights')
     end if
 
   end subroutine photo_final_deallocate
