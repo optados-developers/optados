@@ -1935,17 +1935,18 @@ contains
       if (ierr /= 0) call io_error('Error: weighted_mean_te - allocation of te_tsm_temp failed')
       te_tsm_temp = 0.0_dp
       
-      do n_eigen = 1, nbands
-        do n_eigen2 = 1, nbands
-          if (band_energy(n_eigen2, N_spin, N) .lt. efermi) cycle ! Skip occupied final states
-            do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
-              do N_spin = 1, nspins                    ! Loop over spins
-                do atom = 1, max_atoms + 1
-                  te_tsm_temp(n_eigen, N, N_spin, atom) = te_tsm_temp(n_eigen, N, N_spin, atom)+&
-                    E_transverse(n_eigen, N, N_spin)*qe_tsm(n_eigen, n_eigen2, N, N_spin, atom)
-                end do
+      
+      do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
+        do N_spin = 1, nspins                    ! Loop over spins
+          do n_eigen = 1, nbands
+            do n_eigen2 = 1, nbands
+              if (band_energy(n_eigen2, N_spin, N) .lt. efermi) cycle ! Skip occupied final states
+              do atom = 1, max_atoms + 1
+                te_tsm_temp(n_eigen, N, N_spin, atom) = te_tsm_temp(n_eigen, N, N_spin, atom)+&
+                  E_transverse(n_eigen, N, N_spin)*qe_tsm(n_eigen, n_eigen2, N, N_spin, atom)
               end do
             end do
+          end do
         end do
       end do
       
