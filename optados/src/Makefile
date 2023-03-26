@@ -13,6 +13,7 @@ ifeq ($(BUILD), debug)
   EXTENSION:=.debug
 else
   FFLAGS+=$(FFLAGS_FAST)
+  EXTENSION:=.x
 endif
 
 
@@ -24,8 +25,7 @@ else
    F90:=$(F90_SERIAL)
 endif
 
-#EXTENSION:=$(EXTENSION)$(EXE_SUFFIX)
-EXTENSION:=.x
+EXTENSION:=$(EXTENSION)
 
 # Put object names here
 OBJS=build.o algorithms.o cell.o comms.o constants.o core.o dos.o dos_utils.o electronic.o io.o jdos.o jdos_utils.o optics.o parameters.o pdos.o pdis.o projection_utils.o xmgrace_utils.o photo.o
