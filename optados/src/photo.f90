@@ -30,10 +30,10 @@ module od_photo
   public :: photo_calculate
 
   real(kind=dp), allocatable, public, dimension(:, :, :, :) :: pdos_weights_atoms
-  real(kind=dp), allocatable, public, dimension(:, :, :, :) :: pdos_weights_atoms_tmp
+  ! real(kind=dp), allocatable, public, dimension(:, :, :, :) :: pdos_weights_atoms_tmp
   real(kind=dp), allocatable, public, dimension(:, :, :, :, :) :: matrix_weights
   real(kind=dp), allocatable, public, dimension(:, :, :, :, :) :: projected_matrix_weights
-  real(kind=dp), allocatable, public, dimension(:, :, :, :, :) :: optical_matrix_weights
+  ! real(kind=dp), allocatable, public, dimension(:, :, :, :, :) :: optical_matrix_weights
   real(kind=dp), allocatable, public, dimension(:, :, :, :, :) :: foptical_matrix_weights
   real(kind=dp), allocatable, public, dimension(:, :, :) :: weighted_jdos
   real(kind=dp), allocatable, public, dimension(:, :) :: absorp_layer
@@ -41,9 +41,9 @@ module od_photo
   real(kind=dp), allocatable, dimension(:, :, :) :: imfp_val
   real(kind=dp), allocatable, dimension(:, :, :, :) :: electron_esc
   real(kind=dp), dimension(:, :), allocatable :: I_layer
-  real(kind=dp), dimension(:, :), allocatable :: absorption_layer
-  real(kind=dp), dimension(:), allocatable :: total_absorption
-  real(kind=dp), dimension(:), allocatable :: total_transmittance
+  ! real(kind=dp), dimension(:, :), allocatable :: absorption_layer
+  ! real(kind=dp), dimension(:), allocatable :: total_absorption
+  ! real(kind=dp), dimension(:), allocatable :: total_transmittance
   real(kind=dp), allocatable, public, save :: E(:)
   real(kind=dp), allocatable, public, dimension(:, :) :: weighted_dos_at_e_photo
   real(kind=dp), allocatable, dimension(:, :, :, :) :: epsilon
@@ -308,7 +308,7 @@ contains
     use od_cell, only: num_kpoints_on_node, num_atoms
     use od_comms, only: my_node_id, on_root
     use od_io, only: io_error, stdout
-    use od_parameters, only: iprint, devel_flag
+    use od_parameters, only: devel_flag
     implicit none
     integer :: N, N_spin, n_eigen, np, ierr, atom, i, i_max
 
@@ -597,24 +597,23 @@ contains
 
     use od_cell, only: atoms_pos_cart_photo
     use od_jdos_utils, only: jdos_nbins
-    use od_parameters, only: iprint, devel_flag
+    use od_parameters, only: devel_flag
     use od_io, only: stdout, io_error
     use od_comms, only: on_root
     implicit none
-    real(kind=dp), dimension(:), allocatable :: light_path
-    real(kind=dp), dimension(:, :), allocatable :: attenuation_layer
+    ! real(kind=dp), dimension(:), allocatable :: light_path
+    ! real(kind=dp), dimension(:, :), allocatable :: attenuation_layer
     real(kind=dp) :: I_0
-    integer :: atom, i, ierr, first_atom_second_l, last_atom_secondlast_l, jdos_bin, num_layer
+    integer :: atom, i, ierr, first_atom_second_l, last_atom_secondlast_l, num_layer
 
     allocate (thickness_atom(max_atoms), stat=ierr)
     if (ierr /= 0) call io_error('Error: calc_absorp_layer - allocation of thickness_atom failed')
 
     thickness_atom = 0.0_dp
 
-    allocate (light_path(max_atoms), stat=ierr)
-    if (ierr /= 0) call io_error('Error: calc_absorp_layer - allocation of light_path failed')
-
-    light_path = 0.0_dp
+    ! allocate (light_path(max_atoms), stat=ierr)
+    ! if (ierr /= 0) call io_error('Error: calc_absorp_layer - allocation of light_path failed')
+    ! light_path = 0.0_dp
 
     allocate (I_layer(max_layer, number_energies), stat=ierr)
     if (ierr /= 0) call io_error('Error: calc_absorp_layer - allocation of I_layer failed')
@@ -622,14 +621,15 @@ contains
     !allocate (attenuation_layer(jdos_nbins, max_atoms), stat=ierr)
     !if (ierr /= 0) call io_error('Error: calc_absorp_layer - allocation of attenuation_layer failed')
 
-    allocate (absorption_layer(max_atoms, number_energies), stat=ierr)
-    if (ierr /= 0) call io_error('Error: calc_absorp_layer - allocation of absorption_layer  failed')
+    ! allocate (absorption_layer(max_atoms, number_energies), stat=ierr)
+    ! if (ierr /= 0) call io_error('Error: calc_absorp_layer - allocation of absorption_layer  failed')
+    ! absorption_layer = 0.0_dp
 
-    allocate (total_absorption(jdos_nbins), stat=ierr)
-    if (ierr /= 0) call io_error('Error: calc_absorp_layer - allocation of total_absorption failed')
+    ! allocate (total_absorption(jdos_nbins), stat=ierr)
+    ! if (ierr /= 0) call io_error('Error: calc_absorp_layer - allocation of total_absorption failed')
 
-    allocate (total_transmittance(jdos_nbins), stat=ierr)
-    if (ierr /= 0) call io_error('Error: calc_absorp_layer - allocation of total_transmittance failed')
+    ! allocate (total_transmittance(jdos_nbins), stat=ierr)
+    ! if (ierr /= 0) call io_error('Error: calc_absorp_layer - allocation of total_transmittance failed')
 
     if (max_layer .lt. 2) then
       thickness_atom = 1.5
@@ -670,10 +670,10 @@ contains
                                     atoms_pos_cart_photo(3, atom_order(sum(atoms_per_layer(1:layer(atom))) + 1)))/2)
       end do
     end if
-
-    do atom = 1, max_atoms
-      light_path(atom) = thickness_atom(atom)
-    end do
+    ! Set the light path taken by each 
+    ! do atom = 1, max_atoms
+    !   light_path(atom) = thickness_atom(atom)
+    ! end do
 
     !attenuation_layer = 1.0_dp
 
@@ -692,11 +692,11 @@ contains
       I_layer(1, i) = I_0 - reflect_photo(1, i)
     end do
     if (max_layer .gt. 1) then
-
       do atom = first_atom_second_l, max_atoms
         do i = 1, number_energies
+          ! Thickness_atom is the thickness of each layer representing the path length the light takes through the layer
           I_layer(layer(atom), i) = I_layer(layer(atom) - 1, i)* &
-                                    exp(-(absorp_photo(atom, i)*light_path(atom)*1E-10))
+                                    exp(-(absorp_photo(atom, i)*thickness_atom(atom)*1E-10))
           if (I_layer(layer(atom), i) .lt. 0.0_dp) then
             I_layer(layer(atom), i) = 0.0_dp
           end if
@@ -709,10 +709,16 @@ contains
       deallocate (light_path, stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_absorp_layer - failed to deallocate light_path')
     end if
-    if (allocated(attenuation_layer)) then
-      deallocate (attenuation_layer, stat=ierr)
-      if (ierr /= 0) call io_error('Error: calc_absorp_layer - failed to deallocate attenuation_layer')
-    end if
+    
+    ! if (allocated(light_path)) then
+    !   deallocate (light_path, stat=ierr)
+    !   if (ierr /= 0) call io_error('Error: calc_absorp_layer - failed to deallocate light_path')
+    ! end if
+    
+    ! if (allocated(attenuation_layer)) then
+    !   deallocate (attenuation_layer, stat=ierr)
+    !   if (ierr /= 0) call io_error('Error: calc_absorp_layer - failed to deallocate attenuation_layer')
+    ! end if
 
     if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) then
       write (stdout, '(1x,a78)') '+----------------------- Printing Intensity per Layer -----------------------+'
@@ -759,7 +765,7 @@ contains
     use od_electronic, only: nbands, nspins, band_energy, band_gradient, elec_read_band_gradient, elec_read_band_curvature, &
     & band_curvature
     use od_comms, only: my_node_id, on_root
-    use od_parameters, only: photo_photon_energy, iprint, photo_momentum, devel_flag
+    use od_parameters, only: photo_momentum, devel_flag
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
     use od_io, only: stdout, io_error, io_file_unit, stdout
@@ -909,7 +915,7 @@ contains
     use od_cell, only: num_kpoints_on_node, atoms_pos_cart_photo
     use od_io, only: io_error, stdout
     use od_comms, only: my_node_id, on_root
-    use od_parameters, only: photo_imfp_const, iprint, devel_flag
+    use od_parameters, only: photo_imfp_const, devel_flag
     implicit none
     integer :: atom, N, N_spin, n_eigen, ierr
     real(kind=dp) :: exponent
@@ -924,8 +930,7 @@ contains
                                                    (atoms_pos_cart_photo(3, atom_order(1)))
     end do
 
-    if (.not. allocated(electron_esc)) allocate (electron_esc(nbands, num_kpoints_on_node(my_node_id), nspins, max_atoms), &
-                                              & stat=ierr)
+    if (.not. allocated(electron_esc)) allocate (electron_esc(nbands, num_kpoints_on_node(my_node_id), nspins, max_atoms),stat=ierr)
     if (ierr /= 0) call io_error('Error: calc_electron_esc - allocation of electron_esc failed')
     electron_esc = 0.0_dp
 
@@ -962,7 +967,7 @@ contains
   !***************************************************************
   subroutine bulk_emission
     !***************************************************************
-    ! This subroutine calculates the electron escape depth
+    ! This subroutine calculates the contribution from the approximated bulk material
 
     use od_constants, only: dp, deg_to_rad
     use od_electronic, only: nbands, nspins
@@ -1064,8 +1069,7 @@ contains
     use od_electronic, only: nbands, nspins, band_energy, efermi, electrons_per_state, elec_read_band_gradient, &
                              elec_read_band_curvature
     use od_comms, only: my_node_id, on_root
-    use od_parameters, only: photo_photon_energy, iprint, photo_elec_field, photo_surface_area, scissor_op, &
-    & photo_temperature, devel_flag, photo_photon_sweep
+    use od_parameters, only: photo_surface_area, scissor_op, photo_temperature, devel_flag, photo_photon_sweep
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
     use od_io, only: stdout, io_error, io_file_unit, stdout
@@ -1271,8 +1275,7 @@ contains
     use od_electronic, only: nbands, nspins, band_energy, efermi, electrons_per_state, elec_read_band_gradient,&
     & elec_read_band_curvature
     use od_comms, only: my_node_id
-    use od_parameters, only: photo_photon_energy, iprint, photo_elec_field, photo_surface_area, scissor_op, &
-    & photo_temperature, devel_flag, photo_photon_sweep
+    use od_parameters, only: photo_surface_area, scissor_op, photo_temperature, devel_flag, photo_photon_sweep
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
     use od_comms, only: on_root
@@ -1600,13 +1603,13 @@ contains
     ! sum(QE*mte)/(total QE)
     ! Victor Chang, 7 February 2020
     !===============================================================================
-    use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart, atoms_label_tmp
+    use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart
     use od_electronic, only: nbands, nspins, band_energy, efermi, elec_read_band_gradient, elec_read_band_curvature
     use od_comms, only: my_node_id
-    use od_parameters, only: photo_work_function, photo_photon_energy, photo_elec_field, photo_model
+    use od_parameters, only: photo_model
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
-    use od_io, only: stdout, io_error, io_file_unit, stdout
+    use od_io, only: io_error, io_file_unit
     use od_jdos_utils, only: jdos_utils_calculate
 
     implicit none
@@ -1914,8 +1917,8 @@ contains
     use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_r_cart
     use od_electronic, only: nbands, nspins, band_energy
     use od_comms, only: my_node_id, on_root
-    use od_io, only: io_error, seedname, io_file_unit, options, io_date
-    use od_parameters, only: write_photo_matrix, photo_model, photo_photon_energy, devel_flag, iprint, photo_photon_sweep
+    use od_io, only: io_error, seedname, io_file_unit, io_date
+    use od_parameters, only: write_photo_matrix, photo_model, photo_photon_sweep
     implicit none
     integer :: atom, ierr, e_scale, binding_unit = 12
     integer :: N, N_spin, i, n_eigen, matrix_unit = 25
@@ -2411,6 +2414,15 @@ contains
       deallocate (reflect, stat=ierr)
       if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate reflect')
     end if
+    ! if (allocated(total_transmittance)) then
+    !   deallocate (total_transmittance, stat=ierr)
+    !   if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate total_transmittance')
+    ! end if
+
+    ! if (allocated(total_absorption)) then
+    !   deallocate (total_absorption, stat=ierr)
+    !   if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate total_absorption')
+    ! end if
 
     if (allocated(total_transmittance)) then
       deallocate (total_transmittance, stat=ierr)
