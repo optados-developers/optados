@@ -30,10 +30,8 @@ module od_photo
   public :: photo_calculate
 
   real(kind=dp), allocatable, public, dimension(:, :, :, :) :: pdos_weights_atoms
-  ! real(kind=dp), allocatable, public, dimension(:, :, :, :) :: pdos_weights_atoms_tmp
   real(kind=dp), allocatable, public, dimension(:, :, :, :, :) :: matrix_weights
   real(kind=dp), allocatable, public, dimension(:, :, :, :, :) :: projected_matrix_weights
-  ! real(kind=dp), allocatable, public, dimension(:, :, :, :, :) :: optical_matrix_weights
   real(kind=dp), allocatable, public, dimension(:, :, :, :, :) :: foptical_matrix_weights
   real(kind=dp), allocatable, public, dimension(:, :, :) :: weighted_jdos
   real(kind=dp), allocatable, public, dimension(:, :) :: absorp_layer
@@ -41,13 +39,7 @@ module od_photo
   real(kind=dp), allocatable, dimension(:, :, :) :: imfp_val
   real(kind=dp), allocatable, dimension(:, :, :, :) :: electron_esc
   real(kind=dp), dimension(:, :), allocatable :: I_layer
-  ! real(kind=dp), dimension(:, :), allocatable :: absorption_layer
-  ! real(kind=dp), dimension(:), allocatable :: total_absorption
-  ! real(kind=dp), dimension(:), allocatable :: total_transmittance
   real(kind=dp), allocatable, public, save :: E(:)
-  ! real(kind=dp), allocatable, public, dimension(:, :) :: weighted_dos_at_e_photo
-  real(kind=dp), allocatable, dimension(:, :, :, :) :: epsilon
-  ! real(kind=dp), allocatable, dimension(:, :) :: epsilon_sum
   real(kind=dp), allocatable, dimension(:, :)  :: reflect_photo
   real(kind=dp), allocatable, dimension(:, :) :: absorp_photo
 
@@ -318,9 +310,6 @@ contains
 
     allocate (pdos_weights_atoms(num_atoms, pdos_mwab%nbands, num_kpoints_on_node(my_node_id), nspins), stat=ierr)
     if (ierr /= 0) call io_error('Error: make_pdos_weights_atoms - allocation of pdos_weights_atoms failed')
-
-    ! allocate (pdos_weights_atoms_tmp(num_atoms, pdos_mwab%nbands, num_kpoints_on_node(my_node_id), nspins), stat=ierr)
-    ! if (ierr /= 0) call io_error('Error: make_pdos_weights_atoms - allocation of pdos_weights_atoms_tmp failed')
 
     allocate (pdos_weights_k_band(pdos_mwab%nbands, num_kpoints_on_node(my_node_id), nspins), stat=ierr)
     if (ierr /= 0) call io_error('Error: make_pdos_weights_atoms - allocation of pdos_weights_k_band failed')
@@ -641,18 +630,6 @@ contains
     if (electrons_per_state == 2) then
       num_occ(1) = num_occ(1)/2.0_dp
     end if
-    ! if (on_root .and. iprint .gt. 2) then
-    !   do N_spin=1,nspins
-    !     do N=1,num_kpoints_on_node(my_node_id)
-    !       do i=1,3
-    !         do na=1,nbands + 1
-    !               write(stdout,*) na,i,N,N_spin
-    !               write(stdout,*) foptical_mat(na, na, i, N, N_spin)
-    !             end do
-    !           end do
-    !         end do
-    !       end do
-    ! end if
 
     ! Can I also allocate this to fome(nbands+1, num_kpts, nspins, N_geom)?
     allocate (foptical_matrix_weights(nbands + 1, nbands + 1, num_kpoints_on_node(my_node_id), nspins, N_geom), stat=ierr)
@@ -800,8 +777,6 @@ contains
     use od_io, only: stdout, io_error
     use od_comms, only: on_root
     implicit none
-    ! real(kind=dp), dimension(:), allocatable :: light_path
-    ! real(kind=dp), dimension(:, :), allocatable :: attenuation_layer
     real(kind=dp) :: I_0
     integer :: atom, i, ierr, first_atom_second_l, last_atom_secondlast_l, num_layer
 
@@ -809,26 +784,9 @@ contains
     if (ierr /= 0) call io_error('Error: calc_absorp_layer - allocation of thickness_atom failed')
     thickness_atom = 0.0_dp
 
-    ! allocate (light_path(max_atoms), stat=ierr)
-    ! if (ierr /= 0) call io_error('Error: calc_absorp_layer - allocation of light_path failed')
-    ! light_path = 0.0_dp
-
     allocate (I_layer(max_layer, number_energies), stat=ierr)
     if (ierr /= 0) call io_error('Error: calc_absorp_layer - allocation of I_layer failed')
     I_layer = 0.0_dp
-
-    !allocate (attenuation_layer(jdos_nbins, max_atoms), stat=ierr)
-    !if (ierr /= 0) call io_error('Error: calc_absorp_layer - allocation of attenuation_layer failed')
-
-    ! allocate (absorption_layer(max_atoms, number_energies), stat=ierr)
-    ! if (ierr /= 0) call io_error('Error: calc_absorp_layer - allocation of absorption_layer  failed')
-    ! absorption_layer = 0.0_dp
-
-    ! allocate (total_absorption(jdos_nbins), stat=ierr)
-    ! if (ierr /= 0) call io_error('Error: calc_absorp_layer - allocation of total_absorption failed')
-
-    ! allocate (total_transmittance(jdos_nbins), stat=ierr)
-    ! if (ierr /= 0) call io_error('Error: calc_absorp_layer - allocation of total_transmittance failed')
 
     ! Calculate the thickness of each of the layers
     if (max_layer .lt. 2) then
@@ -871,21 +829,6 @@ contains
                                     atoms_pos_cart_photo(3, atom_order(sum(atoms_per_layer(1:layer(atom))) + 1)))/2)
       end do
     end if
-    ! Set the light path taken by each
-    ! do atom = 1, max_atoms
-    !   light_path(atom) = thickness_atom(atom)
-    ! end do
-
-    !attenuation_layer = 1.0_dp
-
-    ! do atom = 1, max_atoms
-    !   !attenuation_layer(index_energy, atom) = exp(-(absorp_photo(index_energy, atom)*light_path(atom))*1E-10)
-    !   absorption_layer(atom) = absorp_photo(atom)*thickness_atom(atom)*1E-10
-    !   if (iprint .gt. 3) then
-    !     write (stdout, *) "Absorption for the layer #", atom
-    !     write (stdout, *) absorption_layer(atom)
-    !   end if
-    ! end do
 
     I_0 = 1.0_dp
     I_layer = 1.0_dp
@@ -914,16 +857,6 @@ contains
       deallocate (atoms_per_layer, stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_absorp_layer - failed to deallocate atoms_per_layer')
     end if
-
-    ! if (allocated(light_path)) then
-    !   deallocate (light_path, stat=ierr)
-    !   if (ierr /= 0) call io_error('Error: calc_absorp_layer - failed to deallocate light_path')
-    ! end if
-
-    ! if (allocated(attenuation_layer)) then
-    !   deallocate (attenuation_layer, stat=ierr)
-    !   if (ierr /= 0) call io_error('Error: calc_absorp_layer - failed to deallocate attenuation_layer')
-    ! end if
 
     if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) then
       write (stdout, '(1x,a78)') '+----------------------- Printing Intensity per Layer -----------------------+'
@@ -1361,11 +1294,6 @@ contains
     deallocate (new_atoms_coordinates, stat=ierr)
     if (ierr /= 0) call io_error('Error: bulk_emission - failed to deallocate new_atoms_coordinates')
 
-    ! if (allocated(thickness_atom)) then
-    !   deallocate (thickness_atom, stat=ierr)
-    !   if (ierr /= 0) call io_error('Error: bulk_emission - failed to deallocate thickness_atom')
-    ! end if
-
   end subroutine bulk_emission
 
   !===============================================================================
@@ -1520,11 +1448,6 @@ contains
       if (ierr /= 0) call io_error('Error: calc_three_step_model - failed to deallocate delta_temp')
     end if
 
-    ! if (allocated(optical_matrix_weights)) then
-    !   deallocate (optical_matrix_weights, stat=ierr)
-    !   if (ierr /= 0) call io_error('Error: calc_three_step_model - failed to deallocate optical_matrix_weights')
-    ! end if
-
     if ((index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) .or. (index(devel_flag, 'print_qe_matrix_full') > 0 .and.&
     & on_root)) then
       write (stdout, '(1x,a78)') '+----------------------- Printing Full 3step QE Matrix ----------------------+'
@@ -1575,9 +1498,6 @@ contains
     integer       :: ierr
 
     real(kind=dp), intent(out), allocatable, optional    :: delta_temp(:, :, :, :)  !I've added this
-    ! real(kind=dp), allocatable :: jdos_adaptive(:, :)
-    ! real(kind=dp), allocatable :: jdos_fixed(:, :)
-    ! real(kind=dp), allocatable :: jdos_linear(:, :)
 
     !-------------------------------------------------------------------------------
     ! R E A D   B A N D   G R A D I E N T S
@@ -1627,23 +1547,6 @@ contains
         '+ Time to calculate Delta Function', time1 - time0, '(sec) +'
     end if
     !-------------------------------------------------------------------------------
-
-    ! if (dos_per_volume) then
-    !   if (fixed) then
-    !     jdos_fixed = jdos_fixed/photo_slab_volume
-    !   end if
-    !   if (adaptive) then
-    !     jdos_adaptive = jdos_adaptive/photo_slab_volume
-    !   end if
-    !   if (linear) then
-    !     jdos_linear = jdos_linear/photo_slab_volume
-    !   end if
-
-    ! if(quad) then
-    !    dos_quad=dos_quad/cell_volume
-    !    intdos_quad=intdos_quad/cell_volume
-    ! endif
-    ! end if
 
   end subroutine jdos_utils_calculate_delta
 
@@ -1797,21 +1700,6 @@ contains
     width = (1.0_dp/11604.45_dp)*photo_temperature
     qe_factor = 1.0_dp/(2*pi*photo_surface_area)
     norm_vac = gaussian(0.0_dp, width, 0.0_dp)
-
-    ! if (allocated(epsilon)) then
-    !   deallocate (epsilon, stat=ierr)
-    !   if (ierr /= 0) call io_error('Error: calc_one_step_model - failed to deallocate epsilon')
-    ! end if
-
-    ! if (allocated(epsilon_sum)) then
-    !   deallocate (epsilon_sum, stat=ierr)
-    !   if (ierr /= 0) call io_error('Error: calc_one_step_model - failed to deallocate epsilon_sum')
-    ! end if
-
-    ! if (allocated(refract)) then
-    !   deallocate (refract, stat=ierr)
-    !   if (ierr /= 0) call io_error('Error: calc_one_step_model - failed to deallocate refract')
-    ! end if
 
     if (.not. allocated(field_emission)) then
       allocate (field_emission(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
@@ -2091,11 +1979,6 @@ contains
     real(kind=dp) :: qe_norm, total_weighted
     integer :: N, N_spin, n_eigen, atom, e_scale, ierr
 
-    ! if (allocated(E_transverse)) then
-    !   deallocate (E_transverse, stat=ierr)
-    !   if (ierr /= 0) call io_error('Error: binding_energy_spread - failed to deallocate E_transverse')
-    ! end if
-
     allocate (t_energy(max_energy))
     if (ierr /= 0) call io_error('Error: binding_energy_spread - allocation of t_energy failed')
     t_energy = 0.0_dp
@@ -2334,11 +2217,6 @@ contains
       if (ierr /= 0) call io_error('Error: write_qe_output_files - failed to deallocate t_energy')
     end if
 
-    ! if (allocated(qe_osm)) then
-    !   deallocate (qe_osm, stat=ierr)
-    !   if (ierr /= 0) call io_error('Error: write_qe_output_files - failed to deallocate qe_osm')
-    ! end if
-
   end subroutine write_qe_output_files
 
   subroutine photo_deallocate
@@ -2360,16 +2238,6 @@ contains
       deallocate (theta_arpes, stat=ierr)
       if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate theta_arpes')
     end if
-
-    ! if (allocated(epsilon)) then
-    !   deallocate (epsilon, stat=ierr)
-    !   if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate epsilon')
-    ! end if
-
-    ! if (allocated(epsilon_sum)) then
-    !   deallocate (epsilon_sum, stat=ierr)
-    !   if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate epsilon_sum')
-    ! end if
 
     if (allocated(refract)) then
       deallocate (refract, stat=ierr)
@@ -2405,16 +2273,6 @@ contains
       deallocate (matrix_weights, stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate matrix_weights')
     end if
-
-    ! if (allocated(total_transmittance)) then
-    !   deallocate (total_transmittance, stat=ierr)
-    !   if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate total_transmittance')
-    ! end if
-
-    ! if (allocated(total_absorption)) then
-    !   deallocate (total_absorption, stat=ierr)
-    !   if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate total_absorption')
-    ! end if
 
     if (allocated(E_transverse)) then
       deallocate (E_transverse, stat=ierr)
