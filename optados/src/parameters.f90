@@ -780,7 +780,7 @@ contains
     write (stdout, '(1x,a78)') '+-------------------------------- UNITS -------------------------------------+'
     write (stdout, '(1x,a46,2x,a4,25x,a1)') '|  Length Unit                               :', trim(length_unit), '|'
 
-    if (dos .or. pdos .or. photo) then
+    if (dos .or. pdos) then
       if (dos_per_volume) then
         write (stdout, '(1x,a78)') '|  J/P/DOS units                             :  electrons eV^-1 Ang^-3       |'
       else
@@ -840,6 +840,11 @@ contains
       write (stdout, '(1x,a78)') '|  Compute the band gap                      :  True                         |'
     else
       write (stdout, '(1x,a78)') '|  Compute the band gap                      :  False                        |'
+    end if
+
+    if (photo) then
+      write (stdout, '(1x,a46,1x,f7.4,3x,2a,18x,1a)') '|  JDOS bin spacing                          :', jdos_spacing,'eV','|'
+      write (stdout, '(1x,a46,1x,f7.4,3x,2a,18x,1a)') '|  JDOS max energy bin                       :', jdos_max_energy,'ev','|'
     end if
 
     if (optics .or. photo) then

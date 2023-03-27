@@ -114,7 +114,7 @@ contains
       write (stdout, '(1x,a78)') '|                                                                            |'
     end if
 
-    if (.not. efermi_set) then 
+    if (.not. efermi_set) then
       call dos_utils_set_efermi
       call dos_utils_deallocate
     end if
@@ -145,7 +145,7 @@ contains
     end if
 
     if (index(photo_model, '1step') > 0) call elec_read_foptical_mat !Read the one-step matrix elements
-    
+
     if (photo_photon_sweep) then
       do i = 1, number_energies
         temp_photon_energy = photo_photon_min + (i - 1)*jdos_spacing
@@ -392,7 +392,7 @@ contains
     use od_jdos_utils, only: jdos_utils_calculate, jdos_nbins, E, setup_energy_scale, jdos_deallocate
     use od_comms, only: on_root, my_node_id
     use od_parameters, only: optics_intraband, jdos_spacing, photo_model, photo_photon_energy, photo_photon_sweep, &
-    photo_photon_min, photo_photon_max, devel_flag
+    photo_photon_min, photo_photon_max, devel_flag, iprint
     use od_dos_utils, only: dos_utils_calculate_at_e
     use od_constants, only: epsilon_0, e_charge
 
@@ -426,13 +426,13 @@ contains
       if (ierr /= 0) call io_error('Error: calc_photo_optics - allocation of index_energy failed')
       index_energy(number_energies) = int(photo_photon_energy/jdos_spacing)
     end if
-    
+
     allocate (absorp_photo(max_atoms, number_energies), stat=ierr)
     if (ierr /= 0) call io_error('Error: calc_photo_optics - allocation of absorp_photo failed')
 
     allocate (reflect_photo(max_atoms, number_energies), stat=ierr)
     if (ierr /= 0) call io_error('Error: calc_photo_optics - allocation of reflect_photo failed')
-    
+
     call make_weights(matrix_weights)
     N_geom = size(matrix_weights, 5)
     call elec_dealloc_optical
@@ -450,9 +450,14 @@ contains
     if (ierr /= 0) call io_error('Error: calc_photo_optics  - allocation of projected_matrix_weights failed')
 
     do atom = 1, max_atoms                           ! Loop over atoms
+      !
+      if (iprint > 1 .and. on_root) then
+        write (stdout, 145) '+------------------------ Starting Atom # ', atom, ' of ', max_atoms,' ------------------------+'
+145 format(1x,a42,I3,a4,I3,a26)
+      end if
       ! (Re-)Setting the weights for new atom
       projected_matrix_weights = 0.0_dp
-      
+
       do N2 = 1, N_geom
         do N = 1, num_kpoints_on_node(my_node_id)    ! Loop over kpoints
           do N_spin = 1, nspins                    ! Loop over spins
@@ -587,9 +592,9 @@ contains
       if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate absorp')
       deallocate (reflect, stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate reflect')
-      
+
     end do                                        ! Loop over atoms
-    
+
     ! Deallocating this out of the loop to reduce memory operations - could lead to higher memory consumption
     deallocate (projected_matrix_weights, stat=ierr)
     if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate projected_matrix_weights')
@@ -866,7 +871,7 @@ contains
                                     atoms_pos_cart_photo(3, atom_order(sum(atoms_per_layer(1:layer(atom))) + 1)))/2)
       end do
     end if
-    ! Set the light path taken by each 
+    ! Set the light path taken by each
     ! do atom = 1, max_atoms
     !   light_path(atom) = thickness_atom(atom)
     ! end do
@@ -909,12 +914,12 @@ contains
       deallocate (atoms_per_layer, stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_absorp_layer - failed to deallocate atoms_per_layer')
     end if
-    
+
     ! if (allocated(light_path)) then
     !   deallocate (light_path, stat=ierr)
     !   if (ierr /= 0) call io_error('Error: calc_absorp_layer - failed to deallocate light_path')
     ! end if
-    
+
     ! if (allocated(attenuation_layer)) then
     !   deallocate (attenuation_layer, stat=ierr)
     !   if (ierr /= 0) call io_error('Error: calc_absorp_layer - failed to deallocate attenuation_layer')
@@ -1079,13 +1084,13 @@ contains
     end if
     E_transverse = 0.0_dp
 
-    if (.not. allocated(theta_arpes)) then 
+    if (.not. allocated(theta_arpes)) then
       allocate (theta_arpes(nbands, num_kpoints_on_node(my_node_id), nspins), stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_angle - allocation of theta_arpes failed')
     end if
     theta_arpes = 0.0_dp
 
-    if (.not. allocated(phi_arpes)) then 
+    if (.not. allocated(phi_arpes)) then
       allocate (phi_arpes(nbands, num_kpoints_on_node(my_node_id), nspins), stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_angle - allocation of phi_arpes failed')
     end if
@@ -1214,7 +1219,7 @@ contains
       deallocate(band_gradient, stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_angle - failed to deallocate band_gradient')
     end if
-    
+
     if (allocated(kpoint_r_cart)) then
       deallocate (kpoint_r_cart, stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_angle - failed to deallocate kpoint_r_cart')
@@ -1293,7 +1298,7 @@ contains
     use od_parameters, only: photo_imfp_const, bulk_length
     use od_io, only: io_error
     implicit none
-    
+
     real(kind=dp), dimension(:), allocatable :: bulk_light_tmp
     real(kind=dp), dimension(:, :, :, :), allocatable :: bulk_prob_tmp
     integer :: N, N_spin, n_eigen, i, num_layers, ierr
@@ -1354,7 +1359,7 @@ contains
     if (ierr /= 0) call io_error('Error: bulk_emission - failed to deallocate bulk_prob_tmp')
 
     deallocate (new_atoms_coordinates, stat=ierr)
-    if (ierr /= 0) call io_error('Error: bulk_emission - failed to deallocate new_atoms_coordinates')    
+    if (ierr /= 0) call io_error('Error: bulk_emission - failed to deallocate new_atoms_coordinates')
 
     ! if (allocated(thickness_atom)) then
     !   deallocate (thickness_atom, stat=ierr)
@@ -1388,13 +1393,13 @@ contains
     width = (1.0_dp/11604.45_dp)*photo_temperature
     qe_factor = 1.0_dp/(2*pi*photo_surface_area)
     norm_vac = gaussian(0.0_dp, width, 0.0_dp)
-    
+
     if (.not. allocated(field_emission)) then
       allocate (field_emission(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_three_step_model - allocation of field_emission failed')
       field_emission = 0.0_dp
     end if
-    
+
     if (.not. allocated(qe_tsm)) then
       allocate (qe_tsm(nbands, nbands, num_kpoints_on_node(my_node_id), nspins, max_atoms + 1), stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_three_step_model - allocation of qe_tsm failed')
@@ -1763,7 +1768,7 @@ contains
       write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
     end if
 
-    
+
 
   end subroutine calculate_delta
 
@@ -1933,12 +1938,12 @@ contains
     integer :: N, N_spin, n_eigen, n_eigen2, atom, ierr
 
     if (index(photo_model, '3step') > 0) then
-      
+
       allocate (te_tsm_temp(nbands, num_kpoints_on_node(my_node_id), nspins, max_atoms + 1), stat=ierr)
       if (ierr /= 0) call io_error('Error: weighted_mean_te - allocation of te_tsm_temp failed')
       te_tsm_temp = 0.0_dp
-      
-      
+
+
       do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
         do N_spin = 1, nspins                    ! Loop over spins
           do n_eigen = 1, nbands
@@ -1952,7 +1957,7 @@ contains
           end do
         end do
       end do
-      
+
       total_qe = sum(qe_tsm(1:nbands, 1:nbands, 1:num_kpoints_on_node(my_node_id), 1:nspins, 1:max_atoms + 1))
       if (total_qe .gt. 0.0_dp) then
         mean_te = sum(te_tsm_temp(1:nbands, 1:num_kpoints_on_node(my_node_id), 1:nspins, 1:max_atoms + 1))/ total_qe
@@ -1964,7 +1969,7 @@ contains
       if (ierr /= 0) call io_error('Error: weighted_mean_te - failed to deallocate te_tsm_temp')
 
     elseif (index(photo_model, '1step') > 0) then
-      
+
       allocate (te_osm_temp(nbands, num_kpoints_on_node(my_node_id), nspins, max_atoms + 1), stat=ierr)
       if (ierr /= 0) call io_error('Error: weighted_mean_te - allocation of te_osm_temp failed')
       te_osm_temp = 0.0_dp
@@ -2018,7 +2023,7 @@ contains
       'eV         Photon Energy', temp_photon_energy, 'eV   |'
     write (stdout, 224) '| Effective Work Function', work_function_eff, &
       'eV         Electric Field', photo_elec_field, 'V/A  |'
-    
+
     if (index(photo_model, '3step') > 0) then
       write (stdout, '(1x,a78)') '| Final State : Bloch State                                                  |'
       write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
@@ -2160,7 +2165,7 @@ contains
       else
         qe_norm = 1.0_dp
       end if
-      
+
       weighted_temp(e_scale, N, N_spin, n_eigen, atom) = weighted_temp(e_scale, N, N_spin, n_eigen, atom)*qe_norm
 
     elseif (index(photo_model, '1step') > 0) then
@@ -2312,7 +2317,7 @@ contains
       end do
 
       close (unit=binding_unit)
-    end if 
+    end if
 
     if (allocated(weighted_temp)) then
       deallocate (weighted_temp, stat=ierr)
@@ -2400,7 +2405,7 @@ contains
       deallocate (matrix_weights, stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate matrix_weights')
     end if
-    
+
     ! if (allocated(total_transmittance)) then
     !   deallocate (total_transmittance, stat=ierr)
     !   if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate total_transmittance')
@@ -2455,7 +2460,7 @@ contains
       deallocate (I_layer, stat=ierr)
       if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate I_layer')
     end if
-    
+
     if (allocated(field_emission)) then
       deallocate (field_emission, stat=ierr)
       if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate field_emission')
