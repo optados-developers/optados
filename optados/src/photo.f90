@@ -998,10 +998,10 @@ contains
     use od_electronic, only: nbands, nspins, band_energy, band_gradient, elec_read_band_gradient, elec_read_band_curvature, &
     & band_curvature
     use od_comms, only: my_node_id, on_root
-    use od_parameters, only: photo_momentum, devel_flag
+    use od_parameters, only: photo_momentum, devel_flag, iprint
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
-    use od_io, only: stdout, io_error, io_file_unit, stdout
+    use od_io, only: stdout, io_error, io_file_unit, stdout, io_time
     use od_jdos_utils, only: jdos_utils_calculate
     use od_constants, only: hbar, ev_to_j, j_to_ev, e_mass, rad_to_deg
     implicit none
@@ -1010,6 +1010,9 @@ contains
     real(kind=dp), allocatable, dimension(:, :, :):: E_x
     real(kind=dp), allocatable, dimension(:, :, :):: E_y
     real(kind=dp) :: tol = 1.0E-10_dp
+    real(kind=dp) :: time0, time1
+
+    time0 = io_time()
 
     if (.not. allocated(E_transverse)) then
       allocate (E_transverse(nbands, num_kpoints_on_node(my_node_id), nspins), stat=ierr)
@@ -1158,6 +1161,11 @@ contains
       if (ierr /= 0) call io_error('Error: calc_angle - failed to deallocate kpoint_r_cart')
     end if
 
+    time1 = io_time()
+    if (on_root .and. iprint > 1) then
+      write (stdout, '(1x,a39,20x,f11.3,a8)') '+ Time to calculate Photoemission Angle', time1 - time0, ' (sec) +'
+    end if
+
   end subroutine calc_angle
 
   !***************************************************************
@@ -1168,13 +1176,14 @@ contains
     use od_constants, only: dp, deg_to_rad
     use od_electronic, only: nbands, nspins
     use od_cell, only: num_kpoints_on_node, atoms_pos_cart_photo
-    use od_io, only: io_error, stdout
+    use od_io, only: io_error, stdout, io_time
     use od_comms, only: my_node_id, on_root
-    use od_parameters, only: photo_imfp_const, devel_flag
+    use od_parameters, only: photo_imfp_const, devel_flag, iprint
     implicit none
     integer :: atom, N, N_spin, n_eigen, ierr
-    real(kind=dp) :: exponent
+    real(kind=dp) :: exponent,time0,time1
 
+    time0 = io_time()
     allocate (new_atoms_coordinates(3, max_atoms), stat=ierr)
     if (ierr /= 0) call io_error('Error: calc_electron_esc - allocation of new_atoms_coordinates failed')
 
@@ -1217,6 +1226,11 @@ contains
       write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
     end if
 
+    time1 = io_time()
+    if (on_root .and. iprint > 1) then
+      write (stdout, '(1x,a40,19x,f11.3,a8)') '+ Time to calculate Photoemission Escape', time1 - time0, ' (sec) +'
+    end if
+
   end subroutine calc_electron_esc
 
   !***************************************************************
@@ -1227,16 +1241,17 @@ contains
     use od_constants, only: dp, deg_to_rad
     use od_electronic, only: nbands, nspins
     use od_cell, only: num_kpoints_on_node
-    use od_comms, only: my_node_id
-    use od_parameters, only: photo_imfp_const, bulk_length
-    use od_io, only: io_error
+    use od_comms, only: my_node_id, on_root
+    use od_parameters, only: photo_imfp_const, bulk_length, iprint
+    use od_io, only: io_error, io_time, stdout
     implicit none
 
     real(kind=dp), dimension(:), allocatable :: bulk_light_tmp
     real(kind=dp), dimension(:, :, :, :), allocatable :: bulk_prob_tmp
     integer :: N, N_spin, n_eigen, i, num_layers, ierr
-    real(kind=dp) :: exponent
+    real(kind=dp) :: exponent, time0, time1
 
+    time0 = io_time()
     num_layers = int((photo_imfp_const*bulk_length)/thickness_atom(max_atoms))
 
     allocate (bulk_light_tmp(num_layers), stat=ierr)
@@ -1294,6 +1309,11 @@ contains
     deallocate (new_atoms_coordinates, stat=ierr)
     if (ierr /= 0) call io_error('Error: bulk_emission - failed to deallocate new_atoms_coordinates')
 
+    time1 = io_time()
+    if (on_root .and. iprint > 1) then
+      write (stdout, '(1x,a40,19x,f11.3,a8)') '+ Time to calculate Bulk Photoemission', time1 - time0, ' (sec) +'
+    end if
+
   end subroutine bulk_emission
 
   !===============================================================================
@@ -1307,20 +1327,25 @@ contains
     use od_electronic, only: nbands, nspins, band_energy, efermi, electrons_per_state, elec_read_band_gradient, &
                              elec_read_band_curvature
     use od_comms, only: my_node_id, on_root
-    use od_parameters, only: photo_surface_area, scissor_op, photo_temperature, devel_flag, photo_photon_sweep
+    use od_parameters, only: photo_surface_area, scissor_op, photo_temperature, devel_flag, photo_photon_sweep, iprint
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
-    use od_io, only: stdout, io_error, io_file_unit, stdout
+    use od_io, only: stdout, io_error, io_file_unit, io_time
     use od_jdos_utils, only: jdos_utils_calculate
     use od_constants, only: pi, kB
     implicit none
     real(kind=dp), allocatable, dimension(:, :, :, :) :: delta_temp
-    real(kind=dp) :: width, norm_vac, vac_g, transverse_g, fermi_dirac, qe_factor, argument
+    real(kind=dp) :: width, norm_vac, vac_g, transverse_g, fermi_dirac, qe_factor, argument, time0, time1
     integer :: N, N2, N_spin, n_eigen, n_eigen2, atom, ierr, i
 
     width = (1.0_dp/11604.45_dp)*photo_temperature
     qe_factor = 1.0_dp/(2*pi*photo_surface_area)
     norm_vac = gaussian(0.0_dp, width, 0.0_dp)
+
+    time0 = io_time()
+    if (iprint > 1 .and. on_root) then
+      write (stdout, '(1x,a78)') '+--------------------------- Calculating 3Step QE ---------------------------+'
+    end if
 
     if (.not. allocated(field_emission)) then
       allocate (field_emission(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
@@ -1372,6 +1397,10 @@ contains
     end if
 
     do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
+      if (iprint > 1 .and. on_root) then
+        if (mod(real(N, dp), 10.0_dp) == 0.0_dp) write (stdout, '(1x,a1,a38,i4,a3,i4,1x,a14,2x,a11)') ',', &
+             &"Calculating k-point ", N, " of", num_kpoints_on_node(my_node_id), 'on this node.', "<-- QE-3S |"
+      end if
       do N_spin = 1, nspins                    ! Loop over spins
         do n_eigen = 1, nbands
 
@@ -1462,6 +1491,7 @@ contains
       end do
       write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
     end if
+
     if (index(devel_flag, 'print_qe_matrix_reduced') > 0 .and. on_root) then
       write (stdout, '(1x,a78)') '+--------------------- Printing Reduced 3step QE Matrix ---------------------+'
       write (stdout, '(5(1x,I4))') shape(qe_tsm)
@@ -1474,6 +1504,12 @@ contains
         end do
       end do
       write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
+    end if
+
+    time1 = io_time()
+    if (on_root .and. iprint > 1) then
+      write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
+      write (stdout, '(1x,a39,18x,f11.3,a8)') '+ Time to calculate 3step Photoemission', time1 - time0, ' (sec) +'
     end if
 
   end subroutine calc_three_step_model
@@ -1686,20 +1722,25 @@ contains
     use od_electronic, only: nbands, nspins, band_energy, efermi, electrons_per_state, elec_read_band_gradient,&
     & elec_read_band_curvature
     use od_comms, only: my_node_id
-    use od_parameters, only: photo_surface_area, scissor_op, photo_temperature, devel_flag, photo_photon_sweep
+    use od_parameters, only: photo_surface_area, scissor_op, photo_temperature, devel_flag, photo_photon_sweep, iprint
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
     use od_comms, only: on_root
-    use od_io, only: stdout, io_error, io_file_unit, stdout
+    use od_io, only: stdout, io_error, io_file_unit, io_time
     use od_jdos_utils, only: jdos_utils_calculate
     use od_constants, only: pi, kB
     implicit none
     integer :: N, N_spin, n_eigen, n_eigen2, atom, ierr, i
-    real(kind=dp) :: width, norm_vac, vac_g, transverse_g, fermi_dirac, qe_factor, argument
+    real(kind=dp) :: width, norm_vac, vac_g, transverse_g, fermi_dirac, qe_factor, argument, time0, time1
 
     width = (1.0_dp/11604.45_dp)*photo_temperature
     qe_factor = 1.0_dp/(2*pi*photo_surface_area)
     norm_vac = gaussian(0.0_dp, width, 0.0_dp)
+
+    time0 = io_time()
+    if (iprint > 1 .and. on_root) then
+      write (stdout, '(1x,a78)') '+--------------------------- Calculating 1Step QE ---------------------------+'
+    end if
 
     if (.not. allocated(field_emission)) then
       allocate (field_emission(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
@@ -1800,6 +1841,12 @@ contains
       write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
     end if
 
+    time1 = io_time()
+    if (on_root .and. iprint > 1) then
+      write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
+      write (stdout, '(1x,a39,18x,f11.3,a8)') '+ Time to calculate 1step Photoemission', time1 - time0, ' (sec) +'
+    end if
+
   end subroutine calc_one_step_model
 
   !===============================================================================
@@ -1811,19 +1858,25 @@ contains
     !===============================================================================
     use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart
     use od_electronic, only: nbands, nspins, band_energy, efermi, elec_read_band_gradient, elec_read_band_curvature
-    use od_comms, only: my_node_id
-    use od_parameters, only: photo_model
+    use od_comms, only: my_node_id, on_root
+    use od_parameters, only: photo_model, iprint
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
-    use od_io, only: io_error, io_file_unit
+    use od_io, only: io_error, io_file_unit, io_time, stdout
     use od_jdos_utils, only: jdos_utils_calculate
 
     implicit none
 
     real(kind=dp), allocatable, dimension(:, :, :, :) :: te_tsm_temp
     real(kind=dp), allocatable, dimension(:, :, :, :) :: te_osm_temp
-    real(kind=dp)                                     :: total_qe
+    real(kind=dp)                                     :: total_qe, time0, time1
     integer :: N, N_spin, n_eigen, n_eigen2, atom, ierr
+
+    time0 = io_time()
+
+    if (iprint > 1 .and. on_root) then
+      write (stdout, '(1x,a78)') '+----------------------------- Calculating MTE ------------------------------+'
+    end if
 
     if (index(photo_model, '3step') > 0) then
 
@@ -1887,6 +1940,13 @@ contains
       deallocate (te_osm_temp, stat=ierr)
       if (ierr /= 0) call io_error('Error: weighted_mean_te - failed to deallocate te_osm_temp')
     end if
+
+    time1 = io_time()
+    if (on_root .and. iprint > 1) then
+      write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
+      write (stdout, '(1x,a23,34x,f11.3,a8)') '+ Time to calculate MTE', time1 - time0, ' (sec) +'
+    end if
+
   end subroutine weighted_mean_te
 
   subroutine write_qe_data
@@ -2102,17 +2162,19 @@ contains
     use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_r_cart
     use od_electronic, only: nbands, nspins, band_energy
     use od_comms, only: my_node_id, on_root
-    use od_io, only: io_error, seedname, io_file_unit, io_date
-    use od_parameters, only: write_photo_matrix, photo_model, photo_photon_sweep
+    use od_io, only: io_error, seedname, io_file_unit, io_date, io_time, stdout
+    use od_parameters, only: write_photo_matrix, photo_model, photo_photon_sweep, iprint
     implicit none
     integer :: atom, ierr, e_scale, binding_unit = 12
     integer :: N, N_spin, i, n_eigen, matrix_unit = 25
 
-    real(kind=dp), allocatable, dimension(:, :) :: qe_atom
+    real(kind=dp), allocatable, dimension(:, :) :: qe_atom, time0, time1
     character(len=99)                           :: filename
     character(len=10)                           :: char_e
     character(len=9)                            :: ctime             ! Temp. time string
     character(len=11)                           :: cdate             ! Temp. date string
+
+    time0 = io_time()
 
     if (index(write_photo_matrix, 'qe_matrix') > 0) then
       call cell_calc_kpoint_r_cart
@@ -2215,6 +2277,12 @@ contains
     if (allocated(t_energy)) then
       deallocate (t_energy, stat=ierr)
       if (ierr /= 0) call io_error('Error: write_qe_output_files - failed to deallocate t_energy')
+    end if
+
+    time1 = io_time()
+    if (on_root .and. iprint > 1) then
+      write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
+      write (stdout, '(1x,a32,27x,f11.3,a8)') '+ Time to write the output files', time1 - time0, ' (sec) +'
     end if
 
   end subroutine write_qe_output_files
