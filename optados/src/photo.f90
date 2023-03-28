@@ -75,9 +75,10 @@ module od_photo
 
   ! Added by Felix Mildner, 12/2022
 
-  integer, allocatable, dimension(:) :: index_energy
-  integer   :: number_energies, current_energy_index, current_index
-  real(kind=dp) :: temp_photon_energy, time_a, time_b
+  integer, allocatable, dimension(:)  :: index_energy
+  integer                             :: number_energies, current_energy_index, current_index
+  real(kind=dp)                       :: temp_photon_energy, time_a, time_b
+  integer, allocatable, dimension(:,:):: index_unoccupied
 contains
 
   subroutine photo_calculate
@@ -114,6 +115,7 @@ contains
     !Identify layers
 
     call calc_layers
+    call calc_band_info
 
     call elec_read_optical_mat
     !THIS PART COMES FROM THE PDOS MODULE
@@ -302,6 +304,46 @@ contains
     end do
 
   end subroutine calc_layers
+
+  subroutine calc_band_info
+    !===============================================================================
+    ! This subroutine determines useful indices of band energies for later use in 
+    ! the QE and MTE calculation to reduce loop times.
+    ! Felix Mildner, 28th March 2023
+    !===============================================================================
+
+    use od_electronic, only: efermi, band_energy, nbands, nspins
+    use od_cell, only: num_kpoints_on_node
+    use od_comms, only: my_node_id, on_root
+    use od_parameters, only: iprint
+    use od_io, only: stdout, io_time
+
+    integer         :: N, N_spin, n_eigen, ierr
+    real(kind=dp)   :: time0,time1
+
+    time0 = io_time()
+
+    allocate (index_unoccupied(nspins,num_kpoints_on_node(my_node_id)), stat=ierr)
+    if (ierr /= 0) call io_error('Error: calc_band_info - allocation of index_unoccupied failed')
+
+    do N = 1, num_kpoints_on_node(my_node_id)  ! Loop over kpoints
+      do N_spin = 1, nspins                           ! Loop over spins
+        do n_eigen = 1, nbands                        ! Loop over bands
+          ! TODO: Test if this is the behaviour we want and or if we have to change the condition
+          if (band_energy(n_eigen, N_spin, N) .gt. efermi) then
+            index_unoccupied(N, N_spin) = n_eigen
+            exit
+          end if
+        end do
+      end do
+    end do
+
+    time1 = io_time()
+    if (on_root .and. iprint > 1) then
+      write (stdout, '(1x,a36,23x,f11.3,a8)') '+ Time to calculate Band Energy Info', time1 - time0, ' (sec) +'
+    end if
+
+  end subroutine calc_band_info
 
   !***************************************************************
   subroutine make_pdos_weights_atoms
@@ -1439,9 +1481,9 @@ contains
             vac_g = 1.0_dp
           end if
 
-          do n_eigen2 = 1, nbands
+          do n_eigen2 = index_unoccupied(N_spin, N), nbands
             !! this could be checked if it has an impact on the final value
-            if (band_energy(n_eigen2, N_spin, N) .lt. efermi) cycle
+            ! if (band_energy(n_eigen2, N_spin, N) .lt. efermi) cycle
             do atom = 1, max_atoms
               qe_tsm(n_eigen, n_eigen2, N, N_spin, atom) = &
                 (matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
@@ -1495,20 +1537,6 @@ contains
         do N_spin = 1, nspins
           do N = 1, num_kpoints_on_node(my_node_id)
            write (stdout, '(99999(ES16.8E3))') ((qe_tsm(n_eigen, n_eigen2, N, N_spin, atom), n_eigen2=1, nbands), n_eigen=1, nbands)
-          end do
-        end do
-      end do
-      write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
-    end if
-
-    if (index(devel_flag, 'print_qe_matrix_reduced') > 0 .and. on_root) then
-      write (stdout, '(1x,a78)') '+--------------------- Printing Reduced 3step QE Matrix ---------------------+'
-      write (stdout, '(5(1x,I4))') shape(qe_tsm)
-      write (stdout, '(5(1x,I4))') nbands, num_kpoints_on_node(my_node_id), nspins, max_atoms + 1
-      do atom = 1, max_atoms + 1
-        do N_spin = 1, nspins
-          do N = 1, num_kpoints_on_node(my_node_id)
-            write (stdout, '(9999(ES16.8E3))') (sum(qe_tsm(n_eigen, 1:nbands, N, N_spin, atom)), n_eigen=1, nbands)
           end do
         end do
       end do
@@ -1839,7 +1867,7 @@ contains
     end if
 
     if ((index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) .or. (index(devel_flag, 'print_qe_matrix_full') > 0&
-    & .and. on_root) .or. (index(devel_flag, 'print_qe_matrix_reduced') > 0 .and. on_root)) then
+    & .and. on_root)) then
       write (stdout, '(1x,a78)') '+------------------------- Printing 1step QE Matrix -------------------------+'
       write (stdout, 125) shape(qe_osm)
       write (stdout, 125) nbands, num_kpoints_on_node(my_node_id), nspins, max_atoms + 1
@@ -1901,8 +1929,8 @@ contains
       do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
         do N_spin = 1, nspins                    ! Loop over spins
           do n_eigen = 1, nbands
-            do n_eigen2 = 1, nbands
-              if (band_energy(n_eigen2, N_spin, N) .lt. efermi) cycle ! Skip occupied final states
+            do n_eigen2 = index_unoccupied(N_spin, N), nbands
+              ! if (band_energy(n_eigen2, N_spin, N) .lt. efermi) cycle ! Skip occupied final states
               do atom = 1, max_atoms + 1
                 te_tsm_temp(n_eigen, N, N_spin, atom) = te_tsm_temp(n_eigen, N, N_spin, atom)+&
                   E_transverse(n_eigen, N, N_spin)*qe_tsm(n_eigen, n_eigen2, N, N_spin, atom)
