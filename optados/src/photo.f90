@@ -316,7 +316,7 @@ contains
     use od_cell, only: num_kpoints_on_node
     use od_comms, only: my_node_id, on_root
     use od_parameters, only: iprint
-    use od_io, only: stdout, io_time
+    use od_io, only: stdout, io_time, io_error
 
     integer         :: N, N_spin, n_eigen, ierr
     real(kind=dp)   :: time0,time1
@@ -1898,7 +1898,7 @@ contains
     ! Victor Chang, 7 February 2020
     !===============================================================================
     use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart
-    use od_electronic, only: nbands, nspins, band_energy, efermi, elec_read_band_gradient, elec_read_band_curvature
+    use od_electronic, only: nbands, nspins, elec_read_band_gradient, elec_read_band_curvature!, band_energy, efermi
     use od_comms, only: my_node_id, on_root
     use od_parameters, only: photo_model, iprint
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
@@ -1925,7 +1925,8 @@ contains
       if (ierr /= 0) call io_error('Error: weighted_mean_te - allocation of te_tsm_temp failed')
       te_tsm_temp = 0.0_dp
 
-
+      ! Try : move the atom do loop to the outermost, then sum up the qe_tsm contributions from
+      ! all unoccupied final states and multiply that sum by E_transverse to put into the te...
       do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
         do N_spin = 1, nspins                    ! Loop over spins
           do n_eigen = 1, nbands
