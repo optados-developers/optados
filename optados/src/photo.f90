@@ -306,11 +306,11 @@ contains
   end subroutine calc_layers
 
   subroutine calc_band_info
-    !===============================================================================
-    ! This subroutine determines useful indices of band energies for later use in 
-    ! the QE and MTE calculation to reduce loop times.
-    ! Felix Mildner, 28th March 2023
-    !===============================================================================
+  !===============================================================================
+  ! This subroutine determines useful indices of band energies for later use in 
+  ! the QE and MTE calculation to reduce loop times.
+  ! Felix Mildner, 28th March 2023
+  !===============================================================================
 
     use od_electronic, only: efermi, band_energy, nbands, nspins
     use od_cell, only: num_kpoints_on_node
