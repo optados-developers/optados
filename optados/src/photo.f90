@@ -77,7 +77,7 @@ module od_photo
 
   integer, allocatable, dimension(:) :: index_energy
   integer   :: number_energies, current_energy_index, current_index
-  real(kind=dp) :: temp_photon_energy
+  real(kind=dp) :: temp_photon_energy, time_a, time_b
 contains
 
   subroutine photo_calculate
@@ -90,9 +90,9 @@ contains
     use od_jdos_utils, only: jdos_utils_calculate, setup_energy_scale
     use od_comms, only: on_root
     use od_parameters, only: photo_work_function, photo_model, photo_elec_field, write_photo_matrix, photo_photon_sweep,&
-                            &photo_photon_min, jdos_spacing, photo_photon_energy
+                            &photo_photon_min, jdos_spacing, photo_photon_energy, iprint
     use od_dos_utils, only: dos_utils_set_efermi, dos_utils_calculate_at_e, dos_utils_deallocate
-    use od_io, only: stdout, io_error
+    use od_io, only: stdout, io_error, io_time
     use od_pdos, only: pdos_calculate
 
     implicit none
@@ -140,7 +140,10 @@ contains
 
     if (photo_photon_sweep) then
       do i = 1, number_energies
+        time_a = io_time()
         temp_photon_energy = photo_photon_min + (i - 1)*jdos_spacing
+        write (stdout, '(1x,a50,f8.4,a20S)') '+--------------- Starting Photoemission Sweep with',temp_photon_energy,&
+        &' eV ---------------+'
         current_index = i
         current_energy_index = index_energy(i)
         !Calculate the photoemission angles theta/phi and transverse energy
@@ -168,6 +171,10 @@ contains
           call binding_energy_spread
           !Write either a binding energy output with after Gaussian broadening
           call write_qe_output_files
+        end if
+        time_b = io_time()
+        if (on_root .and. iprint > 1) then
+          write (stdout, '(1x,a44,15x,f11.3,a8)') '+ Time to calculate Photoemission sweep step', time_b - time_a, ' (sec) +'
         end if
       end do
     else
@@ -1311,7 +1318,8 @@ contains
 
     time1 = io_time()
     if (on_root .and. iprint > 1) then
-      write (stdout, '(1x,a40,19x,f11.3,a8)') '+ Time to calculate Bulk Photoemission', time1 - time0, ' (sec) +'
+      write (stdout, '(1x,a38,21x,f11.3,a8)') '+ Time to calculate Bulk Photoemission', time1 - time0, ' (sec) +'
+      write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
     end if
 
   end subroutine bulk_emission
@@ -1343,9 +1351,6 @@ contains
     norm_vac = gaussian(0.0_dp, width, 0.0_dp)
 
     time0 = io_time()
-    if (iprint > 1 .and. on_root) then
-      write (stdout, '(1x,a78)') '+--------------------------- Calculating 3Step QE ---------------------------+'
-    end if
 
     if (.not. allocated(field_emission)) then
       allocate (field_emission(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
@@ -1374,6 +1379,10 @@ contains
     end if
 
     call jdos_utils_calculate_delta(delta_temp)
+
+    if (iprint > 1 .and. on_root) then
+      write (stdout, '(1x,a78)') '+--------------------------- Calculating 3Step QE ---------------------------+'
+    end if
 
     if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root .and. .not. photo_photon_sweep) then
       write (stdout, '(1x,a78)') '+---------------------- Printing Delta Function Values ----------------------+'
@@ -1509,7 +1518,7 @@ contains
     time1 = io_time()
     if (on_root .and. iprint > 1) then
       write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
-      write (stdout, '(1x,a39,18x,f11.3,a8)') '+ Time to calculate 3step Photoemission', time1 - time0, ' (sec) +'
+      write (stdout, '(1x,a39,20x,f11.3,a8)') '+ Time to calculate 3step Photoemission', time1 - time0, ' (sec) +'
     end if
 
   end subroutine calc_three_step_model
@@ -1535,6 +1544,10 @@ contains
 
     real(kind=dp), intent(out), allocatable, optional    :: delta_temp(:, :, :, :)  !I've added this
 
+    if (iprint > 1 .and. on_root) then
+      write (stdout, '(1x,a78)') '+---------------------- Calculate JDOS DELTA FUNCTION -----------------------+'
+    end if
+
     !-------------------------------------------------------------------------------
     ! R E A D   B A N D   G R A D I E N T S
     ! If we're using one of the more accurate roadening schemes we also need to read in the
@@ -1543,7 +1556,9 @@ contains
       if (.not. allocated(band_gradient)) call elec_read_band_gradient
     end if
     !-------------------------------------------------------------------------------
-
+    if (iprint > 1 .and. on_root) then
+      write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
+    end if
     if (.not. efermi_set) call dos_utils_set_efermi
 
     time0 = io_time()
@@ -1579,7 +1594,7 @@ contains
 
     time1 = io_time()
     if (on_root .and. iprint > 1) then
-      write (stdout, '(1x,a43,16x,f11.3,1x,a7)') &
+      write (stdout, '(1x,a34,25x,f11.3,1x,a7)') &
         '+ Time to calculate Delta Function', time1 - time0, '(sec) +'
     end if
     !-------------------------------------------------------------------------------
@@ -1648,9 +1663,7 @@ contains
     end if
     delta_temp = 0.0_dp
 
-    if (iprint > 1 .and. on_root) then
-      write (stdout, '(1x,a78)') '+---------------------- Calculate JDOS DELTA FUNCTION -----------------------+'
-    end if
+    
 
     do ik = 1, num_kpoints_on_node(my_node_id)
       if (iprint > 1 .and. on_root) then
@@ -1943,8 +1956,7 @@ contains
 
     time1 = io_time()
     if (on_root .and. iprint > 1) then
-      write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
-      write (stdout, '(1x,a23,34x,f11.3,a8)') '+ Time to calculate MTE', time1 - time0, ' (sec) +'
+      write (stdout, '(1x,a23,36x,f11.3,a8)') '+ Time to calculate MTE', time1 - time0, ' (sec) +'
     end if
 
   end subroutine weighted_mean_te

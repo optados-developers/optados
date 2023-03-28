@@ -257,7 +257,6 @@ contains
       write (stdout, '(1x,a1,a38,f11.3,13x,a15)') '|', 'delta_bins : ', delta_bins, "<-- JDOS Grid |"
       write (stdout, '(1x,a78)') &
         '+----------------------------------------------------------------------------+'
-      write (stdout, *)
     end if
 
   end subroutine setup_energy_scale

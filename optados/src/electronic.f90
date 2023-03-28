@@ -227,7 +227,7 @@ contains
 
       time0 = io_time()
       if (on_root) then
-        if (iprint > 1) write (stdout, '(a)') ' '
+        !if (iprint > 1) write (stdout, '(a)') ' '
         if (iprint > 1) write (stdout, '(a)') ' Reading band gradients from file: '//trim(gradient_filename)
         gradient_unit = io_file_unit()
         if (index(devel_flag, 'old_filename') > 0 .or. legacy_file_format) then
@@ -279,7 +279,9 @@ contains
       band_gradient = band_gradient*bohr2ang*H2eV
 
       time1 = io_time()
-      if (on_root .and. iprint > 1) write (stdout, '(1x,a40,f11.3,a)') 'Time to read band gradients ', time1 - time0, ' (sec)'
+      if (on_root .and. iprint > 1) then
+        write (stdout, '(1x,a30,29x,f11.3,a8)') '+ Time to read band gradients ', time1 - time0, ' (sec) +'
+      end if
 
     else ! lets try to get the data from the cst_ome file
       allocate (band_gradient(1:nbands, 1:3, 1:num_kpoints_on_node(0), 1:nspins), stat=ierr)
