@@ -357,10 +357,10 @@ contains
     implicit none
     integer :: N, N_spin, n_eigen, np, ierr, atom, i, i_max
 
-    allocate (pdos_weights_atoms(num_atoms, pdos_mwab%nbands, num_kpoints_on_node(my_node_id), nspins), stat=ierr)
+    allocate (pdos_weights_atoms(pdos_mwab%nbands, nspins, num_kpoints_on_node(my_node_id), num_atoms), stat=ierr)
     if (ierr /= 0) call io_error('Error: make_pdos_weights_atoms - allocation of pdos_weights_atoms failed')
 
-    allocate (pdos_weights_k_band(pdos_mwab%nbands, num_kpoints_on_node(my_node_id), nspins), stat=ierr)
+    allocate (pdos_weights_k_band(pdos_mwab%nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
     if (ierr /= 0) call io_error('Error: make_pdos_weights_atoms - allocation of pdos_weights_k_band failed')
 
     pdos_weights_atoms = 0.0_dp
@@ -376,24 +376,23 @@ contains
                 i = i + 1
               end if
             end if
-            pdos_weights_atoms(i, n_eigen, N, N_spin) = &
-              pdos_weights_atoms(i, n_eigen, N, N_spin) + &
+            pdos_weights_atoms(n_eigen, N_spin, N, i) = &
+              pdos_weights_atoms(n_eigen, N_spin, N, i) + &
               pdos_weights(np, n_eigen, N, N_spin)
           end do
         end do
       end do
     end do
     i_max = i
-    ! TODO: Reorder the indices in the pdos_weights_atoms to allow for better memory management
-    do N = 1, num_kpoints_on_node(my_node_id)
-      do N_spin = 1, nspins
-        do n_eigen = 1, pdos_mwab%nbands
-          do atom = 1, max_atoms
-            if (pdos_weights_atoms(atom_order(atom), n_eigen, N, N_spin) .lt. 0.0_dp) then
-              pdos_weights_atoms(atom_order(atom), n_eigen, N, N_spin) = 0.0_dp
+    do atom = 1, max_atoms
+      do N = 1, num_kpoints_on_node(my_node_id)
+        do N_spin = 1, nspins
+          do n_eigen = 1, pdos_mwab%nbands
+            if (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom)) .lt. 0.0_dp) then
+              pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom)) = 0.0_dp
             end if
-            pdos_weights_k_band(n_eigen, N, N_spin) = pdos_weights_k_band(n_eigen, N, N_spin) + &
-                                                      pdos_weights_atoms(atom_order(atom), n_eigen, N, N_spin)
+            pdos_weights_k_band(n_eigen, N_spin, N) = pdos_weights_k_band(n_eigen, N_spin, N) + &
+                                                      pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))
           end do
         end do
       end do
@@ -404,15 +403,15 @@ contains
       write (stdout, 125) shape(pdos_weights_atoms)
       write (stdout, 125) i_max, pdos_mwab%nbands, num_kpoints_on_node(my_node_id), nspins
 125   format(4(1x, I4))
-      write (stdout, '(9999(es15.8))') ((((pdos_weights_atoms(i, n_eigen, N, N_spin), N_spin=1, nspins) &
-                                          , N=1, num_kpoints_on_node(my_node_id)), n_eigen=1, pdos_mwab%nbands), i=1, i_max)
+      write (stdout, '(9999(es15.8))') ((((pdos_weights_atoms(n_eigen, N_spin, N, i), N_spin=1, nspins) &
+                                          ,n_eigen=1, pdos_mwab%nbands), N=1, num_kpoints_on_node(my_node_id)), i=1, i_max)
       write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
       write (stdout, '(1x,a78)') '+----------------------- Printing pDOS_weights_k_band -----------------------+'
       write (stdout, 124) shape(pdos_weights_k_band)
       write (stdout, 124) pdos_mwab%nbands, num_kpoints_on_node(my_node_id), nspins
 124   format(3(1x, I4))
-      write (stdout, '(9999(es15.8))') (((pdos_weights_k_band(n_eigen, N, N_spin) &
-                                          , N_spin=1, nspins), N=1, num_kpoints_on_node(my_node_id)), n_eigen=1, pdos_mwab%nbands)
+      write (stdout, '(9999(es15.8))') (((pdos_weights_k_band(n_eigen, N_spin, N) &
+                                          ,N=1, num_kpoints_on_node(my_node_id)), N_spin=1, nspins), n_eigen=1, pdos_mwab%nbands)
       write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
     end if
   end subroutine make_pdos_weights_atoms
@@ -505,7 +504,7 @@ contains
                 if (band_energy(n_eigen2, N_spin, N) < efermi .and. n_eigen /= n_eigen2) cycle
                 projected_matrix_weights(n_eigen, n_eigen2, N, N_spin, N2) = &
                   matrix_weights(n_eigen, n_eigen2, N, N_spin, N2)* &
-                  (pdos_weights_atoms(atom_order(atom), n_eigen, N, N_spin)/pdos_weights_k_band(n_eigen, N, N_spin))
+                  (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))/pdos_weights_k_band(n_eigen, N_spin, N))
               end do                        ! Loop over state 2
             end do                            ! Loop over state 1
           end do                                ! Loop over spins
@@ -1243,7 +1242,7 @@ contains
                                                    (atoms_pos_cart_photo(3, atom_order(1)))
     end do
 
-    if (.not. allocated(electron_esc)) allocate (electron_esc(nbands, num_kpoints_on_node(my_node_id), nspins, max_atoms),stat=ierr)
+    if (.not. allocated(electron_esc)) allocate (electron_esc(nbands, nspins, num_kpoints_on_node(my_node_id), max_atoms),stat=ierr)
     if (ierr /= 0) call io_error('Error: calc_electron_esc - allocation of electron_esc failed')
     electron_esc = 0.0_dp
 
@@ -1255,9 +1254,9 @@ contains
               exponent = (new_atoms_coordinates(3, atom_order(atom))/ &
               &cos(theta_arpes(n_eigen, N, N_spin)*deg_to_rad))/photo_imfp_const
               if (exponent .gt. -575.0_dp) then
-                electron_esc(n_eigen, N, N_spin, atom) = exp(exponent)
+                electron_esc(n_eigen, N_spin, N, atom) = exp(exponent)
               else
-                electron_esc(n_eigen, N, N_spin, atom) = 0.0_dp
+                electron_esc(n_eigen, N_spin, N, atom) = 0.0_dp
               end if
             end if
           end do
@@ -1270,8 +1269,8 @@ contains
       write (stdout, 125) shape(electron_esc)
       write (stdout, 125) nbands, num_kpoints_on_node(my_node_id), nspins, max_atoms
 125   format(4(1x, I4))
-      write (stdout, '(9999(es15.8))') ((((electron_esc(n_eigen, N, N_spin, atom), atom=1, max_atoms), N_spin=1, nspins), &
-                                         N=1, num_kpoints_on_node(my_node_id)), n_eigen=1, nbands)
+      write (stdout, '(9999(es15.8))') ((((electron_esc(n_eigen, N_spin, N, atom), atom=1, max_atoms),N=1, &
+                                          & num_kpoints_on_node(my_node_id)), N_spin=1, nspins), n_eigen=1, nbands)
       write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
     end if
 
@@ -1307,28 +1306,28 @@ contains
     if (ierr /= 0) call io_error('Error: bulk_emission - allocation of bulk_light_tmp failed')
     bulk_light_tmp = 0.0_dp
 
-    allocate (bulk_prob_tmp(nbands, num_kpoints_on_node(my_node_id), nspins, num_layers), stat=ierr)
+    allocate (bulk_prob_tmp(nbands, nspins, num_kpoints_on_node(my_node_id), num_layers), stat=ierr)
     if (ierr /= 0) call io_error('Error: bulk_emission - allocation of bulk_prob_tmp failed')
     bulk_prob_tmp = 0.0_dp
 
-    if (.not. allocated(bulk_prob)) allocate (bulk_prob(nbands, num_kpoints_on_node(my_node_id), nspins), stat=ierr)
+    if (.not. allocated(bulk_prob)) allocate (bulk_prob(nbands,nspins,num_kpoints_on_node(my_node_id)), stat=ierr)
     if (ierr /= 0) call io_error('Error: bulk_emission - allocation of bulk_prob failed')
     bulk_prob = 0.0_dp
 
-    do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
-      do N_spin = 1, nspins                    ! Loop over spins
-        do n_eigen = 1, nbands
-          if (cos(theta_arpes(n_eigen, N, N_spin)*deg_to_rad) .gt. 0.0_dp) then
-            do i = 1, num_layers
+    do i = 1, num_layers
+      do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
+        do N_spin = 1, nspins                    ! Loop over spins
+          do n_eigen = 1, nbands
+            if (cos(theta_arpes(n_eigen, N, N_spin)*deg_to_rad) .gt. 0.0_dp) then
               exponent = (new_atoms_coordinates(3, atom_order(max_atoms)) - i*thickness_atom(max_atoms)/ &
                           cos(theta_arpes(n_eigen, N, N_spin)*deg_to_rad))/photo_imfp_const
               ! This makes sure, that exp(exponent) does not underflow the dp fp value.
               ! As exp(-575) is ~1E-250, this should be more than enough precision.
               if (exponent .gt. -575.0_dp) then
-                bulk_prob_tmp(n_eigen, N, N_spin, i) = exp(exponent)
+                bulk_prob_tmp(n_eigen, N_spin, N, i) = exp(exponent)
               end if
-            end do
-          end if
+            end if
+          end do
         end do
       end do
     end do
@@ -1342,9 +1341,9 @@ contains
       do N_spin = 1, nspins                    ! Loop over spins
         do n_eigen = 1, nbands
           do i = 1, num_layers
-            bulk_prob_tmp(n_eigen, N, N_spin, i) = bulk_prob_tmp(n_eigen, N, N_spin, i)*bulk_light_tmp(i)
+            bulk_prob_tmp(n_eigen, N_spin, N, i) = bulk_prob_tmp(n_eigen, N_spin, N, i)*bulk_light_tmp(i)
           end do
-          bulk_prob(n_eigen, N, N_spin) = sum(bulk_prob_tmp(n_eigen, N, N_spin, 1:num_layers))
+          bulk_prob(n_eigen, N_spin, N) = sum(bulk_prob_tmp(n_eigen, N_spin, N, 1:num_layers))
         end do
       end do
     end do
@@ -1401,7 +1400,7 @@ contains
     end if
 
     if (.not. allocated(qe_tsm)) then
-      allocate (qe_tsm(nbands, nbands, num_kpoints_on_node(my_node_id), nspins, max_atoms + 1), stat=ierr)
+      allocate (qe_tsm(nbands, nbands, nspins, num_kpoints_on_node(my_node_id), max_atoms + 1), stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_three_step_model - allocation of qe_tsm failed')
     end if
     qe_tsm = 0.0_dp
@@ -1432,7 +1431,7 @@ contains
       write (stdout, '(5(1x,I4))') nbands, nbands, num_kpoints_on_node(my_node_id), nspins
       do N_spin = 1, nspins
         do N = 1, num_kpoints_on_node(my_node_id)
-          write (stdout, '(99999(es15.8))') ((delta_temp(n_eigen, n_eigen2, N, N_spin), n_eigen2=1, nbands), n_eigen=1, nbands)
+          write (stdout, '(99999(es15.8))') ((delta_temp(n_eigen, n_eigen2, N_spin, N), n_eigen2=1, nbands), n_eigen=1, nbands)
         end do
       end do
       write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
@@ -1487,23 +1486,23 @@ contains
               !! this could be checked if it has an impact on the final value
               ! if (band_energy(n_eigen2, N_spin, N) .lt. efermi) cycle
 
-              qe_tsm(n_eigen, n_eigen2, N, N_spin, atom) = &
+              qe_tsm(n_eigen, n_eigen2, N_spin, N, atom) = &
                 (matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
-                 delta_temp(n_eigen, n_eigen2, N, N_spin)* &
-                 electron_esc(n_eigen, N, N_spin, atom)* &
+                 delta_temp(n_eigen, n_eigen2, N_spin, N)* &
+                 electron_esc(n_eigen, N_spin, N, atom)* &
                  electrons_per_state*kpoint_weight(N)* &
                  (I_layer(layer(atom), current_index))* &
                  qe_factor*transverse_g*vac_g*fermi_dirac* &
-                 (pdos_weights_atoms(atom_order(atom), n_eigen, N, N_spin)/ &
-                  pdos_weights_k_band(n_eigen, N, N_spin)))* &
+                 (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))/ &
+                  pdos_weights_k_band(n_eigen, N_spin, N)))* &
                 (1.0_dp + field_emission(n_eigen, N_spin, N))
                 if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root .and. .not. photo_photon_sweep) then
                   write (stdout, '(5(1x,I4))') atom, n_eigen, n_eigen2, N_spin, N
-                  write (stdout, '(16(1x,E17.9E3))') qe_tsm(n_eigen, n_eigen2, N, N_spin, atom), band_energy(n_eigen, N_spin, N), &
+                  write (stdout, '(16(1x,E17.9E3))') qe_tsm(n_eigen, n_eigen2, N_spin, N, atom), band_energy(n_eigen, N_spin, N), &
                     band_energy(n_eigen2, N_spin, N), matrix_weights(n_eigen, n_eigen2, N, N_spin, 1), &
-                    delta_temp(n_eigen, n_eigen2, N, N_spin), electron_esc(n_eigen, N, N_spin, atom), electrons_per_state, &
+                    delta_temp(n_eigen, n_eigen2, N_spin, N), electron_esc(n_eigen, N_spin, N, atom), electrons_per_state, &
                     kpoint_weight(N), I_layer(layer(atom), current_index), qe_factor, transverse_g, vac_g, fermi_dirac, &
-                    pdos_weights_atoms(atom_order(atom), n_eigen, N, N_spin), pdos_weights_k_band(n_eigen, N, N_spin), &
+                    pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom)), pdos_weights_k_band(n_eigen, N_spin, N), &
                     field_emission(n_eigen, N_spin, N)
                 end if
             end do
@@ -1544,14 +1543,14 @@ contains
               vac_g = 1.0_dp
             end if
 
-            qe_tsm(n_eigen, n_eigen2, N, N_spin, max_atoms + 1) = &
+            qe_tsm(n_eigen, n_eigen2, N_spin, N, max_atoms + 1) = &
                       (matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
-                      delta_temp(n_eigen, n_eigen2, N, N_spin)* &
-                      bulk_prob(n_eigen, N, N_spin)* &
+                      delta_temp(n_eigen, n_eigen2, N_spin, N)* &
+                      bulk_prob(n_eigen, N_spin, N)* &
                       electrons_per_state*kpoint_weight(N)* &
                       qe_factor*transverse_g*vac_g*fermi_dirac* &
-                      (pdos_weights_atoms(atom_order(max_atoms), n_eigen, N, N_spin)/ &
-                        pdos_weights_k_band(n_eigen, N, N_spin)))* &
+                      (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(max_atoms))/ &
+                        pdos_weights_k_band(n_eigen, N_spin, N)))* &
                       (1.0_dp + field_emission(n_eigen, N_spin, N))
           end do
         end do
@@ -1575,7 +1574,7 @@ contains
       do atom = 1, max_atoms + 1
         do N_spin = 1, nspins
           do N = 1, num_kpoints_on_node(my_node_id)
-           write (stdout, '(99999(ES16.8E3))') ((qe_tsm(n_eigen, n_eigen2, N, N_spin, atom), n_eigen2=1, nbands), n_eigen=1, nbands)
+           write (stdout, '(99999(ES16.8E3))') ((qe_tsm(n_eigen, n_eigen2, N_spin, N, atom), n_eigen2=1, nbands), n_eigen=1, nbands)
           end do
         end do
       end do
@@ -1725,12 +1724,11 @@ contains
     if (fixed) width = fixed_smearing
 
     if (.not. allocated(delta_temp)) then
-      allocate (delta_temp(nbands, nbands, num_kpoints_on_node(my_node_id), nspins), stat=ierr)
+      allocate (delta_temp(nbands, nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
       if (ierr /= 0) call io_error('Error: calculate_delta - allocation of delta_temp failed')
     end if
     delta_temp = 0.0_dp
 
-    
 
     do ik = 1, num_kpoints_on_node(my_node_id)
       if (iprint > 1 .and. on_root) then
@@ -1772,9 +1770,9 @@ contains
             ! The linear method has a special way to calculate the integrated dos
             ! we have to take account for this here.
             if (linear .and. .not. force_adaptive) then
-              delta_temp(ib, jb, ik, is) = doslin(EV(0), EV(1), EV(2), EV(3), EV(4), E(current_energy_index), cuml)
+              delta_temp(ib, jb, is, ik) = doslin(EV(0), EV(1), EV(2), EV(3), EV(4), E(current_energy_index), cuml)
             else
-              delta_temp(ib, jb, ik, is) = gaussian((band_energy(jb, is, ik) - band_energy(ib, is, ik)) + scissor_op, width,&
+              delta_temp(ib, jb, is, ik) = gaussian((band_energy(jb, is, ik) - band_energy(ib, is, ik)) + scissor_op, width,&
               &E(current_energy_index))
             end if
 
@@ -1829,7 +1827,7 @@ contains
     end if
 
     if (.not. allocated(qe_osm)) then
-      allocate (qe_osm(nbands, num_kpoints_on_node(my_node_id), nspins, max_atoms + 1), stat=ierr)
+      allocate (qe_osm(nbands, nspins, num_kpoints_on_node(my_node_id), max_atoms + 1), stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_one_step_model - allocation of qe_osm failed')
     end if
     qe_osm = 0.0_dp
@@ -1872,31 +1870,31 @@ contains
           end if
           n_eigen2 = nbands + 1
           do atom = 1, max_atoms
-            qe_osm(n_eigen, N, N_spin, atom) = &
+            qe_osm(n_eigen, N_spin, N, atom) = &
               (foptical_matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
-               (electron_esc(n_eigen, N, N_spin, atom))* &
+               (electron_esc(n_eigen, N_spin, N, atom))* &
                electrons_per_state*kpoint_weight(N)* &
                (I_layer(layer(atom), current_index))* &
                qe_factor*transverse_g*vac_g*fermi_dirac* &
-               (pdos_weights_atoms(atom_order(atom), n_eigen, N, N_spin)/ &
-                pdos_weights_k_band(n_eigen, N, N_spin)))* &
+               (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))/ &
+                pdos_weights_k_band(n_eigen, N_spin, N)))* &
               (1.0_dp + field_emission(n_eigen, N_spin, N))
             if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root .and. .not. photo_photon_sweep) then
               write (stdout, '(4(1x,I4))') atom, n_eigen, N_spin, N
-              write (stdout, '(13(1x,E16.8E4))') qe_osm(n_eigen, N, N_spin, atom), &
+              write (stdout, '(13(1x,E16.8E4))') qe_osm(n_eigen, N_spin, N, atom), &
                 foptical_matrix_weights(n_eigen, n_eigen2, N, N_spin, 1), &
-               electron_esc(n_eigen, N, N_spin, atom), electrons_per_state, kpoint_weight(N), I_layer(layer(atom), current_index), &
-                qe_factor, transverse_g, vac_g, fermi_dirac, pdos_weights_atoms(atom_order(atom), n_eigen, N, N_spin), &
-                pdos_weights_k_band(n_eigen, N, N_spin), field_emission(n_eigen, N_spin, N)
+               electron_esc(n_eigen, N_spin, N, atom), electrons_per_state, kpoint_weight(N), I_layer(layer(atom), current_index), &
+                qe_factor, transverse_g, vac_g, fermi_dirac, pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom)), &
+                pdos_weights_k_band(n_eigen, N_spin, N), field_emission(n_eigen, N_spin, N)
             end if
           end do
-          qe_osm(n_eigen, N, N_spin, max_atoms + 1) = &
+          qe_osm(n_eigen, N_spin, N, max_atoms + 1) = &
             (foptical_matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
-             bulk_prob(n_eigen, N, N_spin)* &
+             bulk_prob(n_eigen, N_spin, N)* &
              electrons_per_state*kpoint_weight(N)* &
              qe_factor*transverse_g*vac_g*fermi_dirac* &
-             (pdos_weights_atoms(atom_order(max_atoms), n_eigen, N, N_spin)/ &
-              pdos_weights_k_band(n_eigen, N, N_spin)))* &!+&
+             (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(max_atoms))/ &
+              pdos_weights_k_band(n_eigen, N_spin, N)))* &!+&
             (1.0_dp + field_emission(n_eigen, N_spin, N))
         end do
       end do
@@ -1915,7 +1913,7 @@ contains
       do atom = 1, max_atoms + 1
         do N_spin = 1, nspins
           do N = 1, num_kpoints_on_node(my_node_id)
-            write (stdout, '(9999(ES16.8E3))') (qe_osm(n_eigen, N, N_spin, atom), n_eigen=1, nbands)
+            write (stdout, '(9999(ES16.8E3))') (qe_osm(n_eigen, N_spin, N, atom), n_eigen=1, nbands)
           end do
         end do
       end do
@@ -1951,7 +1949,7 @@ contains
     real(kind=dp), allocatable, dimension(:, :, :, :) :: te_tsm_temp
     real(kind=dp), allocatable, dimension(:, :, :, :) :: te_osm_temp
     real(kind=dp)                                     :: total_qe, time0, time1
-    integer :: N, N_spin, n_eigen, n_eigen2, atom, ierr
+    integer :: N, N_spin, n_eigen, atom, ierr
 
     time0 = io_time()
 
@@ -1974,14 +1972,14 @@ contains
                 !do n_eigen2 = index_unoccupied(N_spin, N), nbands
                 ! if (band_energy(n_eigen2, N_spin, N) .lt. efermi) cycle ! Skip occupied final states
               te_tsm_temp(n_eigen, N, N_spin, atom) = E_transverse(n_eigen, N, N_spin)&
-              *sum(qe_tsm(n_eigen, index_unoccupied(N_spin, N):nbands, N, N_spin, atom))
+              *sum(qe_tsm(n_eigen, index_unoccupied(N_spin, N):nbands, N_spin, N, atom))
                 !end do
             end do
           end do
         end do
       end do
 
-      total_qe = sum(qe_tsm(1:nbands, 1:nbands, 1:num_kpoints_on_node(my_node_id), 1:nspins, 1:max_atoms + 1))
+      total_qe = sum(qe_tsm(1:nbands, 1:nbands, 1:nspins, 1:num_kpoints_on_node(my_node_id), 1:max_atoms + 1))
       if (total_qe .gt. 0.0_dp) then
         mean_te = sum(te_tsm_temp(1:nbands, 1:num_kpoints_on_node(my_node_id), 1:nspins, 1:max_atoms + 1))/ total_qe
       else
@@ -2003,15 +2001,15 @@ contains
             !if(band_energy(n_eigen,N_spin,N).ge.efermi) cycle
             do atom = 1, max_atoms
               te_osm_temp(n_eigen, N, N_spin, atom) = &
-                E_transverse(n_eigen, N, N_spin)*qe_osm(n_eigen, N, N_spin, atom)
+                E_transverse(n_eigen, N, N_spin)*qe_osm(n_eigen, N_spin, N, atom)
             end do
             te_osm_temp(n_eigen, N, N_spin, max_atoms + 1) = &
-              E_transverse(n_eigen, N, N_spin)*qe_osm(n_eigen, N, N_spin, max_atoms + 1)
+              E_transverse(n_eigen, N, N_spin)*qe_osm(n_eigen, N_spin, N, max_atoms + 1)
           end do
         end do
       end do
 
-      total_qe = sum(qe_osm(1:nbands, 1:num_kpoints_on_node(my_node_id), 1:nspins, 1:max_atoms + 1))
+      total_qe = sum(qe_osm(1:nbands, 1:nspins, 1:num_kpoints_on_node(my_node_id), 1:max_atoms + 1))
 
       if (total_qe .gt. 0.0_dp) then
         mean_te = sum(te_osm_temp(1:nbands, 1:num_kpoints_on_node(my_node_id), 1:nspins, 1:max_atoms + 1)) / total_qe
@@ -2060,13 +2058,13 @@ contains
 
       do atom = 1, max_atoms
         write (stdout, 225) "|", trim(atoms_label_tmp(atom_order(atom))), atom_order(atom), &
-          layer(atom), sum(qe_tsm(1:nbands, 1:nbands, 1:num_kpoints_on_node(my_node_id), 1:nspins, atom)), "      |"
+          layer(atom), sum(qe_tsm(1:nbands, 1:nbands, 1:nspins, 1:num_kpoints_on_node(my_node_id), atom)), "      |"
       end do
-      write (stdout, 226) "| Bulk", sum(qe_tsm(1:nbands, 1:nbands, 1:num_kpoints_on_node(my_node_id), 1:nspins, max_atoms + 1)), &
+      write (stdout, 226) "| Bulk", sum(qe_tsm(1:nbands, 1:nbands, 1:nspins, 1:num_kpoints_on_node(my_node_id), max_atoms + 1)), &
       &"      |"
 
       write (stdout, 227) '| Total Quantum Efficiency (electrons/photon):', &
-        sum(qe_tsm(1:nbands, 1:nbands, 1:num_kpoints_on_node(my_node_id), 1:nspins, 1:max_atoms + 1)), '   |'
+        sum(qe_tsm(1:nbands, 1:nbands, 1:nspins, 1:num_kpoints_on_node(my_node_id), 1:max_atoms + 1)), '   |'
     elseif (index(photo_model, '1step') > 0) then
 
       write (stdout, '(1x,a78)') '| Final State : Free Electron State                                          |'
@@ -2075,12 +2073,12 @@ contains
 
       do atom = 1, max_atoms
         write (stdout, 225) "|", trim(atoms_label_tmp(atom_order(atom))), atom_order(atom), &
-          layer(atom), sum(qe_osm(1:nbands, 1:num_kpoints_on_node(my_node_id), 1:nspins, atom)), "      |"
+          layer(atom), sum(qe_osm(1:nbands, 1:nspins, 1:num_kpoints_on_node(my_node_id), atom)), "      |"
       end do
-      write (stdout, 226) "| Bulk", sum(qe_osm(1:nbands, 1:num_kpoints_on_node(my_node_id), 1:nspins, max_atoms + 1)), "      |"
+      write (stdout, 226) "| Bulk", sum(qe_osm(1:nbands, 1:nspins, 1:num_kpoints_on_node(my_node_id), max_atoms + 1)), "      |"
 
       write (stdout, 227) '| Total Quantum Efficiency (electrons/photon):', &
-        sum(qe_osm(1:nbands, 1:num_kpoints_on_node(my_node_id), 1:nspins, 1:max_atoms + 1)), '      |'
+        sum(qe_osm(1:nbands, 1:nspins, 1:num_kpoints_on_node(my_node_id), 1:max_atoms + 1)), '      |'
     end if
 
     write (stdout, 228) '| Weighted Mean Transverse Energy (eV):', mean_te, '      |'
@@ -2158,7 +2156,7 @@ contains
         do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
           do N_spin = 1, nspins                    ! Loop over spins
             do n_eigen = 1, nbands
-              qe_temp(n_eigen, N, N_spin, atom) = sum(qe_tsm(n_eigen, 1:nbands, N, N_spin, atom))
+              qe_temp(n_eigen, N, N_spin, atom) = sum(qe_tsm(n_eigen, 1:nbands, N_spin, N, atom))
             end do
           end do
         end do
@@ -2204,7 +2202,7 @@ contains
                 do e_scale = 1, max_energy
                   do atom = 1, max_atoms + 1
                     weighted_temp(e_scale, N, N_spin, n_eigen, atom) = &
-                      binding_temp(e_scale, N, N_spin, n_eigen)*qe_osm(n_eigen, N, N_spin, atom)
+                      binding_temp(e_scale, N, N_spin, n_eigen)*qe_osm(n_eigen, N_spin, N, atom)
                   end do
                 end do
               end if
@@ -2215,7 +2213,7 @@ contains
 
       total_weighted = sum(weighted_temp(1:max_energy, 1:num_kpoints_on_node(my_node_id), 1:nspins, 1:nbands, 1:max_atoms + 1))
       if (total_weighted .gt. 0.0_dp) then
-        qe_norm = sum(qe_osm(1:nbands, 1:num_kpoints_on_node(my_node_id), 1:nspins, 1:max_atoms + 1)) / total_weighted
+        qe_norm = sum(qe_osm(1:nbands, 1:nspins, 1:num_kpoints_on_node(my_node_id), 1:max_atoms + 1)) / total_weighted
       else
         qe_norm = 1.0_dp
       end if
@@ -2286,14 +2284,14 @@ contains
         do atom = 1, max_atoms
           do N_spin = 1, nspins
             do N = 1, num_kpoints_on_node(my_node_id)
-              write (matrix_unit, '(9999(ES16.8E3))') (sum(qe_tsm(n_eigen, 1:nbands, N, N_spin, atom)), n_eigen=1, nbands)
+              write (matrix_unit, '(9999(ES16.8E3))') (sum(qe_tsm(n_eigen, 1:nbands, N_spin, N, atom)), n_eigen=1, nbands)
             end do
           end do
         end do
         write (matrix_unit, *) '## Bulk Contribution:'
         do N_spin = 1, nspins
           do N = 1, num_kpoints_on_node(my_node_id)
-            write (matrix_unit, '(9999(ES16.8E3))') (sum(qe_tsm(n_eigen, 1:nbands, N, N_spin, atom)), n_eigen=1, nbands)
+            write (matrix_unit, '(9999(ES16.8E3))') (sum(qe_tsm(n_eigen, 1:nbands, N_spin, N, atom)), n_eigen=1, nbands)
           end do
         end do
 
@@ -2301,14 +2299,14 @@ contains
         do atom = 1, max_atoms
           do N_spin = 1, nspins
             do N = 1, num_kpoints_on_node(my_node_id)
-              write (matrix_unit, '(9999(ES16.8E3))') (qe_osm(n_eigen, N, N_spin, atom), n_eigen=1, nbands)
+              write (matrix_unit, '(9999(ES16.8E3))') (qe_osm(n_eigen, N_spin, N, atom), n_eigen=1, nbands)
             end do
           end do
         end do
         write (matrix_unit, *) '## Bulk Contribution:'
         do N_spin = 1, nspins
           do N = 1, num_kpoints_on_node(my_node_id)
-            write (matrix_unit, '(9999(ES16.8E3))') (qe_osm(n_eigen, N, N_spin, max_atoms + 1), n_eigen=1, nbands)
+            write (matrix_unit, '(9999(ES16.8E3))') (qe_osm(n_eigen, N_spin, N, max_atoms + 1), n_eigen=1, nbands)
           end do
         end do
       end if
