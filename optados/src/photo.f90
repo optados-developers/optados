@@ -1462,6 +1462,7 @@ contains
           ! issues when computing fermi_dirac due to possible underflow.
           if (argument .gt. 575.0_dp) then
             fermi_dirac = 0.0_dp
+            exit
           elseif (argument .lt. -575.0_dp) then
             fermi_dirac = 1.0_dp
           else
@@ -1813,6 +1814,7 @@ contains
           ! issues when computing fermi_dirac due to possible underflow.
           if (argument .gt. 555.0_dp) then
             fermi_dirac = 0.0_dp
+            exit
           elseif (argument .lt. -575.0_dp) then
             fermi_dirac = 1.0_dp
           else
@@ -1927,15 +1929,15 @@ contains
 
       ! Try : move the atom do loop to the outermost, then sum up the qe_tsm contributions from
       ! all unoccupied final states and multiply that sum by E_transverse to put into the te...
-      do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
-        do N_spin = 1, nspins                    ! Loop over spins
-          do n_eigen = 1, nbands
-            do n_eigen2 = index_unoccupied(N_spin, N), nbands
-              ! if (band_energy(n_eigen2, N_spin, N) .lt. efermi) cycle ! Skip occupied final states
-              do atom = 1, max_atoms + 1
-                te_tsm_temp(n_eigen, N, N_spin, atom) = te_tsm_temp(n_eigen, N, N_spin, atom)+&
-                  E_transverse(n_eigen, N, N_spin)*qe_tsm(n_eigen, n_eigen2, N, N_spin, atom)
-              end do
+      do atom = 1, max_atoms + 1
+        do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
+          do N_spin = 1, nspins                    ! Loop over spins
+            do n_eigen = 1, nbands
+                !do n_eigen2 = index_unoccupied(N_spin, N), nbands
+                ! if (band_energy(n_eigen2, N_spin, N) .lt. efermi) cycle ! Skip occupied final states
+              te_tsm_temp(n_eigen, N, N_spin, atom) = te_tsm_temp(n_eigen, N, N_spin, atom)+&
+                  E_transverse(n_eigen, N, N_spin)*sum(qe_tsm(n_eigen, index_unoccupied(N_spin, N):nbands, N, N_spin, atom))
+               !end do
             end do
           end do
         end do
