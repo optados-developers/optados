@@ -2,14 +2,14 @@
 SYSTEM := gfortran
 
 # fast / debug
-BUILD := debug
+BUILD := fast
 
 # serial / mpi
 COMMS_ARCH := serial
 
 # Where would you like the executables?
-PREFIX:=../photon_new/
-#PREFIX:=../../../compiled_programs/optados_photon_sweep/
+#PREFIX:=../photon_new/
+PREFIX:=../../../compiled_programs/optados_photon_sweep/
 
 SYSTEM := $(strip $(SYSTEM))
 BUILD  := $(strip $(BUILD))
