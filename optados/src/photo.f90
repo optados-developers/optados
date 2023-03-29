@@ -309,6 +309,8 @@ contains
   !===============================================================================
   ! This subroutine determines useful indices of band energies for later use in 
   ! the QE and MTE calculation to reduce loop times.
+  ! This relies on an IMPORTANT assumption: the bands file is ordered by energy
+  ! and not by band number (e.g. after being processed by bands2orbitals)
   ! Felix Mildner, 28th March 2023
   !===============================================================================
 
@@ -325,6 +327,18 @@ contains
 
     allocate (index_unoccupied(nspins,num_kpoints_on_node(my_node_id)), stat=ierr)
     if (ierr /= 0) call io_error('Error: calc_band_info - allocation of index_unoccupied failed')
+
+    do N = 1, num_kpoints_on_node(my_node_id)  ! Loop over kpoints
+      do N_spin = 1, nspins                           ! Loop over spins
+        do n_eigen = 2, nbands                        ! Loop over bands
+          ! TODO: Test if this is the behaviour we want and or if we have to change the condition
+          if (band_energy(n_eigen -1, N_spin, N) .gt. band_energy(n_eigen, N_spin, N)) then
+            call io_error('Error: the band energies in the .bands file used are NOT ORDERED CORRECTLY (i.e. by increasing energy) &
+            & which will give WRONG RESULTS!')
+          end if
+        end do
+      end do
+    end do
 
     do N = 1, num_kpoints_on_node(my_node_id)  ! Loop over kpoints
       do N_spin = 1, nspins                           ! Loop over spins
