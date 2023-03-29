@@ -345,7 +345,7 @@ contains
         do n_eigen = 1, nbands                        ! Loop over bands
           ! TODO: Test if this is the behaviour we want and or if we have to change the condition
           if (band_energy(n_eigen, N_spin, N) .gt. efermi) then
-            min_index_unocc(N, N_spin) = n_eigen
+            min_index_unocc(N_spin, N) = n_eigen
             exit
           end if
         end do
@@ -1676,8 +1676,10 @@ contains
     end if
 
     ! Can I also allocate this to fome(nbands+1, num_kpts, nspins, N_geom)?
-    allocate (foptical_matrix_weights(nbands + 1, nbands + 1, num_kpoints_on_node(my_node_id), nspins, N_geom), stat=ierr)
-    if (ierr /= 0) call io_error('Error: make_foptical_weights - allocation of foptical_matrix_weights failed')
+    if (.not. allocated(foptical_matrix_weights)) then
+      allocate (foptical_matrix_weights(nbands + 1, nbands + 1, num_kpoints_on_node(my_node_id), nspins, N_geom), stat=ierr)
+      if (ierr /= 0) call io_error('Error: make_foptical_weights - allocation of foptical_matrix_weights failed')
+    end if
     foptical_matrix_weights = 0.0_dp
 
     if (index(optics_geom, 'polar') > 0) then
