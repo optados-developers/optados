@@ -2355,7 +2355,7 @@ contains
         write (matrix_unit, *) '## Bulk Contribution:'
         do N_spin = 1, nspins
           do N = 1, num_kpoints_on_node(my_node_id)
-            write (matrix_unit, '(9999(ES16.8E3))') (sum(qe_tsm(n_eigen, 1:nbands, N_spin, N, atom)), n_eigen=1, nbands)
+            write (matrix_unit, '(9999(ES16.8E3))') (sum(qe_tsm(n_eigen, 1:nbands, N_spin, N, max_atoms+1)), n_eigen=1, nbands)
           end do
         end do
 
