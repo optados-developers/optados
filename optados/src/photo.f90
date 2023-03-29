@@ -436,7 +436,7 @@ contains
 
     use od_optics, only: make_weights, calc_epsilon_2, calc_epsilon_1, calc_refract, calc_absorp, calc_reflect, &
     & epsilon, refract, absorp, reflect, intra
-    use od_io, only: stdout, io_error
+    use od_io, only: stdout, io_error, io_time
     use od_electronic, only: elec_read_optical_mat, nbands, nspins, efermi, elec_dealloc_optical, elec_read_band_gradient,&
     & nbands, nspins, band_energy
     use od_cell, only: num_kpoints_on_node, num_kpoints_on_node
@@ -455,7 +455,9 @@ contains
 
     integer :: N, N2, N_spin, n_eigen, n_eigen2, atom, ierr, energies
     integer :: jdos_bin, i, s
-    real(kind=dp)    :: num_energies, temp
+    real(kind=dp)    :: num_energies, temp, time0,time1
+
+    time0 = io_time()
 
     if (photo_photon_sweep) then
       num_energies = (photo_photon_max - photo_photon_min)/jdos_spacing
@@ -653,6 +655,11 @@ contains
     if (index(photo_model, '1step') > 0) then
       deallocate (matrix_weights, stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate matrix_weights')
+    end if
+
+    time1= io_time()
+    if (on_root .and. iprint > 1) then
+      write (stdout, '(1x,a52,7x,f11.3,a8)') '+ Time to calculate Photoemission Optical Properties', time1 - time0, ' (sec) +'
     end if
 
   end subroutine calc_photo_optics
@@ -1213,6 +1220,7 @@ contains
     !===============================================================================
     ! This subroutine calculates the QE using the thre step model.
     ! Victor Chang, 7th February 2020
+    ! edited by Felix Mildner, 03/2023
     !===============================================================================
 
     use od_cell, only: num_kpoints_on_node, kpoint_weight
@@ -1290,11 +1298,11 @@ contains
     end if
 
     do atom = 1, max_atoms
+      if (iprint > 2 .and. on_root) then
+        write (stdout, '(1x,a1,a38,i4,a3,i4,1x,16x,a11)') ',', &
+            &"Calculating atom ", atom, " of", max_atoms, "<-- QE-3S |"
+      end if
       do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
-        if (iprint > 1 .and. on_root) then
-          if (mod(real(N, dp), 10.0_dp) == 0.0_dp) write (stdout, '(1x,a1,a38,i4,a3,i4,1x,a14,2x,a11)') ',', &
-              &"Calculating k-point ", N, " of", num_kpoints_on_node(my_node_id), 'on this node.', "<-- QE-3S |"
-        end if
         do N_spin = 1, nspins                    ! Loop over spins
           do n_eigen2 = min_index_unocc(N_spin, N), nbands
             do n_eigen = 1, nbands
@@ -1574,7 +1582,7 @@ contains
 
 
     do ik = 1, num_kpoints_on_node(my_node_id)
-      if (iprint > 1 .and. on_root) then
+      if (iprint > 2 .and. on_root) then
         if (mod(real(ik, dp), 10.0_dp) == 0.0_dp) write (stdout, '(1x,a1,a38,i4,a3,i4,1x,a14,2x,a11)') '^', &
              &"Calculating k-point ", ik, " of", num_kpoints_on_node(my_node_id), 'on this node.', "<-- Delta |"
       end if
@@ -1854,6 +1862,9 @@ contains
       write (stdout, '(1x,a11,6(1x,I4))') 'Array Shape', i, max_atoms, nbands, nspins, num_kpoints_on_node(my_node_id)
     end if
     do atom = 1, max_atoms
+      if (iprint > 2 .and. on_root) then
+        write (stdout, '(1x,a1,a38,i4,a3,i4,1x,16x,a11)') ',', "Calculating atom ", atom, " of", max_atoms, "<-- QE-1S |"
+      end if
       do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
         do N_spin = 1, nspins                    ! Loop over spins
           do n_eigen = 1, nbands
