@@ -232,10 +232,10 @@ contains
       deallocate (task_string, stat=ierr)
       if (ierr /= 0) call io_error('Error: param_read - deallocation failed for task_string')
     end if
-    if ((compare_dos .or. compare_jdos) .and. (pdos .or. core .or. optics)) &
-      call io_error('Error: compare_dos/compare_jdos are not comptable with pdos, core or optics tasks')
+    if ((compare_dos .or. compare_jdos) .and. (pdos .or. core .or. optics .or. photo)) &
+      call io_error('Error: compare_dos/compare_jdos are not comptable with pdos, core, optics or photoemission tasks')
 
-    if (pdis .and. (optics .or. core .or. jdos .or. pdos .or. dos .or. compare_dos .or. compare_jdos)) &
+    if (pdis .and. (optics .or. core .or. jdos .or. pdos .or. dos .or. compare_dos .or. compare_jdos .or. photo)) &
       call io_error('Error: projected bandstructure not compatible with any other tasks')
 
     i_temp = 0
