@@ -218,7 +218,7 @@ contains
           dos = .true.
         elseif (index(task_string(loop), 'photoemission') > 0) then
           photo = .true.
-        elseif (index(task_string(loop), 'photoemission_sweep') >0) then
+        elseif (index(task_string(loop), 'photon_sweep') >0) then
           photo = .true.
           photo_photon_sweep = .true.
         elseif (index(task_string(loop), 'none') > 0) then
