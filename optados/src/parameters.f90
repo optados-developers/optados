@@ -983,7 +983,7 @@ contains
     ! to lowercase characters               !
     !=======================================!
 
-    use od_io, only: io_file_unit, io_error, seedname, multi_num, options
+    use od_io, only: io_file_unit, io_error, seedname, options
     use od_algorithms, only: utility_lowercase
 
     implicit none
@@ -992,12 +992,7 @@ contains
     character(len=maxlen) :: dummy
 
     in_unit = io_file_unit()
-    ! Added by F. Mildner to allow multiple simultaneous runs
-    if (index(options, '-multi_out') > 0) then
-      open (in_unit, file=trim(seedname)//'_'//trim(adjustl(multi_num))//'.odi', form='formatted', status='old', err=101)
-    else
-      open (in_unit, file=trim(seedname)//'.odi', form='formatted', status='old', err=101)
-    end if
+    open (in_unit, file=trim(seedname)//'.odi', form='formatted', status='old', err=101)
     num_lines = 0; tot_num_lines = 0
     do
       read (in_unit, '(a)', iostat=ierr, err=200, end=210) dummy
