@@ -843,8 +843,8 @@ contains
     end if
 
     if (photo) then
-      write (stdout, '(1x,a19,26x,1a,1x,f7.4,3x,2a,18x,1a)') '|  JDOS bin spacing',':', jdos_spacing,'eV','|'
-      write (stdout, '(1x,a22,23x,1a,1x,f7.4,3x,2a,18x,1a)') '|  JDOS max energy bin',':', jdos_max_energy,'ev','|'
+      write (stdout, '(1x,a19,26x,a2,f7.4,3x,21a)') '|  JDOS bin spacing',': ', jdos_spacing,'eV                  |'
+      write (stdout, '(1x,a22,23x,a2,f7.4,3x,21a)') '|  JDOS max energy bin',': ', jdos_max_energy,'eV                  |'
     end if
 
     if (optics .or. photo) then

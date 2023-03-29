@@ -138,8 +138,6 @@ contains
       work_function_eff = photo_work_function
     end if
 
-    if (index(photo_model, '1step') > 0) call elec_read_foptical_mat !Read the one-step matrix elements
-
     if (photo_photon_sweep) then
       do i = 1, number_energies
         time_a = io_time()
@@ -160,6 +158,7 @@ contains
         if (index(photo_model, '3step') > 0) then !Three-step-model
           call calc_three_step_model
         elseif (index(photo_model, '1step') > 0) then !One-step-model
+          if (.not. allocated(foptical_matrix_weights)) call elec_read_foptical_mat !Read the one-step matrix elements
           call make_foptical_weights !Calculate the one-step optical matrix
           call calc_one_step_model !Calculate QE
         end if
@@ -195,6 +194,7 @@ contains
       if (index(photo_model, '3step') > 0) then !Three-step-model
         call calc_three_step_model
       elseif (index(photo_model, '1step') > 0) then !One-step-model
+        if (.not. allocated(foptical_matrix_weights)) call elec_read_foptical_mat !Read the one-step matrix elements
         call make_foptical_weights !Calculate the one-step optical matrix
         call calc_one_step_model !Calculate QE
       end if
@@ -225,7 +225,7 @@ contains
     use od_cell, only: num_atoms, atoms_pos_cart_photo, atoms_label_tmp
     use od_io, only: stdout, io_error
     implicit none
-    integer :: atom_1, atom_2, i, index, temp, first, ierr, atom
+    integer :: atom_1, atom_2, i, index, temp, first, ierr, atom, ic
 
     allocate (atom_order(num_atoms), stat=ierr)
     if (ierr /= 0) call io_error('Error: calc_layers - allocation of atom_order failed')
@@ -266,13 +266,20 @@ contains
       layer(atom) = i
     end do
 
+    do atom = 1, num_atoms
+      ic = ichar(atoms_label_tmp(atom_order(atom)) (1:1))
+      if ((ic .ge. ichar('a')) .and. (ic .le. ichar('z'))) &
+        atoms_label_tmp(atom_order(atom)) (1:1) = char(ic + ichar('Z') - ichar('z'))
+    end do
+
     write (stdout, '(1x,a78)') '+------------------------------- Atomic Order  ------------------------------+'
-    write (stdout, '(1x,a78)') '| Atom |  Atom Order  |   Layer   |          Atomic Position (Angs)          |'
+    write (stdout, '(1x,a78)') '| Atom |  Atom Order  |   Layer   |         Atom Z-Coordinate (Ang)          |'
+
 
     do atom = 1, num_atoms
-      write (stdout, *) "|  ", trim(atoms_label_tmp(atom_order(atom))), atom_order(atom), &
-        layer(atom), '              ', &
-        atoms_pos_cart_photo(3, atom_order(atom)), "      |"
+      write (stdout, '(1x,a3,a2,8x,i3,11x,i3,18x,F12.7,a18)') "|  ", trim(atoms_label_tmp(atom_order(atom))), atom_order(atom), &
+        layer(atom), &
+        atoms_pos_cart_photo(3, atom_order(atom)), "|"
     end do
 
     write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
@@ -1503,7 +1510,7 @@ contains
       if (ierr /= 0) call io_error('Error: jdos_utils_calculate_delta - failed to deallocate E')
     end if
 
-    if (allocated(band_gradient)) then
+    if (allocated(band_gradient) .and. current_index .eq. number_energies) then
       deallocate(band_gradient, stat=ierr)
       if (ierr /= 0) call io_error('Error: jdos_utils_calculate_delta - failed to deallocate band_gradient')
     end if
@@ -1789,7 +1796,7 @@ contains
       end do           ! Loop over spins
     end do               ! Loop over kpoints
 
-    if (allocated(foptical_mat)) then
+    if (allocated(foptical_mat) .and. current_index .eq. number_energies) then
       deallocate(foptical_mat, stat=ierr)
       if (ierr /= 0) call io_error('Error: make_foptical_weights - failed to deallocate foptical_mat')
     end if
@@ -1980,7 +1987,7 @@ contains
     time1 = io_time()
     if (on_root .and. iprint > 1) then
       write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
-      write (stdout, '(1x,a39,18x,f11.3,a8)') '+ Time to calculate 1step Photoemission', time1 - time0, ' (sec) +'
+      write (stdout, '(1x,a39,20x,f11.3,a8)') '+ Time to calculate 1step Photoemission', time1 - time0, ' (sec) +'
     end if
 
   end subroutine calc_one_step_model
