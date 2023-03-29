@@ -643,177 +643,6 @@ contains
 
   end subroutine calc_photo_optics
 
-  !===============================================================================
-  subroutine make_foptical_weights
-    !===============================================================================
-    ! This subroutine calclualtes the optical matrix elements for the one step
-    ! photoemission model.
-    ! Victor Chang, 7th February 2020
-    !===============================================================================
-
-    use od_constants, only: dp
-    use od_electronic, only: nbands, nspins, num_electrons, electrons_per_state, foptical_mat
-    use od_cell, only: num_kpoints_on_node, cell_get_symmetry, num_crystal_symmetry_operations, crystal_symmetry_operations
-    use od_parameters, only: optics_geom, optics_qdir, legacy_file_format, devel_flag, photo_photon_sweep
-    use od_io, only: io_error, stdout
-    use od_comms, only: my_node_id, on_root
-    implicit none
-    complex(kind=dp), dimension(3) :: g
-    real(kind=dp), dimension(3) :: qdir, qdir1, qdir2
-    real(kind=dp), dimension(2) :: num_occ
-    real(kind=dp) :: q_weight1, q_weight2, factor
-    integer :: N, i, j, N_in, N_spin, N2, N3, n_eigen, n_eigen2, num_symm, ierr
-
-    if (.not. legacy_file_format .and. index(devel_flag, 'old_filename') > 0) then
-      num_symm = 0
-      call cell_get_symmetry
-    end if
-    num_symm = num_crystal_symmetry_operations
-
-    num_occ = 0.0_dp
-    do N_spin = 1, nspins
-      num_occ(N_spin) = num_electrons(N_spin)
-    end do
-
-    if (electrons_per_state == 2) then
-      num_occ(1) = num_occ(1)/2.0_dp
-    end if
-
-    ! Can I also allocate this to fome(nbands+1, num_kpts, nspins, N_geom)?
-    allocate (foptical_matrix_weights(nbands + 1, nbands + 1, num_kpoints_on_node(my_node_id), nspins, N_geom), stat=ierr)
-    if (ierr /= 0) call io_error('Error: make_foptical_weights - allocation of foptical_matrix_weights failed')
-    foptical_matrix_weights = 0.0_dp
-
-    if (index(optics_geom, 'polar') > 0) then
-      qdir = optics_qdir
-      q_weight = ((qdir(1)**2) + (qdir(2)**2) + (qdir(3)**2))**0.5_dp
-      if (q_weight < 0.001_dp) &
-        call io_error("Error:  please check optics_qdir, norm close to zero")
-    end if
-
-    if (index(optics_geom, 'unpolar') > 0) then
-      !TO CHANGE WHEN THE light_direction IS CORRECTED
-      !optics_qdir(:)=t_cart(:)
-      if (optics_qdir(3) .lt. 1E-06) then
-        qdir1(1) = 0.0_dp
-        qdir1(2) = 0.0_dp
-        qdir1(3) = 1.0_dp
-      else
-        qdir1(1) = 1.0_dp
-        qdir1(2) = 1.0_dp
-        qdir1(3) = -(optics_qdir(1) + optics_qdir(2))/optics_qdir(3)
-      end if
-      qdir2(1) = (optics_qdir(2)*qdir1(3)) - (optics_qdir(3)*qdir1(2))
-      qdir2(2) = (optics_qdir(3)*qdir1(1)) - (optics_qdir(1)*qdir1(3))
-      qdir2(3) = (optics_qdir(1)*qdir1(2)) - (optics_qdir(2)*qdir1(1))
-      q_weight1 = ((qdir1(1)**2) + (qdir1(2)**2) + (qdir1(3)**2))**0.5_dp
-      q_weight2 = ((qdir2(1)**2) + (qdir2(2)**2) + (qdir2(3)**2))**0.5_dp
-    end if
-
-    N_in = 1  ! 0 = no inversion, 1 = inversion
-    g = 0.0_dp
-
-    do N = 1, num_kpoints_on_node(my_node_id)                   ! Loop over kpoints
-      do N_spin = 1, nspins                                    ! Loop over spins
-        do n_eigen = 1, nbands                                ! Loop over state 1
-          factor = 1.0_dp/(temp_photon_energy**2)
-          if (index(optics_geom, 'unpolar') > 0) then
-            if (num_symm == 0) then
-              g(1) = (((qdir1(1)*foptical_mat(n_eigen, nbands + 1, 1, N, N_spin)) + &
-                       (qdir1(2)*foptical_mat(n_eigen, nbands + 1, 2, N, N_spin)) + &
-                       (qdir1(3)*foptical_mat(n_eigen, nbands + 1, 3, N, N_spin)))/q_weight1)
-              g(2) = (((qdir2(1)*foptical_mat(n_eigen, nbands + 1, 1, N, N_spin)) + &
-                       (qdir2(2)*foptical_mat(n_eigen, nbands + 1, 2, N, N_spin)) + &
-                       (qdir2(3)*foptical_mat(n_eigen, nbands + 1, 3, N, N_spin)))/q_weight2)
-              foptical_matrix_weights(n_eigen, nbands + 1, N, N_spin, N_geom) = &
-                0.5_dp*factor*(real(g(1)*conjg(g(1)), dp) + real(g(2)*conjg(g(2)), dp))
-            else ! begin unpolar symmetric
-              do N2 = 1, num_symm
-                do N3 = 1, 1 + N_in
-                  ! Calculating foptical_matrix_weights contribution for qdir1
-                  do i = 1, 3
-                    qdir(i) = 0.0_dp
-                    do j = 1, 3
-                      qdir(i) = qdir(i) + ((-1.0_dp)**(N3 + 1))*(crystal_symmetry_operations(j, i, N2)*qdir1(j))
-                    end do
-                  end do
-                  g(1) = (((qdir(1)*foptical_mat(n_eigen, nbands + 1, 1, N, N_spin)) + &
-                           (qdir(2)*foptical_mat(n_eigen, nbands + 1, 2, N, N_spin)) + &
-                           (qdir(3)*foptical_mat(n_eigen, nbands + 1, 3, N, N_spin)))/q_weight1)
-                  foptical_matrix_weights(n_eigen, nbands + 1, N, N_spin, N_geom) = &
-                    foptical_matrix_weights(n_eigen, nbands + 1, N, N_spin, N_geom) + &
-                    (0.5_dp/Real((num_symm*(N_in + 1)), dp))*real(g(1)*conjg(g(1)), dp)*factor
-                  g(1) = 0.0_dp
-                  ! Calculating foptical_matrix_weights contribution for qdir2
-                  do i = 1, 3 ! if I include an extra variable I can merge this and the last do loops
-                    qdir(i) = 0.0_dp
-                    do j = 1, 3
-                      qdir(i) = qdir(i) + ((-1.0_dp)**(N3 + 1))*(crystal_symmetry_operations(j, i, N2)*qdir2(j))
-                    end do
-                  end do
-                  g(1) = (((qdir(1)*foptical_mat(n_eigen, nbands + 1, 1, N, N_spin)) + &
-                           (qdir(2)*foptical_mat(n_eigen, nbands + 1, 2, N, N_spin)) + &
-                           (qdir(3)*foptical_mat(n_eigen, nbands + 1, 3, N, N_spin)))/q_weight2)
-                  foptical_matrix_weights(n_eigen, nbands + 1, N, N_spin, N_geom) = &
-                    foptical_matrix_weights(n_eigen, nbands + 1, N, N_spin, N_geom) + &
-                    (0.5_dp/Real((num_symm*(N_in + 1)), dp))*real(g(1)*conjg(g(1)), dp)*factor
-                end do
-              end do
-            end if !end unpolar symmetric
-          elseif (index(optics_geom, 'polar') > 0) then
-            if (num_symm == 0) then
-              g(1) = (((qdir(1)*foptical_mat(n_eigen, nbands + 1, 1, N, N_spin)) + &
-                       (qdir(2)*foptical_mat(n_eigen, nbands + 1, 2, N, N_spin)) + &
-                       (qdir(3)*foptical_mat(n_eigen, nbands + 1, 3, N, N_spin)))/q_weight)
-              foptical_matrix_weights(n_eigen, nbands + 1, N, N_spin, N_geom) = factor*real(g(1)*conjg(g(1)), dp)
-            else !begin polar symmetric
-              do N2 = 1, num_symm
-                do N3 = 1, 1 + N_in
-                  do i = 1, 3
-                    qdir(i) = 0.0_dp
-                    do j = 1, 3
-                      qdir(i) = qdir(i) + ((-1.0_dp)**(N3 + 1))* &
-                                (crystal_symmetry_operations(j, i, N2)*optics_qdir(j))
-                    end do
-                  end do
-                  g(1) = 0.0_dp
-                  g(1) = (((qdir(1)*foptical_mat(n_eigen, nbands + 1, 1, N, N_spin)) + &
-                           (qdir(2)*foptical_mat(n_eigen, nbands + 1, 2, N, N_spin)) + &
-                           (qdir(3)*foptical_mat(n_eigen, nbands + 1, 3, N, N_spin)))/q_weight)
-                  foptical_matrix_weights(n_eigen, nbands + 1, N, N_spin, N_geom) = &
-                    foptical_matrix_weights(n_eigen, nbands + 1, N, N_spin, N_geom) + &
-                    (1.0_dp/Real((num_symm*(N_in + 1)), dp))*factor*real(g(1)*conjg(g(1)), dp)
-                end do
-              end do
-            end if !end polar symmetric
-          end if ! end photo_geom
-        end do       ! Loop over state 1
-      end do           ! Loop over spins
-    end do               ! Loop over kpoints
-
-    if (allocated(foptical_mat)) then
-      deallocate(foptical_mat, stat=ierr)
-      if (ierr /= 0) call io_error('Error: make_foptical_weights - failed to deallocate foptical_mat')
-    end if
-
-    if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root .and. .not. photo_photon_sweep) then
-      write (stdout, '(1x,a78)') '+------------------------- Printing Free OM Weights -------------------------+'
-      write (stdout, 126) shape(foptical_matrix_weights)
-      write (stdout, 126) nbands + 1, nbands + 1, num_kpoints_on_node(my_node_id), nspins, N_geom
-126   format(5(1x, I4))
-      do N2 = 1, N_geom
-        do N_spin = 1, nspins
-          do N = 1, num_kpoints_on_node(my_node_id)
-           write (stdout, '(99999(es15.8))') ((foptical_matrix_weights(n_eigen, n_eigen2, N, N_spin, N2), n_eigen2=1, nbands + 1), &
-                                               n_eigen=1, nbands + 1)
-          end do
-        end do
-      end do
-      write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
-    end if
-
-  end subroutine make_foptical_weights
-
   !***************************************************************
   subroutine calc_absorp_layer
     !***************************************************************
@@ -1788,6 +1617,177 @@ contains
 
 
   end subroutine calculate_delta
+
+  !===============================================================================
+  subroutine make_foptical_weights
+    !===============================================================================
+    ! This subroutine calclualtes the optical matrix elements for the one step
+    ! photoemission model.
+    ! Victor Chang, 7th February 2020
+    !===============================================================================
+
+    use od_constants, only: dp
+    use od_electronic, only: nbands, nspins, num_electrons, electrons_per_state, foptical_mat
+    use od_cell, only: num_kpoints_on_node, cell_get_symmetry, num_crystal_symmetry_operations, crystal_symmetry_operations
+    use od_parameters, only: optics_geom, optics_qdir, legacy_file_format, devel_flag, photo_photon_sweep
+    use od_io, only: io_error, stdout
+    use od_comms, only: my_node_id, on_root
+    implicit none
+    complex(kind=dp), dimension(3) :: g
+    real(kind=dp), dimension(3) :: qdir, qdir1, qdir2
+    real(kind=dp), dimension(2) :: num_occ
+    real(kind=dp) :: q_weight1, q_weight2, factor
+    integer :: N, i, j, N_in, N_spin, N2, N3, n_eigen, n_eigen2, num_symm, ierr
+
+    if (.not. legacy_file_format .and. index(devel_flag, 'old_filename') > 0) then
+      num_symm = 0
+      call cell_get_symmetry
+    end if
+    num_symm = num_crystal_symmetry_operations
+
+    num_occ = 0.0_dp
+    do N_spin = 1, nspins
+      num_occ(N_spin) = num_electrons(N_spin)
+    end do
+
+    if (electrons_per_state == 2) then
+      num_occ(1) = num_occ(1)/2.0_dp
+    end if
+
+    ! Can I also allocate this to fome(nbands+1, num_kpts, nspins, N_geom)?
+    allocate (foptical_matrix_weights(nbands + 1, nbands + 1, num_kpoints_on_node(my_node_id), nspins, N_geom), stat=ierr)
+    if (ierr /= 0) call io_error('Error: make_foptical_weights - allocation of foptical_matrix_weights failed')
+    foptical_matrix_weights = 0.0_dp
+
+    if (index(optics_geom, 'polar') > 0) then
+      qdir = optics_qdir
+      q_weight = ((qdir(1)**2) + (qdir(2)**2) + (qdir(3)**2))**0.5_dp
+      if (q_weight < 0.001_dp) &
+        call io_error("Error:  please check optics_qdir, norm close to zero")
+    end if
+
+    if (index(optics_geom, 'unpolar') > 0) then
+      !TO CHANGE WHEN THE light_direction IS CORRECTED
+      !optics_qdir(:)=t_cart(:)
+      if (optics_qdir(3) .lt. 1E-06) then
+        qdir1(1) = 0.0_dp
+        qdir1(2) = 0.0_dp
+        qdir1(3) = 1.0_dp
+      else
+        qdir1(1) = 1.0_dp
+        qdir1(2) = 1.0_dp
+        qdir1(3) = -(optics_qdir(1) + optics_qdir(2))/optics_qdir(3)
+      end if
+      qdir2(1) = (optics_qdir(2)*qdir1(3)) - (optics_qdir(3)*qdir1(2))
+      qdir2(2) = (optics_qdir(3)*qdir1(1)) - (optics_qdir(1)*qdir1(3))
+      qdir2(3) = (optics_qdir(1)*qdir1(2)) - (optics_qdir(2)*qdir1(1))
+      q_weight1 = ((qdir1(1)**2) + (qdir1(2)**2) + (qdir1(3)**2))**0.5_dp
+      q_weight2 = ((qdir2(1)**2) + (qdir2(2)**2) + (qdir2(3)**2))**0.5_dp
+    end if
+
+    N_in = 1  ! 0 = no inversion, 1 = inversion
+    g = 0.0_dp
+
+    do N = 1, num_kpoints_on_node(my_node_id)                   ! Loop over kpoints
+      do N_spin = 1, nspins                                    ! Loop over spins
+        do n_eigen = 1, nbands                                ! Loop over state 1
+          factor = 1.0_dp/(temp_photon_energy**2)
+          if (index(optics_geom, 'unpolar') > 0) then
+            if (num_symm == 0) then
+              g(1) = (((qdir1(1)*foptical_mat(n_eigen, nbands + 1, 1, N, N_spin)) + &
+                       (qdir1(2)*foptical_mat(n_eigen, nbands + 1, 2, N, N_spin)) + &
+                       (qdir1(3)*foptical_mat(n_eigen, nbands + 1, 3, N, N_spin)))/q_weight1)
+              g(2) = (((qdir2(1)*foptical_mat(n_eigen, nbands + 1, 1, N, N_spin)) + &
+                       (qdir2(2)*foptical_mat(n_eigen, nbands + 1, 2, N, N_spin)) + &
+                       (qdir2(3)*foptical_mat(n_eigen, nbands + 1, 3, N, N_spin)))/q_weight2)
+              foptical_matrix_weights(n_eigen, nbands + 1, N, N_spin, N_geom) = &
+                0.5_dp*factor*(real(g(1)*conjg(g(1)), dp) + real(g(2)*conjg(g(2)), dp))
+            else ! begin unpolar symmetric
+              do N2 = 1, num_symm
+                do N3 = 1, 1 + N_in
+                  ! Calculating foptical_matrix_weights contribution for qdir1
+                  do i = 1, 3
+                    qdir(i) = 0.0_dp
+                    do j = 1, 3
+                      qdir(i) = qdir(i) + ((-1.0_dp)**(N3 + 1))*(crystal_symmetry_operations(j, i, N2)*qdir1(j))
+                    end do
+                  end do
+                  g(1) = (((qdir(1)*foptical_mat(n_eigen, nbands + 1, 1, N, N_spin)) + &
+                           (qdir(2)*foptical_mat(n_eigen, nbands + 1, 2, N, N_spin)) + &
+                           (qdir(3)*foptical_mat(n_eigen, nbands + 1, 3, N, N_spin)))/q_weight1)
+                  foptical_matrix_weights(n_eigen, nbands + 1, N, N_spin, N_geom) = &
+                    foptical_matrix_weights(n_eigen, nbands + 1, N, N_spin, N_geom) + &
+                    (0.5_dp/Real((num_symm*(N_in + 1)), dp))*real(g(1)*conjg(g(1)), dp)*factor
+                  g(1) = 0.0_dp
+                  ! Calculating foptical_matrix_weights contribution for qdir2
+                  do i = 1, 3 ! if I include an extra variable I can merge this and the last do loops
+                    qdir(i) = 0.0_dp
+                    do j = 1, 3
+                      qdir(i) = qdir(i) + ((-1.0_dp)**(N3 + 1))*(crystal_symmetry_operations(j, i, N2)*qdir2(j))
+                    end do
+                  end do
+                  g(1) = (((qdir(1)*foptical_mat(n_eigen, nbands + 1, 1, N, N_spin)) + &
+                           (qdir(2)*foptical_mat(n_eigen, nbands + 1, 2, N, N_spin)) + &
+                           (qdir(3)*foptical_mat(n_eigen, nbands + 1, 3, N, N_spin)))/q_weight2)
+                  foptical_matrix_weights(n_eigen, nbands + 1, N, N_spin, N_geom) = &
+                    foptical_matrix_weights(n_eigen, nbands + 1, N, N_spin, N_geom) + &
+                    (0.5_dp/Real((num_symm*(N_in + 1)), dp))*real(g(1)*conjg(g(1)), dp)*factor
+                end do
+              end do
+            end if !end unpolar symmetric
+          elseif (index(optics_geom, 'polar') > 0) then
+            if (num_symm == 0) then
+              g(1) = (((qdir(1)*foptical_mat(n_eigen, nbands + 1, 1, N, N_spin)) + &
+                       (qdir(2)*foptical_mat(n_eigen, nbands + 1, 2, N, N_spin)) + &
+                       (qdir(3)*foptical_mat(n_eigen, nbands + 1, 3, N, N_spin)))/q_weight)
+              foptical_matrix_weights(n_eigen, nbands + 1, N, N_spin, N_geom) = factor*real(g(1)*conjg(g(1)), dp)
+            else !begin polar symmetric
+              do N2 = 1, num_symm
+                do N3 = 1, 1 + N_in
+                  do i = 1, 3
+                    qdir(i) = 0.0_dp
+                    do j = 1, 3
+                      qdir(i) = qdir(i) + ((-1.0_dp)**(N3 + 1))* &
+                                (crystal_symmetry_operations(j, i, N2)*optics_qdir(j))
+                    end do
+                  end do
+                  g(1) = 0.0_dp
+                  g(1) = (((qdir(1)*foptical_mat(n_eigen, nbands + 1, 1, N, N_spin)) + &
+                           (qdir(2)*foptical_mat(n_eigen, nbands + 1, 2, N, N_spin)) + &
+                           (qdir(3)*foptical_mat(n_eigen, nbands + 1, 3, N, N_spin)))/q_weight)
+                  foptical_matrix_weights(n_eigen, nbands + 1, N, N_spin, N_geom) = &
+                    foptical_matrix_weights(n_eigen, nbands + 1, N, N_spin, N_geom) + &
+                    (1.0_dp/Real((num_symm*(N_in + 1)), dp))*factor*real(g(1)*conjg(g(1)), dp)
+                end do
+              end do
+            end if !end polar symmetric
+          end if ! end photo_geom
+        end do       ! Loop over state 1
+      end do           ! Loop over spins
+    end do               ! Loop over kpoints
+
+    if (allocated(foptical_mat)) then
+      deallocate(foptical_mat, stat=ierr)
+      if (ierr /= 0) call io_error('Error: make_foptical_weights - failed to deallocate foptical_mat')
+    end if
+
+    if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root .and. .not. photo_photon_sweep) then
+      write (stdout, '(1x,a78)') '+------------------------- Printing Free OM Weights -------------------------+'
+      write (stdout, 126) shape(foptical_matrix_weights)
+      write (stdout, 126) nbands + 1, nbands + 1, num_kpoints_on_node(my_node_id), nspins, N_geom
+126   format(5(1x, I4))
+      do N2 = 1, N_geom
+        do N_spin = 1, nspins
+          do N = 1, num_kpoints_on_node(my_node_id)
+           write (stdout, '(99999(es15.8))') ((foptical_matrix_weights(n_eigen, n_eigen2, N, N_spin, N2), n_eigen2=1, nbands + 1), &
+                                               n_eigen=1, nbands + 1)
+          end do
+        end do
+      end do
+      write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
+    end if
+
+  end subroutine make_foptical_weights
 
   !===============================================================================
   subroutine calc_one_step_model
