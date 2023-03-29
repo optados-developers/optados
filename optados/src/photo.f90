@@ -78,7 +78,7 @@ module od_photo
   integer, allocatable, dimension(:)  :: index_energy
   integer                             :: number_energies, current_energy_index, current_index
   real(kind=dp)                       :: temp_photon_energy, time_a, time_b
-  integer, allocatable, dimension(:,:):: index_unoccupied
+  integer, allocatable, dimension(:,:):: min_index_unocc
 contains
 
   subroutine photo_calculate
@@ -325,8 +325,8 @@ contains
 
     time0 = io_time()
 
-    allocate (index_unoccupied(nspins,num_kpoints_on_node(my_node_id)), stat=ierr)
-    if (ierr /= 0) call io_error('Error: calc_band_info - allocation of index_unoccupied failed')
+    allocate (min_index_unocc(nspins,num_kpoints_on_node(my_node_id)), stat=ierr)
+    if (ierr /= 0) call io_error('Error: calc_band_info - allocation of min_index_unocc failed')
 
     do N = 1, num_kpoints_on_node(my_node_id)  ! Loop over kpoints
       do N_spin = 1, nspins                           ! Loop over spins
@@ -345,7 +345,7 @@ contains
         do n_eigen = 1, nbands                        ! Loop over bands
           ! TODO: Test if this is the behaviour we want and or if we have to change the condition
           if (band_energy(n_eigen, N_spin, N) .gt. efermi) then
-            index_unoccupied(N, N_spin) = n_eigen
+            min_index_unocc(N, N_spin) = n_eigen
             exit
           end if
         end do
@@ -1296,7 +1296,7 @@ contains
               &"Calculating k-point ", N, " of", num_kpoints_on_node(my_node_id), 'on this node.', "<-- QE-3S |"
         end if
         do N_spin = 1, nspins                    ! Loop over spins
-          do n_eigen2 = index_unoccupied(N_spin, N), nbands
+          do n_eigen2 = min_index_unocc(N_spin, N), nbands
             do n_eigen = 1, nbands
 
               argument = (band_energy(n_eigen, N_spin, N) - efermi)/(kB*photo_temperature)
@@ -1356,7 +1356,7 @@ contains
 
     do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
       do N_spin = 1, nspins                    ! Loop over spins
-        do n_eigen2 = index_unoccupied(N_spin, N), nbands
+        do n_eigen2 = min_index_unocc(N_spin, N), nbands
           do n_eigen = 1, nbands
 
             argument = (band_energy(n_eigen, N_spin, N) - efermi)/(kB*photo_temperature)
@@ -2014,10 +2014,10 @@ contains
         do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
           do N_spin = 1, nspins                    ! Loop over spins
             do n_eigen = 1, nbands
-                !do n_eigen2 = index_unoccupied(N_spin, N), nbands
+                !do n_eigen2 = min_index_unocc(N_spin, N), nbands
                 ! if (band_energy(n_eigen2, N_spin, N) .lt. efermi) cycle ! Skip occupied final states
               te_tsm_temp(n_eigen, N, N_spin, atom) = E_transverse(n_eigen, N, N_spin)&
-              *sum(qe_tsm(n_eigen, index_unoccupied(N_spin, N):nbands, N_spin, N, atom))
+              *sum(qe_tsm(n_eigen, min_index_unocc(N_spin, N):nbands, N_spin, N, atom))
                 !end do
             end do
           end do
