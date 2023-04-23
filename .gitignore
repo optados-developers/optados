@@ -1,5 +1,6 @@
 optados/*.x
-optados/volume/optados.x
+optados/*.mpi
+optados/volume/
 optados/src/build.f90
 optados/mpi/
 optados/mpi_debug/
