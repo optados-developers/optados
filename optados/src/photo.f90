@@ -1147,7 +1147,7 @@ contains
     use od_electronic, only: nbands, nspins
     use od_cell, only: num_kpoints_on_node
     use od_comms, only: my_node_id, on_root
-    use od_parameters, only: photo_imfp_const, bulk_length, iprint
+    use od_parameters, only: photo_imfp_const, photo_bulk_length, iprint
     use od_io, only: io_error, io_time, stdout
     implicit none
 
@@ -1157,7 +1157,7 @@ contains
     real(kind=dp) :: exponent, time0, time1
 
     time0 = io_time()
-    num_layers = int((photo_imfp_const*bulk_length)/thickness_atom(max_atoms))
+    num_layers = int((photo_imfp_const*photo_bulk_length)/thickness_atom(max_atoms))
 
     allocate (bulk_light_tmp(num_layers), stat=ierr)
     if (ierr /= 0) call io_error('Error: bulk_emission - allocation of bulk_light_tmp failed')
