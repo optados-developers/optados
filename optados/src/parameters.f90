@@ -1676,6 +1676,7 @@ contains
     call comms_bcast(set_efermi_zero, 1)
     !
     ! Photoemission
+    ! TODO: Broadcast the rest of the photoemission parameters!!
     call comms_bcast(photo_model, len(photo_model))
     call comms_bcast(photo_momentum, len(photo_momentum))
 

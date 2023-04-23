@@ -59,6 +59,12 @@ program optados
   character(len=11):: cdate             ! Temp. date string
   character(len=10):: char_iprint, char_e ! Added by Felix Mildner, 03/23 for multi file output
   character(len=120):: filename            ! Added by Felix Mildner, 03/23 for multi file output
+  integer :: i
+
+  i = 0
+  do while (i == 0)
+    call sleep(5)
+  end do
 
   time0 = io_time()
 
