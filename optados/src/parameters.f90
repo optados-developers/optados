@@ -133,12 +133,12 @@ module od_parameters
   logical, public, save       :: photo_photon_sweep
   real(kind=dp), public, save :: photo_photon_min
   real(kind=dp), public, save :: photo_photon_max
-  real(kind=dp), public, save :: bulk_length
+  real(kind=dp), public, save :: photo_bulk_length
   real(kind=dp), public, save :: photo_temperature
   real(kind=dp), public, save :: photo_elec_field
   real(kind=dp), public, save :: photo_imfp_const
-  logical, public, save :: photo_e_units
-  !logical, public, save :: photo_mte
+  ! logical, public, save :: photo_e_units
+  ! logical, public, save :: photo_mte
   real(kind=dp), public, save :: photo_work_function
   real(kind=dp), public, save :: photo_surface_area
   real(kind=dp), public, save :: photo_slab_volume
@@ -480,8 +480,8 @@ contains
     call param_get_keyword('photo_photon_energy', found, r_value=photo_photon_energy)
     if (photo .and. .not. found .and. .not. photo_photon_sweep) &
       call io_error('Error: please set photon energy for photoemission calculation')
-    bulk_length = 10.0_dp
-    call param_get_keyword('photo_bulk_length', found, r_value=bulk_length)
+    photo_bulk_length = 10.0_dp
+    call param_get_keyword('photo_bulk_length', found, r_value=photo_bulk_length)
     photo_temperature = 298.0_dp
     call param_get_keyword('photo_temperature', found, r_value=photo_temperature)
 
@@ -1679,6 +1679,24 @@ contains
     ! TODO: Broadcast the rest of the photoemission parameters!!
     call comms_bcast(photo_model, len(photo_model))
     call comms_bcast(photo_momentum, len(photo_momentum))
+    call comms_bcast(photo_photon_energy, 1)
+    call comms_bcast(photo_photon_sweep, 1)
+    if (photo_photon_sweep)then
+      call comms_bcast(photo_photon_min, 1)
+      call comms_bcast(photo_photon_max, 1)
+    end if
+    call comms_bcast(photo_work_function, 1)
+    call comms_bcast(photo_surface_area, 1)
+    call comms_bcast(photo_slab_volume, 1)
+    call comms_bcast(photo_elec_field, 1)
+    call comms_bcast(photo_imfp_const, 1)
+    call comms_bcast(photo_bulk_length, 1)
+    call comms_bcast(photo_temperature, 1)
+    call comms_bcast(write_photo_matrix, len(write_photo_matrix))
+    call comms_bcast(photo_theta_lower, 1)
+    call comms_bcast(photo_theta_upper, 1)
+    call comms_bcast(photo_phi_lower, 1)
+    call comms_bcast(photo_phi_upper, 1)
 
     call comms_bcast(num_exclude_bands, 1)
     if (num_exclude_bands > 1) then
