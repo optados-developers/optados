@@ -62,9 +62,9 @@ program optados
   integer :: i
 
   i = 0
-  do while (i == 0)
-    call sleep(5)
-  end do
+  ! do while (i == 0)
+  !   call sleep(5)
+  ! end do
 
   time0 = io_time()
 
