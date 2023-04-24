@@ -30,6 +30,11 @@ extract_fn = tools parsers.parse_od2od_log.parse
 exe = ../../od2od
 extract_fn = tools parsers.parse_od2od_fmt.parse
 
+[OPTADOS_PHOTO_OK]
+exe = ../../optados.x
+extract_fn = tools parsers.parse_phodo.parse
+tolerance = (1.0e-3, 5.0e-3, 'fermi_lb'),(2.0e-68,1.0e-2,'qe_bulk'),(2.9e-68,1.0e-2,'qe_total'),(8.5E-4,1.0e-2,'mte')
+
 [user]
 # This is the string (or list of strings) that identifies sets of tests
 # to be run - one could have multiple ones

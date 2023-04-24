@@ -367,5 +367,5 @@ default =  all
 [testopt_photo_general]
 program = OPTADOS_ODO_OK
 max_nprocs = 0
-inputs_args = ('Cu_photo.odi','')
-output = Cu.odo
+inputs_args = ('C2.odi','')
+output = C2.odo

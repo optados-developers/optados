@@ -43,6 +43,8 @@ module od_electronic
   !Additional variables for photoemission.- V.Chang Nov-2020
   real(kind=dp), allocatable, public, save  :: band_curvature(:, :, :, :, :)
   complex(kind=dp), allocatable, public, save  :: foptical_mat(:, :, :, :, :)
+  ! F. Mildner April-2023
+  character(len=80), public, save :: femfile_header
 
   real(kind=dp), public, save :: efermi ! The fermi energy we finally decide on
   logical, public, save       :: efermi_set = .false. ! Have we set efermi?
@@ -597,7 +599,6 @@ contains
 
     integer :: gradient_unit, i, ib, jb, is, ik, inodes, ierr
     character(filename_len) :: gradient_filename
-    character(len=80)       :: header
     real(kind=dp) :: time0, time1, file_version
     real(kind=dp), parameter :: file_ver = 1.0_dp
 
@@ -614,8 +615,8 @@ contains
       read (gradient_unit) file_version
       if ((file_version - file_ver) > 0.001_dp) &
         call io_error('Error: Trying to read newer version of fem_bin file. Update optados!')
-      read (gradient_unit) header
-      if (iprint > 1) write (stdout, '(1x,a)') trim(header)
+      read (gradient_unit) femfile_header
+      if (iprint > 1) write (stdout, '(1x,a)') trim(femfile_header)
     end if
 
     ! Figure out how many kpoints should be on each node
