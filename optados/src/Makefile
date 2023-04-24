@@ -85,7 +85,7 @@ pdos.o : pdos.F90 projection_utils.o cell.o comms.o constants.o io.o dos.o elect
 pdis.o : pdis.f90 projection_utils.o cell.o comms.o constants.o io.o dos.o electronic.o ../make.system
 	$(F90) -c $(FFLAGS) $<
 
-photo.o : photo.f90 constants.o io.o electronic.o jdos_utils.o cell.o parameters.o xmgrace_utils.o ../make.system
+photo.o : photo.f90 comms.o constants.o io.o electronic.o jdos_utils.o cell.o parameters.o xmgrace_utils.o ../make.system
 	$(F90) -c $(FFLAGS) $<
 
 projection_utils.o : projection_utils.f90 cell.o comms.o constants.o cell.o electronic.o io.o parameters.o ../make.system

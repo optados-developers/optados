@@ -1629,6 +1629,8 @@ contains
     call comms_bcast(pdos, 1)
     call comms_bcast(jdos, 1)
     call comms_bcast(optics, 1)
+    call comms_bcast(photo, 1)
+    call comms_bcast(photo_photon_sweep, 1)
     call comms_bcast(core, 1)
     call comms_bcast(compare_dos, 1)
     call comms_bcast(compare_jdos, 1)
@@ -1680,7 +1682,6 @@ contains
     call comms_bcast(photo_model, len(photo_model))
     call comms_bcast(photo_momentum, len(photo_momentum))
     call comms_bcast(photo_photon_energy, 1)
-    call comms_bcast(photo_photon_sweep, 1)
     if (photo_photon_sweep)then
       call comms_bcast(photo_photon_min, 1)
       call comms_bcast(photo_photon_max, 1)

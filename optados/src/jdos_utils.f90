@@ -68,7 +68,7 @@ contains
                             &jdos_max_energy, jdos_spacing
     use od_electronic, only: elec_read_band_gradient, band_gradient, nspins, electrons_per_state, &
                              num_electrons, efermi_set
-    use od_comms, only: on_root
+    use od_comms, only: on_root, comms_bcast
     use od_io, only: stdout, io_error, io_time, seedname
     use od_cell, only: cell_volume
     use od_dos_utils, only: dos_utils_set_efermi
@@ -157,7 +157,7 @@ contains
            &      ', time1 - time0, ' (sec) +'
     end if
     !-------------------------------------------------------------------------------
-    if (calc_weighted_jdos .and. .not. photo) then
+    if (calc_weighted_jdos .and. .not. photo .and. on_root) then
       N_geom = size(matrix_weights, 5)
       open (unit=wjdos_unit, action='write', file=trim(seedname)//'_weighted_jdos.dat')
       write (wjdos_unit, '(1x,a28)') '############################'
@@ -173,6 +173,7 @@ contains
       end do
       close (unit=wjdos_unit)
     end if
+
     if (dos_per_volume) then
       if (photo) then
         if (fixed) then
@@ -337,40 +338,40 @@ contains
 
     logical :: linear, fixed, adaptive, force_adaptive
 
-    ! <Added by Felix Mildner, 03/2023 to reduce if statement overhead>
-    ! This relies on an IMPORTANT assumption: the bands file is ordered by energy
-    ! and not by band number (e.g. after being processed by CASTEP bands2orbitals)
-    integer, allocatable, dimension(:,:)  :: min_index_unocc
+    ! ! <Added by Felix Mildner, 03/2023 to reduce if statement overhead>
+    ! ! This relies on an IMPORTANT assumption: the bands file is ordered by energy
+    ! ! and not by band number (e.g. after being processed by CASTEP bands2orbitals)
+    ! integer, allocatable, dimension(:,:)  :: min_index_unocc
 
-    if (.not. allocated(min_index_unocc)) then
-      allocate(min_index_unocc(nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
-      if (ierr /= 0) call io_error('Error: calculate_jdos - allocation of max_index_occ failed')
-    end if
+    ! if (.not. allocated(min_index_unocc)) then
+    !   allocate(min_index_unocc(nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
+    !   if (ierr /= 0) call io_error('Error: calculate_jdos - allocation of max_index_occ failed')
+    ! end if
 
-    do ik = 1, num_kpoints_on_node(my_node_id)  ! Loop over kpoints
-      do is = 1, nspins                           ! Loop over spins
-        do ib = 2, nbands                        ! Loop over bands
-          ! TODO: Test if this is the behaviour we want and or if we have to change the condition
-          if (band_energy(ib -1, is, ik) .gt. band_energy(ib, is, ik)) then
-            call io_error('Error: the band energies in the .bands file used are NOT ORDERED CORRECTLY (i.e. by increasing energy) &
-            & which will give WRONG RESULTS!')
-          end if
-        end do
-      end do
-    end do
+    ! do ik = 1, num_kpoints_on_node(my_node_id)  ! Loop over kpoints
+    !   do is = 1, nspins                           ! Loop over spins
+    !     do ib = 2, nbands                        ! Loop over bands
+    !       ! TODO: Test if this is the behaviour we want and or if we have to change the condition
+    !       if (band_energy(ib -1, is, ik) .gt. band_energy(ib, is, ik)) then
+    !         call io_error('Error: the band energies in the .bands file used are NOT ORDERED CORRECTLY (i.e. by increasing energy) &
+    !         & which will give WRONG RESULTS!')
+    !       end if
+    !     end do
+    !   end do
+    ! end do
 
-    do ik = 1, num_kpoints_on_node(my_node_id)  ! Loop over kpoints
-      do is = 1, nspins                           ! Loop over spins
-        do ib = 1, nbands                        ! Loop over bands
-          if (band_energy(ib, is, ik) .ge. efermi) then
-            min_index_unocc(is, ik) = ib
-            exit
-          end if
-        end do
-      end do
-    end do
+    ! do ik = 1, num_kpoints_on_node(my_node_id)  ! Loop over kpoints
+    !   do is = 1, nspins                           ! Loop over spins
+    !     do ib = 1, nbands                        ! Loop over bands
+    !       if (band_energy(ib, is, ik) .ge. efermi) then
+    !         min_index_unocc(is, ik) = ib
+    !         exit
+    !       end if
+    !     end do
+    !   end do
+    ! end do
 
-    ! </Added by Felix Mildner, 03/2023 to reduce if statement overhead>
+    ! ! </Added by Felix Mildner, 03/2023 to reduce if statement overhead>
 
 
     linear = .false.
@@ -418,15 +419,15 @@ contains
              &"Calculating k-point ", ik, " of", num_kpoints_on_node(my_node_id), 'on this node.', "<-- JDOS |"
       end if
       do is = 1, nspins
-        occ_states: do ib = 1, min_index_unocc(is,ik) - 1
-        !occ_states: do ib = 1, nbands
+        ! occ_states: do ib = 1, min_index_unocc(is,ik) - 1
+        occ_states: do ib = 1, nbands
           if (num_exclude_bands > 0) then
             if (any(exclude_bands == ib)) cycle
           end if
-          ! if (band_energy(ib, is, ik) .ge. efermi) cycle occ_states
-          unocc_states: do jb = min_index_unocc(is,ik), nbands
-          !unocc_states: do jb = 1, nbands
-            ! if (band_energy(jb, is, ik) .lt. efermi) cycle unocc_states
+          if (band_energy(ib, is, ik) .ge. efermi) cycle occ_states
+          ! unocc_states: do jb = min_index_unocc(is,ik), nbands
+          unocc_states: do jb = 1, nbands
+            if (band_energy(jb, is, ik) .lt. efermi) cycle unocc_states
             if (linear .or. adaptive) grad(:) = band_gradient(jb, :, ik, is) - band_gradient(ib, :, ik, is)
             ! If the band is very flat linear broadening can have problems describing it. In this case, fall back to
             ! adaptive smearing (and take advantage of FBCS if required).
@@ -468,10 +469,10 @@ contains
       end do
     end do
 
-    if (allocated(min_index_unocc)) then
-      deallocate(min_index_unocc, stat=ierr)
-      if (ierr /= 0) call io_error('Error: calculate_jdos - failed to deallocate min_index_unocc')
-    end if
+    ! if (allocated(min_index_unocc)) then
+    !   deallocate(min_index_unocc, stat=ierr)
+    !   if (ierr /= 0) call io_error('Error: calculate_jdos - failed to deallocate min_index_unocc')
+    ! end if
 
     if (iprint > 1 .and. on_root) then
       write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
@@ -502,15 +503,17 @@ contains
     !===============================================================================
     use od_comms, only: comms_reduce
     use od_electronic, only: nspins
-    use od_comms, only: comms_reduce
 
     implicit none
     real(kind=dp), intent(inout), allocatable, optional :: weighted_jdos(:, :, :) ! bins.spins, orbitals
     real(kind=dp), allocatable, intent(inout) :: jdos(:, :)
+    
+    integer :: N_geom
+    N_geom = size(weighted_jdos, 3)
 
     call comms_reduce(jdos(1, 1), nspins*jdos_nbins, "SUM")
 
-    if (present(weighted_jdos)) call comms_reduce(weighted_jdos(1, 1, 1), nspins*jdos_nbins*1, "SUM")
+    if (present(weighted_jdos)) call comms_reduce(weighted_jdos(1, 1, 1), nspins*jdos_nbins*N_geom, "SUM")
 
 !    if(.not.on_root) then
 !       if(allocated(jdos)) deallocate(jdos,stat=ierr)
