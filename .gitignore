@@ -1,5 +1,6 @@
 optados/*.x
-optados/volume/optados.x
+optados/optados.*
+optados/volume/
 optados/src/build.f90
 optados/mpi/
 optados/mpi_debug/
@@ -8,4 +9,4 @@ optados/devel_flag/
 optados/multi_out/
 optados/photon_sweep/
 optados/original/
-optados/photon_new/optados.x
+optados/photon_new/
