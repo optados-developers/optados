@@ -360,6 +360,13 @@ max_nprocs = 0
 inputs_args = ('C2.odi','')
 output = C2.odo
 
+# This tests the performance of the photon sweep vs singular photoemission runs.
+[testopt_photo_sweep]
+program = OPTADOS_PHOTO_OK
+max_nprocs = 0
+inputs_args = ('C2.odi','')
+output = C2.odo
+
 #--------------------------------------------------------------
 # C a t e g o r y   L i s t
 #--------------------------------------------------------------
