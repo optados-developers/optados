@@ -43,6 +43,7 @@ module od_electronic
   !Additional variables for photoemission.- V.Chang Nov-2020
   real(kind=dp), allocatable, public, save  :: band_curvature(:, :, :, :, :)
   complex(kind=dp), allocatable, public, save  :: foptical_mat(:, :, :, :, :)
+  character(len=80), public, save :: femfile_header
 
   real(kind=dp), public, save :: efermi ! The fermi energy we finally decide on
   logical, public, save       :: efermi_set = .false. ! Have we set efermi?
@@ -366,8 +367,8 @@ contains
         read (curvature_unit) file_version
         if ((file_version - file_ver) > 0.001_dp) &
           call io_error('Error: Trying to read newer version of ddome_bin file. Update optados!')
-        read (curvature_unit) header
-        if (iprint > 1) write (stdout, *) trim(header)
+        read (curvature_unit) femfile_header
+        if (iprint > 1) write (stdout, *) trim(femfile_header)
 
       end if
       ! Figure out how many kpoint should be on each node
