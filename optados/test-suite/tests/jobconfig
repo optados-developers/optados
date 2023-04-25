@@ -351,21 +351,21 @@ inputs_args = ('', '-i ome_bin -o ome_fmt -w Si2_out Si2')
 output = Si2_out.ome_fmt
 
 #--------------------------------------------------------------
+# P h o t o e m i s s i o n   T e s t s 
+#--------------------------------------------------------------
+# This is a general test of the OptaDOS photoemission module.
+[testopt_photo_general]
+program = OPTADOS_PHOTO_OK
+max_nprocs = 0
+inputs_args = ('C2.odi','')
+output = C2.odo
+
+#--------------------------------------------------------------
 # C a t e g o r y   L i s t
 #--------------------------------------------------------------
 [categories]
 optados_only = testopt_*
 od2od_only = testod2od_*
-all = optados_only od2od_only
+photoemission_only = testopt_photo_*
+all = optados_only od2od_only photoemission_only
 default =  all
-
-
-#--------------------------------------------------------------
-# P h o t o e m i s s i o n   T e s t s 
-#--------------------------------------------------------------
-# This is a general test of the OptaDOS photoemission module.
-[testopt_photo_general]
-program = OPTADOS_ODO_OK
-max_nprocs = 0
-inputs_args = ('C2.odi','')
-output = C2.odo
