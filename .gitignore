@@ -1,5 +1,6 @@
 optados/*.x
 optados/*.mpi
+optados/od2od
 optados/volume/
 optados/src/build.f90
 optados/mpi/
