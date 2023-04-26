@@ -367,6 +367,13 @@ nprocs = 2
 inputs_args = ('C2.odi','')
 output = C2.odo
 
+# This tests whether a change to the parallel version has changed the qe value after changing a part of the code.
+[testopt_photo_parallel_diff]
+program = OPTADOS_PHOTOMPI_OK
+nprocs = 2
+inputs_args = ('C2.odi','')
+output = C2.odo
+
 # This tests the performance of the photon sweep vs singular photoemission runs.
 [testopt_photo_sweep]
 program = OPTADOS_PHOTO_OK
