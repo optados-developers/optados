@@ -937,6 +937,8 @@ contains
         write (stdout, '(1x,a46,1x,E17.9,13x,a1)') '|  Electric Field Strength    (V/Ang)        :', photo_elec_field, '|'
       end if
       write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Smearing Temperature       (K)            :', photo_temperature, '|'
+      write (stdout, '(1x,a46,1x,a9,21x,a1)') '|  Transverse Momentum Scheme                :', photo_momentum, '|'
+      ! TODO: Edit the output to reflect the changes made to the printing subroutines
       if (index(write_photo_matrix, 'slab') > 0) then
         write (stdout, '(1x,a78)') '|  Writing Photoemission Matrix Elements     :     Atom Sites                |'
         write (stdout, '(1x,a78)') '|          to *SEED*_matrix.dat ---------------------------------------------|'

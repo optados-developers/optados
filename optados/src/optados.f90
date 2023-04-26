@@ -57,7 +57,6 @@ program optados
   character(len=9) :: stat, pos          ! Status and position of .odo file
   character(len=9) :: ctime             ! Temp. time string
   character(len=11):: cdate             ! Temp. date string
-  character(len=10):: char_iprint, char_e ! Added by Felix Mildner, 03/23 for multi file output
   character(len=120):: filename            ! Added by Felix Mildner, 03/23 for multi file output
 
   ! call sleep(25)
