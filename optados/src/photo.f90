@@ -165,17 +165,17 @@ contains
           call calc_one_step_model !Calculate QE
         end if
 
-        call weighted_mean_te !Weight the contribution of each electron
+        !Weight the contribution of each electron
         !to the transverse energy spread according to their QE
-        if (on_root) then
-          call write_qe_data
-          ! Only call the binding energy gaussian broadening and file printing if necessary
-          if (.not. index(write_photo_matrix, 'off') > 0) then
-            !Broaden ouputs using a gaussian function
-            call binding_energy_spread
-            !Write either a binding energy output with after Gaussian broadening
-            call write_qe_output_files
-          end if
+        call weighted_mean_te
+
+        call write_qe_data
+        ! Only call the binding energy gaussian broadening and file printing if necessary
+        if (.not. index(write_photo_matrix, 'off') > 0) then
+          !Broaden ouputs using a gaussian function
+          if (index(write_photo_matrix, 'e_bind') > 0) call binding_energy_spread
+          !Write either a binding energy output with after Gaussian broadening or the reduced QE tensor 
+          call write_qe_output_files
         end if
         time_b = io_time()
         if (on_root .and. iprint > 1) then
@@ -202,17 +202,20 @@ contains
         call make_foptical_weights !Calculate the one-step optical matrix
         call calc_one_step_model !Calculate QE
       end if
-
-      call weighted_mean_te !Weight the contribution of each electron
+      
+      !Weight the contribution of each electron
       !to the transverse energy spread according to their QE
+      call weighted_mean_te 
       call write_qe_data
+      
       ! Only call the binding energy gaussian broadening and file printing if necessary
       if (.not. index(write_photo_matrix, 'off') > 0) then
         !Broaden ouputs using a gaussian function
-        call binding_energy_spread
+        if (index(write_photo_matrix, 'e_bind') > 0) call binding_energy_spread
         !Write either a binding energy output with after Gaussian broadening
         call write_qe_output_files
       end if
+
     end if
     ! Deallocate the rest that was needed for the photoemission calcs
     call photo_deallocate
@@ -1291,7 +1294,7 @@ contains
       write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
     end if
 
-    call jdos_utils_calculate_delta(delta_temp)
+    call photo_calculate_delta(delta_temp)
 
     if (iprint > 1 .and. on_root) then
       write (stdout, '(1x,a78)') '+--------------------------- Calculating 3Step QE ---------------------------+'
@@ -1461,7 +1464,7 @@ contains
   end subroutine calc_three_step_model
 
   !===============================================================================
-  subroutine jdos_utils_calculate_delta(delta_temp)
+  subroutine photo_calculate_delta(delta_temp)
     !===============================================================================
     ! It is required to evaluate the delta funcion.
     ! Victor Chang, 7th February 2020
@@ -1521,12 +1524,12 @@ contains
 
     if (allocated(E)) then
       deallocate(E, stat=ierr)
-      if (ierr /= 0) call io_error('Error: jdos_utils_calculate_delta - failed to deallocate E')
+      if (ierr /= 0) call io_error('Error: photo_calculate_delta - failed to deallocate E')
     end if
 
     if (allocated(band_gradient) .and. current_index .eq. number_energies) then
       deallocate(band_gradient, stat=ierr)
-      if (ierr /= 0) call io_error('Error: jdos_utils_calculate_delta - failed to deallocate band_gradient')
+      if (ierr /= 0) call io_error('Error: photo_calculate_delta - failed to deallocate band_gradient')
     end if
 
     time1 = io_time()
@@ -1536,7 +1539,7 @@ contains
     end if
     !-------------------------------------------------------------------------------
 
-  end subroutine jdos_utils_calculate_delta
+  end subroutine photo_calculate_delta
 
   !===============================================================================
   subroutine calculate_delta(delta_type, delta_temp)
@@ -2102,11 +2105,17 @@ contains
         layer_qe(atom) = sum(qe_osm(1:nbands,1:nspins,1:num_kpoints_on_node(my_node_id),atom))
       end do
 
+      ! if (num_nodes .eq. 1) then
+      !   write(*,*) sum(qe_osm(1:nbands))
+      ! end if
       ! Sum the data from other nodes that have more k-points stored 
       call comms_reduce(layer_qe(1), max_atoms + 1 , "SUM")
-
+      write(*,*) my_node_id
+      write(*,*) layer_qe
       ! Calculate the total QE
       total_qe = sum(layer_qe)
+      call comms_reduce(total_qe, 1, "SUM")
+
 
       if (total_qe .gt. 0.0_dp) then
         ! Calculate the sum of transverse E from all the bands and k-points on node
@@ -2136,7 +2145,7 @@ contains
 
     use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart, atoms_label_tmp
     use od_electronic, only: nbands, nspins, elec_read_band_gradient, elec_read_band_curvature
-    use od_comms, only: my_node_id
+    use od_comms, only: my_node_id,on_root
     use od_parameters, only: photo_work_function, photo_elec_field, photo_model
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
@@ -2144,39 +2153,39 @@ contains
     use od_jdos_utils, only: jdos_utils_calculate
 
     integer :: atom
+    if (on_root) then
+      write (stdout, '(1x,a78)') '+------------------------------ Photoemission -------------------------------+'
+      write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
+      write (stdout, 223) '| Work Function     ', photo_work_function, &
+        'eV         Photon Energy', temp_photon_energy, 'eV   |'
+      write (stdout, 224) '| Effective Work Function', work_function_eff, &
+        'eV         Electric Field', photo_elec_field, 'V/A  |'
 
-    write (stdout, '(1x,a78)') '+------------------------------ Photoemission -------------------------------+'
-    write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
-    write (stdout, 223) '| Work Function     ', photo_work_function, &
-      'eV         Photon Energy', temp_photon_energy, 'eV   |'
-    write (stdout, 224) '| Effective Work Function', work_function_eff, &
-      'eV         Electric Field', photo_elec_field, 'V/A  |'
+      if (index(photo_model, '3step') > 0) then
+        write (stdout, '(1x,a78)') '| Final State : Bloch State                                                  |'
+      elseif (index(photo_model, '1step') > 0) then
+        write (stdout, '(1x,a78)') '| Final State : Free Electron State                                          |'
+      end if
+      write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
+      write (stdout, '(1x,a78)') '| Atom |  Atom Order  |   Layer   |             Quantum Efficiency           |'
 
-    if (index(photo_model, '3step') > 0) then
-      write (stdout, '(1x,a78)') '| Final State : Bloch State                                                  |'
-    elseif (index(photo_model, '1step') > 0) then
-      write (stdout, '(1x,a78)') '| Final State : Free Electron State                                          |'
+      do atom = 1, max_atoms
+        write (stdout, 225) "|", trim(atoms_label_tmp(atom_order(atom))), atom_order(atom), &
+          layer(atom), layer_qe(atom), "      |"
+      end do
+      write (stdout, 226) "| Bulk", layer_qe(max_atoms + 1), &
+      &"      |"
+
+      write (stdout, 227) '| Total Quantum Efficiency (electrons/photon):', total_qe, '   |'
+
+      write (stdout, 228) '| Weighted Mean Transverse Energy (eV):', mean_te, '      |'
+
+      if (photo_elec_field .gt. 0.0_dp) then
+        write (stdout, 229) '| Total field emission (electrons/A^2):', total_field_emission, '      |'
+      end if
+
+      write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
     end if
-    write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
-    write (stdout, '(1x,a78)') '| Atom |  Atom Order  |   Layer   |             Quantum Efficiency           |'
-
-    do atom = 1, max_atoms
-      write (stdout, 225) "|", trim(atoms_label_tmp(atom_order(atom))), atom_order(atom), &
-        layer(atom), layer_qe(atom), "      |"
-    end do
-    write (stdout, 226) "| Bulk", layer_qe(max_atoms + 1), &
-    &"      |"
-
-    write (stdout, 227) '| Total Quantum Efficiency (electrons/photon):', total_qe, '   |'
-
-    write (stdout, 228) '| Weighted Mean Transverse Energy (eV):', mean_te, '      |'
-
-    if (photo_elec_field .gt. 0.0_dp) then
-      write (stdout, 229) '| Total field emission (electrons/A^2):', total_field_emission, '      |'
-    end if
-
-    write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
-
     223 format(1x, a20, f15.4, 1x, a24, f11.4, a7)
     224 format(1x, a25, f10.4, 1x, a25, f10.4, a7)
     225 format(1x, a1, a4, 8x, I3, 10x, I3, 16x, E24.16E3, 2x, a7)
@@ -2207,15 +2216,15 @@ contains
     real(kind=dp) :: qe_norm, total_weighted
     integer :: N, N_spin, n_eigen, atom, e_scale, ierr
 
-    allocate (t_energy(max_energy))
+    allocate (t_energy(max_energy),stat=ierr)
     if (ierr /= 0) call io_error('Error: binding_energy_spread - allocation of t_energy failed')
     t_energy = 0.0_dp
 
-    allocate (weighted_temp(max_energy, num_kpoints_on_node(my_node_id), nspins, nbands, max_atoms + 1))
+    allocate (weighted_temp(max_energy, num_kpoints_on_node(my_node_id), nspins, nbands, max_atoms + 1),stat=ierr)
     if (ierr /= 0) call io_error('Error: binding_energy_spread - allocation of weighted_temp failed')
     weighted_temp = 0.0_dp
 
-    allocate (binding_temp(max_energy, num_kpoints_on_node(my_node_id), nspins, nbands))
+    allocate (binding_temp(max_energy, num_kpoints_on_node(my_node_id), nspins, nbands),stat=ierr)
     if (ierr /= 0) call io_error('Error: binding_energy_spread - allocation of binding_temp failed')
     binding_temp = 0.0_dp
 
@@ -2237,7 +2246,7 @@ contains
 
     if (index(photo_model, '3step') > 0) then
 
-      allocate (qe_temp(nbands, num_kpoints_on_node(my_node_id), nspins, max_atoms + 1))
+      allocate (qe_temp(nbands, num_kpoints_on_node(my_node_id), nspins, max_atoms + 1),stat=ierr)
       if (ierr /= 0) call io_error('Error: binding_energy_spread - allocation of qe_temp failed')
       qe_temp = 0.0_dp
 
@@ -2326,78 +2335,131 @@ contains
     ! This subroutine write either the transverse energy or the binding energy
     ! after the Gaussian broadening has been applied.
     ! Victor Chang, 7 February 2020
+    ! Felix Mildner, April 2023
 
     use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_r_cart
     use od_electronic, only: nbands, nspins, band_energy
-    use od_comms, only: my_node_id, on_root
+    use od_comms, only: my_node_id, on_root, num_nodes, comms_send, comms_recv, root_id
     use od_io, only: io_error, seedname, io_file_unit, io_date, io_time, stdout
-    use od_parameters, only: write_photo_matrix, photo_model, photo_photon_sweep, iprint
+    use od_parameters, only: write_photo_matrix, photo_model, photo_photon_sweep, photo_photon_energy, iprint
     implicit none
     integer :: atom, ierr, e_scale, binding_unit = 12
-    integer :: N, N_spin, i, n_eigen, matrix_unit = 25
+    integer :: N, N_spin, i, n_eigen, inodes, kpt_total, matrix_unit = 25
 
-    real(kind=dp), allocatable, dimension(:, :) :: qe_atom, time0, time1
+    real(kind=dp), allocatable :: temp_kpt_cart(:,:)
+    real(kind=dp), allocatable, dimension(:,:,:) :: temp_band_energy
+    real(kind=dp), allocatable, dimension(:,:,:,:) :: temp_qe
+    real(kind=dp), allocatable, dimension(:,:) :: qe_atom
+    real(kind=dp) :: time0, time1
     character(len=99)                           :: filename
     character(len=10)                           :: char_e
     character(len=9)                            :: ctime             ! Temp. time string
     character(len=11)                           :: cdate             ! Temp. date string
 
     time0 = io_time()
-
     if (index(write_photo_matrix, 'qe_matrix') > 0) then
       call cell_calc_kpoint_r_cart
-
-      if ((photo_photon_sweep) .and. (on_root)) then
-        write (char_e, '(F7.3)') temp_photon_energy
-        filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_qe_matrix.dat'
-        open (unit=matrix_unit, action='write', file=filename)
-      else
-        open (unit=matrix_unit, action='write', file=trim(seedname)//'_qe_matrix.dat')
+      kpt_total = sum(num_kpoints_on_node(0:num_nodes-1))
+      write(*,*) kpt_total
+      if (num_nodes .gt. 1) then
+        if (on_root) then
+          allocate (temp_kpt_cart(3,kpt_total),stat=ierr)
+          if (ierr /= 0) call io_error('Error: writing qe files - allocation of temp_kpt_cart failed')
+          allocate (temp_band_energy(nbands,nspins,kpt_total),stat=ierr)
+          if (ierr /= 0) call io_error('Error: writing qe files - allocation of temp_band_energy failed')
+          allocate (temp_qe(nbands,nspins,kpt_total,max_atoms+1),stat=ierr)
+          if (ierr /= 0) call io_error('Error: writing qe files - allocation of temp_qe failed')
+        end if
+        call gather_qe_matrix_data(temp_kpt_cart, temp_band_energy, temp_qe)
       end if
-      call io_date(cdate, ctime)
-      write (matrix_unit, *) '## OptaDOS Photoemission: Printing QE Matrix on ', cdate, ' at ', ctime
-      write (matrix_unit, *) '## Seedname: ',trim(seedname)
-      write (matrix_unit, *) '## Photoemission Model: ', trim(photo_model)
-      write (matrix_unit, *) '## Photon Energy: ', trim(adjustl(char_e))
-      write (matrix_unit, '(1x,a31,4(1x,I5),1a)') '## (Reduced) QE Matrix Shape: (', nbands, num_kpoints_on_node(my_node_id), &
-                                                & nspins, max_atoms,')'
-      do N = 1, num_kpoints_on_node(my_node_id)
-        write (matrix_unit, '(1x,a13,3(1x,F16.8),a1)') '## K-point: (',(kpoint_r_cart(i, N),i=1,3),')'
-        do N_spin = 1, nspins
-          write (matrix_unit, *) '## Spin comp: (',N_spin,')'
-          write (matrix_unit, *) (band_energy(n_eigen, N_spin, N),n_eigen=1,nbands)
-        end do
-      end do
+      if (on_root) then
+        if ((photo_photon_sweep)) then
+          write (char_e, '(F7.3)') temp_photon_energy
+          filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_qe_matrix.dat'
+          open (unit=matrix_unit, action='write', file=filename)
+        else
+          write (char_e, '(F7.3)') photo_photon_energy
+          open (unit=matrix_unit, action='write', file=trim(seedname)//'_qe_matrix.dat')
+        end if
+        call io_date(cdate, ctime)
+        write (matrix_unit, *) '## OptaDOS Photoemission: Printing QE Matrix on ', cdate, ' at ', ctime
+        write (matrix_unit, *) '## Seedname: ',trim(seedname)
+        write (matrix_unit, *) '## Photoemission Model: ', trim(photo_model)
+        write (matrix_unit, *) '## Photon Energy: ', trim(adjustl(char_e))
+        write (matrix_unit, '(1x,a31,4(1x,I5),1a)') '## (Reduced) QE Matrix Shape: (', nbands, kpt_total,nspins, max_atoms,')'
+        if (num_nodes > 1) then
+          do N = 1, kpt_total
+            write (matrix_unit, '(1x,a13,3(1x,F11.8),a1)') '## K-point: (',(temp_kpt_cart(i, N),i=1,3),')'
+            do N_spin = 1, nspins
+              write (matrix_unit, '(1x,a15,I1,a1)') '## Spin comp: (',N_spin,')'
+              write (matrix_unit, '(4999(1x,SF17.8))') (temp_band_energy(n_eigen, N_spin, N),n_eigen=1,nbands)
+            end do
+          end do
+          deallocate(temp_kpt_cart,stat=ierr)
+          if (ierr /= 0) call io_error('Error: writing qe files - deallocation of temp_kpt_cart failed')
+          deallocate(temp_band_energy,stat=ierr)
+          if (ierr /= 0) call io_error('Error: writing qe files - deallocation of temp_kpt_cart failed')
+        else
+          ! Printing out the info on root_node
+          do N = 1, num_kpoints_on_node(my_node_id)
+            write (matrix_unit, '(1x,a13,3(1x,F11.8),a1)') '## K-point: (',(kpoint_r_cart(i, N),i=1,3),')'
+            do N_spin = 1, nspins
+              write (matrix_unit, '(1x,a15,I1,a1)') '## Spin comp: (',N_spin,')'
+              write (matrix_unit, '(4999(1x,SF17.8))') (band_energy(n_eigen, N_spin, N),n_eigen=1,nbands)
+            end do
+          end do
+        end if
+      end if
 
       if (index(photo_model, '3step') > 0) then
-        do atom = 1, max_atoms
-          do N_spin = 1, nspins
-            do N = 1, num_kpoints_on_node(my_node_id)
-              write (matrix_unit, '(9999(ES16.8E3))') (sum(qe_tsm(n_eigen, 1:nbands, N_spin, N, atom)), n_eigen=1, nbands)
+        if (num_nodes > 1) then
+          if (on_root) then
+            do atom = 1, max_atoms + 1
+              if (atom .eq. max_atoms + 1) write (matrix_unit, *) '## Bulk Contribution:'
+              do N_spin = 1, nspins
+                do N = 1, num_kpoints_on_node(my_node_id)
+                  write (matrix_unit, '(9999(ES16.8E3))') (temp_qe(n_eigen, N_spin, N, atom), n_eigen=1, nbands)
+                end do
+              end do
+            end do
+            deallocate(temp_qe)
+            if (ierr /= 0) call io_error('Error: writing qe files - deallocation of temp_qe failed')
+          end if
+        else
+          do atom = 1, max_atoms + 1
+            if (atom .eq. max_atoms + 1) write (matrix_unit, *) '## Bulk Contribution:'
+            do N_spin = 1, nspins
+              do N = 1, num_kpoints_on_node(my_node_id)
+                write (matrix_unit, '(9999(ES16.8E3))') (sum(qe_tsm(n_eigen, 1:nbands, N_spin, N, atom)), n_eigen=1, nbands)
+              end do
             end do
           end do
-        end do
-        write (matrix_unit, *) '## Bulk Contribution:'
-        do N_spin = 1, nspins
-          do N = 1, num_kpoints_on_node(my_node_id)
-            write (matrix_unit, '(9999(ES16.8E3))') (sum(qe_tsm(n_eigen, 1:nbands, N_spin, N, max_atoms+1)), n_eigen=1, nbands)
-          end do
-        end do
+        end if            
 
       elseif(index(photo_model, '1step') > 0) then
-        do atom = 1, max_atoms
-          do N_spin = 1, nspins
-            do N = 1, num_kpoints_on_node(my_node_id)
-              write (matrix_unit, '(9999(ES16.8E3))') (qe_osm(n_eigen, N_spin, N, atom), n_eigen=1, nbands)
+        if (num_nodes > 1) then
+          if (on_root) then
+            do atom = 1, max_atoms + 1
+              if (atom .eq. max_atoms + 1) write (matrix_unit, *) '## Bulk Contribution:'
+              do N_spin = 1, nspins
+                do N = 1, num_kpoints_on_node(my_node_id)
+                  write (matrix_unit, '(9999(ES16.8E3))') (temp_qe(n_eigen, N_spin, N, atom), n_eigen=1, nbands)
+                end do
+              end do
+            end do
+            deallocate(temp_qe)
+            if (ierr /= 0) call io_error('Error: writing qe files - deallocation of temp_qe failed')
+          end if
+        else
+          do atom = 1, max_atoms + 1
+            if (atom .eq. max_atoms + 1) write (matrix_unit, *) '## Bulk Contribution:'
+            do N_spin = 1, nspins
+              do N = 1, num_kpoints_on_node(my_node_id)
+                write (matrix_unit, '(9999(ES16.8E3))') (qe_osm(n_eigen, N_spin, N, atom), n_eigen=1, nbands)
+              end do
             end do
           end do
-        end do
-        write (matrix_unit, *) '## Bulk Contribution:'
-        do N_spin = 1, nspins
-          do N = 1, num_kpoints_on_node(my_node_id)
-            write (matrix_unit, '(9999(ES16.8E3))') (qe_osm(n_eigen, N_spin, N, max_atoms + 1), n_eigen=1, nbands)
-          end do
-        end do
+        end if
       end if
       close (unit=matrix_unit)
     end if
@@ -2454,6 +2516,86 @@ contains
     end if
 
   end subroutine write_qe_output_files
+
+  subroutine gather_qe_matrix_data(temp_kpt, temp_bands, temp_qe)
+    !***************************************************************
+    ! This subroutine takes in 
+
+    use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_r_cart
+    use od_electronic, only: nbands, nspins, band_energy
+    use od_comms, only: my_node_id, on_root, num_nodes, comms_send, comms_recv, root_id
+    use od_io, only: io_error, io_file_unit, io_date, io_time
+    use od_parameters, only: photo_model
+
+    implicit none
+
+    real(kind=dp), allocatable, dimension(:, :),intent(inout),optional :: temp_kpt
+    real(kind=dp), allocatable, dimension(:,:,:),intent(inout),optional :: temp_bands
+    real(kind=dp), allocatable, dimension(:,:,:,:),intent(inout),optional :: temp_qe
+    real(kind=dp), allocatable, dimension(:,:,:,:) :: on_note_temp_qe
+
+    integer :: N, N_spin, n_eigen,atom, ierr, inodes, kpt_current, kpt_max
+
+    kpt_current = 1
+
+    ! Gather Data from other nodes
+    if (on_root) then
+      do inodes = 1, num_nodes -1
+        ! Receive the data from other nodes
+        call comms_recv(temp_bands(1,1,kpt_current),nbands*nspins*num_kpoints_on_node(inodes),inodes)
+        call comms_recv(temp_kpt(1,kpt_current),3*num_kpoints_on_node(inodes),inodes)
+        call comms_recv(temp_qe(1,1,kpt_current,1),nbands*nspins*num_kpoints_on_node(inodes)*(max_atoms + 1),inodes)
+        kpt_current = kpt_current + num_kpoints_on_node(inodes)
+      end do
+      ! Populate the data for the root_node
+      kpt_max = kpt_current + num_kpoints_on_node(my_node_id)
+      temp_bands(1:nbands,1:nspins,kpt_current:kpt_max-1) = band_energy(1:nbands,1:nspins,1:num_kpoints_on_node(my_node_id))
+      temp_kpt(1:3,kpt_current:kpt_max-1) = kpoint_r_cart(1:3,1:num_kpoints_on_node(my_node_id))
+      if (index(photo_model, '3step') > 0) then
+        do atom = 1, max_atoms+1
+          do N = kpt_current, kpt_max
+            do N_spin = 1, nspins
+              do n_eigen = 1, nbands
+                ! Sum up the qe contributions from each final state
+              temp_qe(n_eigen,N_spin,N,atom) = sum(qe_tsm(n_eigen, 1:nbands, N_spin, N, atom))
+              end do                            
+            end do
+          end do
+        end do
+      elseif (index(photo_model, '1step') > 1) then
+        temp_qe(1:nbands,1:nspins,kpt_current:kpt_max,1:max_atoms+1) = qe_osm(1:nbands,1:nspins,1:num_kpoints_on_node(0),&
+        1:max_atoms+1)
+      end if
+    else
+      ! Sending of the bands and K-points to the root node
+      call comms_send(band_energy(1,1,1),nbands*num_kpoints_on_node(my_node_id)*nspins,root_id)
+      call comms_send(kpoint_r_cart(1,1),3*num_kpoints_on_node(my_node_id),root_id)
+      ! Sending (+summing of 3step) of QE to the root node
+      if (index(photo_model, '3step') > 0) then
+        ! Make the array to store the qe for each of the sums over the final bands
+        allocate(on_note_temp_qe(nbands,nspins,num_kpoints_on_node(my_node_id),max_atoms+1))
+        if (ierr /= 0) call io_error('Error: gather_qe_matrix_data - allocation of on_note_temp_qe failed')
+        do atom = 1, max_atoms+1
+          do N = 1, num_kpoints_on_node(my_node_id)
+            do N_spin = 1, nspins
+              do n_eigen = 1, nbands
+                ! Sum up the qe contributions from each final state
+                on_note_temp_qe(n_eigen,N_spin,N,atom) = sum(qe_tsm(n_eigen, 1:nbands, N_spin, N, atom))
+              end do                            
+            end do
+          end do
+        end do
+        ! Send the summed up 3step data
+        call comms_send(on_note_temp_qe(1,1,1,1),nbands*nspins*num_kpoints_on_node(my_node_id)*(max_atoms+1),root_id)
+        deallocate (on_note_temp_qe)
+        if (ierr /= 0) call io_error('Error: gather_qe_matrix_data - deallocation of on_note_temp_qe failed')
+      elseif (index(photo_model, '1step') > 0) then
+        call comms_send(qe_osm(1,1,1,1),nbands*nspins*num_kpoints_on_node(my_node_id)*(max_atoms+1),root_id)
+      end if
+
+    end if
+
+  end subroutine gather_qe_matrix_data
 
   subroutine photo_deallocate
     !***************************************************************
