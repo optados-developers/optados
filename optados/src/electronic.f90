@@ -754,11 +754,11 @@ contains
     !
     call algor_dist_array(nkpoints, num_kpoints_on_node)
     !
-    allocate (band_energy(1:nbands, 1:nspins, 1:num_kpoints_on_node(0)), stat=ierr)
+    allocate (band_energy(1:nbands, 1:nspins, 1:num_kpoints_on_node(my_node_id)), stat=ierr)
     if (ierr /= 0) call io_error('Error: Problem allocating band_energy in read_band_energy')
-    allocate (kpoint_weight(1:num_kpoints_on_node(0)), stat=ierr)
+    allocate (kpoint_weight(1:num_kpoints_on_node(my_node_id)), stat=ierr)
     if (ierr /= 0) call io_error('Error: Problem allocating kpoint_weight in read_band_energy')
-    allocate (kpoint_r(1:3, 1:num_kpoints_on_node(0)), stat=ierr)
+    allocate (kpoint_r(1:3, 1:num_kpoints_on_node(my_node_id)), stat=ierr)
     if (ierr /= 0) call io_error('Error: Problem allocating kpoint_r in read_band_energy')
 
     if (on_root) then
