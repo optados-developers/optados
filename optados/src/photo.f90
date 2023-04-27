@@ -1882,8 +1882,9 @@ contains
     if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root .and. .not. photo_photon_sweep) then
       i = 13 ! Defines the number of columns printed in the loop - needed for reshaping the data array during postprocessing
       write (stdout, '(1x,a78)') '+------------ Printing list of values going into 1step QE Values ------------+'
-      write (stdout, '(1x,a211)') 'calculated_QE - foptical_matrix_weights - electron_esc - electrons_per_state - kpoint_weight -&
-      & I_layer - qe_factor - transverse_g - vac_g - fermi_dirac - pdos_weights_atoms - pdos_weights_k_band - field_emission'
+      write (stdout, '(1x,a222)') 'calculated_QE  foptical_matrix_weight selectron_esc electrons_per_state kpoint_weight    &
+      &  I_layer      qe_factor        transverse_g         vac_g         fermi_dirac  pdos_weights_atoms pdos_weights_k_band&
+      & field_emission'
       write (stdout, '(1x,a11,6(1x,I4))') 'Array Shape', i, max_atoms, nbands, nspins, num_kpoints_on_node(my_node_id)
     end if
     do atom = 1, max_atoms
@@ -1930,7 +1931,7 @@ contains
               (1.0_dp + field_emission(n_eigen, N_spin, N))
             ! if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root .and. .not. photo_photon_sweep) then
             !   write (stdout, '(4(1x,I4))') atom, n_eigen, N_spin, N
-            !   write (stdout, '(13(1x,E16.8E4))') qe_osm(n_eigen, N_spin, N, atom), &
+            !   write (stdout, '(13(7x,E16.8E4))') qe_osm(n_eigen, N_spin, N, atom), &
             !     foptical_matrix_weights(n_eigen, n_eigen2, N, N_spin, 1), &
             !    electron_esc(n_eigen, N_spin, N, atom), electrons_per_state, kpoint_weight(N), I_layer(layer(atom), current_index), &
             !     qe_factor, transverse_g, vac_g, fermi_dirac, pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom)), &
@@ -2018,7 +2019,7 @@ contains
     !===============================================================================
     use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart
     use od_electronic, only: nbands, nspins, elec_read_band_gradient, elec_read_band_curvature!, band_energy, efermi
-    use od_comms, only: my_node_id, on_root, comms_reduce
+    use od_comms, only: my_node_id, on_root, comms_reduce, num_nodes
     use od_parameters, only: photo_model, iprint
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
@@ -2105,17 +2106,25 @@ contains
         layer_qe(atom) = sum(qe_osm(1:nbands,1:nspins,1:num_kpoints_on_node(my_node_id),atom))
       end do
 
-      ! if (num_nodes .eq. 1) then
-      !   write(*,*) sum(qe_osm(1:nbands))
-      ! end if
+      if (num_nodes .eq. 1) then
+        do N = 1, 11
+          do atom = 1, 3
+            ! write(*,*) sum(qe_osm(1:nbands,1:nspins,N,atom))
+          end do
+        end do
+      end if
+      if (num_nodes .eq. 2) then
+        ! write(*,*) my_node_id
+        do atom = 1, 3
+          do N = 1, num_kpoints_on_node(my_node_id)
+            ! write(*,*) sum(qe_osm(1:nbands,1:nspins,N,atom))
+          end do
+        end do
+      end if
       ! Sum the data from other nodes that have more k-points stored 
       call comms_reduce(layer_qe(1), max_atoms + 1 , "SUM")
-      write(*,*) my_node_id
-      write(*,*) layer_qe
       ! Calculate the total QE
       total_qe = sum(layer_qe)
-      call comms_reduce(total_qe, 1, "SUM")
-
 
       if (total_qe .gt. 0.0_dp) then
         ! Calculate the sum of transverse E from all the bands and k-points on node
@@ -2360,7 +2369,6 @@ contains
     if (index(write_photo_matrix, 'qe_matrix') > 0) then
       call cell_calc_kpoint_r_cart
       kpt_total = sum(num_kpoints_on_node(0:num_nodes-1))
-      write(*,*) kpt_total
       if (num_nodes .gt. 1) then
         if (on_root) then
           allocate (temp_kpt_cart(3,kpt_total),stat=ierr)
