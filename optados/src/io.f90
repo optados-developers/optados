@@ -46,7 +46,7 @@ module od_io
   integer, parameter, public :: filename_len = 80
   character(len=filename_len), public, save :: seedname
   character(len=filename_len), public, save :: options
-  character(len=2), public, save            :: multi_num
+  character(len=filename_len), public, save :: temp_dir
   integer, parameter, public :: maxlen = 120  ! Max column width of input file
 
   public :: io_get_seedname
@@ -78,7 +78,7 @@ contains
     ! Added by F. Mildner to allow for multi_output runs
     elseif (num_arg == 3) then
       call get_command_argument(1, options)
-      call get_command_argument(2, multi_num)
+      call get_command_argument(2, temp_dir)
       call get_command_argument(3, seedname)
     else
       call get_command_argument(1, seedname)

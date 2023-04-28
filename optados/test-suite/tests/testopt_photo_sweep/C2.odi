@@ -1,0 +1,24 @@
+task : photon_sweep
+JDOS_SPACING : 0.05
+JDOS_MAX_ENERGY : 25
+BROADENING : linear
+hybrid_linear : TRUE
+linear_smearing : 0.026
+optics_intraband : TRUE
+optics_geom : unpolar
+optics_qdir : 1 1.0 1.0
+
+photo_model : 1step
+photo_photon_min : 5.00
+photo_photon_max : 5.00
+photo_work_function : 3.98321
+photo_surface_area : 6.23373
+photo_slab_volume : 5.551018
+photo_elec_field : 0.00
+photo_imfp_const : 10.0
+photo_momentum : crystal
+photo_temperature : 300
+photo_theta_lower : 59
+photo_theta_upper : 61
+
+iprint : 1

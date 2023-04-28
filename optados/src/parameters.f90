@@ -130,12 +130,15 @@ module od_parameters
   real(kind=dp), public, save :: photo_theta_lower
   real(kind=dp), public, save :: photo_theta_upper
   real(kind=dp), public, save :: photo_photon_energy
-  real(kind=dp), public, save :: bulk_length
+  logical, public, save       :: photo_photon_sweep
+  real(kind=dp), public, save :: photo_photon_min
+  real(kind=dp), public, save :: photo_photon_max
+  real(kind=dp), public, save :: photo_bulk_length
   real(kind=dp), public, save :: photo_temperature
   real(kind=dp), public, save :: photo_elec_field
   real(kind=dp), public, save :: photo_imfp_const
-  logical, public, save :: photo_e_units
-  !logical, public, save :: photo_mte
+  ! logical, public, save :: photo_e_units
+  ! logical, public, save :: photo_mte
   real(kind=dp), public, save :: photo_work_function
   real(kind=dp), public, save :: photo_surface_area
   real(kind=dp), public, save :: photo_slab_volume
@@ -190,7 +193,7 @@ contains
       call io_error('Error: value of energy_unit not recognised in param_read')
 
     dos = .false.; pdos = .false.; pdis = .false.; jdos = .false.; optics = .false.
-    core = .false.; compare_dos = .false.; compare_jdos = .false.; photo = .false.
+    core = .false.; compare_dos = .false.; compare_jdos = .false.; photo = .false.; photo_photon_sweep = .false.
     call param_get_vector_length('task', found, i_temp)
     if (found .and. i_temp > 0) then
       allocate (task_string(i_temp), stat=ierr)
@@ -215,6 +218,9 @@ contains
           dos = .true.
         elseif (index(task_string(loop), 'photoemission') > 0) then
           photo = .true.
+        elseif (index(task_string(loop), 'photon_sweep') >0) then
+          photo = .true.
+          photo_photon_sweep = .true.
         elseif (index(task_string(loop), 'none') > 0) then
           dos = .false.; pdos = .false.; jdos = .false.; optics = .false.; core = .false.
         elseif (index(task_string(loop), 'all') > 0) then
@@ -226,10 +232,10 @@ contains
       deallocate (task_string, stat=ierr)
       if (ierr /= 0) call io_error('Error: param_read - deallocation failed for task_string')
     end if
-    if ((compare_dos .or. compare_jdos) .and. (pdos .or. core .or. optics)) &
-      call io_error('Error: compare_dos/compare_jdos are not comptable with pdos, core or optics tasks')
+    if ((compare_dos .or. compare_jdos) .and. (pdos .or. core .or. optics .or. photo)) &
+      call io_error('Error: compare_dos/compare_jdos are not comptable with pdos, core, optics or photoemission tasks')
 
-    if (pdis .and. (optics .or. core .or. jdos .or. pdos .or. dos .or. compare_dos .or. compare_jdos)) &
+    if (pdis .and. (optics .or. core .or. jdos .or. pdos .or. dos .or. compare_dos .or. compare_jdos .or. photo)) &
       call io_error('Error: projected bandstructure not compatible with any other tasks')
 
     i_temp = 0
@@ -443,9 +449,10 @@ contains
 
     write_photo_matrix = 'off'
     call param_get_keyword('write_photo_matrix', found, c_value=write_photo_matrix)
-    if (index(write_photo_matrix, 'slab') == 0 .and. index(write_photo_matrix, 'all') == 0 .and. &
-      & index(write_photo_matrix, 'off') == 0) &
-      call io_error('Error: value of write_photo_matrix output not recognised in param_read')
+    if (index(write_photo_matrix, 'qe_matrix') == 0 .and. index(write_photo_matrix, 'e_bind') == 0 .and. &
+      & index(write_photo_matrix, 'off') == 0) then
+        call io_error('Error: value of write_photo_matrix output not recognised in param_read')
+    end if
 
     photo_model = '1step'
     call param_get_keyword('photo_model', found, c_value=photo_model)
@@ -464,11 +471,17 @@ contains
     call param_get_keyword('photo_phi_lower', found, r_value=photo_phi_lower)
     photo_phi_upper = 90.0_dp
     call param_get_keyword('photo_phi_upper', found, r_value=photo_phi_upper)
+    photo_photon_min = 1.0_dp
+    call param_get_keyword('photo_photon_min', found, r_value=photo_photon_min)
+    photo_photon_max = 2.0_dp
+    call param_get_keyword('photo_photon_max', found, r_value=photo_photon_max)
+    if (photo_photon_max < photo_photon_min) &
+    call io_error('Error: max photon value is lower than min photon value')
     call param_get_keyword('photo_photon_energy', found, r_value=photo_photon_energy)
-    if (photo .and. .not. found) &
+    if (photo .and. .not. found .and. .not. photo_photon_sweep) &
       call io_error('Error: please set photon energy for photoemission calculation')
-    bulk_length = 10.0_dp
-    call param_get_keyword('photo_bulk_length', found, r_value=bulk_length)
+    photo_bulk_length = 10.0_dp
+    call param_get_keyword('photo_bulk_length', found, r_value=photo_bulk_length)
     photo_temperature = 298.0_dp
     call param_get_keyword('photo_temperature', found, r_value=photo_temperature)
 
@@ -767,7 +780,7 @@ contains
     write (stdout, '(1x,a78)') '+-------------------------------- UNITS -------------------------------------+'
     write (stdout, '(1x,a46,2x,a4,25x,a1)') '|  Length Unit                               :', trim(length_unit), '|'
 
-    if (dos .or. pdos .or. photo) then
+    if (dos .or. pdos) then
       if (dos_per_volume) then
         write (stdout, '(1x,a78)') '|  J/P/DOS units                             :  electrons eV^-1 Ang^-3       |'
       else
@@ -827,6 +840,11 @@ contains
       write (stdout, '(1x,a78)') '|  Compute the band gap                      :  True                         |'
     else
       write (stdout, '(1x,a78)') '|  Compute the band gap                      :  False                        |'
+    end if
+
+    if (photo) then
+      write (stdout, '(1x,a19,26x,a2,f7.4,3x,21a)') '|  JDOS bin spacing',': ', jdos_spacing,'eV                  |'
+      write (stdout, '(1x,a22,23x,a2,f7.4,3x,21a)') '|  JDOS max energy bin',': ', jdos_max_energy,'eV                  |'
     end if
 
     if (optics .or. photo) then
@@ -903,7 +921,12 @@ contains
         write (stdout, '(1x,a78)') '|  Photoemission Model                       :     3-Step Model              |'
         write (stdout, '(1x,a78)') '|  Photoemission Final State                 :     Bloch State               |'
       end if
-      write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Photon Energy              (eV)           :', photo_photon_energy, '|'
+      if (photo_photon_sweep) then
+        write (stdout, '(1x,a46,1x,1f10.4,a4,1f7.4,a10)') '|  Photon Energy Sweep                       :', photo_photon_min ,&
+                                                        & ' -> ',photo_photon_max,' eV      |'
+      else
+        write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Photon Energy              (eV)           :', photo_photon_energy, '|'
+      end if
       write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Work Function              (eV)           :', photo_work_function, '|'
       write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Surface Area               (Ang**2)       :', photo_surface_area, '|'
       write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Slab Volume                (Ang**3)       :', photo_slab_volume, '|'
@@ -914,6 +937,8 @@ contains
         write (stdout, '(1x,a46,1x,E17.9,13x,a1)') '|  Electric Field Strength    (V/Ang)        :', photo_elec_field, '|'
       end if
       write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Smearing Temperature       (K)            :', photo_temperature, '|'
+      write (stdout, '(1x,a46,1x,a9,21x,a1)') '|  Transverse Momentum Scheme                :', photo_momentum, '|'
+      ! TODO: Edit the output to reflect the changes made to the printing subroutines
       if (index(write_photo_matrix, 'slab') > 0) then
         write (stdout, '(1x,a78)') '|  Writing Photoemission Matrix Elements     :     Atom Sites                |'
         write (stdout, '(1x,a78)') '|          to *SEED*_matrix.dat ---------------------------------------------|'
@@ -960,7 +985,7 @@ contains
     ! to lowercase characters               !
     !=======================================!
 
-    use od_io, only: io_file_unit, io_error, seedname, multi_num, options
+    use od_io, only: io_file_unit, io_error, seedname, options
     use od_algorithms, only: utility_lowercase
 
     implicit none
@@ -969,12 +994,7 @@ contains
     character(len=maxlen) :: dummy
 
     in_unit = io_file_unit()
-    ! Added by F. Mildner to allow multiple simultaneous runs
-    if (index(options, '-multi_out') > 0) then
-      open (in_unit, file=trim(seedname)//'_'//trim(adjustl(multi_num))//'.odi', form='formatted', status='old', err=101)
-    else
-      open (in_unit, file=trim(seedname)//'.odi', form='formatted', status='old', err=101)
-    end if
+    open (in_unit, file=trim(seedname)//'.odi', form='formatted', status='old', err=101)
     num_lines = 0; tot_num_lines = 0
     do
       read (in_unit, '(a)', iostat=ierr, err=200, end=210) dummy
@@ -1611,6 +1631,8 @@ contains
     call comms_bcast(pdos, 1)
     call comms_bcast(jdos, 1)
     call comms_bcast(optics, 1)
+    call comms_bcast(photo, 1)
+    call comms_bcast(photo_photon_sweep, 1)
     call comms_bcast(core, 1)
     call comms_bcast(compare_dos, 1)
     call comms_bcast(compare_jdos, 1)
@@ -1658,8 +1680,26 @@ contains
     call comms_bcast(set_efermi_zero, 1)
     !
     ! Photoemission
+    ! TODO: Broadcast the rest of the photoemission parameters!!
     call comms_bcast(photo_model, len(photo_model))
     call comms_bcast(photo_momentum, len(photo_momentum))
+    call comms_bcast(photo_photon_energy, 1)
+    if (photo_photon_sweep)then
+      call comms_bcast(photo_photon_min, 1)
+      call comms_bcast(photo_photon_max, 1)
+    end if
+    call comms_bcast(photo_work_function, 1)
+    call comms_bcast(photo_surface_area, 1)
+    call comms_bcast(photo_slab_volume, 1)
+    call comms_bcast(photo_elec_field, 1)
+    call comms_bcast(photo_imfp_const, 1)
+    call comms_bcast(photo_bulk_length, 1)
+    call comms_bcast(photo_temperature, 1)
+    call comms_bcast(write_photo_matrix, len(write_photo_matrix))
+    call comms_bcast(photo_theta_lower, 1)
+    call comms_bcast(photo_theta_upper, 1)
+    call comms_bcast(photo_phi_lower, 1)
+    call comms_bcast(photo_phi_upper, 1)
 
     call comms_bcast(num_exclude_bands, 1)
     if (num_exclude_bands > 1) then

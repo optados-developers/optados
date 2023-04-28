@@ -35,6 +35,11 @@ exe = ../../optados.x
 extract_fn = tools parsers.parse_photo.parse
 tolerance = (1.0e-3, 5.0e-3, 'fermi_lb'),(2.0e-69,1.0e-3,'qe_bulk'),(2.9e-69,1.0e-3,'qe_total'),(8.5E-4,1.0e-3,'mte')
 
+[OPTADOS_PHOTOMPI_OK]
+exe = ../../optados.mpi
+extract_fn = tools parsers.parse_photo.parse
+tolerance = (1.0e-3, 5.0e-3, 'fermi_lb'),(2.0e-69,1.0e-3,'qe_bulk'),(2.9e-69,1.0e-3,'qe_total'),(8.5E-4,1.0e-3,'mte')
+
 [user]
 # This is the string (or list of strings) that identifies sets of tests
 # to be run - one could have multiple ones

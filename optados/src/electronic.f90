@@ -229,7 +229,7 @@ contains
 
       time0 = io_time()
       if (on_root) then
-        if (iprint > 1) write (stdout, '(a)') ' '
+        !if (iprint > 1) write (stdout, '(a)') ' '
         if (iprint > 1) write (stdout, '(a)') ' Reading band gradients from file: '//trim(gradient_filename)
         gradient_unit = io_file_unit()
         if (index(devel_flag, 'old_filename') > 0 .or. legacy_file_format) then
@@ -248,7 +248,7 @@ contains
 
       ! Figure out how many kpoint should be on each node
       call algor_dist_array(nkpoints, num_kpoints_on_node)
-      allocate (band_gradient(1:nbands, 1:3, 1:num_kpoints_on_node(0), 1:nspins), stat=ierr)
+      allocate (band_gradient(1:nbands, 1:3, 1:num_kpoints_on_node(my_node_id), 1:nspins), stat=ierr)
       if (ierr /= 0) call io_error('Error: Problem allocating band_gradient in elec_read_band_gradient')
 
       band_gradient = 0.0_dp
@@ -259,7 +259,7 @@ contains
               read (gradient_unit) ((band_gradient(ib, i, ik, is), ib=1, nbands), i=1, 3)
             end do
           end do
-          call comms_send(band_gradient(1, 1, 1, 1), nbands*3*nspins*num_kpoints_on_node(0), inodes)
+          call comms_send(band_gradient(1, 1, 1, 1), nbands*3*nspins*num_kpoints_on_node(inodes), inodes)
         end do
         do ik = 1, num_kpoints_on_node(0)
           do is = 1, nspins
@@ -269,7 +269,7 @@ contains
       end if
 
       if (.not. on_root) then
-        call comms_recv(band_gradient(1, 1, 1, 1), nbands*3*nspins*num_kpoints_on_node(0), root_id)
+        call comms_recv(band_gradient(1, 1, 1, 1), nbands*3*nspins*num_kpoints_on_node(my_node_id), root_id)
       end if
 
 !        write(*,*) "I'm node", my_node_id, "k-pts:", num_kpoints_on_node(my_node_id),"bgarray:", &
@@ -281,10 +281,12 @@ contains
       band_gradient = band_gradient*bohr2ang*H2eV
 
       time1 = io_time()
-      if (on_root .and. iprint > 1) write (stdout, '(1x,a40,f11.3,a)') 'Time to read band gradients ', time1 - time0, ' (sec)'
+      if (on_root .and. iprint > 1) then
+        write (stdout, '(1x,a30,29x,f11.3,a8)') '+ Time to read band gradients ', time1 - time0, ' (sec) +'
+      end if
 
     else ! lets try to get the data from the cst_ome file
-      allocate (band_gradient(1:nbands, 1:3, 1:num_kpoints_on_node(0), 1:nspins), stat=ierr)
+      allocate (band_gradient(1:nbands, 1:3, 1:num_kpoints_on_node(my_node_id), 1:nspins), stat=ierr)
       if (ierr /= 0) call io_error('Error: Problem allocating band_gradient (b) in elec_read_band_gradient')
 
       if (allocated(optical_mat)) then
@@ -366,8 +368,8 @@ contains
         read (curvature_unit) file_version
         if ((file_version - file_ver) > 0.001_dp) &
           call io_error('Error: Trying to read newer version of ddome_bin file. Update optados!')
-        read (curvature_unit) header
-        if (iprint > 1) write (stdout, *) trim(header)
+        read (curvature_unit) femfile_header
+        if (iprint > 1) write (stdout, *) trim(femfile_header)
 
       end if
       ! Figure out how many kpoint should be on each node
@@ -484,7 +486,7 @@ contains
 
     ! Figure out how many kpoints should be on each node
     call algor_dist_array(nkpoints, num_kpoints_on_node)
-    allocate (optical_mat(1:nbands, 1:nbands, 1:3, 1:num_kpoints_on_node(0), 1:nspins), stat=ierr)
+    allocate (optical_mat(1:nbands, 1:nbands, 1:3, 1:num_kpoints_on_node(my_node_id), 1:nspins), stat=ierr)
     if (ierr /= 0) call io_error('Error: Problem allocating optical_mat in elec_read_optical_mat')
 
     if (legacy_file_format) then
@@ -503,7 +505,7 @@ contains
               end do
             end do
           end do
-          call comms_send(optical_mat(1, 1, 1, 1, 1), nbands*nbands*3*nspins*num_kpoints_on_node(0), inodes)
+          call comms_send(optical_mat(1, 1, 1, 1, 1), nbands*nbands*3*nspins*num_kpoints_on_node(inodes), inodes)
         end do
 
         do ik = 1, num_kpoints_on_node(0)
@@ -530,7 +532,7 @@ contains
                                      , jb=1, nbands), i=1, 3)
             end do
           end do
-          call comms_send(optical_mat(1, 1, 1, 1, 1), nbands*nbands*3*nspins*num_kpoints_on_node(0), inodes)
+          call comms_send(optical_mat(1, 1, 1, 1, 1), nbands*nbands*3*nspins*num_kpoints_on_node(inodes), inodes)
         end do
         do ik = 1, num_kpoints_on_node(0)
           do is = 1, nspins
@@ -541,7 +543,7 @@ contains
     end if
 
     if (.not. on_root) then
-      call comms_recv(optical_mat(1, 1, 1, 1, 1), nbands*nbands*3*nspins*num_kpoints_on_node(0), root_id)
+      call comms_recv(optical_mat(1, 1, 1, 1, 1), nbands*nbands*3*nspins*num_kpoints_on_node(my_node_id), root_id)
     end if
 
     if (on_root) close (unit=gradient_unit)
@@ -752,11 +754,11 @@ contains
     !
     call algor_dist_array(nkpoints, num_kpoints_on_node)
     !
-    allocate (band_energy(1:nbands, 1:nspins, 1:num_kpoints_on_node(0)), stat=ierr)
+    allocate (band_energy(1:nbands, 1:nspins, 1:num_kpoints_on_node(my_node_id)), stat=ierr)
     if (ierr /= 0) call io_error('Error: Problem allocating band_energy in read_band_energy')
-    allocate (kpoint_weight(1:num_kpoints_on_node(0)), stat=ierr)
+    allocate (kpoint_weight(1:num_kpoints_on_node(my_node_id)), stat=ierr)
     if (ierr /= 0) call io_error('Error: Problem allocating kpoint_weight in read_band_energy')
-    allocate (kpoint_r(1:3, 1:num_kpoints_on_node(0)), stat=ierr)
+    allocate (kpoint_r(1:3, 1:num_kpoints_on_node(my_node_id)), stat=ierr)
     if (ierr /= 0) call io_error('Error: Problem allocating kpoint_r in read_band_energy')
 
     if (on_root) then
@@ -779,9 +781,9 @@ contains
             end do
           end do
         end do
-        call comms_send(band_energy(1, 1, 1), nbands*nspins*num_kpoints_on_node(0), inodes)
-        call comms_send(kpoint_r(1, 1), 3*num_kpoints_on_node(0), inodes)
-        call comms_send(kpoint_weight(1), num_kpoints_on_node(0), inodes)
+        call comms_send(band_energy(1, 1, 1), nbands*nspins*num_kpoints_on_node(inodes), inodes)
+        call comms_send(kpoint_r(1, 1), 3*num_kpoints_on_node(inodes), inodes)
+        call comms_send(kpoint_weight(1), num_kpoints_on_node(inodes), inodes)
       end do
 
       do ik = 1, num_kpoints_on_node(0)
@@ -815,9 +817,9 @@ contains
     end if
 
     if (.not. on_root) then
-      call comms_recv(band_energy(1, 1, 1), nbands*nspins*num_kpoints_on_node(0), root_id)
-      call comms_recv(kpoint_r(1, 1), 3*num_kpoints_on_node(0), root_id)
-      call comms_recv(kpoint_weight(1), num_kpoints_on_node(0), root_id)
+      call comms_recv(band_energy(1, 1, 1), nbands*nspins*num_kpoints_on_node(my_node_id), root_id)
+      call comms_recv(kpoint_r(1, 1), 3*num_kpoints_on_node(my_node_id), root_id)
+      call comms_recv(kpoint_weight(1), num_kpoints_on_node(my_node_id), root_id)
     end if
 
     if (on_root) close (unit=band_unit)
@@ -1446,7 +1448,7 @@ contains
     allocate (nbands_occ(1:num_kpoints_on_node(my_node_id), 1:pdos_mwab%nspins), stat=ierr)
     if (ierr /= 0) stop " Error : cannot allocate nbands_occ"
     allocate (pdos_weights(1:pdos_mwab%norbitals, 1:pdos_mwab%nbands, &
-                           1:num_kpoints_on_node(0), 1:pdos_mwab%nspins), stat=ierr)
+                           1:num_kpoints_on_node(my_node_id), 1:pdos_mwab%nspins), stat=ierr)
     if (ierr /= 0) stop " Error : cannot allocate pdos_weights"
 
     if (on_root) then
@@ -1468,7 +1470,7 @@ contains
           end do
         end do
         call comms_send(pdos_weights(1, 1, 1, 1), pdos_mwab%norbitals*pdos_mwab%nbands* &
-                        nspins*num_kpoints_on_node(0), inodes)
+                        nspins*num_kpoints_on_node(inodes), inodes)
       end do
 
       do ik = 1, num_kpoints_on_node(0)
@@ -1486,7 +1488,7 @@ contains
 
     if (.not. on_root) then
       call comms_recv(pdos_weights(1, 1, 1, 1), pdos_mwab%norbitals*pdos_mwab%nbands* &
-                      nspins*num_kpoints_on_node(0), root_id)
+                      nspins*num_kpoints_on_node(my_node_id), root_id)
     end if
 
     if (on_root) close (pdos_in_unit)

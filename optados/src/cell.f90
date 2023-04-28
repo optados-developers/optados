@@ -1084,11 +1084,19 @@ contains
         if (ierr /= 0) call io_error('Error allocating atoms_label in cell_dist')
         allocate (atoms_symbol(num_species), stat=ierr)
         if (ierr /= 0) call io_error('Error allocating atoms_symbol in cell_dist')
+        ! For Photoemission
+        allocate(atoms_pos_cart_photo(3,num_atoms),stat=ierr)
+        if (ierr/=0) call io_error('Error allocating atoms_pos_cart_photo in cell_dist')
+        allocate(atoms_label_tmp(num_atoms),stat=ierr)
+        if (ierr/=0) call io_error('Error allocating atoms_label_tmp in cell_dist')
       end if
       call comms_bcast(atoms_pos_frac(1, 1, 1), 3*num_species*max_sites)
       call comms_bcast(atoms_pos_cart(1, 1, 1), 3*num_species*max_sites)
       call comms_bcast(atoms_label(1), len(atoms_label(1))*num_species)
       call comms_bcast(atoms_symbol(1), len(atoms_symbol(1))*num_species)
+      ! For Photoemission
+      call comms_bcast(atoms_pos_cart_photo(1,1),3*num_atoms)
+      call comms_bcast(atoms_label_tmp(1), maxlen*num_atoms)
     end if
     call comms_bcast(num_crystal_symmetry_operations, 1)
     if (num_crystal_symmetry_operations > 0) then
@@ -1158,10 +1166,10 @@ contains
     real(kind=dp), allocatable, dimension(:, :) :: kpoint_r_tmp
     real(kind=dp), allocatable, dimension(:, :) :: kpoint_r_cart_tmp
 
-    allocate (kpoint_r_tmp(3, nkpoints), stat=ierr)
+    allocate (kpoint_r_tmp(3, num_kpoints_on_node(my_node_id)), stat=ierr)
     if (ierr /= 0) call io_error('Error allocating kpoint_r_tmp in&
 &    cell_calc_kpoint_r_cart')
-    allocate (kpoint_r_cart_tmp(3, nkpoints), stat=ierr)
+    allocate (kpoint_r_cart_tmp(3, num_kpoints_on_node(my_node_id)), stat=ierr)
     if (ierr /= 0) call io_error('Error allocating kpoint_r_cart_tmp in&
 &    cell_calc_kpoint_r_cart')
 
@@ -1171,10 +1179,14 @@ contains
     !If they are, the elec_read_band_energy will return.
 !    call elec_read_band_energy
 
-    call cell_get_real_lattice
-
-    call cell_calc_lattice
-
+    ! We will call this only if we have not read in the cell before. With a parallel build
+    ! the non root nodes would not get the updated cell and perform another bohr2ang
+    ! conversion. If I try to insert a comms_bcast in the cell_get_
+    ! F.Mildner 04/2023
+    if (.not. abs(cell_volume) .gt. 0.0_dp) then
+      call cell_get_real_lattice
+      call cell_calc_lattice
+    end if
     do loop = 1, num_kpoints_on_node(my_node_id)
       call utility_reciprocal_frac_to_cart(kpoint_r_tmp(:, loop), kpoint_r_cart_tmp(:, loop), recip_lattice)
 !      print*,kpoint_r_tmp(1,loop),kpoint_r_tmp(2,loop),kpoint_r_tmp(3,loop),&
