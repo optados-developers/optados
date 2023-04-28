@@ -1,4 +1,4 @@
-task : photoemission
+task : photon_sweep
 JDOS_SPACING : 0.05
 JDOS_MAX_ENERGY : 25
 BROADENING : linear
@@ -10,6 +10,8 @@ optics_qdir : 1 1.0 1.0
 
 photo_model : 1step
 photo_photon_energy : 5.00
+# photo_photon_min : 4.20
+# photo_photon_max : 4.5
 photo_work_function : 3.98321
 photo_surface_area : 6.23373
 photo_slab_volume : 5.551018

@@ -355,28 +355,28 @@ output = Si2_out.ome_fmt
 #--------------------------------------------------------------
 # This is a general test of the OptaDOS photoemission module.
 [testopt_photo_general]
-program = OPTADOS_PHOTO_OK
+program = OPTADOS_PHOTO_ODO_OK
 max_nprocs = 0
 inputs_args = ('C2.odi','')
 output = C2.odo
 
 # This tests the performance of the photon sweep vs singular photoemission runs.
 [testopt_photo_mpi]
-program = OPTADOS_PHOTOMPI_OK
+program = OPTADOS_MPI_ODO_OK
 nprocs = 2
 inputs_args = ('C2.odi','')
 output = C2.odo
 
-# This tests whether a change to the parallel version has changed the qe value after changing a part of the code.
-[testopt_photo_parallel_diff]
-program = OPTADOS_PHOTOMPI_OK
+# This tests whether the wrong setup of a photon sweep fails, like it should
+[testopt_photo_mpi_sweep]
+program = OPTADOS_MPI_PHOTO_ODO_FAIL
 nprocs = 2
 inputs_args = ('C2.odi','')
 output = C2.odo
 
 # This tests the performance of the photon sweep vs singular photoemission runs.
 [testopt_photo_sweep]
-program = OPTADOS_PHOTO_OK
+program = OPTADOS_PHOTO_ODO_OK
 max_nprocs = 0
 inputs_args = ('C2.odi','')
 output = C2.odo

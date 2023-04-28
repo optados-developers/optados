@@ -30,13 +30,19 @@ extract_fn = tools parsers.parse_od2od_log.parse
 exe = ../../od2od
 extract_fn = tools parsers.parse_od2od_fmt.parse
 
-[OPTADOS_PHOTO_OK]
+[OPTADOS_PHOTO_ODO_OK]
 exe = ../../optados.x
 extract_fn = tools parsers.parse_photo.parse
 tolerance = (1.0e-3, 5.0e-3, 'fermi_lb'),(2.0e-69,1.0e-3,'qe_bulk'),(2.9e-69,1.0e-3,'qe_total'),(8.5E-4,1.0e-3,'mte')
 
-[OPTADOS_PHOTOMPI_OK]
+[OPTADOS_MPI_ODO_OK]
 exe = ../../optados.mpi
+extract_fn = tools parsers.parse_photo.parse
+tolerance = (1.0e-3, 5.0e-3, 'fermi_lb'),(2.0e-69,1.0e-3,'qe_bulk'),(2.9e-69,1.0e-3,'qe_total'),(8.5E-4,1.0e-3,'mte')
+
+[OPTADOS_MPI_PHOTO_ODO_FAIL]
+exe = ../../optados.mpi
+can_fail = true
 extract_fn = tools parsers.parse_photo.parse
 tolerance = (1.0e-3, 5.0e-3, 'fermi_lb'),(2.0e-69,1.0e-3,'qe_bulk'),(2.9e-69,1.0e-3,'qe_total'),(8.5E-4,1.0e-3,'mte')
 
