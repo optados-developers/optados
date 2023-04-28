@@ -366,6 +366,13 @@ max_nprocs = 0
 inputs_args = ('C2.odi','')
 output = C2.odo
 
+# This tests if the wrong input fails the run as expected
+[testopt_photo_finput1]
+program = OPTADOS_PHOTO_OPTERR_FAIL
+max_nprocs = 0
+inputs_args = ('C2.odi','')
+output = C2.opt_err
+
 # This tests the performance of the photon sweep vs singular photoemission runs.
 [testopt_photo_sweep]
 program = OPTADOS_PHOTO_ODO_OK
