@@ -353,6 +353,12 @@ output = Si2_out.ome_fmt
 #--------------------------------------------------------------
 # P h o t o e m i s s i o n   T e s t s 
 #--------------------------------------------------------------
+# Test coverage
+#
+# Photoemission
+# MPI gives same result as serial
+# photon_sweep task gives same result as the photoemission task
+
 # This is a general test of the OptaDOS photoemission module.
 [testopt_photo_general]
 program = OPTADOS_PHOTO_ODO_OK
@@ -361,23 +367,16 @@ inputs_args = ('C2.odi','')
 output = C2.odo
 
 # This tests the performance of the photon sweep vs singular photoemission runs.
-[testopt_photo_mpi]
-program = OPTADOS_MPI_ODO_OK
-nprocs = 2
-inputs_args = ('C2.odi','')
-output = C2.odo
-
-# This tests whether the wrong setup of a photon sweep fails, like it should
-[testopt_photo_mpi_sweep]
-program = OPTADOS_MPI_PHOTO_ODO_FAIL
-nprocs = 2
+[testopt_photo_sweep]
+program = OPTADOS_PHOTO_ODO_OK
+max_nprocs = 0
 inputs_args = ('C2.odi','')
 output = C2.odo
 
 # This tests the performance of the photon sweep vs singular photoemission runs.
-[testopt_photo_sweep]
-program = OPTADOS_PHOTO_ODO_OK
-max_nprocs = 0
+[testopt_photo_mpi]
+program = OPTADOS_MPI_PHOTO_ODO_OK
+nprocs = 2
 inputs_args = ('C2.odi','')
 output = C2.odo
 
