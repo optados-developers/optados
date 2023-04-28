@@ -472,12 +472,10 @@ contains
     photo_phi_upper = 90.0_dp
     call param_get_keyword('photo_phi_upper', found, r_value=photo_phi_upper)
     call param_get_keyword('photo_photon_min', found, r_value=photo_photon_min)
-    if (found .and. photo) call io_error('Error: cannot set min photon energy for photoemission calculation')
     photo_photon_min = 3.0_dp
     call param_get_keyword('photo_photon_max', found, r_value=photo_photon_max)
-    if (found .and. photo) call io_error('Error: cannot set max photon energy for photoemission calculation')
     photo_photon_max = 2.0_dp
-    if (photo_photon_sweep .and. photo_photon_max < photo_photon_min) &
+    if (photo_photon_sweep .and. photo_photon_max .gt. photo_photon_min) &
       call io_error('Error: max photon value is lower than min photon value or they have not been set')
     call param_get_keyword('photo_photon_energy', found, r_value=photo_photon_energy)
     if (found .and. photo_photon_sweep) call io_error('Error: cannot set photon energy for photon energy sweep calculation')

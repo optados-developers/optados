@@ -389,6 +389,7 @@ output = C2.odo
 # This tests the performance of the photon sweep vs singular photoemission runs.
 [testopt_photo_mpi]
 program = OPTADOS_MPI_PHOTO_ODO_OK
+min_nprocs = 2
 nprocs = 2
 inputs_args = ('C2.odi','')
 output = C2.odo
@@ -396,6 +397,7 @@ output = C2.odo
 # This tests the performance of the photon sweep vs singular photoemission runs.
 [testopt_photo_mpi_qemat]
 program = OPTADOS_MPI_PHOTO_QEMAT_OK
+min_nprocs = 2
 nprocs = 2
 inputs_args = ('C2.odi','')
 output = C2_qe_matrix.dat
