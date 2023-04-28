@@ -81,6 +81,7 @@ contains
     real(kind=dp), intent(in), optional  :: matrix_weights(:, :, :, :, :)               !I've added this
 
     integer :: N_geom ,is, idos, wjdos_unit = 25
+    logical :: print_weighted_jdos = .false.
 
     calc_weighted_jdos = .false.
     if (present(matrix_weights)) calc_weighted_jdos = .true.
@@ -157,21 +158,23 @@ contains
            &      ', time1 - time0, ' (sec) +'
     end if
     !-------------------------------------------------------------------------------
-    if (calc_weighted_jdos .and. .not. photo .and. on_root) then
-      N_geom = size(matrix_weights, 5)
-      open (unit=wjdos_unit, action='write', file=trim(seedname)//'_weighted_jdos.dat')
-      write (wjdos_unit, '(1x,a28)') '############################'
-      write (wjdos_unit, '(1x,a19,1x,a99)') '# Weighted JDOS for' , seedname
-      write (wjdos_unit, '(1x,a23,1x,F10.4,1x,a4)') '# maximum JDOS energy :' , jdos_max_energy , '[eV]'
-      write (wjdos_unit, '(1x,a23,1x,F10.4,1x,a4)') '# JDOS step size      :' , jdos_spacing , '[eV]'
-      write (wjdos_unit, '(1x,a28)') '############################'
-      do is = 1, nspins
-        write (wjdos_unit, *) 'Spin Channel :', is
-        do idos = 1, jdos_nbins
-          write (wjdos_unit, *) idos*jdos_spacing, ' , ',sum(weighted_jdos(idos, is, 1:N_geom))
+    if (print_weighted_jdos) then
+      if (on_root) then
+        N_geom = size(matrix_weights, 5)
+        open (unit=wjdos_unit, action='write', file=trim(seedname)//'_weighted_jdos.dat')
+        write (wjdos_unit, '(1x,a28)') '############################'
+        write (wjdos_unit, '(1x,a19,1x,a99)') '# Weighted JDOS for' , seedname
+        write (wjdos_unit, '(1x,a23,1x,F10.4,1x,a4)') '# maximum JDOS energy :' , jdos_max_energy , '[eV]'
+        write (wjdos_unit, '(1x,a23,1x,F10.4,1x,a4)') '# JDOS step size      :' , jdos_spacing , '[eV]'
+        write (wjdos_unit, '(1x,a28)') '############################'
+        do is = 1, nspins
+          write (wjdos_unit, *) 'Spin Channel :', is
+          do idos = 1, jdos_nbins
+            write (wjdos_unit, *) idos*jdos_spacing, ' , ',sum(weighted_jdos(idos, is, 1:N_geom))
+          end do
         end do
-      end do
-      close (unit=wjdos_unit)
+        close (unit=wjdos_unit)
+      end if
     end if
 
     if (dos_per_volume) then
@@ -509,7 +512,7 @@ contains
     real(kind=dp), allocatable, intent(inout) :: jdos(:, :)
     
     integer :: N_geom
-    N_geom = size(weighted_jdos, 3)
+    if (present(weighted_jdos)) N_geom = size(weighted_jdos, 3)
 
     call comms_reduce(jdos(1, 1), nspins*jdos_nbins, "SUM")
 
