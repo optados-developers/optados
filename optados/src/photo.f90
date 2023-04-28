@@ -2106,21 +2106,6 @@ contains
         layer_qe(atom) = sum(qe_osm(1:nbands,1:nspins,1:num_kpoints_on_node(my_node_id),atom))
       end do
 
-      if (num_nodes .eq. 1) then
-        do N = 1, 11
-          do atom = 1, 3
-            ! write(*,*) sum(qe_osm(1:nbands,1:nspins,N,atom))
-          end do
-        end do
-      end if
-      if (num_nodes .eq. 2) then
-        ! write(*,*) my_node_id
-        do atom = 1, 3
-          do N = 1, num_kpoints_on_node(my_node_id)
-            ! write(*,*) sum(qe_osm(1:nbands,1:nspins,N,atom))
-          end do
-        end do
-      end if
       ! Sum the data from other nodes that have more k-points stored 
       call comms_reduce(layer_qe(1), max_atoms + 1 , "SUM")
       ! Calculate the total QE
