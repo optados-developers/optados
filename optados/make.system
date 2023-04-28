@@ -2,10 +2,10 @@
 SYSTEM := gfortran
 
 # fast / debug
-BUILD := debug
+BUILD := fast
 
 # serial / mpi
-COMMS_ARCH := serial
+COMMS_ARCH := mpi
 
 # Where would you like the executables?
 #PREFIX:=../photon_new/
