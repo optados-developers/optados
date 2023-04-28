@@ -356,6 +356,12 @@ output = Si2_out.ome_fmt
 # Test coverage
 #
 # Photoemission
+# Wrong inputs:
+#  - leaving out photoemission
+#  TODO:
+#  - setting wrong min > max photon energies
+#  - setting wrong distance of min/max energies
+# Testing the QE matrix file output for correct numbers in mpi
 # MPI gives same result as serial
 # photon_sweep task gives same result as the photoemission task
 
@@ -366,7 +372,7 @@ max_nprocs = 0
 inputs_args = ('C2.odi','')
 output = C2.odo
 
-# This tests if the wrong input fails the run as expected
+# This tests if leaving out the photon energy fails the run
 [testopt_photo_finput1]
 program = OPTADOS_PHOTO_OPTERR_FAIL
 max_nprocs = 0
@@ -386,6 +392,13 @@ program = OPTADOS_MPI_PHOTO_ODO_OK
 nprocs = 2
 inputs_args = ('C2.odi','')
 output = C2.odo
+
+# This tests the performance of the photon sweep vs singular photoemission runs.
+[testopt_photo_mpi_qemat]
+program = OPTADOS_MPI_PHOTO_QEMAT_OK
+nprocs = 2
+inputs_args = ('C2.odi','')
+output = C2_qe_matrix.dat
 
 #--------------------------------------------------------------
 # C a t e g o r y   L i s t
