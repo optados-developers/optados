@@ -219,8 +219,7 @@ contains
         elseif (index(task_string(loop), 'photoemission') > 0) then
           photo = .true.
         elseif (index(task_string(loop), 'photon_sweep') >0) then
-          photo = .true.
-          photo_photon_sweep = .true.
+          photo = .true.; photo_photon_sweep = .true.
         elseif (index(task_string(loop), 'none') > 0) then
           dos = .false.; pdos = .false.; jdos = .false.; optics = .false.; core = .false.
         elseif (index(task_string(loop), 'all') > 0) then
@@ -471,11 +470,11 @@ contains
     call param_get_keyword('photo_phi_lower', found, r_value=photo_phi_lower)
     photo_phi_upper = 90.0_dp
     call param_get_keyword('photo_phi_upper', found, r_value=photo_phi_upper)
-    call param_get_keyword('photo_photon_min', found, r_value=photo_photon_min)
     photo_photon_min = 3.0_dp
-    call param_get_keyword('photo_photon_max', found, r_value=photo_photon_max)
+    call param_get_keyword('photo_photon_min', found, r_value=photo_photon_min)
     photo_photon_max = 2.0_dp
-    if (photo_photon_sweep .and. photo_photon_max .gt. photo_photon_min) &
+    call param_get_keyword('photo_photon_max', found, r_value=photo_photon_max)
+    if (photo_photon_max .gt. photo_photon_min .and. photo_photon_sweep) &
       call io_error('Error: max photon value is lower than min photon value or they have not been set')
     call param_get_keyword('photo_photon_energy', found, r_value=photo_photon_energy)
     if (found .and. photo_photon_sweep) call io_error('Error: cannot set photon energy for photon energy sweep calculation')

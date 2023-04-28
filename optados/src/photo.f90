@@ -476,7 +476,7 @@ contains
     if (photo_photon_sweep) then
       num_energies = (photo_photon_max - photo_photon_min)/jdos_spacing
       number_energies = int(num_energies) + 1
-      if (photo_photon_max .eq. photo_photon_min) then
+      if (photo_photon_max - photo_photon_min .eq. 0.0_dp) then
         number_energies = 1
       else if (mod(num_energies, 1.0_dp) > 1.0E-10_dp) then
         number_energies = number_energies + 1
