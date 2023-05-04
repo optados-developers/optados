@@ -2055,7 +2055,7 @@ contains
       do atom = 1, max_atoms + 1
         do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
           do N_spin = 1, nspins                    ! Loop over spins
-            do n_eigen = 1, nbands
+            do n_eigen = 1, min_index_unocc(N_spin, N) - 1
                 !do n_eigen2 = min_index_unocc(N_spin, N), nbands
                 ! if (band_energy(n_eigen2, N_spin, N) .lt. efermi) cycle ! Skip occupied final states
               te_tsm_temp(n_eigen, N, N_spin, atom) = E_transverse(n_eigen, N, N_spin)&
@@ -2065,7 +2065,7 @@ contains
           end do
         end do
         ! Calculate the qe contribution of each atom/layer
-        layer_qe(atom) = sum(qe_tsm(1:nbands,min_index_unocc(N_spin, N):nbands,1:nspins,1:num_kpoints_on_node(my_node_id),atom))
+        layer_qe(atom) = sum(qe_tsm(1:nbands,1:nbands,1:nspins,1:num_kpoints_on_node(my_node_id),atom))
       end do
 
       ! Sum the data from other nodes that have more k-points stored 
