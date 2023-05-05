@@ -454,7 +454,7 @@ contains
     use od_electronic, only: elec_read_optical_mat, nbands, nspins, efermi, elec_dealloc_optical, elec_read_band_gradient,&
     & nbands, nspins, band_energy
     use od_cell, only: num_kpoints_on_node, num_kpoints_on_node
-    use od_jdos_utils, only: jdos_utils_calculate, jdos_nbins, E, setup_energy_scale, jdos_deallocate
+    use od_jdos_utils, only: jdos_utils_calculate, jdos_nbins, setup_energy_scale, jdos_deallocate
     use od_comms, only: comms_bcast, on_root, my_node_id
     use od_parameters, only: optics_intraband, jdos_spacing, photo_model, photo_photon_energy, photo_photon_sweep, &
     photo_photon_min, photo_photon_max, devel_flag, iprint
@@ -2019,7 +2019,7 @@ contains
     !===============================================================================
     use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart
     use od_electronic, only: nbands, nspins, elec_read_band_gradient, elec_read_band_curvature!, band_energy, efermi
-    use od_comms, only: my_node_id, on_root, comms_reduce, num_nodes
+    use od_comms, only: my_node_id, on_root, comms_reduce
     use od_parameters, only: photo_model, iprint
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
@@ -2042,7 +2042,7 @@ contains
     if (.not. allocated(layer_qe)) then
       allocate(layer_qe(max_atoms+1), stat=ierr)
       if (ierr /= 0) call io_error('Error: weighted_mean_te - allocation of layer_qe failed')
-    end if 
+    end if
 
     if (index(photo_model, '3step') > 0) then
 
@@ -2458,7 +2458,7 @@ contains
 
     use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_r_cart
     use od_electronic, only: nbands, nspins, band_energy
-    use od_comms, only: my_node_id, on_root, num_nodes, comms_send, comms_recv, root_id
+    use od_comms, only: my_node_id, on_root, num_nodes, comms_send, comms_recv, root_id, comms_bcast
     use od_io, only: io_error, io_file_unit, io_date, io_time, seedname
     use od_parameters, only: photo_model, photo_photon_sweep, photo_photon_energy
 
