@@ -2074,16 +2074,14 @@ contains
       ! Calculate the total QE
       total_qe = sum(layer_qe)
 
-      if (total_qe .gt. 0.0_dp) then
-        ! Calculate the sum of transverse E from all the bands and k-points on node
-        mean_te = sum(te_tsm_temp(1:nbands, 1:num_kpoints_on_node(my_node_id), 1:nspins, 1:max_atoms + 1))
-        ! Sum the data from other nodes that have more k-points stored
-      else
-        mean_te = 0.0_dp
-      end if
+      mean_te = sum(te_tsm_temp(1:nbands, 1:num_kpoints_on_node(my_node_id), 1:nspins, 1:max_atoms + 1))
+      ! Sum the data from other nodes that have more k-points stored
       call comms_reduce(mean_te, 1, 'SUM')
+
       if (total_qe .gt. 0.0_dp) then
         mean_te = mean_te/total_qe
+      else
+        mean_te = 0.0_dp
       end if
 
       deallocate (te_tsm_temp, stat=ierr)
@@ -2091,7 +2089,7 @@ contains
 
     elseif (index(photo_model, '1step') > 0) then
 
-      allocate (te_osm_temp(nbands, num_kpoints_on_node(my_node_id), nspins, max_atoms + 1), stat=ierr)
+      allocate (te_osm_temp(nbands, num_kpoints_on_node(my_node_id), nspins, max_atoms+1), stat=ierr)
       if (ierr /= 0) call io_error('Error: weighted_mean_te - allocation of te_osm_temp failed')
       te_osm_temp = 0.0_dp
       do atom = 1, max_atoms + 1
@@ -2108,20 +2106,21 @@ contains
         layer_qe(atom) = sum(qe_osm(1:nbands,1:nspins,1:num_kpoints_on_node(my_node_id),atom))
       end do
 
-      ! Sum the data from other nodes that have more k-points stored 
+      ! Sum the data from other nodes that have more k-points stored
       call comms_reduce(layer_qe(1), max_atoms+1 , 'SUM')
       ! Calculate the total QE
       total_qe = sum(layer_qe)
 
+      ! Calculate the sum of transverse E from all the bands and k-points on node
+      mean_te = sum(te_osm_temp(1:nbands, 1:num_kpoints_on_node(my_node_id), 1:nspins, 1:max_atoms+1))
+      ! Sum the data from other nodes that have more k-points stored
+      call comms_reduce(mean_te, 1, 'SUM')
+
       if (total_qe .gt. 0.0_dp) then
-        ! Calculate the sum of transverse E from all the bands and k-points on node
-        mean_te = sum(te_osm_temp(1:nbands, 1:num_kpoints_on_node(my_node_id), 1:nspins, 1:max_atoms + 1)) 
-        ! Sum the data from other nodes that have more k-points stored
+        mean_te = mean_te/total_qe
       else
         mean_te = 0.0_dp
       end if
-      call comms_reduce(mean_te, 1, 'SUM')
-      mean_te = mean_te / total_qe
 
       deallocate (te_osm_temp, stat=ierr)
       if (ierr /= 0) call io_error('Error: weighted_mean_te - failed to deallocate te_osm_temp')
