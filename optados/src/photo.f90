@@ -2043,6 +2043,7 @@ contains
       allocate(layer_qe(max_atoms+1), stat=ierr)
       if (ierr /= 0) call io_error('Error: weighted_mean_te - allocation of layer_qe failed')
     end if
+    layer_qe = 0.0_dp
 
     if (index(photo_model, '3step') > 0) then
 
@@ -2069,19 +2070,20 @@ contains
       end do
 
       ! Sum the data from other nodes that have more k-points stored 
-      call comms_reduce(layer_qe(1), max_atoms + 1 , "SUM")
-
+      call comms_reduce(layer_qe(1), max_atoms+1 , 'SUM')
       ! Calculate the total QE
       total_qe = sum(layer_qe)
-      
+
       if (total_qe .gt. 0.0_dp) then
         ! Calculate the sum of transverse E from all the bands and k-points on node
         mean_te = sum(te_tsm_temp(1:nbands, 1:num_kpoints_on_node(my_node_id), 1:nspins, 1:max_atoms + 1))
         ! Sum the data from other nodes that have more k-points stored
-        call comms_reduce(mean_te, 1, "SUM")
-        mean_te = mean_te/total_qe
       else
         mean_te = 0.0_dp
+      end if
+      call comms_reduce(mean_te, 1, 'SUM')
+      if (total_qe .gt. 0.0_dp) then
+        mean_te = mean_te/total_qe
       end if
 
       deallocate (te_tsm_temp, stat=ierr)
@@ -2107,7 +2109,7 @@ contains
       end do
 
       ! Sum the data from other nodes that have more k-points stored 
-      call comms_reduce(layer_qe(1), max_atoms + 1 , "SUM")
+      call comms_reduce(layer_qe(1), max_atoms+1 , 'SUM')
       ! Calculate the total QE
       total_qe = sum(layer_qe)
 
@@ -2115,11 +2117,11 @@ contains
         ! Calculate the sum of transverse E from all the bands and k-points on node
         mean_te = sum(te_osm_temp(1:nbands, 1:num_kpoints_on_node(my_node_id), 1:nspins, 1:max_atoms + 1)) 
         ! Sum the data from other nodes that have more k-points stored
-        call comms_reduce(mean_te, 1, "SUM")
-        mean_te = mean_te / total_qe
       else
         mean_te = 0.0_dp
       end if
+      call comms_reduce(mean_te, 1, 'SUM')
+      mean_te = mean_te / total_qe
 
       deallocate (te_osm_temp, stat=ierr)
       if (ierr /= 0) call io_error('Error: weighted_mean_te - failed to deallocate te_osm_temp')
