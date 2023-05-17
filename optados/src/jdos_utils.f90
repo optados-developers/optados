@@ -66,15 +66,14 @@ contains
     !===============================================================================
     use od_parameters, only: linear, fixed, adaptive, quad, iprint, dos_per_volume, photo, photo_slab_volume,&
                             &jdos_max_energy, jdos_spacing
-    use od_electronic, only: elec_read_band_gradient, band_gradient, nspins, electrons_per_state, &
-                             num_electrons, efermi_set
+    use od_electronic, only: elec_read_band_gradient, band_gradient, nspins, efermi_set
     use od_comms, only: on_root, comms_bcast
     use od_io, only: stdout, io_error, io_time, seedname
     use od_cell, only: cell_volume
     use od_dos_utils, only: dos_utils_set_efermi
 
     implicit none
-    integer :: ierr
+    !integer :: ierr
     real(kind=dp) :: time0, time1
 
     real(kind=dp), intent(out), allocatable, optional    :: weighted_jdos(:, :, :)  !I've added this
