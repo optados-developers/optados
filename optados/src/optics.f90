@@ -504,7 +504,7 @@ contains
     use od_cell, only: nkpoints, cell_volume
     use od_electronic, only: nspins, electrons_per_state, nbands
     use od_jdos_utils, only: E, jdos_nbins
-    use od_parameters, only: optics_intraband, optics_drude_broadening, photo,photo_slab_volume, iprint
+    use od_parameters, only: optics_intraband, optics_drude_broadening, photo, photo_slab_volume, iprint
     use od_io, only: stdout
     use od_comms, only: on_root
 

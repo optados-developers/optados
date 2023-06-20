@@ -218,7 +218,7 @@ contains
           dos = .true.
         elseif (index(task_string(loop), 'photoemission') > 0) then
           photo = .true.
-        elseif (index(task_string(loop), 'photon_sweep') >0) then
+        elseif (index(task_string(loop), 'photon_sweep') > 0) then
           photo = .true.; photo_photon_sweep = .true.
         elseif (index(task_string(loop), 'none') > 0) then
           dos = .false.; pdos = .false.; jdos = .false.; optics = .false.; core = .false.
@@ -450,7 +450,7 @@ contains
     call param_get_keyword('write_photo_output', found, c_value=write_photo_output)
     if (index(write_photo_output, 'qe_matrix') == 0 .and. index(write_photo_output, 'e_bind') == 0 .and. &
       & index(write_photo_output, 'off') == 0) then
-        call io_error('Error: value of write_photo_output output not recognised in param_read')
+      call io_error('Error: value of write_photo_output output not recognised in param_read')
     end if
 
     photo_model = '1step'
@@ -843,8 +843,8 @@ contains
     end if
 
     if (photo) then
-      write (stdout, '(1x,a19,26x,a2,f7.4,3x,21a)') '|  JDOS bin spacing',': ', jdos_spacing,'eV                  |'
-      write (stdout, '(1x,a22,23x,a2,f7.4,3x,21a)') '|  JDOS max energy bin',': ', jdos_max_energy,'eV                  |'
+      write (stdout, '(1x,a19,26x,a2,f7.4,3x,21a)') '|  JDOS bin spacing', ': ', jdos_spacing, 'eV                  |'
+      write (stdout, '(1x,a22,23x,a2,f7.4,3x,21a)') '|  JDOS max energy bin', ': ', jdos_max_energy, 'eV                  |'
     end if
 
     if (optics .or. photo) then
@@ -922,8 +922,8 @@ contains
         write (stdout, '(1x,a78)') '|  Photoemission Final State                 :     Bloch State               |'
       end if
       if (photo_photon_sweep) then
-        write (stdout, '(1x,a46,1x,1f10.4,a4,1f7.4,a10)') '|  Photon Energy Sweep                       :', photo_photon_min ,&
-                                                        & ' -> ',photo_photon_max,' eV      |'
+        write (stdout, '(1x,a46,1x,1f10.4,a4,1f7.4,a10)') '|  Photon Energy Sweep                       :', photo_photon_min,&
+                                                        & ' -> ', photo_photon_max, ' eV      |'
       else
         write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Photon Energy              (eV)           :', photo_photon_energy, '|'
       end if
@@ -1684,7 +1684,7 @@ contains
     call comms_bcast(photo_model, len(photo_model))
     call comms_bcast(photo_momentum, len(photo_momentum))
     call comms_bcast(photo_photon_energy, 1)
-    if (photo_photon_sweep)then
+    if (photo_photon_sweep) then
       call comms_bcast(photo_photon_min, 1)
       call comms_bcast(photo_photon_max, 1)
     end if
