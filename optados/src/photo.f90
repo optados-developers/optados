@@ -437,8 +437,8 @@ contains
       write (stdout, 124) shape(pdos_weights_k_band)
       write (stdout, 124) pdos_mwab%nbands, num_kpoints_on_node(my_node_id), nspins
 124   format(3(1x, I4))
-      write (stdout, '(9999(es15.8))') (((pdos_weights_k_band(n_eigen, N_spin, N),
-       N=1, num_kpoints_on_node(my_node_id)), N_spin=1, nspins), n_eigen=1, pdos_mwab%nbands)
+      write (stdout, '(9999(es15.8))') (((pdos_weights_k_band(n_eigen, N_spin, N), &
+                                          N=1, num_kpoints_on_node(my_node_id)), N_spin=1, nspins), n_eigen=1, pdos_mwab%nbands)
       write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
     end if
   end subroutine make_pdos_weights_atoms
@@ -561,7 +561,7 @@ contains
         write (stdout, '(1x,a78)') '+------------------------ Printing Weighted Joint-DOS -----------------------+'
         write (stdout, 124) shape(weighted_jdos)
         write (stdout, 124) jdos_nbins, nspins, N_geom
-        124     format(3(1x, I4))
+124     format(3(1x, I4))
         write (stdout, '(9999(es15.8))') (((weighted_jdos(jdos_bin, N_spin, N2), N2=1, N_geom), N_spin=1, nspins) &
                                           , jdos_bin=1, jdos_nbins)
         write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
@@ -590,7 +590,7 @@ contains
           write (stdout, '(1x,a78)') '+------------------------ Printing DOS Matrix Weights -----------------------+'
           write (stdout, 125) shape(dos_matrix_weights)
           write (stdout, 125) size(matrix_weights, 5), nbands, num_kpoints_on_node(my_node_id), nspins
-          125     format(4(1x, I4))
+125       format(4(1x, I4))
           write (stdout, '(9999(es15.8))') ((((dos_matrix_weights(n_eigen, n_eigen2, N, s), s=1, nspins), N=1, &
                                               num_kpoints_on_node(my_node_id)), n_eigen2=1, nbands), n_eigen=1, &
                                             size(matrix_weights, 5))
@@ -1660,8 +1660,6 @@ contains
     if (iprint > 1 .and. on_root) then
       write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
     end if
-
-
 
   end subroutine calculate_delta
 

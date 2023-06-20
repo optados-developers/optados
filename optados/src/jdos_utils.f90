@@ -511,10 +511,7 @@ contains
     
     integer :: N_geom
     if (present(weighted_jdos)) N_geom = size(weighted_jdos, 3)
-
-    integer :: N_geom
-    if (present(weighted_jdos)) N_geom = size(weighted_jdos, 3)
-
+    
     call comms_reduce(jdos(1, 1), nspins*jdos_nbins, "SUM")
 
     if (present(weighted_jdos)) call comms_reduce(weighted_jdos(1, 1, 1), nspins*jdos_nbins*N_geom, "SUM")
