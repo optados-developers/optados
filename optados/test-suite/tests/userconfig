@@ -30,6 +30,32 @@ extract_fn = tools parsers.parse_od2od_log.parse
 exe = ../../od2od
 extract_fn = tools parsers.parse_od2od_fmt.parse
 
+[OPTADOS_PHOTO_ODO_OK]
+exe = ../../optados.x
+extract_fn = tools parsers.parse_photo_odo.parse
+tolerance = (1.0e-3, 5.0e-3, 'fermi_lb'),(2.0e-69,1.0e-3,'qe_bulk'),(2.9e-69,1.0e-3,'qe_total'),(8.5E-4,1.0e-3,'mte')
+
+[OPTADOS_PHOTO_OPTERR_FAIL]
+exe = ../../optados.x
+can_fail = true
+extract_fn = tools parsers.parse_photo_opterr.parse
+
+[OPTADOS_MPI_PHOTO_ODO_OK]
+exe = ../../optados.mpi
+extract_fn = tools parsers.parse_photo_odo.parse
+tolerance = (1.0e-3, 5.0e-3, 'fermi_lb'),(2.0e-69,1.0e-3,'qe_bulk'),(2.9e-69,1.0e-3,'qe_total'),(8.5E-4,1.0e-3,'mte')
+
+[OPTADOS_MPI_PHOTO_QEMAT_OK]
+exe = ../../optados.mpi
+extract_fn = tools parsers.parse_photo_qemat.parse
+tolerance = (1.0e-3, 5.0e-3, 'band_energies')
+
+[OPTADOS_MPI_PHOTO_ODO_FAIL]
+exe = ../../optados.mpi
+can_fail = true
+extract_fn = tools parsers.parse_photo_opterr.parse
+tolerance = (1.0e-3, 5.0e-3, 'fermi_lb'),(2.0e-69,1.0e-3,'qe_bulk'),(2.9e-69,1.0e-3,'qe_total'),(8.5E-4,1.0e-3,'mte')
+
 [user]
 # This is the string (or list of strings) that identifies sets of tests
 # to be run - one could have multiple ones

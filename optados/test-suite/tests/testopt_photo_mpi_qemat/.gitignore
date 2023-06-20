@@ -1,0 +1,6 @@
+*.ome_bin
+*.pdos_bin
+*.fem_bin
+*.dome_bin
+*.bands
+*.odo

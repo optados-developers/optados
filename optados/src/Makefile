@@ -13,6 +13,7 @@ ifeq ($(BUILD), debug)
   EXTENSION:=.debug
 else
   FFLAGS+=$(FFLAGS_FAST)
+  EXTENSION:=.x
 endif
 
 
@@ -24,8 +25,8 @@ else
    F90:=$(F90_SERIAL)
 endif
 
-#EXTENSION:=$(EXTENSION)$(EXE_SUFFIX)
-EXTENSION:=.x
+EXTENSION:=$(EXTENSION)
+#EXTENSION:=.x
 
 # Put object names here
 OBJS=build.o algorithms.o cell.o comms.o constants.o core.o dos.o dos_utils.o electronic.o io.o jdos.o jdos_utils.o optics.o parameters.o pdos.o pdis.o projection_utils.o xmgrace_utils.o photo.o
@@ -38,7 +39,7 @@ od2od : od2od.f90 $(OBJS) ../make.system
 	$(F90) $(FFLAGS) $< $(OBJS) -o ../od2od
 
 optados : optados.f90 $(OBJS) ../make.system
-	$(F90) $(FFLAGS) $< $(OBJS) -o ../optados$(EXTENSION)
+	$(F90) $(FFLAGS) $< $(OBJS) -o $(PREFIX)optados$(EXTENSION)
 
 algorithms.o : algorithms.f90 io.o constants.o ../make.system
 	$(F90) -c $(FFLAGS) $<
@@ -85,7 +86,7 @@ pdos.o : pdos.F90 projection_utils.o cell.o comms.o constants.o io.o dos.o elect
 pdis.o : pdis.f90 projection_utils.o cell.o comms.o constants.o io.o dos.o electronic.o ../make.system
 	$(F90) -c $(FFLAGS) $<
 
-photo.o : photo.f90 constants.o io.o electronic.o jdos_utils.o cell.o parameters.o xmgrace_utils.o ../make.system
+photo.o : photo.f90 comms.o constants.o io.o electronic.o jdos_utils.o cell.o parameters.o xmgrace_utils.o ../make.system
 	$(F90) -c $(FFLAGS) $<
 
 projection_utils.o : projection_utils.f90 cell.o comms.o constants.o cell.o electronic.o io.o parameters.o ../make.system

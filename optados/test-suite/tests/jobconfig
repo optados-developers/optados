@@ -351,10 +351,63 @@ inputs_args = ('', '-i ome_bin -o ome_fmt -w Si2_out Si2')
 output = Si2_out.ome_fmt
 
 #--------------------------------------------------------------
+# P h o t o e m i s s i o n   T e s t s 
+#--------------------------------------------------------------
+# Test coverage
+#
+# Photoemission
+# Wrong inputs:
+#  - leaving out photoemission
+#  TODO:
+#  - setting wrong min > max photon energies
+#  - setting wrong distance of min/max energies
+# Testing the QE matrix file output for correct numbers in mpi
+# MPI gives same result as serial
+# photon_sweep task gives same result as the photoemission task
+
+# This is a general test of the OptaDOS photoemission module.
+[testopt_photo_general]
+program = OPTADOS_PHOTO_ODO_OK
+max_nprocs = 0
+inputs_args = ('C2.odi','')
+output = C2.odo
+
+# This tests if leaving out the photon energy fails the run
+[testopt_photo_finput1]
+program = OPTADOS_PHOTO_OPTERR_FAIL
+max_nprocs = 0
+inputs_args = ('C2.odi','')
+output = C2.opt_err
+
+# This tests the performance of the photon sweep vs singular photoemission runs.
+[testopt_photo_sweep]
+program = OPTADOS_PHOTO_ODO_OK
+max_nprocs = 0
+inputs_args = ('C2.odi','')
+output = C2.odo
+
+# This tests the performance of the photon sweep vs singular photoemission runs.
+[testopt_photo_mpi]
+program = OPTADOS_MPI_PHOTO_ODO_OK
+min_nprocs = 2
+nprocs = 2
+inputs_args = ('C2.odi','')
+output = C2.odo
+
+# This tests the performance of the photon sweep vs singular photoemission runs.
+[testopt_photo_mpi_qemat]
+program = OPTADOS_MPI_PHOTO_QEMAT_OK
+min_nprocs = 2
+nprocs = 2
+inputs_args = ('C2.odi','')
+output = C2_qe_matrix.dat
+
+#--------------------------------------------------------------
 # C a t e g o r y   L i s t
 #--------------------------------------------------------------
 [categories]
 optados_only = testopt_*
 od2od_only = testod2od_*
-all = optados_only od2od_only
+photoemission_only = testopt_photo_*
+all = optados_only od2od_only photoemission_only
 default =  all
