@@ -1,0 +1,22 @@
+task : photoemission
+jdos_spacing : 0.1
+jdos_max_energy : 25
+broadening : linear
+linear_smearing : 0.026
+optics_intraband : TRUE
+hybrid_linear : TRUE
+optics_geom : unpolar
+optics_qdir : 1 1 0
+
+photo_model : 1step
+photo_photon_energy: 21.2
+photo_work_function : 4.556
+photo_surface_area : 6.339744873
+photo_slab_volume : 190.942338
+photo_elec_field : 0.00
+photo_imfp_const : 19.0
+photo_momentum : crystal
+photo_temperature : 300
+write_photo_output : e_bind
+
+iprint : 1

@@ -1,0 +1,14 @@
+TASK                 : SPECTRAL
+SPECTRAL_TASK        : OPTICS
+PDOS_CALCULATE_WEIGHTS : TRUE
+xc_functional        : PBEsol
+opt_strategy         : speed
+smearing_width       : 300 K
+cut_off_energy       : 600 eV
+elec_energy_tol      : 1e-8 eV
+NEXTRA_BANDS         : 100
+MAX_SCF_CYCLES       : 1000
+FIX_OCCUPANCY        : FALSE
+WRITE_FORMATTED_POTENTIAL : TRUE
+
+
