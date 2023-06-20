@@ -121,7 +121,7 @@ module od_parameters
 
   ! Photoemission parameters - V.Chang, et al. Dec-2022
   character(len=20), public, save :: photo_model
-  character(len=20), public, save :: write_photo_matrix
+  character(len=20), public, save :: write_photo_output
   character(len=20), public, save :: photo_momentum
   !logical,           public, save :: angle_resolution
   !character(len=20), public, save :: resolution_type
@@ -446,11 +446,11 @@ contains
     if (index(photo_momentum, 'kp') == 0 .and. index(photo_momentum, 'crystal') == 0 .and. index(photo_momentum, 'operator') == 0) &
       call io_error('Error: value of momentum not recognised in param_read')
 
-    write_photo_matrix = 'off'
-    call param_get_keyword('write_photo_matrix', found, c_value=write_photo_matrix)
-    if (index(write_photo_matrix, 'qe_matrix') == 0 .and. index(write_photo_matrix, 'e_bind') == 0 .and. &
-      & index(write_photo_matrix, 'off') == 0) then
-        call io_error('Error: value of write_photo_matrix output not recognised in param_read')
+    write_photo_output = 'off'
+    call param_get_keyword('write_photo_output', found, c_value=write_photo_output)
+    if (index(write_photo_output, 'qe_matrix') == 0 .and. index(write_photo_output, 'e_bind') == 0 .and. &
+      & index(write_photo_output, 'off') == 0) then
+        call io_error('Error: value of write_photo_output output not recognised in param_read')
     end if
 
     photo_model = '1step'
@@ -939,10 +939,10 @@ contains
       write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Smearing Temperature       (K)            :', photo_temperature, '|'
       write (stdout, '(1x,a46,1x,a9,21x,a1)') '|  Transverse Momentum Scheme                :', photo_momentum, '|'
       ! TODO: Edit the output to reflect the changes made to the printing subroutines
-      if (index(write_photo_matrix, 'slab') > 0) then
+      if (index(write_photo_output, 'slab') > 0) then
         write (stdout, '(1x,a78)') '|  Writing Photoemission Matrix Elements     :     Atom Sites                |'
         write (stdout, '(1x,a78)') '|          to *SEED*_matrix.dat ---------------------------------------------|'
-      elseif (index(write_photo_matrix, 'all') > 0) then
+      elseif (index(write_photo_output, 'all') > 0) then
         write (stdout, '(1x,a78)') '|  Writing Photoemission Matrix Elements     :     All Elements              |'
         write (stdout, '(1x,a78)') '|          to *SEED*_matrix.dat ---------------------------------------------|'
       end if
@@ -1695,7 +1695,7 @@ contains
     call comms_bcast(photo_imfp_const, 1)
     call comms_bcast(photo_bulk_length, 1)
     call comms_bcast(photo_temperature, 1)
-    call comms_bcast(write_photo_matrix, len(write_photo_matrix))
+    call comms_bcast(write_photo_output, len(write_photo_output))
     call comms_bcast(photo_theta_lower, 1)
     call comms_bcast(photo_theta_upper, 1)
     call comms_bcast(photo_phi_lower, 1)

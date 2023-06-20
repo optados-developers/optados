@@ -92,7 +92,7 @@ contains
     & efermi, efermi_set, elec_read_foptical_mat, elec_dealloc_pdos
     use od_jdos_utils, only: jdos_utils_calculate, setup_energy_scale
     use od_comms, only: on_root
-    use od_parameters, only: photo_work_function, photo_model, photo_elec_field, write_photo_matrix, photo_photon_sweep,&
+    use od_parameters, only: photo_work_function, photo_model, photo_elec_field, write_photo_output, photo_photon_sweep,&
                             &photo_photon_min, jdos_spacing, photo_photon_energy, iprint
     use od_dos_utils, only: dos_utils_set_efermi, dos_utils_calculate_at_e, dos_utils_deallocate
     use od_io, only: stdout, io_error, io_time
@@ -171,9 +171,9 @@ contains
 
         call write_qe_data
         ! Only call the binding energy gaussian broadening and file printing if necessary
-        if (.not. index(write_photo_matrix, 'off') > 0) then
+        if (.not. index(write_photo_output, 'off') > 0) then
           !Broaden ouputs using a gaussian function
-          if (index(write_photo_matrix, 'e_bind') > 0) call binding_energy_spread
+          if (index(write_photo_output, 'e_bind') > 0) call binding_energy_spread
           !Write either a binding energy output with after Gaussian broadening or the reduced QE tensor 
           call write_qe_output_files
         end if
@@ -209,9 +209,9 @@ contains
       call write_qe_data
       
       ! Only call the binding energy gaussian broadening and file printing if necessary
-      if (.not. index(write_photo_matrix, 'off') > 0) then
+      if (.not. index(write_photo_output, 'off') > 0) then
         !Broaden ouputs using a gaussian function
-        if (index(write_photo_matrix, 'e_bind') > 0) call binding_energy_spread
+        if (index(write_photo_output, 'e_bind') > 0) call binding_energy_spread
         !Write either a binding energy output with after Gaussian broadening
         call write_qe_output_files
       end if
@@ -2019,7 +2019,7 @@ contains
     !===============================================================================
     use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart
     use od_electronic, only: nbands, nspins, elec_read_band_gradient, elec_read_band_curvature!, band_energy, efermi
-    use od_comms, only: my_node_id, on_root, comms_reduce
+    use od_comms, only: my_node_id, on_root, comms_reduce, comms_bcast
     use od_parameters, only: photo_model, iprint
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
@@ -2110,6 +2110,7 @@ contains
       call comms_reduce(layer_qe(1), max_atoms+1 , 'SUM')
       ! Calculate the total QE
       total_qe = sum(layer_qe)
+      call comms_bcast(total_qe,1)
 
       ! Calculate the sum of transverse E from all the bands and k-points on node
       mean_te = sum(te_osm_temp(1:nbands, 1:num_kpoints_on_node(my_node_id), 1:nspins, 1:max_atoms+1))
@@ -2191,6 +2192,8 @@ contains
 
   subroutine binding_energy_spread
     ! TODO: Make this work well with parallelisation!!
+    ! Why do we take the fixed smearing and why do we have to apply a gaussian broadening to the qe
+    ! matrix? Would it make sense to apply the photo_temperature value in eV?
     ! This subroutine applies a Gaussian broadenning to the binding energy
     ! Additionally, it takes the photoemission angles theta and phi as inputs
     ! Victor Chang, 7 February 2020
@@ -2200,29 +2203,31 @@ contains
     use od_parameters, only: photo_work_function, fixed_smearing,photo_model, photo_theta_lower, photo_theta_upper, &
     & photo_phi_lower, photo_phi_upper
     use od_algorithms, only: gaussian
-    use od_comms, only: my_node_id
+    use od_comms, only: my_node_id, comms_reduce, comms_bcast
     use od_io, only: io_error, io_file_unit
     implicit none
 
     real(kind=dp), allocatable, dimension(:, :, :, :) :: binding_temp
-    real(kind=dp), allocatable, dimension(:, :, :, :) :: qe_temp
+    ! real(kind=dp), allocatable, dimension(:, :, :, :) :: qe_temp
+    real(kind=dp) :: qe_temp
 
     real(kind=dp) :: qe_norm, total_weighted
     integer :: N, N_spin, n_eigen, atom, e_scale, ierr
+
+    max_energy = int((temp_photon_energy - photo_work_function)*1000) + 100
 
     allocate (t_energy(max_energy),stat=ierr)
     if (ierr /= 0) call io_error('Error: binding_energy_spread - allocation of t_energy failed')
     t_energy = 0.0_dp
 
-    allocate (weighted_temp(max_energy, num_kpoints_on_node(my_node_id), nspins, nbands, max_atoms + 1),stat=ierr)
+    allocate (weighted_temp(max_energy, nbands, nspins, num_kpoints_on_node(my_node_id), max_atoms + 1),stat=ierr)
     if (ierr /= 0) call io_error('Error: binding_energy_spread - allocation of weighted_temp failed')
     weighted_temp = 0.0_dp
 
-    allocate (binding_temp(max_energy, num_kpoints_on_node(my_node_id), nspins, nbands),stat=ierr)
+    allocate (binding_temp(max_energy,nbands,nspins,num_kpoints_on_node(my_node_id)),stat=ierr)
     if (ierr /= 0) call io_error('Error: binding_energy_spread - allocation of binding_temp failed')
     binding_temp = 0.0_dp
 
-    max_energy = int((temp_photon_energy - photo_work_function)*1000) + 100
     do e_scale = 1, max_energy
       t_energy(e_scale) = real(e_scale - 1, dp)/1000
     end do
@@ -2231,96 +2236,84 @@ contains
       do N_spin = 1, nspins                    ! Loop over spins
         do n_eigen = 1, nbands
           do e_scale = 1, max_energy
-            binding_temp(e_scale, N, N_spin, n_eigen) = &
+            binding_temp(e_scale,n_eigen,N_spin,N) = &
               gaussian((efermi - band_energy(n_eigen, N_spin, N)), fixed_smearing, t_energy(e_scale))
           end do
         end do
       end do
     end do
 
-    if (index(photo_model, '3step') > 0) then
-
-      allocate (qe_temp(nbands, num_kpoints_on_node(my_node_id), nspins, max_atoms + 1),stat=ierr)
-      if (ierr /= 0) call io_error('Error: binding_energy_spread - allocation of qe_temp failed')
-      qe_temp = 0.0_dp
-
+    if (index(photo_model, '3step') > 0) then      
       do atom = 1, max_atoms + 1
         do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
           do N_spin = 1, nspins                    ! Loop over spins
             do n_eigen = 1, nbands
-              qe_temp(n_eigen, N, N_spin, atom) = sum(qe_tsm(n_eigen, 1:nbands, N_spin, N, atom))
-            end do
-          end do
-        end do
-      end do
-
-      do e_scale = 1, max_energy
-        do atom = 1, max_atoms + 1
-          do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
-            do N_spin = 1, nspins                    ! Loop over spins
-              do n_eigen = 1, nbands
-                if (theta_arpes(n_eigen, N, N_spin) .ge. photo_theta_lower .and. &
-                    theta_arpes(n_eigen, N, N_spin) .le. photo_theta_upper) then
-                  if (phi_arpes(n_eigen, N, N_spin) .ge. photo_phi_lower .and. &
-                      phi_arpes(n_eigen, N, N_spin) .le. photo_phi_upper) then
-                    weighted_temp(e_scale, N, N_spin, n_eigen, atom) = &
-                      binding_temp(e_scale, N, N_spin, n_eigen)*qe_temp(n_eigen, N, N_spin, atom)
-                  end if
+              if (theta_arpes(n_eigen, N, N_spin) .ge. photo_theta_lower .and. &
+                  theta_arpes(n_eigen, N, N_spin) .le. photo_theta_upper) then
+                if (phi_arpes(n_eigen, N, N_spin) .ge. photo_phi_lower .and. &
+                    phi_arpes(n_eigen, N, N_spin) .le. photo_phi_upper) then
+                  qe_temp = sum(qe_tsm(n_eigen, 1:nbands, N_spin, N, atom))
+                  do e_scale = 1, max_energy
+                    weighted_temp(e_scale,n_eigen, N_spin, N, atom) = &
+                      binding_temp(e_scale,n_eigen, N_spin, N)*qe_temp
+                  end do
                 end if
-              end do
+              end if
             end do
           end do
         end do
       end do
 
-      total_weighted = sum(weighted_temp(1:max_energy, 1:num_kpoints_on_node(my_node_id), 1:nspins, 1:nbands, 1:max_atoms + 1))
+      total_weighted = sum(weighted_temp(1:max_energy, 1:nbands, 1:nspins, 1:num_kpoints_on_node(my_node_id), 1:max_atoms + 1))
+      call comms_reduce(total_weighted,1, "SUM")
       if (total_weighted .gt. 0.0_dp) then
-        qe_norm = sum(qe_temp(1:nbands, 1:num_kpoints_on_node(my_node_id), 1:nspins, 1:max_atoms + 1)) / total_weighted
+        qe_norm = total_qe / total_weighted
       else
         qe_norm = 1.0_dp
       end if
-
-      weighted_temp(e_scale, N, N_spin, n_eigen, atom) = weighted_temp(e_scale, N, N_spin, n_eigen, atom)*qe_norm
+      call comms_bcast(qe_norm,1)
+      ! Why do we need to normalise this array?
+      ! This does not make sense to me - it should only set a single element and keep the rest the same
+      ! Find out how to multiply an array with a constant and implement this
+      weighted_temp(e_scale,n_eigen, N_spin, N, atom) = weighted_temp(e_scale,n_eigen, N_spin, N, atom)*qe_norm
 
     elseif (index(photo_model, '1step') > 0) then
-      do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
-        do N_spin = 1, nspins                    ! Loop over spins
-          do n_eigen = 1, nbands
-            if (theta_arpes(n_eigen, N, N_spin) .ge. photo_theta_lower .and. &
-                theta_arpes(n_eigen, N, N_spin) .le. photo_theta_upper) then
-              if (phi_arpes(n_eigen, N, N_spin) .ge. photo_phi_lower .and. &
-                  phi_arpes(n_eigen, N, N_spin) .le. photo_phi_upper) then
-                ! if(band_energy(n_eigen,N_spin,N).ge.efermi) cycle
-                do e_scale = 1, max_energy
-                  do atom = 1, max_atoms + 1
-                    weighted_temp(e_scale, N, N_spin, n_eigen, atom) = &
-                      binding_temp(e_scale, N, N_spin, n_eigen)*qe_osm(n_eigen, N_spin, N, atom)
+      do atom = 1, max_atoms + 1
+        do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
+          do N_spin = 1, nspins                    ! Loop over spins
+            do n_eigen = 1, nbands
+              if (theta_arpes(n_eigen, N, N_spin) .ge. photo_theta_lower .and. &
+                  theta_arpes(n_eigen, N, N_spin) .le. photo_theta_upper) then
+                if (phi_arpes(n_eigen, N, N_spin) .ge. photo_phi_lower .and. &
+                    phi_arpes(n_eigen, N, N_spin) .le. photo_phi_upper) then
+                  ! if(band_energy(n_eigen,N_spin,N).ge.efermi) cycle
+                  do e_scale = 1, max_energy
+                    weighted_temp(e_scale, n_eigen, N_spin, N, atom) = &
+                      binding_temp(e_scale,n_eigen, N_spin, N)*qe_osm(n_eigen, N_spin, N, atom)
                   end do
-                end do
+                end if
               end if
-            end if
+            end do
           end do
         end do
       end do
 
-      total_weighted = sum(weighted_temp(1:max_energy, 1:num_kpoints_on_node(my_node_id), 1:nspins, 1:nbands, 1:max_atoms + 1))
+      total_weighted = sum(weighted_temp(1:max_energy, 1:nbands,  1:nspins, 1:num_kpoints_on_node(my_node_id), 1:max_atoms + 1))
+      call comms_reduce(total_weighted,1, "SUM")
       if (total_weighted .gt. 0.0_dp) then
-        qe_norm = sum(qe_osm(1:nbands, 1:nspins, 1:num_kpoints_on_node(my_node_id), 1:max_atoms + 1)) / total_weighted
+        qe_norm = total_qe / total_weighted
       else
         qe_norm = 1.0_dp
       end if
-
-      weighted_temp(e_scale, N, N_spin, n_eigen, atom) = weighted_temp(e_scale, N, N_spin, n_eigen, atom)*qe_norm
+      call comms_bcast(qe_norm,1)
+      ! Why do we need to normalise this array?
+      ! This does not make sense to me - it should only set a single element and keep the rest the same
+      ! Find out how to multiply an array with a constant and implement this
+      weighted_temp(e_scale,n_eigen, N_spin, N,  atom) = weighted_temp(e_scale, n_eigen, N_spin, N, atom)*qe_norm
     end if
 
     deallocate (binding_temp, stat=ierr)
     if (ierr /= 0) call io_error('Error: binding_energy_spread - failed to deallocate binding_temp')
-
-    if (allocated(qe_temp)) then
-      deallocate (qe_temp, stat=ierr)
-      if (ierr /= 0) call io_error('Error: binding_energy_spread - failed to deallocate qe_temp')
-    end if
-
   end subroutine binding_energy_spread
 
   !***************************************************************
@@ -2333,11 +2326,11 @@ contains
 
     use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_r_cart
     use od_electronic, only: nbands, nspins, band_energy
-    use od_comms, only: my_node_id, on_root, num_nodes, comms_send, comms_recv, root_id
+    use od_comms, only: my_node_id, on_root, num_nodes, comms_send, comms_recv, root_id, comms_reduce
     use od_io, only: io_error, seedname, io_file_unit, io_date, io_time, stdout
-    use od_parameters, only: write_photo_matrix, photo_model, photo_photon_sweep, photo_photon_energy, iprint
+    use od_parameters, only: write_photo_output, photo_model, photo_photon_sweep, photo_photon_energy, iprint
     implicit none
-    integer :: atom, ierr, e_scale, binding_unit = 12, matrix_unit = 25
+    integer :: atom, ierr, e_scale, binding_unit, matrix_unit
     integer :: N, N_spin, i, n_eigen, kpt_total
 
     real(kind=dp), allocatable, dimension(:,:) :: qe_atom
@@ -2348,12 +2341,13 @@ contains
     character(len=11)                           :: cdate             ! Temp. date string
 
     time0 = io_time()
-    if (index(write_photo_matrix, 'qe_matrix') > 0) then
+    if (index(write_photo_output, 'qe_matrix') > 0) then
       call cell_calc_kpoint_r_cart
       kpt_total = sum(num_kpoints_on_node(0:num_nodes-1))
       if (num_nodes .gt. 1) then
         call write_distributed_qe_data(kpt_total)
       else
+        matrix_unit = io_file_unit()
         if ((photo_photon_sweep)) then
           write (char_e, '(F7.3)') temp_photon_energy
         else
@@ -2395,39 +2389,45 @@ contains
             end do
           end do
         end if
-
         close (unit=matrix_unit)
       end if
     end if
 
-    if (index(write_photo_matrix, 'e_bind') > 0) then
+    if (index(write_photo_output, 'e_bind') > 0) then
 
       allocate (qe_atom(max_energy, max_atoms + 1), stat=ierr)
       if (ierr /= 0) call io_error('Error: write_qe_output_files - allocation of qe_atom failed')
       qe_atom = 0.0_dp
 
-      do e_scale = 1, max_energy !loop over transverse energy
-        do atom = 1, max_atoms + 1
+      do atom = 1, max_atoms + 1
+        do e_scale = 1, max_energy !loop over transverse energy
           qe_atom(e_scale, atom) = &
-            sum(weighted_temp(e_scale, 1:num_kpoints_on_node(my_node_id), 1:nspins, 1:nbands, atom))
+            sum(weighted_temp(e_scale, 1:nbands, 1:nspins, 1:num_kpoints_on_node(my_node_id), atom))
         end do
       end do
 
-      if ((photo_photon_sweep) .and. (on_root)) then
-        write (char_e, '(F7.3)') temp_photon_energy
-        filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//&
-        &'_binding_energy.dat'
-        open (unit=binding_unit, action='write', file=filename)
-      else
-        open (unit=binding_unit, action='write', file=trim(seedname)//'_binding_energy.dat')
+      if (num_nodes .gt. 1) then
+        call comms_reduce(qe_atom(1,1),max_energy*(max_atoms+1),"SUM")
       end if
+      
+      if (on_root) then
+        binding_unit = io_file_unit()
+        if ((photo_photon_sweep)) then
+          write (char_e, '(F7.3)') temp_photon_energy
+          filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//&
+          &'_binding_energy.dat'
+          open (unit=binding_unit, action='write', file=filename)
+        else
+          open (unit=binding_unit, action='write', file=trim(seedname)//'_binding_energy.dat')
+        end if
 
-      do e_scale = 1, max_energy
-        write (binding_unit, *) t_energy(e_scale), sum(qe_atom(e_scale, 1:max_atoms + 1)), &
-          qe_atom(e_scale, 1:max_atoms + 1)
-      end do
+        do e_scale = 1, max_energy
+          write (binding_unit, *) t_energy(e_scale), sum(qe_atom(e_scale, 1:max_atoms + 1)), &
+            qe_atom(e_scale, 1:max_atoms + 1)
+        end do
 
-      close (unit=binding_unit)
+        close (unit=binding_unit)
+      end if
     end if
 
     if (allocated(weighted_temp)) then
@@ -2469,7 +2469,7 @@ contains
     character(len=10)                           :: char_e
     character(len=9)                            :: ctime             ! Temp. time string
     character(len=11)                           :: cdate             ! Temp. date string
-    integer:: i, N, N_spin, n_eigen, atom, token, matrix_unit = 25
+    integer:: i, N, N_spin, n_eigen, atom, token, matrix_unit
 
     if (on_root) then
       ! Writing header to output file
@@ -2479,6 +2479,7 @@ contains
         write (char_e, '(F7.3)') photo_photon_energy
       end if
       filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_qe_matrix.dat'
+      matrix_unit = io_file_unit()
       open (unit=matrix_unit, action='write', file=filename)
       call io_date(cdate, ctime)
       write (matrix_unit, *) '## OptaDOS Photoemission: Printing QE Matrix on ', cdate, ' at ', ctime
@@ -2495,6 +2496,7 @@ contains
     else
       ! Receive the token to write to the output file
       call comms_recv(token,1,my_node_id-1)
+      matrix_unit = io_file_unit()
       open (unit=matrix_unit, access='append', action='write', file=filename)
       do N = 1, num_kpoints_on_node(my_node_id)
         write (matrix_unit, '(1x,a13,3(1x,F11.8),a1)') '## K-point: (',(kpoint_r_cart(i, N),i=1,3),')'
@@ -2510,6 +2512,7 @@ contains
     ! Write out the kpoints and band energies on root node
     if (my_node_id .eq. 0) then
       call comms_recv(token,1,num_nodes-1)
+      matrix_unit = io_file_unit()
       open (unit=matrix_unit, access='append', action='write', file=filename)
       do N = 1, num_kpoints_on_node(my_node_id)
         write (matrix_unit, '(1x,a13,3(1x,F11.8),a1)') '## K-point: (',(kpoint_r_cart(i, N),i=1,3),')'
@@ -2527,6 +2530,7 @@ contains
     else
       ! Receive the token to write to the output file
       call comms_recv(token,1,my_node_id-1)
+      matrix_unit = io_file_unit()
       open (unit=matrix_unit, access='append', action='write', file=filename)
       if (index(photo_model, '3step') > 0) then
         do atom = 1, max_atoms
@@ -2552,6 +2556,7 @@ contains
     ! Write out the qe matrix for all atoms but the bulk contribution on root node
     if (my_node_id .eq. 0) then
       call comms_recv(token,1,num_nodes-1)
+      matrix_unit = io_file_unit()
       open (unit=matrix_unit, access='append', action='write', file=filename)
       if (index(photo_model, '3step') > 0) then
         do atom = 1, max_atoms
@@ -2580,6 +2585,7 @@ contains
     else
       ! Receive the token to write to the output file
       call comms_recv(token,1,my_node_id-1)
+      matrix_unit = io_file_unit()
       open (unit=matrix_unit, access='append', action='write', file=filename)
       if (index(photo_model, '3step') > 0) then
         do N = 1, num_kpoints_on_node(my_node_id)
@@ -2601,6 +2607,7 @@ contains
     ! Write out the qe matrix of the bulk contribution on root node
     if (my_node_id .eq. 0) then
       call comms_recv(token,1,num_nodes-1)
+      matrix_unit = io_file_unit()
       open (unit=matrix_unit, access='append', action='write', file=filename)
       if (index(photo_model, '3step') > 0) then
         do N = 1, num_kpoints_on_node(my_node_id)
