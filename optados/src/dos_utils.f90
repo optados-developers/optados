@@ -1763,8 +1763,8 @@ contains
             if (linear .and. .not. force_adaptive) call doslin_sub_cell_corners(grad, step, band_energy(ib, is, ik), EV)
             if (adaptive .or. force_adaptive) width = sqrt(dot_product(grad, grad))*adaptive_smearing_temp
           end if
-            ! Hybrid Adaptive -- This way we don't lose weight at very flat parts of the
-            ! band. It's a kind of fudge that we wouldn't need if we had infinitely small bins.
+          ! Hybrid Adaptive -- This way we don't lose weight at very flat parts of the
+          ! band. It's a kind of fudge that we wouldn't need if we had infinitely small bins.
           if (finite_bin_correction) then ! Force the compiler to do this the right way around
             if (width < delta_bins) then
               width = delta_bins

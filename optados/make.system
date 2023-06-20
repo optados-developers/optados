@@ -5,7 +5,7 @@ SYSTEM := gfortran
 BUILD := debug
 
 # serial / mpi
-COMMS_ARCH := mpi
+COMMS_ARCH := serial
 
 # Where would you like the executables?
 #PREFIX:=../photon_new/
