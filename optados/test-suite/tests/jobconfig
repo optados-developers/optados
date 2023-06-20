@@ -400,7 +400,7 @@ program = OPTADOS_MPI_PHOTO_QEMAT_OK
 min_nprocs = 2
 nprocs = 2
 inputs_args = ('C2.odi','')
-output = C2_qe_matrix.dat
+output = C2_1step_5.000_qe_matrix.dat
 
 #--------------------------------------------------------------
 # C a t e g o r y   L i s t
