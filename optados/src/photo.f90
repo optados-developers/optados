@@ -48,6 +48,7 @@ module od_photo
   real(kind=dp), allocatable, dimension(:) :: absorp
 
   real(kind=dp), dimension(:), allocatable :: thickness_atom
+  real(kind=dp), dimension(:), allocatable :: thickness_layer
   real(kind=dp), dimension(:, :), allocatable :: new_atoms_coordinates
   real(kind=dp), allocatable, dimension(:, :, :) :: phi_arpes
   real(kind=dp), allocatable, dimension(:, :, :) :: theta_arpes
@@ -232,6 +233,7 @@ contains
     use od_cell, only: num_atoms, atoms_pos_cart_photo, atoms_label_tmp
     use od_io, only: stdout, io_error
     use od_comms, only: on_root
+    use od_parameters, only: photo_imfp_list
     implicit none
     integer :: atom_1, atom_2, i, index, temp, first, ierr, atom, ic
 
@@ -262,7 +264,9 @@ contains
       end do
     end do
 
-    !DEFINE THE LAYER FOR EACH ATOM
+    ! DEFINE THE LAYER FOR EACH ATOM
+    ! Assume that a new layer starts if the atom type changes or 
+    ! the atom is more than 0.5 Angstrom lower than the current layer
     i = 1
     layer(1) = 1
     do atom = 2, num_atoms
@@ -315,6 +319,21 @@ contains
         atoms_per_layer(layer(atom)) = atoms_per_layer(layer(atom)) + 1
       end if
     end do
+
+    allocate(thickness_layer(max_layer),stat=ierr)
+    if (ierr /= 0) call io_error('Error: calc_layers - allocation of thickness_layer failed')
+    thickness_layer = 0.0_dp
+    ! Calculate the mean thickness of the atoms in a layer
+    do atom = 1, max_atoms
+      thickness_layer(layer(atom)) = thickness_layer(layer(atom)) + thickness_atom(atom)
+    end do
+    do i = 1, max_layer
+      thickness_layer(i) = thickness_layer(i) / atoms_per_layer(i)
+    end do
+    !TEST IF THE SUPPLIED IMFP LIST IS LONG ENOUGH
+    if (allocated(photo_imfp_list) .and. size(photo_imfp_list,1) .lt. max_layer) then
+      call io_error('The supplied list of layer dependent imfp values is less than the calculated max_layer. Check input!')
+    end if
 
   end subroutine calc_layers
 
@@ -1155,6 +1174,85 @@ contains
     end if
 
   end subroutine calc_electron_esc
+
+  !***************************************************************
+  subroutine calc_electron_esc_list
+    !***************************************************************
+    ! This subroutine calculates the electron escape depth
+
+    use od_constants, only: dp, deg_to_rad
+    use od_electronic, only: nbands, nspins
+    use od_cell, only: num_kpoints_on_node, atoms_pos_cart_photo
+    use od_io, only: io_error, stdout, io_time
+    use od_comms, only: my_node_id, on_root
+    use od_parameters, only: photo_imfp_list, devel_flag, iprint
+    implicit none
+    integer :: atom, N, N_spin, n_eigen, ierr, i
+    real(kind=dp) :: exponent, time0, time1
+    real(kind=dp),dimension(:),allocatable :: atom_imfp
+
+    time0 = io_time()
+    allocate (new_atoms_coordinates(3, max_atoms), stat=ierr)
+    if (ierr /= 0) call io_error('Error: calc_electron_esc_list - allocation of new_atoms_coordinates failed')
+
+    allocate (atom_imfp(max_atoms), stat=ierr)
+    if (ierr /= 0) call io_error('Error: calc_electron_esc_list - allocation of new_atoms_coordinates failed')
+    atom_imfp = 0.0_dp
+
+    !Redefine new z coordinates where the first layer is at z=0
+    new_atoms_coordinates = atoms_pos_cart_photo
+    do atom = 1, max_atoms
+      new_atoms_coordinates(3, atom_order(atom)) = atoms_pos_cart_photo(3, atom_order(atom)) - &
+                                                   (atoms_pos_cart_photo(3, atom_order(1)))
+    end do
+
+    if (.not. allocated(electron_esc)) allocate (electron_esc(nbands, nspins, &
+    &num_kpoints_on_node(my_node_id), max_atoms), stat=ierr)
+    if (ierr /= 0) call io_error('Error: calc_electron_esc - allocation of electron_esc failed')
+    electron_esc = 0.0_dp
+
+    ! Calculate the layer dependent imfp constant as a list
+    do atom = 1, max_atoms
+      do i = 1, layer(atom)
+        atom_imfp(atom) = atom_imfp(atom) + thickness_layer(i)*photo_imfp_list(i)
+      end do 
+    end do
+
+    do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
+      do N_spin = 1, nspins                    ! Loop over spins
+        do n_eigen = 1, nbands
+          do atom = 1, max_atoms
+            if (cos(theta_arpes(n_eigen, N, N_spin)*deg_to_rad) .gt. 0.0_dp) then
+              exponent = (new_atoms_coordinates(3, atom_order(atom))/ &
+              &cos(theta_arpes(n_eigen, N, N_spin)*deg_to_rad))/photo_imfp_list(layer(atom))
+              if (exponent .gt. -575.0_dp) then
+                electron_esc(n_eigen, N_spin, N, atom) = exp(exponent)
+              else
+                electron_esc(n_eigen, N_spin, N, atom) = 0.0_dp
+              end if
+            end if
+          end do
+        end do
+      end do
+    end do
+
+    if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) then
+      write (stdout, '(1x,a78)') '+----------------------- Printing P(Escape) per Layer -----------------------+'
+      write (stdout, 125) shape(electron_esc)
+      write (stdout, 125) nbands, num_kpoints_on_node(my_node_id), nspins, max_atoms
+125   format(4(1x, I4))
+      write (stdout, '(9999(es15.8))') ((((electron_esc(n_eigen, N_spin, N, atom), atom=1, max_atoms), N=1, &
+                                          & num_kpoints_on_node(my_node_id)), N_spin=1, nspins), n_eigen=1, nbands)
+      write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
+    end if
+
+    time1 = io_time()
+    if (on_root .and. iprint > 1) then
+      write (stdout, '(1x,a40,19x,f11.3,a8)') '+ Time to calculate Photoemission Escape', time1 - time0, ' (sec) +'
+    end if
+
+  end subroutine calc_electron_esc_list
+
 
   !***************************************************************
   subroutine bulk_emission

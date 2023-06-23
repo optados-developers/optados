@@ -137,6 +137,7 @@ module od_parameters
   real(kind=dp), public, save :: photo_temperature
   real(kind=dp), public, save :: photo_elec_field
   real(kind=dp), public, save :: photo_imfp_const
+  real(kind=dp), dimension(:), allocatable, public, save :: photo_imfp_list
   ! logical, public, save :: photo_e_units
   ! logical, public, save :: photo_mte
   real(kind=dp), public, save :: photo_work_function
@@ -500,6 +501,15 @@ contains
     call param_get_keyword('photo_imfp_const', found, r_value=photo_imfp_const)
     if (photo .and. .not. found) &
       call io_error('Error: constant imfp, but photo_imfp_const is not set')
+
+    call param_get_vector_length('photo_imfp_list', found, i_temp)
+    if (found) then
+      allocate (photo_imfp_list(i_temp), stat=ierr)
+      if (ierr /= 0) call io_error('Error: param_read - allocation failed for photo_imfp_list')
+      call param_get_keyword_vector('photo_imfp_list', found, i_temp, r_value=photo_imfp_list)
+    end if
+    if (photo_imfp_const .gt. 0.0_dp .and. found) &
+      call io_error('Error: imfp constant and list defined together, but only one setup can be used')
 
     num_atoms = 0
     num_species = 0
