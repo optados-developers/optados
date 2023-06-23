@@ -499,8 +499,8 @@ contains
 
     photo_imfp_const = 0.0_dp
     call param_get_keyword('photo_imfp_const', found, r_value=photo_imfp_const)
-    if (photo .and. .not. found) &
-      call io_error('Error: constant imfp, but photo_imfp_const is not set')
+    ! if (photo .and. .not. found) &
+    !   call io_error('Error: constant imfp, but photo_imfp_const is not set')
 
     call param_get_vector_length('photo_imfp_list', found, i_temp)
     if (found) then

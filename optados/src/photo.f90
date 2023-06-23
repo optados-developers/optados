@@ -49,6 +49,7 @@ module od_photo
 
   real(kind=dp), dimension(:), allocatable :: thickness_atom
   real(kind=dp), dimension(:), allocatable :: thickness_layer
+  real(kind=dp), dimension(:), allocatable :: atom_imfp
   real(kind=dp), dimension(:, :), allocatable :: new_atoms_coordinates
   real(kind=dp), allocatable, dimension(:, :, :) :: phi_arpes
   real(kind=dp), allocatable, dimension(:, :, :) :: theta_arpes
@@ -153,7 +154,7 @@ contains
         call calc_angle
 
         !Calculate the electron escape length
-        call calc_electron_esc
+        call calc_electron_esc_list
 
         call bulk_emission
 
@@ -191,7 +192,7 @@ contains
       call calc_angle
 
       !Calculate the electron escape length
-      call calc_electron_esc
+      call calc_electron_esc_list
 
       call bulk_emission
 
@@ -320,16 +321,7 @@ contains
       end if
     end do
 
-    allocate(thickness_layer(max_layer),stat=ierr)
-    if (ierr /= 0) call io_error('Error: calc_layers - allocation of thickness_layer failed')
-    thickness_layer = 0.0_dp
-    ! Calculate the mean thickness of the atoms in a layer
-    do atom = 1, max_atoms
-      thickness_layer(layer(atom)) = thickness_layer(layer(atom)) + thickness_atom(atom)
-    end do
-    do i = 1, max_layer
-      thickness_layer(i) = thickness_layer(i) / atoms_per_layer(i)
-    end do
+
     !TEST IF THE SUPPLIED IMFP LIST IS LONG ENOUGH
     if (allocated(photo_imfp_list) .and. size(photo_imfp_list,1) .lt. max_layer) then
       call io_error('The supplied list of layer dependent imfp values is less than the calculated max_layer. Check input!')
@@ -793,10 +785,10 @@ contains
       if (ierr /= 0) call io_error('Error: calc_absorp_layer - failed to deallocate reflect_photo')
     end if
 
-    if (allocated(atoms_per_layer)) then
-      deallocate (atoms_per_layer, stat=ierr)
-      if (ierr /= 0) call io_error('Error: calc_absorp_layer - failed to deallocate atoms_per_layer')
-    end if
+    ! if (allocated(atoms_per_layer)) then
+    !   deallocate (atoms_per_layer, stat=ierr)
+    !   if (ierr /= 0) call io_error('Error: calc_absorp_layer - failed to deallocate atoms_per_layer')
+    ! end if
 
     if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) then
       write (stdout, '(1x,a78)') '+----------------------- Printing Intensity per Layer -----------------------+'
@@ -1189,15 +1181,12 @@ contains
     implicit none
     integer :: atom, N, N_spin, n_eigen, ierr, i
     real(kind=dp) :: exponent, time0, time1
-    real(kind=dp),dimension(:),allocatable :: atom_imfp
 
     time0 = io_time()
     allocate (new_atoms_coordinates(3, max_atoms), stat=ierr)
     if (ierr /= 0) call io_error('Error: calc_electron_esc_list - allocation of new_atoms_coordinates failed')
 
-    allocate (atom_imfp(max_atoms), stat=ierr)
-    if (ierr /= 0) call io_error('Error: calc_electron_esc_list - allocation of new_atoms_coordinates failed')
-    atom_imfp = 0.0_dp
+    
 
     !Redefine new z coordinates where the first layer is at z=0
     new_atoms_coordinates = atoms_pos_cart_photo
@@ -1211,12 +1200,35 @@ contains
     if (ierr /= 0) call io_error('Error: calc_electron_esc - allocation of electron_esc failed')
     electron_esc = 0.0_dp
 
+    allocate(thickness_layer(max_layer),stat=ierr)
+    if (ierr /= 0) call io_error('Error: calc_layers - allocation of thickness_layer failed')
+    thickness_layer = 0.0_dp
+
+    allocate(atom_imfp(max_atoms), stat=ierr)
+    if (ierr /= 0) call io_error('Error: calc_electron_esc_list - allocation of new_atoms_coordinates failed')
+    atom_imfp = 0.0_dp
+    write(*,*) 'Hello'
+    write(*,*) (atom_imfp(i), i=1, max_atoms)
+
+    ! Calculate the mean thickness of the atoms in a layer
+    do atom = 1, max_atoms
+      thickness_layer(layer(atom)) = thickness_layer(layer(atom)) + thickness_atom(atom)
+    end do
+    do i = 1, max_layer
+      thickness_layer(i) = thickness_layer(i) / atoms_per_layer(i)
+    end do
+    write (*,*) (thickness_layer(i), i=1, max_layer)
+
     ! Calculate the layer dependent imfp constant as a list
     do atom = 1, max_atoms
       do i = 1, layer(atom)
         atom_imfp(atom) = atom_imfp(atom) + thickness_layer(i)*photo_imfp_list(i)
-      end do 
+      end do
+      atom_imfp(atom) = atom_imfp(atom) / sum(thickness_layer(1:max_layer))
     end do
+
+    write (*,*) (atom_imfp(i),i=1,max_atoms)
+    write (*,*) (photo_imfp_list(i), i=1, max_layer)
 
     do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
       do N_spin = 1, nspins                    ! Loop over spins
@@ -1224,7 +1236,7 @@ contains
           do atom = 1, max_atoms
             if (cos(theta_arpes(n_eigen, N, N_spin)*deg_to_rad) .gt. 0.0_dp) then
               exponent = (new_atoms_coordinates(3, atom_order(atom))/ &
-              &cos(theta_arpes(n_eigen, N, N_spin)*deg_to_rad))/photo_imfp_list(layer(atom))
+              &cos(theta_arpes(n_eigen, N, N_spin)*deg_to_rad))/atom_imfp(atom)
               if (exponent .gt. -575.0_dp) then
                 electron_esc(n_eigen, N_spin, N, atom) = exp(exponent)
               else
@@ -1273,7 +1285,7 @@ contains
     real(kind=dp) :: exponent, time0, time1
 
     time0 = io_time()
-    num_layers = int((photo_imfp_const*photo_bulk_length)/thickness_atom(max_atoms))
+    num_layers = int((atom_imfp(max_atoms)*photo_bulk_length)/thickness_atom(max_atoms))
 
     allocate (bulk_light_tmp(num_layers), stat=ierr)
     if (ierr /= 0) call io_error('Error: bulk_emission - allocation of bulk_light_tmp failed')
@@ -1293,7 +1305,7 @@ contains
           do n_eigen = 1, nbands
             if (cos(theta_arpes(n_eigen, N, N_spin)*deg_to_rad) .gt. 0.0_dp) then
               exponent = (new_atoms_coordinates(3, atom_order(max_atoms)) - i*thickness_atom(max_atoms)/ &
-                          cos(theta_arpes(n_eigen, N, N_spin)*deg_to_rad))/photo_imfp_const
+                          cos(theta_arpes(n_eigen, N, N_spin)*deg_to_rad))/atom_imfp(max_atoms)
               ! This makes sure, that exp(exponent) does not underflow the dp fp value.
               ! As exp(-575) is ~1E-250, this should be more than enough precision.
               if (exponent .gt. -575.0_dp) then
