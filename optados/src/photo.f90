@@ -2328,7 +2328,7 @@ contains
     use od_electronic, only: nbands, nspins, band_energy
     use od_comms, only: my_node_id, on_root, num_nodes, comms_send, comms_recv, root_id, comms_reduce
     use od_io, only: io_error, seedname, io_file_unit, io_date, io_time, stdout
-    use od_parameters, only: write_photo_output, photo_model, photo_photon_sweep, photo_photon_energy, iprint
+    use od_parameters, only: write_photo_output, photo_model, photo_photon_sweep, photo_photon_energy, iprint, devel_flag
     implicit none
     integer :: atom, ierr, e_scale, binding_unit, matrix_unit
     integer :: N, N_spin, i, n_eigen, kpt_total
@@ -2360,6 +2360,13 @@ contains
         write (matrix_unit, *) '## Seedname: ', trim(seedname)
         write (matrix_unit, *) '## Photoemission Model: ', trim(photo_model)
         write (matrix_unit, *) '## Photon Energy: ', trim(adjustl(char_e))
+        if (index(devel_flag, 'final') > 0 .and. index(photo_model, '3step') > 0) then
+          write (matrix_unit, *) '## Writing the sum over 3-step initial states contributions'
+          write (matrix_unit, *) '## The written values are contributions of final states to the total number'
+        elseif (index(devel_flag, 'final') .eq. 0 .and. index(photo_model, '3step') > 0) then
+          write (matrix_unit, *) '## Writing the sum over 3-step final states contributions'
+          write (matrix_unit, *) '## The written values are contributions of initial states to the total number'
+        end if
         write (matrix_unit, '(1x,a31,4(1x,I5),1a)') '## (Reduced) QE Matrix Shape: (', nbands, kpt_total, nspins, max_atoms, ')'
         ! Printing out the info on root_node
         do N = 1, num_kpoints_on_node(my_node_id)
@@ -2371,14 +2378,25 @@ contains
         end do
 
         if (index(photo_model, '3step') > 0) then
-          do atom = 1, max_atoms + 1
-            if (atom .eq. max_atoms + 1) write (matrix_unit, *) '## Bulk Contribution:'
-            do N = 1, num_kpoints_on_node(my_node_id)
-              do N_spin = 1, nspins
-                write (matrix_unit, '(9999(ES16.8E3))') (sum(qe_tsm(n_eigen, 1:nbands, N_spin, N, atom)), n_eigen=1, nbands)
+          if (index(devel_flag, 'final') > 0 ) then
+            do atom = 1, max_atoms + 1
+              if (atom .eq. max_atoms + 1) write (matrix_unit, *) '## Bulk Contribution:'
+              do N = 1, num_kpoints_on_node(my_node_id)
+                do N_spin = 1, nspins
+                  write (matrix_unit, '(9999(ES16.8E3))') (sum(qe_tsm(1:nbands, n_eigen, N_spin, N, atom)), n_eigen=1, nbands)
+                end do
               end do
             end do
-          end do
+          else
+            do atom = 1, max_atoms + 1
+              if (atom .eq. max_atoms + 1) write (matrix_unit, *) '## Bulk Contribution:'
+              do N = 1, num_kpoints_on_node(my_node_id)
+                do N_spin = 1, nspins
+                  write (matrix_unit, '(9999(ES16.8E3))') (sum(qe_tsm(n_eigen, 1:nbands, N_spin, N, atom)), n_eigen=1, nbands)
+                end do
+              end do
+            end do
+          end if
         elseif (index(photo_model, '1step') > 0) then
           do atom = 1, max_atoms + 1
             if (atom .eq. max_atoms + 1) write (matrix_unit, *) '## Bulk Contribution:'
