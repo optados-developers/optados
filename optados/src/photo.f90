@@ -2382,6 +2382,7 @@ contains
             n_eigen = len_trim(devel_flag)
             read (devel_flag(n_eigen-2:n_eigen),*) band_num
             write (matrix_unit, '(1x,a42,1x,I3)') '## Writing contributions into final band #', band_num
+            write (matrix_unit, '(1x,a14)') '## QE Matrix :'
             do atom = 1, max_atoms + 1
               if (atom .eq. max_atoms + 1) write (matrix_unit, *) '## Bulk Contribution:'
               do N = 1, num_kpoints_on_node(my_node_id)
