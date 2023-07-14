@@ -1140,7 +1140,6 @@ contains
       allocate(atom_imfp(max_atoms), stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_electron_esc_list - allocation of new_atoms_coordinates failed')
       atom_imfp = 0.0_dp
-      write(*,*) (atom_imfp(i), i=1, max_atoms)
 
       ! Calculate the mean thickness of the atoms in a layer
       do atom = 1, max_atoms
@@ -1149,7 +1148,6 @@ contains
       do i = 1, max_layer
         thickness_layer(i) = thickness_layer(i) / atoms_per_layer(i)
       end do
-      write (*,*) 'Thickness Layer', (thickness_layer(i), i=1, max_layer)
       write (stdout, '(1x,a78)') '+--------------- User Supplied and Calculated IMFP Constants ----------------+'
       write (stdout, '(1x,a78)') '| Atom | Atom Order | Layer | Layer Thickness | User Input IMFP | Calc. IMFP |'
 
@@ -1185,7 +1183,6 @@ contains
       deallocate (thickness_layer, stat=ierr)
       if (ierr /= 0) call io_error('Error: thickness_layer - failed to deallocate calc_elec_esc')
     elseif (size(photo_imfp_const,1) .eq. 1) then
-      write (*,*) 'IMFP Const',(photo_imfp_const(1))
       do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
         do N_spin = 1, nspins                    ! Loop over spins
           do n_eigen = 1, nbands
