@@ -9,8 +9,8 @@ COMMS_ARCH := serial
 
 # Where would you like the executables?
 #PREFIX:=../photon_new/
-#PREFIX:=../../../compiled_programs/optados_latest/
-PREFIX:=../
+PREFIX:=../../../compiled_programs/optados_imfp/
+#PREFIX:=../
 SYSTEM := $(strip $(SYSTEM))
 BUILD  := $(strip $(BUILD))
 COMMS_ARCH := $(strip $(COMMS_ARCH))
@@ -39,7 +39,7 @@ ifeq ($(SYSTEM), gfortran)
    FFLAGS= -fconvert=big-endian -fPIC
    FFLAGS_PARALLEL=  -DMPI
    FFLAGS_FAST= -O3
-   FFLAGS_DEBUG= -O0  -g -fcheck=all
+   FFLAGS_DEBUG= -O0  -g -fcheck=all -ffpe-trap=zero
    EXTENSION=.gfortran
 endif
 
