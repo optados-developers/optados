@@ -2319,7 +2319,7 @@ contains
   !***************************************************************
   subroutine write_qe_output_files
     !***************************************************************
-    ! This subroutine write either the transverse energy or the binding energy
+    ! This subroutine writes either the transverse energy or the binding energy
     ! after the Gaussian broadening has been applied.
     ! Victor Chang, 7 February 2020
     ! Felix Mildner, April 2023
@@ -2393,7 +2393,7 @@ contains
             end do
           else
             write (matrix_unit, *) '## (Reduced) QE Matrix where each row contains the contributions from all bands'
-            write (matrix_unit, *) '## from an atom at a certain k-point and spin'
+            write (matrix_unit, *) '## from an atom at a certain k-point and spin:'
             do atom = 1, max_atoms + 1
               if (atom .eq. max_atoms + 1) write (matrix_unit, *) '## Bulk Contribution:'
               do N = 1, num_kpoints_on_node(my_node_id)
@@ -2480,6 +2480,9 @@ contains
   subroutine write_distributed_qe_data(kpt_total)
     !***************************************************************
     ! This subroutine writes the distributed qe tensor to a single file.
+    ! To save on required memory the output file is accessed by each MPI process in turn
+    ! and writes its values/contents one after the other.
+    ! F. Mildner, June 2023
 
     use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_r_cart
     use od_electronic, only: nbands, nspins, band_energy
@@ -2545,6 +2548,8 @@ contains
           write (matrix_unit, '(4999(1x,SF17.8))') (band_energy(n_eigen, N_spin, N), n_eigen=1, nbands)
         end do
       end do
+      write (matrix_unit, *) '## (Reduced) QE Matrix where each row contains the contributions from all bands'
+      write (matrix_unit, *) '## from an atom at a certain k-point and spin:'
       close (unit=matrix_unit)
     end if
 
