@@ -1719,6 +1719,8 @@ contains
     call comms_bcast(photo_work_function, 1)
     call comms_bcast(photo_surface_area, 1)
     call comms_bcast(photo_slab_volume, 1)
+    call comms_bcast(photo_layer_choice,len(photo_layer_choice))
+    call comms_bcast(photo_max_layer,1)
     call comms_bcast(photo_elec_field, 1)
     call comms_bcast(photo_imfp_const(1), size(photo_imfp_const,1))
     call comms_bcast(photo_bulk_length, 1)

@@ -240,7 +240,7 @@ contains
     use od_cell, only: num_atoms, atoms_pos_cart_photo, atoms_label_tmp
     use od_io, only: stdout, io_error
     use od_comms, only: on_root
-    use od_parameters, only: devel_flag, photo_max_layer, photo_layer_choice, photo_imfp_cons
+    use od_parameters, only: devel_flag, photo_max_layer, photo_layer_choice, photo_imfp_const
     implicit none
     integer :: atom_1, atom_2, i, atom_index, temp, first, ierr, atom, ic
 
