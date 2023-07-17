@@ -39,7 +39,7 @@ ifeq ($(SYSTEM), gfortran)
    FFLAGS= -fconvert=big-endian -fPIC
    FFLAGS_PARALLEL=  -DMPI
    FFLAGS_FAST= -O3
-   FFLAGS_DEBUG= -O0  -g -fcheck=all
+   FFLAGS_DEBUG= -O0  -g -fcheck=all -ffpe-trap=zero
    EXTENSION=.gfortran
 endif
 

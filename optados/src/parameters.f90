@@ -138,7 +138,8 @@ module od_parameters
   real(kind=dp), public, save :: photo_bulk_length
   real(kind=dp), public, save :: photo_temperature
   real(kind=dp), public, save :: photo_elec_field
-  real(kind=dp), public, save :: photo_imfp_const
+  real(kind=dp), dimension(:), allocatable, public, save :: photo_imfp_const
+  ! real(kind=dp), dimension(:), allocatable, public, save :: photo_imfp_list
   ! logical, public, save :: photo_e_units
   ! logical, public, save :: photo_mte
   real(kind=dp), public, save :: photo_work_function
@@ -507,10 +508,18 @@ contains
     photo_elec_field = 0.00_dp
     call param_get_keyword('photo_elec_field', found, r_value=photo_elec_field)
 
-    photo_imfp_const = 0.0_dp
-    call param_get_keyword('photo_imfp_const', found, r_value=photo_imfp_const)
+    call param_get_vector_length('photo_imfp_const', found, i_temp)
+    if (found) then
+      allocate (photo_imfp_const(i_temp), stat=ierr)
+      if (ierr /= 0) call io_error('Error: param_read - allocation failed for photo_imfp_const')
+      call param_get_keyword_vector('photo_imfp_const', found, i_temp, r_value=photo_imfp_const)
+    else
+      allocate (photo_imfp_const(1),stat=ierr)
+      if (ierr /= 0) call io_error('Error: param_read - allocation failed for photo_imfp_const')
+      photo_imfp_const = 0.0_dp
+    end if
     if (photo .and. .not. found) &
-      call io_error('Error: constant imfp, but photo_imfp_const is not set')
+    call io_error('Error: constant imfp, but photo_imfp_const is not set')
 
     num_atoms = 0
     num_species = 0
@@ -944,7 +953,12 @@ contains
       if (index(photo_layer_choice,'user') > 0) then
         write (stdout, '(1x,a46,2x,I4,25x,a1)') '|  User set maximal # of layers for calc.    :',photo_max_layer,'|'
       end if
-      write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  IMFP Constant              (Ang)          :', photo_imfp_const, '|'
+      if (size(photo_imfp_const,1) .eq. 1) then
+        write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  IMFP Constant              (Ang)          :', photo_imfp_const(1), '|'
+      else
+        write (stdout, '(1x,a78)') '|  IMFP Constant              (Ang)          : Layer values provided by user |'
+        write (stdout, '(1x,a78)') '|                                              values will be printed later  |'
+      endif
       if ((photo_elec_field .gt. 1.0E-4_dp) .or. (photo_elec_field .lt. 1.0E-25_dp)) then
         write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Electric Field Strength    (V/Ang)        :', photo_elec_field, '|'
       else
@@ -1706,7 +1720,7 @@ contains
     call comms_bcast(photo_surface_area, 1)
     call comms_bcast(photo_slab_volume, 1)
     call comms_bcast(photo_elec_field, 1)
-    call comms_bcast(photo_imfp_const, 1)
+    call comms_bcast(photo_imfp_const(1), size(photo_imfp_const,1))
     call comms_bcast(photo_bulk_length, 1)
     call comms_bcast(photo_temperature, 1)
     call comms_bcast(write_photo_output, len(write_photo_output))
