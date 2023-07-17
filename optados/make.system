@@ -5,11 +5,11 @@ SYSTEM := gfortran
 BUILD := fast
 
 # serial / mpi
-COMMS_ARCH := serial
+COMMS_ARCH := mpi
 
 # Where would you like the executables?
 #PREFIX:=../photon_new/
-PREFIX:=../../../compiled_programs/optados_imfp/
+PREFIX:=../../../compiled_programs/optados_latest/
 #PREFIX:=../
 SYSTEM := $(strip $(SYSTEM))
 BUILD  := $(strip $(BUILD))

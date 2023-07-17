@@ -2412,7 +2412,7 @@ contains
   !***************************************************************
   subroutine write_qe_output_files
     !***************************************************************
-    ! This subroutine write either the transverse energy or the binding energy
+    ! This subroutine writes either the transverse energy or the binding energy
     ! after the Gaussian broadening has been applied.
     ! Victor Chang, 7 February 2020
     ! Felix Mildner, April 2023
@@ -2421,10 +2421,10 @@ contains
     use od_electronic, only: nbands, nspins, band_energy
     use od_comms, only: my_node_id, on_root, num_nodes, comms_send, comms_recv, root_id, comms_reduce
     use od_io, only: io_error, seedname, io_file_unit, io_date, io_time, stdout
-    use od_parameters, only: write_photo_output, photo_model, photo_photon_sweep, photo_photon_energy, iprint
+    use od_parameters, only: write_photo_output, photo_model, photo_photon_sweep, photo_photon_energy, iprint, devel_flag
     implicit none
     integer :: atom, ierr, e_scale, binding_unit, matrix_unit
-    integer :: N, N_spin, i, n_eigen, kpt_total
+    integer :: N, N_spin, i, n_eigen, kpt_total, band_num
 
     real(kind=dp), allocatable, dimension(:, :) :: qe_atom
     real(kind=dp) :: time0, time1
@@ -2453,6 +2453,13 @@ contains
         write (matrix_unit, *) '## Seedname: ', trim(seedname)
         write (matrix_unit, *) '## Photoemission Model: ', trim(photo_model)
         write (matrix_unit, *) '## Photon Energy: ', trim(adjustl(char_e))
+        ! if (index(devel_flag, 'final') > 0 .and. index(photo_model, '3step') > 0) then
+        !   write (matrix_unit, *) '## Writing the sum over 3-step initial states contributions'
+        !   write (matrix_unit, *) '## The written values are contributions of final states to the total number'
+        ! elseif (index(devel_flag, 'final') .eq. 0 .and. index(photo_model, '3step') > 0) then
+        !   write (matrix_unit, *) '## Writing the sum over 3-step final states contributions'
+        !   write (matrix_unit, *) '## The written values are contributions of initial states to the total number'
+        ! end if
         write (matrix_unit, '(1x,a31,4(1x,I5),1a)') '## (Reduced) QE Matrix Shape: (', nbands, kpt_total, nspins, max_atoms, ')'
         ! Printing out the info on root_node
         do N = 1, num_kpoints_on_node(my_node_id)
@@ -2464,14 +2471,31 @@ contains
         end do
 
         if (index(photo_model, '3step') > 0) then
-          do atom = 1, max_atoms + 1
-            if (atom .eq. max_atoms + 1) write (matrix_unit, *) '## Bulk Contribution:'
-            do N = 1, num_kpoints_on_node(my_node_id)
-              do N_spin = 1, nspins
-                write (matrix_unit, '(9999(ES16.8E3))') (sum(qe_tsm(n_eigen, 1:nbands, N_spin, N, atom)), n_eigen=1, nbands)
+          if (index(devel_flag, 'single') > 0 ) then
+            n_eigen = len_trim(devel_flag)
+            read (devel_flag(n_eigen-2:n_eigen),*) band_num
+            write (matrix_unit, '(1x,a42,1x,I3)') '## Writing contributions into final band #', band_num
+            write (matrix_unit, '(1x,a14)') '## QE Matrix :'
+            do atom = 1, max_atoms + 1
+              if (atom .eq. max_atoms + 1) write (matrix_unit, *) '## Bulk Contribution:'
+              do N = 1, num_kpoints_on_node(my_node_id)
+                do N_spin = 1, nspins
+                  write (matrix_unit, '(9999(ES16.8E3))') (qe_tsm(n_eigen, band_num, N_spin, N, atom), n_eigen=1, nbands)
+                end do
               end do
             end do
-          end do
+          else
+            write (matrix_unit, *) '## (Reduced) QE Matrix where each row contains the contributions from all bands'
+            write (matrix_unit, *) '## from an atom at a certain k-point and spin:'
+            do atom = 1, max_atoms + 1
+              if (atom .eq. max_atoms + 1) write (matrix_unit, *) '## Bulk Contribution:'
+              do N = 1, num_kpoints_on_node(my_node_id)
+                do N_spin = 1, nspins
+                  write (matrix_unit, '(9999(ES16.8E3))') (sum(qe_tsm(n_eigen, 1:nbands, N_spin, N, atom)), n_eigen=1, nbands)
+                end do
+              end do
+            end do
+          end if
         elseif (index(photo_model, '1step') > 0) then
           do atom = 1, max_atoms + 1
             if (atom .eq. max_atoms + 1) write (matrix_unit, *) '## Bulk Contribution:'
@@ -2549,6 +2573,9 @@ contains
   subroutine write_distributed_qe_data(kpt_total)
     !***************************************************************
     ! This subroutine writes the distributed qe tensor to a single file.
+    ! To save on required memory the output file is accessed by each MPI process in turn
+    ! and writes its values/contents one after the other.
+    ! F. Mildner, June 2023
 
     use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_r_cart
     use od_electronic, only: nbands, nspins, band_energy
@@ -2614,6 +2641,8 @@ contains
           write (matrix_unit, '(4999(1x,SF17.8))') (band_energy(n_eigen, N_spin, N), n_eigen=1, nbands)
         end do
       end do
+      write (matrix_unit, *) '## (Reduced) QE Matrix where each row contains the contributions from all bands'
+      write (matrix_unit, *) '## from an atom at a certain k-point and spin:'
       close (unit=matrix_unit)
     end if
 
