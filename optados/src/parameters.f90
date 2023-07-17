@@ -123,6 +123,8 @@ module od_parameters
   character(len=20), public, save :: photo_model
   character(len=20), public, save :: write_photo_output
   character(len=20), public, save :: photo_momentum
+  character(len=20), public, save :: photo_layer_choice
+  integer, public, save           :: photo_max_layer
   !logical,           public, save :: angle_resolution
   !character(len=20), public, save :: resolution_type
   real(kind=dp), public, save :: photo_phi_lower
@@ -493,6 +495,15 @@ contains
     call param_get_keyword('photo_slab_volume', found, r_value=photo_slab_volume)
     if (photo .and. .not. found) &
       call io_error('Error: please set volume of the slab for photoemission calculation')
+
+    photo_layer_choice = 'optados'
+    call param_get_keyword('photo_layer_choice',found, c_value=photo_layer_choice)
+
+    photo_max_layer = -1
+    call param_get_keyword('photo_max_layer',found,i_value=photo_max_layer)
+    if (photo .and. index(photo_layer_choice,'user') .gt. 0 .and. .not. found) &
+    call io_error('Error: max # of layers was set to be supplied by user, but does not exist in input')
+
 
     photo_elec_field = 0.00_dp
     call param_get_keyword('photo_elec_field', found, r_value=photo_elec_field)
@@ -939,6 +950,9 @@ contains
       write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Work Function              (eV)           :', photo_work_function, '|'
       write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Surface Area               (Ang**2)       :', photo_surface_area, '|'
       write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Slab Volume                (Ang**3)       :', photo_slab_volume, '|'
+      if (index(photo_layer_choice,'user') > 0) then
+        write (stdout, '(1x,a46,2x,I4,25x,a1)') '|  User set maximal # of layers for calc.    :',photo_max_layer,'|'
+      end if
       if (size(photo_imfp_const,1) .eq. 1) then
         write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  IMFP Constant              (Ang)          :', photo_imfp_const(1), '|'
       else
