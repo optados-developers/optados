@@ -93,7 +93,7 @@ contains
     use od_jdos_utils, only: jdos_utils_calculate, setup_energy_scale
     use od_comms, only: on_root
     use od_parameters, only: photo_work_function, photo_model, photo_elec_field, write_photo_output, photo_photon_sweep,&
-                            &photo_photon_min, jdos_spacing, photo_photon_energy, iprint
+                            &photo_photon_min, jdos_spacing, photo_photon_energy, iprint, devel_flag
     use od_dos_utils, only: dos_utils_set_efermi, dos_utils_calculate_at_e, dos_utils_deallocate
     use od_io, only: stdout, io_error, io_time
     use od_pdos, only: pdos_calculate
@@ -107,6 +107,12 @@ contains
       write (stdout, '(1x,a78)') '+                             Photoemission Calculation                      +'
       write (stdout, '(1x,a78)') '+============================================================================+'
       write (stdout, '(1x,a78)') '|                                                                            |'
+    end if
+
+    if (index(devel_flag,'geom_analysis')>0) then
+      write (stdout, '(1x,a78)') '+           Only performing the analysis of the supplied geometry!           +'
+      call calc_layers
+      return
     end if
 
     if (.not. efermi_set) then
@@ -232,8 +238,9 @@ contains
     use od_cell, only: num_atoms, atoms_pos_cart_photo, atoms_label_tmp
     use od_io, only: stdout, io_error
     use od_comms, only: on_root
+    use od_parameters, only: devel_flag, photo_max_layer, photo_layer_choice
     implicit none
-    integer :: atom_1, atom_2, i, index, temp, first, ierr, atom, ic
+    integer :: atom_1, atom_2, i, atom_index, temp, first, ierr, atom, ic
 
     allocate (atom_order(num_atoms), stat=ierr)
     if (ierr /= 0) call io_error('Error: calc_layers - allocation of atom_order failed')
@@ -248,16 +255,16 @@ contains
     do atom_1 = 1, num_atoms - 1
       first = atom_order(atom_1)
       do atom_2 = atom_1 + 1, num_atoms
-        index = atom_1
+        atom_index = atom_1
         if (atoms_pos_cart_photo(3, atom_order(atom_2)) .gt. atoms_pos_cart_photo(3, first)) then
           first = atom_order(atom_2)
-          index = atom_2
+          atom_index = atom_2
         end if
 
-        if (index /= atom_1) then
+        if (atom_index /= atom_1) then
           temp = atom_order(atom_1)
-          atom_order(atom_1) = atom_order(index)
-          atom_order(index) = temp
+          atom_order(atom_1) = atom_order(atom_index)
+          atom_order(atom_index) = temp
         end if
       end do
     end do
@@ -292,29 +299,42 @@ contains
 
     !CALCULATE THE MAX LAYER (HALF SLAB)
     max_layer = ((layer(num_atoms) + 1)/2)
+    if (index(photo_layer_choice, 'user') > 0) then
+      max_layer = photo_max_layer
+    end if
 
     !CALCULATE THE MAX ATOM (HALF SLAB)
     max_atoms = 0
     do atom = 1, num_atoms
-      if (layer(atom) .le. ((layer(num_atoms) + 1)/2)) then
+      if (layer(atom) .le. max_layer) then
         max_atoms = max_atoms + 1
       end if
     end do
+
     if (on_root) then
       write (stdout, 226) '|  Max number of atoms:', max_atoms, '   Max  number of layers:', max_layer, '   |'
 226   format(1x, a23, I12, 1x, a25, 1x, I12, a4)
+
+      if (index(devel_flag, 'layer_user') > 0) then
+        write (stdout, '(1x,a78)') '|     *** ATTENTION *** : The max_layer value was supplied by the user!      |'
+      end if
+      
       write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
     end if
-    allocate (atoms_per_layer(max_layer), stat=ierr)
-    if (ierr /= 0) call io_error('Error: calc_layers - allocation of atoms_per_layer failed')
 
     !CALCULATE HOW MANY ATOMS PER LAYER
+    allocate (atoms_per_layer(max_layer), stat=ierr)
+    if (ierr /= 0) call io_error('Error: calc_layers - allocation of atoms_per_layer failed')
     atoms_per_layer = 1
     do atom = 2, max_atoms
       if (layer(atom) .eq. layer(atom - 1)) then
         atoms_per_layer(layer(atom)) = atoms_per_layer(layer(atom)) + 1
       end if
     end do
+    do i = 1, max_layer
+      write (stdout, *) 'Layer: ', i, atoms_per_layer(i), ' |'
+    end do
+
 
   end subroutine calc_layers
 
