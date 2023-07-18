@@ -138,6 +138,7 @@ module od_parameters
   real(kind=dp), public, save :: photo_bulk_length
   real(kind=dp), public, save :: photo_temperature
   real(kind=dp), public, save :: photo_elec_field
+  integer, public, save       :: photo_len_imfp_const
   real(kind=dp), dimension(:), allocatable, public, save :: photo_imfp_const
   ! real(kind=dp), dimension(:), allocatable, public, save :: photo_imfp_list
   ! logical, public, save :: photo_e_units
@@ -510,10 +511,12 @@ contains
 
     call param_get_vector_length('photo_imfp_const', found, i_temp)
     if (found) then
+      photo_len_imfp_const = i_temp
       allocate (photo_imfp_const(i_temp), stat=ierr)
       if (ierr /= 0) call io_error('Error: param_read - allocation failed for photo_imfp_const')
       call param_get_keyword_vector('photo_imfp_const', found, i_temp, r_value=photo_imfp_const)
     else
+      photo_len_imfp_const = 1
       allocate (photo_imfp_const(1),stat=ierr)
       if (ierr /= 0) call io_error('Error: param_read - allocation failed for photo_imfp_const')
       photo_imfp_const = 0.0_dp
@@ -1722,7 +1725,12 @@ contains
     call comms_bcast(photo_layer_choice,len(photo_layer_choice))
     call comms_bcast(photo_max_layer,1)
     call comms_bcast(photo_elec_field, 1)
-    call comms_bcast(photo_imfp_const(1), size(photo_imfp_const,1))
+    call comms_bcast(photo_len_imfp_const,1)
+    if (.not. on_root) then
+      allocate(photo_imfp_const(photo_len_imfp_const), stat=ierr)
+      if (ierr /= 0) call io_error('Error: param_dist - allocation failed for photo_imfp_const')
+    end if
+    call comms_bcast(photo_imfp_const(1), photo_len_imfp_const)
     call comms_bcast(photo_bulk_length, 1)
     call comms_bcast(photo_temperature, 1)
     call comms_bcast(write_photo_output, len(write_photo_output))
