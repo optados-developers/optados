@@ -75,7 +75,7 @@ contains
       seedname = '--help'
     elseif (num_arg == 1) then
       call get_command_argument(1, seedname)
-    ! Added by F. Mildner to allow for multi_output runs
+      ! Added by F. Mildner to allow for multi_output runs
     elseif (num_arg == 3) then
       call get_command_argument(1, options)
       call get_command_argument(2, temp_dir)
