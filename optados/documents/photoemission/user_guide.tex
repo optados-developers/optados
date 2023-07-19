@@ -21,7 +21,7 @@
 \renewcommand{\d}{\mathrm{d}}
 \newcommand{\e}{\mathrm{e}}
 
-% Ensure that blank pages don't have numbers or heading on them 
+% Ensure that blank pages don't have numbers or heading on them
 \makeatletter
 \def\cleardoublepage{\clearpage\if@twoside \ifodd\c@page\else
  \hbox{}
@@ -105,12 +105,12 @@ The formalism adopted in the photoemission model adopted here requires that the 
     \label{fermi_golden_rule}
 \end{equation}
 
-where $E$ is the electronic state eigenvalue, $i$ and $j$ are the indices for the initial and final state respectively, $s$ is the spin index, $\bf{k}$ is the wavevector of the electron wavefunction, $M(i,j,{\bf{k}},s)$ is the photoemission matrix element and the Dirac delta function $\delta(E{(j,{\bf{k}},s)}-E{(i,{\bf{k}},s)}-\hbar \omega)$ ensure the energy conservation in the photoemission process. The Dirac delta function can be evaluated using the fixed-width Gaussian broadening, adaptive Gaussian broadening or linear extrapolative scheme implemented in the OptaDOS code. 
+where $E$ is the electronic state eigenvalue, $i$ and $j$ are the indices for the initial and final state respectively, $s$ is the spin index, $\bf{k}$ is the wavevector of the electron wavefunction, $M(i,j,{\bf{k}},s)$ is the photoemission matrix element and the Dirac delta function $\delta(E{(j,{\bf{k}},s)}-E{(i,{\bf{k}},s)}-\hbar \omega)$ ensure the energy conservation in the photoemission process. The Dirac delta function can be evaluated using the fixed-width Gaussian broadening, adaptive Gaussian broadening or linear extrapolative scheme implemented in the OptaDOS code.
 
 The photoemission matrix element $M(i,j,\bf{k},s)$ in Eq.~\ref{fermi_golden_rule} is
 
 \begin{equation}
-M(i,j,{\bf{k}},s) = \left | \left \langle \psi_{{\bf{k}},j,s}\left | H'  \right | \psi_{{\bf{k}},i,s} \right \rangle \right |^2 
+M(i,j,{\bf{k}},s) = \left | \left \langle \psi_{{\bf{k}},j,s}\left | H'  \right | \psi_{{\bf{k}},i,s} \right \rangle \right |^2
     \label{matrix_elements}
 \end{equation}
 
@@ -121,7 +121,7 @@ H' = \frac{e}{2m_{0}} (p \cdot A + A \cdot p) + \frac{e^2 A^2}{2 m_0}
 \label{matrix2}
 \end{equation}
 
-where $p = - i \hbar \nabla $ is the momentum operator and here $A$ is the polarization vector of the incoming electromagnetic wave. The $A^2$ term can be neglected under the assumption of a weak field. The Hamiltonian can be simplify due to the Coulomb gauge, $\nabla \cdot A = 0$. The perturbation due to the light field is rewritten as 
+where $p = - i \hbar \nabla $ is the momentum operator and here $A$ is the polarization vector of the incoming electromagnetic wave. The $A^2$ term can be neglected under the assumption of a weak field. The Hamiltonian can be simplify due to the Coulomb gauge, $\nabla \cdot A = 0$. The perturbation due to the light field is rewritten as
 
 \begin{equation}
 H' = \frac{e}{2m_{0}} p \cdot A
@@ -193,7 +193,7 @@ where $\alpha(\omega,\mu)$ is the absorption coefficient at each atomic site, $t
     \label{dielectric}
 \end{equation}
 
-where $e$ is the electron charge, $\epsilon_0$ is the permittivity of vacuum and $\Omega$ is the volume of the unit cell. The real part of the dielectric function $\epsilon_1$ is calculated using the Kramers-Kronig relation. The absorption coefficient is 
+where $e$ is the electron charge, $\epsilon_0$ is the permittivity of vacuum and $\Omega$ is the volume of the unit cell. The real part of the dielectric function $\epsilon_1$ is calculated using the Kramers-Kronig relation. The absorption coefficient is
 
 \begin{equation}
 \alpha(\omega,\mu) = \frac{2k(\omega, \mu)\omega}{c}
@@ -260,7 +260,7 @@ k_{\perp}(i,j,{\bf{k}},s) = \frac{2m}{\hbar^2}(E(j,{\bf{k}},s)-E_v)- {\bf{k}_{\p
 
 Here ${\bf{k}_{\parallel}}(i,{\bf{k}},s)$ is the electron parallel momentum inside the crystal.
 
-$\Theta'$ is a modified version of the Heavyside step function $\Theta$ in which $0$ is replaced by a Dirac delta function $\delta(E_v - E_f)$ evaluated with a Gaussian function is included to account for finite temperature broadening of electrons that do not strictly fulfill the parallel momentum conservation. 
+$\Theta'$ is a modified version of the Heavyside step function $\Theta$ in which $0$ is replaced by a Dirac delta function $\delta(E_v - E_f)$ evaluated with a Gaussian function is included to account for finite temperature broadening of electrons that do not strictly fulfill the parallel momentum conservation.
 
 \begin{equation}
     \delta(E_v - E(j,{\bf{k}},s)) = \frac{1}{\sigma \sqrt{2\pi}}exp \left (-\frac{1}{2}\frac{E_v - E(j,{\bf{k}},s)}{\sigma^2}\right )
@@ -279,7 +279,7 @@ QE{(\omega, {\bf{k}},\mu, T, s)}= \sum_{i,j,s} \Gamma_{i \rightarrow j} W( i,j,{
 \end{equation}
 
 where $A$ is the surface area of the simulation cell. The atomic weighting of the contributions of the atomic sites allows the projected quantum efficiency to be defined as;
- 
+
 \begin{equation}
 QE{(\omega ,\mu, T)}= \int_{BZ} QE{(\omega, {\bf{k}},\mu, T)}\frac{d{\bf{k}}}{8\pi^3}
     \label{projected_qe}
@@ -294,7 +294,7 @@ QE_{bulk}(\omega,T) = \sum^{\tau}_{\mu = N} QE(\omega,\mu,T)
     \label{QE_bulk}
 \end{equation}
 
-where $N$ is the index of the atomic layer at the centre of the slab and 
+where $N$ is the index of the atomic layer at the centre of the slab and
 
 \begin{equation}
 \tau = \frac{10\lambda(\omega)}{d(\mu)}
@@ -310,7 +310,7 @@ QE_{tot}( \omega , T)= \sum_{\mu}^N  QE{( \omega ,\mu, T)} + QE_{bulk}(\omega,T)
     \label{total_qe}
 \end{equation}
 
-The mean transverse energy 
+The mean transverse energy
 
 \begin{equation}
 MTE(\omega, T) =\int_{BZ} \frac{\sum_{\mu}^N{QE(\omega,{\bf{k}},\mu, T)}\frac{\hbar^2}{m_e}\bf{k_{\parallel}}^2}{QE_{tot}( \omega , T)} \frac{d{\bf{k}}}{8\pi^3}
@@ -330,17 +330,17 @@ B_{SN} = \phi - eFz - \frac{e^2}{16 \pi \epsilon_0 z}
 
 where $e$ is the electron charge, $\epsilon_0$ is the vacuum permittivity, $\phi$ is the potential barrier, $F$ is the external electric field and $z$ is the distance from the surface. The surface-vacuum potential barrier $B_{SN}$ can be plotted as a function of the distance from the surface for different external electric fields.
 
-Electrons tunnel through this barrier with a probability; 
+Electrons tunnel through this barrier with a probability;
 
 \begin{equation}
-D \approx \frac{exp^{-G}}{1+exp^{-G}}  
+D \approx \frac{exp^{-G}}{1+exp^{-G}}
     \label{tunneling}
 \end{equation}
 
-where $G$ is known as the strength of the barrier, 
+where $G$ is known as the strength of the barrier,
 
 \begin{equation}
-G = g_e \int B_{SN}^{1/2} dz 
+G = g_e \int B_{SN}^{1/2} dz
     \label{tunneling_barrier}
 \end{equation}
 
@@ -348,7 +348,7 @@ In the current implementation the integral in Eq.~\ref{tunneling_barrier} is com
 
 \chapter{Getting Started}\label{chap:getting_started}
 \section{Installation}
-\optados\ is usually obtained in a gzipped tarball, \verb#optados-X.X.tar.gz#. Extract this ( \verb# tar -xzf optados-X.X.tar.gz#) in the desired directory. Inside the  \verb#optados/# directory are a number of sub directories,  \verb#documents/#,   \verb#examples/# and \verb#tools/#.  The code may be compiled using the \verb#Makefile# in the  \verb#optados/# directory.  The \verb#SYSTEM#, \verb#BUILD#, \verb#COMMS_ARCH# and \verb#PREFIX# flags must be set, either in the  \verb#makefile.system#, or from the command line (for example  \verb#make BUILD=fast#).  
+\optados\ is usually obtained in a gzipped tarball, \verb#optados-X.X.tar.gz#. Extract this ( \verb# tar -xzf optados-X.X.tar.gz#) in the desired directory. Inside the  \verb#optados/# directory are a number of sub directories,  \verb#documents/#,   \verb#examples/# and \verb#tools/#.  The code may be compiled using the \verb#Makefile# in the  \verb#optados/# directory.  The \verb#SYSTEM#, \verb#BUILD#, \verb#COMMS_ARCH# and \verb#PREFIX# flags must be set, either in the  \verb#makefile.system#, or from the command line (for example  \verb#make BUILD=fast#).
 
 \subsection[system]{\tt SYSTEM}
 
@@ -375,7 +375,7 @@ Choose the level of optimisations required when making \optados.  The valid valu
 
 Whether to compile for serial or parallel execution. The valid values are:
 \begin{itemize}
-\item[{\bf --}]  \verb#serial# (default) 
+\item[{\bf --}]  \verb#serial# (default)
 \item[{\bf --}]  \verb#mpi# (not tested)
 \end{itemize}
 
@@ -402,9 +402,9 @@ belong to each layer and which is the maximum one to include in the calculations
 It contains:
        \begin{itemize}
        \item a sorting algorithm
-       \item identification of the maximum layer 
-       \item identification of the maximum atom 
-       \item identification of how many atoms belong to each layer 
+       \item identification of the maximum layer
+       \item identification of the maximum atom
+       \item identification of how many atoms belong to each layer
        \end{itemize}
 
 \item  {\bf schottky\_effect}: this subrotuine calculates
@@ -420,30 +420,30 @@ It contains:
 \item  {\bf calc\_electron\_esc}: this subroutine calculates the
 	escape length and the probability
 	for the emission of the electron from
-	a certain layer. 
+	a certain layer.
 	At the moment, only the constant value is
 	available.
 
-\item  {\bf make\_pdos\_weights\_atoms}: this subroutine calculates the 
+\item  {\bf make\_pdos\_weights\_atoms}: this subroutine calculates the
 PDOS on atoms, by summing the orbital contributions
 of a certain atom. It is taken from the {\it pdos\_merge} subroutine of
 pdos.F90, but only the sum on atoms is included.
 It contains:
        \begin{itemize}
-       \item the sum of the orbital contribution of the same atom 
+       \item the sum of the orbital contribution of the same atom
        \item the sum of all atomic contribution at fixed {\bf k}
 and band indices.
        \end{itemize}
 
 \item  {\bf make\_optical\_weight}s: the task of this subroutine is
-	calculating the optical matrix weights. 
-	This is done by weigthing the optical matrix by the components of the direction of the light, 
+	calculating the optical matrix weights.
+	This is done by weigthing the optical matrix by the components of the direction of the light,
 	which are specified by optics\_geom and optics\_qdir
 	parameters, see Section 5.6 (and 5.6.2) for details.
 	For the photoemission calculation, the optics\_geom can be
 	\begin{itemize}
-        \item {\bf polarized}: the three indices specify the 
-		plane of oscillation of the electric field 
+        \item {\bf polarized}: the three indices specify the
+		plane of oscillation of the electric field
 		of the incoming radiation;
         \item {\bf unpolarized}: the three indices define the
 		plane perpendicular to the direction
@@ -469,7 +469,7 @@ and band indices.
 %	(write down the formula to split it
 %	layer-by-layer).
 \item  {\bf calc\_absorp\_photo}: this subroutine
-       calculates the absorption coefficient from the 
+       calculates the absorption coefficient from the
        imaginary part of the refractive index.
 \item  {\bf calc\_reflect\_photo}:this subroutine
        calculates the reflection coefficient from the
@@ -477,9 +477,9 @@ and band indices.
 \item  {\bf calc\_absorp\_layer}: this subroutine calculates
 	the portion of light absorbed by each layer.
 	If there is only one layer, the thickness is fixed to one.
-	
-\item  {\bf write\_optics}: Write the layer by layer optical properties in the OptaDOS output file.	
-	
+
+\item  {\bf write\_optics}: Write the layer by layer optical properties in the OptaDOS output file.
+
 \item  {\bf calc\_angle}: Calculate the photoemission angles theta/phi and the transverse energy.
 
 \item  {\bf QE calculation}: Calculates the layer-by-layer QE.
@@ -503,7 +503,7 @@ and band indices.
 
 \section{{\tt seedname.odi} File}
 The \optados\ input file {\tt seedname.odi} has a flexible free-form
-structure. 
+structure.
 
 The ordering of the keywords is not significant. Case is ignored (so
 \verb#smearing_width# is the same as \verb#Smearing_Width#). Characters after !, or \#
@@ -528,7 +528,7 @@ strings: {\tt T}, {\tt true}, {\tt .true.}.
 \section{General Parameters}
 \subsection[task]{\tt character(len=20) :: task}
 
-Tells the code what to compute. 
+Tells the code what to compute.
 
 The specific option to run this module is:
 \begin{itemize}
@@ -568,7 +568,7 @@ If $\verb#spectral_scheme# = \verb#fixed#$ default value is 0.3eV.
 
 
 \subsection[adaptive\_smearing]{\tt real(kind=dp) :: linear\_smearing}
-Smear the linear broadening with a Gaussian of this width. 
+Smear the linear broadening with a Gaussian of this width.
 
 Default value is 0.0.
 
@@ -577,7 +577,7 @@ Choose which Fermi energy to use.
 
 The valid options for this parameter are:
 \begin{itemize}
-\item[{\bf --}]  \verb#optados# (default) \optados\ recalculates the Fermi energy by performing a DOS calculation. 
+\item[{\bf --}]  \verb#optados# (default) \optados\ recalculates the Fermi energy by performing a DOS calculation.
 \item[{\bf --}]  \verb#file# Take the value from the output of the ab-initio calculation.
 \item[{\bf --}]  \verb#insulator# Assume that the material is an insulator and counts filled bands to find the Fermi energy.
 \item[{\bf --}]  \verb#<real number># User supplied value.
@@ -586,7 +586,7 @@ The valid options for this parameter are:
 The default value is {\tt optados}.
 
 \subsection[finite\_bin\_correction]{\tt logical :: finite\_bin\_correction}
-Force each Gaussian to be larger than a single energy bin. (Useful for adaptive smearing and semi-core states when \verb#numerical_intdos=TRUE#). 
+Force each Gaussian to be larger than a single energy bin. (Useful for adaptive smearing and semi-core states when \verb#numerical_intdos=TRUE#).
 
 Default value \verb#TRUE#.
 
@@ -596,8 +596,8 @@ Calculate the integrated dos by numerical integration instead of semi-analytical
 Default value \verb#FALSE#.
 
 \subsection[hybrid\_linear]{\tt logical :: hybrid\_linear}
-Switch from linear broadening scheme to adaptive broadening when band gradient less than \verb#hybrid_linear_grad_tol#. 
-This allows for a good description of very flat bands such as defect and semi-core states. May also be used in conjunction 
+Switch from linear broadening scheme to adaptive broadening when band gradient less than \verb#hybrid_linear_grad_tol#.
+This allows for a good description of very flat bands such as defect and semi-core states. May also be used in conjunction
 with \verb#finite_bin_correction# further improving the DOS and band energy
 
 Default value \verb#FALSE#.
@@ -614,32 +614,32 @@ The default value is 0.01eV/\AA.
 Specifies the geometry for the optics calculation.  Possible options:
 \begin{itemize}
 \item[{\bf --}]  \verb#polycrystalline# (Isotropic average)
-\item[{\bf --}]  \verb#polarized#  
-\item[{\bf --}]  \verb#unpolarized# 
+\item[{\bf --}]  \verb#polarized#
+\item[{\bf --}]  \verb#unpolarized#
 \item[{\bf --}]  \verb#tensor# (Full dielectric tensor)
 \end{itemize}
 The default is polycrystalline.
 
 \subsection[optics\_qdir]{\tt real(kind=dp) :: optics\_qdir(3)}
-Direction of polarisation. Must be specified if \verb#optics_geom = polarized#  
+Direction of polarisation. Must be specified if \verb#optics_geom = polarized#
 or \verb#optics_geom = unpolarized#.
 
 There is no default value
 
 \subsection[optics\_intraband]{\tt logical :: optics\_intraband}
-If true, the intraband contribution to the dielectric function will be calculated.  (Important for metals.)    
+If true, the intraband contribution to the dielectric function will be calculated.  (Important for metals.)
 
 The default is FALSE.
 
 \subsection[optics\_drude\_broadening]{\tt real(kind=dp) :: optics\_drude\_broadening}
-Value of broadening included in the Drude term expressed in $s^{-1}$.  
+Value of broadening included in the Drude term expressed in $s^{-1}$.
 
-The default value is 1E-14.  
+The default value is 1E-14.
 
 \subsection[optics\_lossfn\_broadening]{\tt real(kind=dp) :: optics\_lossfn\_broadening}
-FWHM of Gaussian used to broaden the loss function.  
+FWHM of Gaussian used to broaden the loss function.
 
-The default value is 0 ($i.e.$ no broadening is used).  
+The default value is 0 ($i.e.$ no broadening is used).
 
 \section{Photoemission Parameters}
 
@@ -691,7 +691,7 @@ Set the external electric field in V/$\AA$.
 \chapter{Examples}
 
 \begin{itemize}
-This is an example of using photoemission module for calculating the photoemission properties of Cu(111) surface using a 16 atomic layers slab. 
+This is an example of using photoemission module for calculating the photoemission properties of Cu(111) surface using a 16 atomic layers slab.
 \item \emph{Input Files}:
 \begin{itemize}
 \item \verb#examples/Cu_photo/Cu.cell# - The \castep\ cell file containing information about the simulation cell.
@@ -704,14 +704,14 @@ This is an example of using photoemission module for calculating the photoemissi
 %%%%  Step 1 %%%%%
 \item Perform a \castep\ calculation using the  \verb#Cu.cell#  and \verb#Cu.param# input files. Slab calculations are time consuming calculations, a high performing computer should be used.
 
-  \verb#$ castep Cu# 
+  \verb#$ castep Cu#
 
-More help can be found in  the tutorials  on  the \castep\ website \verb#www.castep.org#.  
+More help can be found in  the tutorials  on  the \castep\ website \verb#www.castep.org#.
 
 %%%%  Step 2 %%%%%
 \item Perform an \optados\ calculation.
- 
-\verb#$ optados.<SYSTEM>.<BUILD>.<COMMS_ARCH>.x86_64 Cu# 
+
+\verb#$ optados.<SYSTEM>.<BUILD>.<COMMS_ARCH>.x86_64 Cu#
 
 This generates several files:
 \begin{itemize}
@@ -865,7 +865,7 @@ These code snippets are also available in the \texttt{tools/} directory of the \
 
 %\begin{landscape}
 \section{\texttt{.ome\_bin} file}
-The \texttt{.ome\_bin} file is required for adaptive and linear broadening, and for optics calculations. 
+The \texttt{.ome\_bin} file is required for adaptive and linear broadening, and for optics calculations.
 %
 Note that a \texttt{.dome} file is just the diagonal elements of the \texttt{.ome}.
 %
@@ -893,7 +893,7 @@ end do
 %\end{landscape}
 
 \section{\texttt{.fome\_bin} file}
-The \texttt{.fome\_bin} file is required for the one step model. 
+The \texttt{.fome\_bin} file is required for the one step model.
 %
 Note that a \texttt{.dome} file is just the diagonal elements of the \texttt{.fome}.
 %
@@ -948,7 +948,7 @@ write(pdos_file) max_eigenv
 write(pdos_file) species(1_:num_popn_orb)
 write(pdos_file) ion(1:num_popn_orb)
 write(pdos_file) am_channel(1:num_popn_orb)
-       
+
 do nk=1,num_kpoints
  write(pdos_file) nk, kpoint_positions(nk,:)
  do ns = 1,num_spins
@@ -963,7 +963,7 @@ end do
 %\end{landscape}
 
 \section{\texttt{.dome\_bin} file}
-The \texttt{.dome\_bin} file contains the first derivative of a band with respect to k. Also known as electron velocity. 
+The \texttt{.dome\_bin} file contains the first derivative of a band with respect to k. Also known as electron velocity.
 
 The \texttt{.dome\_bin} file is an unformatted file.
 \begin{verbatim}
@@ -987,7 +987,7 @@ end do
 \end{verbatim}
 
 \section{\texttt{.ddome\_bin} file}
-The \texttt{.ddome\_bin} file contains the second derivative of a band with respect to k. Also known as effective mass. 
+The \texttt{.ddome\_bin} file contains the second derivative of a band with respect to k. Also known as effective mass.
 
 The \texttt{.ddome\_bin} file is an unformatted file.
 \begin{verbatim}
