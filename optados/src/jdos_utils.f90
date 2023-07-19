@@ -340,41 +340,6 @@ contains
 
     logical :: linear, fixed, adaptive, force_adaptive
 
-    ! ! <Added by Felix Mildner, 03/2023 to reduce if statement overhead>
-    ! ! This relies on an IMPORTANT assumption: the bands file is ordered by energy
-    ! ! and not by band number (e.g. after being processed by CASTEP bands2orbitals)
-    ! integer, allocatable, dimension(:,:)  :: min_index_unocc
-
-    ! if (.not. allocated(min_index_unocc)) then
-    !   allocate(min_index_unocc(nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
-    !   if (ierr /= 0) call io_error('Error: calculate_jdos - allocation of max_index_occ failed')
-    ! end if
-
-    ! do ik = 1, num_kpoints_on_node(my_node_id)  ! Loop over kpoints
-    !   do is = 1, nspins                           ! Loop over spins
-    !     do ib = 2, nbands                        ! Loop over bands
-    !       ! TODO: Test if this is the behaviour we want and or if we have to change the condition
-    !       if (band_energy(ib -1, is, ik) .gt. band_energy(ib, is, ik)) then
-    !         call io_error('Error: the band energies in the .bands file used are NOT ORDERED CORRECTLY (i.e. by increasing energy) &
-    !         & which will give WRONG RESULTS!')
-    !       end if
-    !     end do
-    !   end do
-    ! end do
-
-    ! do ik = 1, num_kpoints_on_node(my_node_id)  ! Loop over kpoints
-    !   do is = 1, nspins                           ! Loop over spins
-    !     do ib = 1, nbands                        ! Loop over bands
-    !       if (band_energy(ib, is, ik) .ge. efermi) then
-    !         min_index_unocc(is, ik) = ib
-    !         exit
-    !       end if
-    !     end do
-    !   end do
-    ! end do
-
-    ! ! </Added by Felix Mildner, 03/2023 to reduce if statement overhead>
-
     linear = .false.
     fixed = .false.
     adaptive = .false.
@@ -420,13 +385,11 @@ contains
              &"Calculating k-point ", ik, " of", num_kpoints_on_node(my_node_id), 'on this node.', "<-- JDOS |"
       end if
       do is = 1, nspins
-        ! occ_states: do ib = 1, min_index_unocc(is,ik) - 1
         occ_states: do ib = 1, nbands
           if (num_exclude_bands > 0) then
             if (any(exclude_bands == ib)) cycle
           end if
           if (band_energy(ib, is, ik) .ge. efermi) cycle occ_states
-          ! unocc_states: do jb = min_index_unocc(is,ik), nbands
           unocc_states: do jb = 1, nbands
             if (band_energy(jb, is, ik) .lt. efermi) cycle unocc_states
             if (linear .or. adaptive) grad(:) = band_gradient(jb, :, ik, is) - band_gradient(ib, :, ik, is)
@@ -469,11 +432,6 @@ contains
         end do occ_states
       end do
     end do
-
-    ! if (allocated(min_index_unocc)) then
-    !   deallocate(min_index_unocc, stat=ierr)
-    !   if (ierr /= 0) call io_error('Error: calculate_jdos - failed to deallocate min_index_unocc')
-    ! end if
 
     if (iprint > 1 .and. on_root) then
       write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
