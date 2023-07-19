@@ -5,11 +5,9 @@ SYSTEM := gfortran
 BUILD := debug
 
 # serial / mpi
-COMMS_ARCH := mpi
+COMMS_ARCH := serial 
 
 # Where would you like the executables?
-#PREFIX:=../photon_new/
-#PREFIX:=../../../compiled_programs/optados_latest/
 PREFIX:=../
 SYSTEM := $(strip $(SYSTEM))
 BUILD  := $(strip $(BUILD))
@@ -39,7 +37,7 @@ ifeq ($(SYSTEM), gfortran)
    FFLAGS= -fconvert=big-endian -fPIC
    FFLAGS_PARALLEL=  -DMPI
    FFLAGS_FAST= -O3
-   FFLAGS_DEBUG= -O0  -g -fcheck=all -ffpe-trap=zero
+   FFLAGS_DEBUG= -O0  -g -fcheck=all
    EXTENSION=.gfortran
 endif
 
