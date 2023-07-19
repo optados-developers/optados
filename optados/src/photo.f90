@@ -95,7 +95,7 @@ contains
     use od_jdos_utils, only: jdos_utils_calculate, setup_energy_scale
     use od_comms, only: on_root
     use od_parameters, only: photo_work_function, photo_model, photo_elec_field, write_photo_output, photo_photon_sweep,&
-                            &photo_photon_min, jdos_spacing, photo_photon_energy, iprint
+                            &photo_photon_min, jdos_spacing, photo_photon_energy, iprint, devel_flag
     use od_dos_utils, only: dos_utils_set_efermi, dos_utils_calculate_at_e, dos_utils_deallocate
     use od_io, only: stdout, io_error, io_time
     use od_pdos, only: pdos_calculate
@@ -109,6 +109,12 @@ contains
       write (stdout, '(1x,a78)') '+                             Photoemission Calculation                      +'
       write (stdout, '(1x,a78)') '+============================================================================+'
       write (stdout, '(1x,a78)') '|                                                                            |'
+    end if
+
+    if (index(devel_flag, 'geom_analysis') > 0) then
+      write (stdout, '(1x,a78)') '+           Only performing the analysis of the supplied geometry!           +'
+      call calc_layers
+      return
     end if
 
     if (.not. efermi_set) then
@@ -147,7 +153,7 @@ contains
         time_a = io_time()
         temp_photon_energy = photo_photon_min + (i - 1)*jdos_spacing
         if (on_root) write (stdout, '(1x,a50,f8.4,a20S)') '+--------------- Starting Photoemission Sweep with', temp_photon_energy,&
-            &' eV ---------------+'
+                &' eV ---------------+'
         current_index = i
         current_energy_index = index_energy(i)
         !Calculate the photoemission angles theta/phi and transverse energy
@@ -234,9 +240,9 @@ contains
     use od_cell, only: num_atoms, atoms_pos_cart_photo, atoms_label_tmp
     use od_io, only: stdout, io_error
     use od_comms, only: on_root
-    use od_parameters, only: photo_imfp_const
+    use od_parameters, only: devel_flag, photo_max_layer, photo_layer_choice, photo_imfp_const
     implicit none
-    integer :: atom_1, atom_2, i, index, temp, first, ierr, atom, ic
+    integer :: atom_1, atom_2, i, atom_index, temp, first, ierr, atom, ic
 
     allocate (atom_order(num_atoms), stat=ierr)
     if (ierr /= 0) call io_error('Error: calc_layers - allocation of atom_order failed')
@@ -251,22 +257,22 @@ contains
     do atom_1 = 1, num_atoms - 1
       first = atom_order(atom_1)
       do atom_2 = atom_1 + 1, num_atoms
-        index = atom_1
+        atom_index = atom_1
         if (atoms_pos_cart_photo(3, atom_order(atom_2)) .gt. atoms_pos_cart_photo(3, first)) then
           first = atom_order(atom_2)
-          index = atom_2
+          atom_index = atom_2
         end if
 
-        if (index /= atom_1) then
+        if (atom_index /= atom_1) then
           temp = atom_order(atom_1)
-          atom_order(atom_1) = atom_order(index)
-          atom_order(index) = temp
+          atom_order(atom_1) = atom_order(atom_index)
+          atom_order(atom_index) = temp
         end if
       end do
     end do
 
     ! DEFINE THE LAYER FOR EACH ATOM
-    ! Assume that a new layer starts if the atom type changes or 
+    ! Assume that a new layer starts if the atom type changes or
     ! the atom is more than 0.5 Angstrom lower than the current layer
     i = 1
     layer(1) = 1
@@ -297,33 +303,44 @@ contains
 
     !CALCULATE THE MAX LAYER (HALF SLAB)
     max_layer = ((layer(num_atoms) + 1)/2)
+    if (index(photo_layer_choice, 'user') > 0) then
+      max_layer = photo_max_layer
+    end if
 
     !CALCULATE THE MAX ATOM (HALF SLAB)
     max_atoms = 0
     do atom = 1, num_atoms
-      if (layer(atom) .le. ((layer(num_atoms) + 1)/2)) then
+      if (layer(atom) .le. max_layer) then
         max_atoms = max_atoms + 1
       end if
     end do
+
     if (on_root) then
       write (stdout, 226) '|  Max number of atoms:', max_atoms, '   Max  number of layers:', max_layer, '   |'
 226   format(1x, a23, I12, 1x, a25, 1x, I12, a4)
+
+      if (index(devel_flag, 'layer_user') > 0) then
+        write (stdout, '(1x,a78)') '|     *** ATTENTION *** : The max_layer value was supplied by the user!      |'
+      end if
+
       write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
     end if
-    allocate (atoms_per_layer(max_layer), stat=ierr)
-    if (ierr /= 0) call io_error('Error: calc_layers - allocation of atoms_per_layer failed')
 
     !CALCULATE HOW MANY ATOMS PER LAYER
+    allocate (atoms_per_layer(max_layer), stat=ierr)
+    if (ierr /= 0) call io_error('Error: calc_layers - allocation of atoms_per_layer failed')
     atoms_per_layer = 1
     do atom = 2, max_atoms
       if (layer(atom) .eq. layer(atom - 1)) then
         atoms_per_layer(layer(atom)) = atoms_per_layer(layer(atom)) + 1
       end if
     end do
-
+    ! do i = 1, max_layer
+    !   write (stdout, *) 'Layer: ', i, atoms_per_layer(i), ' |'
+    ! end do
 
     !TEST IF THE SUPPLIED IMFP LIST IS LONG ENOUGH
-    if (allocated(photo_imfp_const) .and. size(photo_imfp_const,1) .gt. 1 .and. size(photo_imfp_const,1) .lt. max_layer) then
+    if (allocated(photo_imfp_const) .and. size(photo_imfp_const, 1) .gt. 1 .and. size(photo_imfp_const, 1) .lt. max_layer) then
       call io_error('The supplied list of layer dependent imfp values is less than the calculated max_layer. Check input!')
     end if
 
@@ -638,7 +655,7 @@ contains
             write (stdout, '(9999(E17.8E3))') (((epsilon(jdos_bin, N, N2, 1), jdos_bin=1, jdos_nbins), N=1, 2), N2=1, N_geom)
           else
             write (stdout, '(9999(E17.8E3))') ((((epsilon(jdos_bin, N, N2, i), jdos_bin=1, jdos_nbins), N=1, 2), N2=1, N_geom),&
-              & i=1, 3)
+                & i=1, 3)
           end if
           write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
 
@@ -988,7 +1005,7 @@ contains
     if (index(photo_momentum, 'crystal') > 0) call cell_calc_kpoint_r_cart
 
     if ((index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) .or. (index(devel_flag, 'print_qe_matrix_full') > 0 .and.&
-     & on_root) .or. (index(devel_flag, 'print_qe_matrix_reduced') > 0 .and. on_root)) then
+      & on_root) .or. (index(devel_flag, 'print_qe_matrix_reduced') > 0 .and. on_root)) then
       call cell_calc_kpoint_r_cart
       write (stdout, '(a78)') "+---------------- Printing K-Points in Cartesian Coordinates ----------------+"
       do N = 1, num_kpoints_on_node(my_node_id)
@@ -1132,12 +1149,12 @@ contains
     if (ierr /= 0) call io_error('Error: calc_electron_esc - allocation of electron_esc failed')
     electron_esc = 0.0_dp
 
-    if (size(photo_imfp_const,1) .gt. 1) then
-      allocate(thickness_layer(max_layer),stat=ierr)
+    if (size(photo_imfp_const, 1) .gt. 1) then
+      allocate (thickness_layer(max_layer), stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_layers - allocation of thickness_layer failed')
       thickness_layer = 0.0_dp
 
-      allocate(atom_imfp(max_atoms), stat=ierr)
+      allocate (atom_imfp(max_atoms), stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_electron_esc_list - allocation of new_atoms_coordinates failed')
       atom_imfp = 0.0_dp
 
@@ -1146,7 +1163,7 @@ contains
         thickness_layer(layer(atom)) = thickness_layer(layer(atom)) + thickness_atom(atom)
       end do
       do i = 1, max_layer
-        thickness_layer(i) = thickness_layer(i) / atoms_per_layer(i)
+        thickness_layer(i) = thickness_layer(i)/atoms_per_layer(i)
       end do
       write (stdout, '(1x,a78)') '+--------------- User Supplied and Calculated IMFP Constants ----------------+'
       write (stdout, '(1x,a78)') '| Atom | Atom Order | Layer | Layer Thickness | User Input IMFP | Calc. IMFP |'
@@ -1156,10 +1173,10 @@ contains
         do i = 1, layer(atom)
           atom_imfp(atom) = atom_imfp(atom) + thickness_layer(i)*photo_imfp_const(i)
         end do
-        atom_imfp(atom) = atom_imfp(atom) / sum(thickness_layer(1:i-1))
+        atom_imfp(atom) = atom_imfp(atom)/sum(thickness_layer(1:i - 1))
         write (stdout, 225) "|", trim(atoms_label_tmp(atom_order(atom))), atom_order(atom), &
           layer(atom), thickness_layer(layer(atom)), photo_imfp_const(layer(atom)), atom_imfp(atom), "    |"
-225 format(1x, a1, a4, 6x, I3, 8x, I3, 6x,E13.6E3, 4x, F11.4, 3x, F11.4, a5)
+225     format(1x, a1, a4, 6x, I3, 8x, I3, 6x, E13.6E3, 4x, F11.4, 3x, F11.4, a5)
       end do
       write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
 
@@ -1182,7 +1199,7 @@ contains
       end do
       deallocate (thickness_layer, stat=ierr)
       if (ierr /= 0) call io_error('Error: thickness_layer - failed to deallocate calc_elec_esc')
-    elseif (size(photo_imfp_const,1) .eq. 1) then
+    elseif (size(photo_imfp_const, 1) .eq. 1) then
       do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
         do N_spin = 1, nspins                    ! Loop over spins
           do n_eigen = 1, nbands
@@ -1217,7 +1234,6 @@ contains
       write (stdout, '(1x,a40,19x,f11.3,a8)') '+ Time to calculate Photoemission Escape', time1 - time0, ' (sec) +'
     end if
 
-
   end subroutine calc_electron_esc
 
   !***************************************************************
@@ -1239,9 +1255,9 @@ contains
     real(kind=dp) :: exponent, time0, time1
 
     time0 = io_time()
-    if (size(photo_imfp_const,1) .gt. 1) then
+    if (size(photo_imfp_const, 1) .gt. 1) then
       num_layers = int((atom_imfp(max_atoms)*photo_bulk_length)/thickness_atom(max_atoms))
-    elseif (size(photo_imfp_const,1) .eq. 1) then
+    elseif (size(photo_imfp_const, 1) .eq. 1) then
       num_layers = int((photo_imfp_const(1)*photo_bulk_length)/thickness_atom(max_atoms))
     end if
 
@@ -1257,7 +1273,7 @@ contains
     if (ierr /= 0) call io_error('Error: bulk_emission - allocation of bulk_prob failed')
     bulk_prob = 0.0_dp
 
-    if (size(photo_imfp_const,1) .gt. 1) then
+    if (size(photo_imfp_const, 1) .gt. 1) then
       do i = 1, num_layers
         do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
           do N_spin = 1, nspins                    ! Loop over spins
@@ -1278,7 +1294,7 @@ contains
       deallocate (atom_imfp, stat=ierr)
       if (ierr /= 0) call io_error('Error: bulk_emission - failed to deallocate bulk_prob_tmp')
 
-    elseif (size(photo_imfp_const,1) .eq. 1) then
+    elseif (size(photo_imfp_const, 1) .eq. 1) then
       do i = 1, num_layers
         do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
           do N_spin = 1, nspins                    ! Loop over spins
@@ -2366,9 +2382,7 @@ contains
       end if
       call comms_bcast(qe_norm, 1)
       ! Why do we need to normalise this array?
-      ! This does not make sense to me - it should only set a single element and keep the rest the same
-      ! Find out how to multiply an array with a constant and implement this
-      weighted_temp(e_scale, n_eigen, N_spin, N, atom) = weighted_temp(e_scale, n_eigen, N_spin, N, atom)*qe_norm
+      weighted_temp = weighted_temp*qe_norm
 
     elseif (index(photo_model, '1step') > 0) then
       do atom = 1, max_atoms + 1
@@ -2400,9 +2414,7 @@ contains
       end if
       call comms_bcast(qe_norm, 1)
       ! Why do we need to normalise this array?
-      ! This does not make sense to me - it should only set a single element and keep the rest the same
-      ! Find out how to multiply an array with a constant and implement this
-      weighted_temp(e_scale, n_eigen, N_spin, N, atom) = weighted_temp(e_scale, n_eigen, N_spin, N, atom)*qe_norm
+      weighted_temp = weighted_temp*qe_norm
     end if
 
     deallocate (binding_temp, stat=ierr)
@@ -2412,19 +2424,19 @@ contains
   !***************************************************************
   subroutine write_qe_output_files
     !***************************************************************
-    ! This subroutine write either the transverse energy or the binding energy
+    ! This subroutine writes either the transverse energy or the binding energy
     ! after the Gaussian broadening has been applied.
     ! Victor Chang, 7 February 2020
     ! Felix Mildner, April 2023
 
-    use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_r_cart
-    use od_electronic, only: nbands, nspins, band_energy
+    use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart
+    use od_electronic, only: nbands, nspins
     use od_comms, only: my_node_id, on_root, num_nodes, comms_send, comms_recv, root_id, comms_reduce
     use od_io, only: io_error, seedname, io_file_unit, io_date, io_time, stdout
-    use od_parameters, only: write_photo_output, photo_model, photo_photon_sweep, photo_photon_energy, iprint
+    use od_parameters, only: write_photo_output, photo_model, iprint, devel_flag
     implicit none
     integer :: atom, ierr, e_scale, binding_unit, matrix_unit
-    integer :: N, N_spin, i, n_eigen, kpt_total
+    integer :: N, N_spin, n_eigen, kpt_total, band_num
 
     real(kind=dp), allocatable, dimension(:, :) :: qe_atom
     real(kind=dp) :: time0, time1
@@ -2441,11 +2453,7 @@ contains
         call write_distributed_qe_data(kpt_total)
       else
         matrix_unit = io_file_unit()
-        if ((photo_photon_sweep)) then
-          write (char_e, '(F7.3)') temp_photon_energy
-        else
-          write (char_e, '(F7.3)') photo_photon_energy
-        end if
+        write (char_e, '(F7.3)') temp_photon_energy
         filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_qe_matrix.dat'
         open (unit=matrix_unit, action='write', file=filename)
         call io_date(cdate, ctime)
@@ -2453,26 +2461,51 @@ contains
         write (matrix_unit, *) '## Seedname: ', trim(seedname)
         write (matrix_unit, *) '## Photoemission Model: ', trim(photo_model)
         write (matrix_unit, *) '## Photon Energy: ', trim(adjustl(char_e))
-        write (matrix_unit, '(1x,a31,4(1x,I5),1a)') '## (Reduced) QE Matrix Shape: (', nbands, kpt_total, nspins, max_atoms, ')'
+        ! if (index(devel_flag, 'final') > 0 .and. index(photo_model, '3step') > 0) then
+        !   write (matrix_unit, *) '## Writing the sum over 3-step initial states contributions'
+        !   write (matrix_unit, *) '## The written values are contributions of final states to the total'
+        ! elseif (index(devel_flag, 'final') .eq. 0 .and. index(photo_model, '3step') > 0) then
+        !   write (matrix_unit, *) '## Writing the sum over 3-step final states contributions'
+        !   write (matrix_unit, *) '## The written values are contributions of initial states to the total'
+        ! end if
+        write (matrix_unit, *) '## Find band energies and fractional k-point coordinates in: ', trim(seedname), '.bands'
+
         ! Printing out the info on root_node
-        do N = 1, num_kpoints_on_node(my_node_id)
-          write (matrix_unit, '(1x,a13,3(1x,F11.8),a1)') '## K-point: (', (kpoint_r_cart(i, N), i=1, 3), ')'
-          do N_spin = 1, nspins
-            write (matrix_unit, '(1x,a15,I1,a1)') '## Spin comp: (', N_spin, ')'
-            write (matrix_unit, '(4999(1x,SF17.8))') (band_energy(n_eigen, N_spin, N), n_eigen=1, nbands)
-          end do
-        end do
 
         if (index(photo_model, '3step') > 0) then
-          do atom = 1, max_atoms + 1
-            if (atom .eq. max_atoms + 1) write (matrix_unit, *) '## Bulk Contribution:'
-            do N = 1, num_kpoints_on_node(my_node_id)
-              do N_spin = 1, nspins
-                write (matrix_unit, '(9999(ES16.8E3))') (sum(qe_tsm(n_eigen, 1:nbands, N_spin, N, atom)), n_eigen=1, nbands)
+          if (index(devel_flag, 'single') > 0) then
+            n_eigen = len_trim(devel_flag)
+            read (devel_flag(n_eigen - 2:n_eigen), *) band_num
+            write (matrix_unit, '(1x,a42,1x,I3)') '## Writing contributions into final band #', band_num
+            write (matrix_unit, '(1x,a31,4(1x,I5),1x,1a)') '## (Reduced) QE Matrix Shape: (', nbands, nspins, kpt_total, max_atoms,&
+                  & ')'
+            do atom = 1, max_atoms + 1
+              if (atom .eq. max_atoms + 1) write (matrix_unit, *) '## Bulk Contribution:'
+              do N = 1, num_kpoints_on_node(my_node_id)
+                do N_spin = 1, nspins
+                  write (matrix_unit, '(9999(ES16.8E3))') (qe_tsm(n_eigen, band_num, N_spin, N, atom), n_eigen=1, nbands)
+                end do
               end do
             end do
-          end do
+          else
+            write (matrix_unit, *) '## (Reduced) QE Matrix where each row contains the contributions from each band'
+            write (matrix_unit, *) '## at a certain k-point, spin, and atom'
+            write (matrix_unit, '(1x,a31,4(1x,I5),1x,1a)') '## (Reduced) QE Matrix Shape: (', nbands, nspins, kpt_total, max_atoms,&
+                  & ')'
+            do atom = 1, max_atoms + 1
+              if (atom .eq. max_atoms + 1) write (matrix_unit, *) '## Bulk Contribution:'
+              do N = 1, num_kpoints_on_node(my_node_id)
+                do N_spin = 1, nspins
+                  write (matrix_unit, '(9999(ES16.8E3))') (sum(qe_tsm(n_eigen, 1:nbands, N_spin, N, atom)), n_eigen=1, nbands)
+                end do
+              end do
+            end do
+          end if
         elseif (index(photo_model, '1step') > 0) then
+          write (matrix_unit, *) '## (Reduced) QE Matrix where each row contains the contributions from each band'
+          write (matrix_unit, *) '## at a certain k-point, spin, and atom'
+          write (matrix_unit, '(1x,a31,4(1x,I5),1x,1a)') '## (Reduced) QE Matrix Shape: (', nbands, nspins, kpt_total, max_atoms,&
+               & ')'
           do atom = 1, max_atoms + 1
             if (atom .eq. max_atoms + 1) write (matrix_unit, *) '## Bulk Contribution:'
             do N = 1, num_kpoints_on_node(my_node_id)
@@ -2505,18 +2538,21 @@ contains
 
       if (on_root) then
         binding_unit = io_file_unit()
-        if ((photo_photon_sweep)) then
-          write (char_e, '(F7.3)') temp_photon_energy
-          filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//&
-          &'_binding_energy.dat'
-          open (unit=binding_unit, action='write', file=filename)
-        else
-          open (unit=binding_unit, action='write', file=trim(seedname)//'_binding_energy.dat')
-        end if
+        write (char_e, '(F7.3)') temp_photon_energy
+        filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//&
+        &'_binding_energy.dat'
+        open (unit=binding_unit, action='write', file=filename)
+        call io_date(cdate, ctime)
+        write (binding_unit, *) '## OptaDOS Photoemission: Printing Binding Energy Spread on ', cdate, ' at ', ctime
+        write (binding_unit, *) '## Seedname: ', trim(seedname)
+        write (binding_unit, *) '## Photoemission Model: ', trim(photo_model)
+        write (binding_unit, *) '## Photon Energy: ', trim(adjustl(char_e))
+        write (binding_unit, *) '## Transverse Energy (TE) [eV] | Total QE from sum(atoms + bulk) @ TE | Contributions from: atom1 &
+        &| atom2 | ... | bulk | '
 
         do e_scale = 1, max_energy
-          write (binding_unit, *) t_energy(e_scale), sum(qe_atom(e_scale, 1:max_atoms + 1)), &
-            qe_atom(e_scale, 1:max_atoms + 1)
+          write (binding_unit, '(1x,ES13.6E2,2x,ES19.12E3,1x,999(1x,ES19.12E3))') t_energy(e_scale), &
+          &sum(qe_atom(e_scale, 1:max_atoms + 1)), qe_atom(e_scale, 1:max_atoms + 1)
         end do
 
         close (unit=binding_unit)
@@ -2549,28 +2585,31 @@ contains
   subroutine write_distributed_qe_data(kpt_total)
     !***************************************************************
     ! This subroutine writes the distributed qe tensor to a single file.
+    ! To save on required memory the output file is accessed by each MPI process in turn
+    ! and writes its values/contents one after the other.
+    ! F. Mildner, June 2023
 
-    use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_r_cart
-    use od_electronic, only: nbands, nspins, band_energy
+    use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart
+    use od_electronic, only: nspins, nbands
     use od_comms, only: my_node_id, on_root, num_nodes, comms_send, comms_recv, root_id, comms_bcast
     use od_io, only: io_error, io_file_unit, io_date, io_time, seedname
-    use od_parameters, only: photo_model, photo_photon_sweep, photo_photon_energy
+    use od_parameters, only: photo_model
 
     implicit none
-    integer, intent(in) :: kpt_total
+    real(kind=dp), dimension(:, :, :), allocatable :: qe_mat_temp
+    real(kind=dp), dimension(:, :, :, :), allocatable :: tsm_reduced
+    integer, intent(in)                         :: kpt_total
     character(len=99)                           :: filename
     character(len=10)                           :: char_e
     character(len=9)                            :: ctime             ! Temp. time string
     character(len=11)                           :: cdate             ! Temp. date string
-    integer:: i, N, N_spin, n_eigen, atom, token, matrix_unit
+    integer:: N, N_spin, n_eigen, atom, token, matrix_unit, ierr, inode
+
+    ! On root open file and write header
 
     if (on_root) then
       ! Writing header to output file
-      if ((photo_photon_sweep)) then
-        write (char_e, '(F7.3)') temp_photon_energy
-      else
-        write (char_e, '(F7.3)') photo_photon_energy
-      end if
+      write (char_e, '(F7.3)') temp_photon_energy
       filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_qe_matrix.dat'
       matrix_unit = io_file_unit()
       open (unit=matrix_unit, action='write', file=filename)
@@ -2579,143 +2618,80 @@ contains
       write (matrix_unit, *) '## Seedname: ', trim(seedname)
       write (matrix_unit, *) '## Photoemission Model: ', trim(photo_model)
       write (matrix_unit, *) '## Photon Energy: ', trim(adjustl(char_e))
-      write (matrix_unit, '(1x,a31,4(1x,I5),1a)') '## (Reduced) QE Matrix Shape: (', nbands, kpt_total, nspins, max_atoms, ')'
-      close (unit=matrix_unit)
-    end if
-    call comms_bcast(filename, 99)
-    ! Write out the kpoints and band energies on non-root nodes
-    if (my_node_id .eq. 0) then
-      token = -1; 
-    else
-      ! Receive the token to write to the output file
-      call comms_recv(token, 1, my_node_id - 1)
-      matrix_unit = io_file_unit()
-      open (unit=matrix_unit, access='append', action='write', file=filename)
-      do N = 1, num_kpoints_on_node(my_node_id)
-        write (matrix_unit, '(1x,a13,3(1x,F11.8),a1)') '## K-point: (', (kpoint_r_cart(i, N), i=1, 3), ')'
-        do N_spin = 1, nspins
-          write (matrix_unit, '(1x,a15,I1,a1)') '## Spin comp: (', N_spin, ')'
-          write (matrix_unit, '(4999(1x,SF17.8))') (band_energy(n_eigen, N_spin, N), n_eigen=1, nbands)
-        end do
-      end do
-      close (unit=matrix_unit)
-    end if
-    !Pass the token to the next node
-    call comms_send(token, 1, modulo(my_node_id + 1, num_nodes))
-    ! Write out the kpoints and band energies on root node
-    if (my_node_id .eq. 0) then
-      call comms_recv(token, 1, num_nodes - 1)
-      matrix_unit = io_file_unit()
-      open (unit=matrix_unit, access='append', action='write', file=filename)
-      do N = 1, num_kpoints_on_node(my_node_id)
-        write (matrix_unit, '(1x,a13,3(1x,F11.8),a1)') '## K-point: (', (kpoint_r_cart(i, N), i=1, 3), ')'
-        do N_spin = 1, nspins
-          write (matrix_unit, '(1x,a15,I1,a1)') '## Spin comp: (', N_spin, ')'
-          write (matrix_unit, '(4999(1x,SF17.8))') (band_energy(n_eigen, N_spin, N), n_eigen=1, nbands)
-        end do
-      end do
-      close (unit=matrix_unit)
+      write (matrix_unit, *) '## Find band energies and fractional k-point coordinates in: ', trim(seedname), '.bands'
+      write (matrix_unit, *) '## (Reduced) QE Matrix where each row contains the contributions from each band'
+      write (matrix_unit, *) '## at a certain k-point, spin, and atom'
+      write (matrix_unit, '(1x,a31,4(1x,I5),1x,1a)') '## (Reduced) QE Matrix Shape: (', nbands, nspins, kpt_total, max_atoms, ')'
+      allocate (qe_mat_temp(nbands, nspins, num_kpoints_on_node(0)), stat=ierr)
+      if (ierr /= 0) call io_error('Error: write_distributed_qe_data - failed to allocate qe_mat_temp on root')
+      token = -1
     end if
 
-    ! Write out the qe matrix for all atoms but the bulk contribution on non-root nodes
-    if (my_node_id .eq. 0) then
-      token = -1; 
-    else
-      ! Receive the token to write to the output file
-      call comms_recv(token, 1, my_node_id - 1)
-      matrix_unit = io_file_unit()
-      open (unit=matrix_unit, access='append', action='write', file=filename)
+    ! allocate and sum the 3step qe matrix on non-root
+    if (.not. on_root) then
       if (index(photo_model, '3step') > 0) then
-        do atom = 1, max_atoms
+        allocate (tsm_reduced(nbands, nspins, num_kpoints_on_node(0), max_atoms + 1), stat=ierr)
+        if (ierr /= 0) call io_error('Error: write_distributed_qe_data - failed to allocate tsm_reduced')
+        tsm_reduced = sum(qe_tsm, dim=2)
+      end if
+    end if
+    ! For each atom until max_atoms+1
+    do atom = 1, max_atoms + 1
+      ! On non root nodes
+      if (.not. on_root) then
+        ! - wait for the token
+        call comms_recv(token, 1, 0)
+        ! - send the respective qe_matrix for that specific atom
+        if (index(photo_model, '3step') > 0) then
+          call comms_send(tsm_reduced(1, 1, 1, atom), nbands*nspins*num_kpoints_on_node(my_node_id), 0)
+        elseif (index(photo_model, '1step') > 0) then
+          call comms_send(qe_osm(1, 1, 1, atom), nbands*nspins*num_kpoints_on_node(my_node_id), 0)
+        end if
+        ! - send token back to root node
+        call comms_send(token, 1, 0)
+        ! On root node
+      elseif (on_root) then
+        do inode = 1, num_nodes - 1
+          ! - send to the token to notes in turn
+          call comms_send(token, 1, inode)
+          ! - receive the qe_matrix from the other notes and write it to the file
+          call comms_recv(qe_mat_temp(1, 1, 1), nbands*nspins*num_kpoints_on_node(inode), inode)
+          ! write out the qe_matrix to the file
+          do N = 1, num_kpoints_on_node(inode)
+            do N_spin = 1, nspins
+              write (matrix_unit, '(9999(ES16.8E3))') (qe_mat_temp(n_eigen, N_spin, N), n_eigen=1, nbands)
+            end do
+          end do
+          ! - receive the token from a node
+          call comms_recv(token, 1, inode)
+        end do
+        ! - write root qe_matrix elements
+        if (index(photo_model, '3step') > 0) then
           do N = 1, num_kpoints_on_node(my_node_id)
             do N_spin = 1, nspins
               write (matrix_unit, '(9999(ES16.8E3))') (sum(qe_tsm(n_eigen, 1:nbands, N_spin, N, atom)), n_eigen=1, nbands)
             end do
           end do
-        end do
-      elseif (index(photo_model, '1step') > 0) then
-        do atom = 1, max_atoms
+        elseif (index(photo_model, '1step') > 0) then
           do N = 1, num_kpoints_on_node(my_node_id)
             do N_spin = 1, nspins
               write (matrix_unit, '(9999(ES16.8E3))') (qe_osm(n_eigen, N_spin, N, atom), n_eigen=1, nbands)
             end do
           end do
-        end do
+        end if
+        ! Write header for bulk contrib using root node
+        if (atom .eq. max_atoms) write (matrix_unit, '(1x,a21)') '## Bulk Contribution:'
       end if
+    end do
+    if (on_root) then
       close (unit=matrix_unit)
-    end if
-    !Pass the token to the next node
-    call comms_send(token, 1, modulo(my_node_id + 1, num_nodes))
-    ! Write out the qe matrix for all atoms but the bulk contribution on root node
-    if (my_node_id .eq. 0) then
-      call comms_recv(token, 1, num_nodes - 1)
-      matrix_unit = io_file_unit()
-      open (unit=matrix_unit, access='append', action='write', file=filename)
+      deallocate (qe_mat_temp, stat=ierr)
+      if (ierr /= 0) call io_error('Error: write_distributed_qe_data - failed to deallocate qe_mat_temp')
+    elseif (.not. on_root) then
       if (index(photo_model, '3step') > 0) then
-        do atom = 1, max_atoms
-          do N = 1, num_kpoints_on_node(my_node_id)
-            do N_spin = 1, nspins
-              write (matrix_unit, '(9999(ES16.8E3))') (sum(qe_tsm(n_eigen, 1:nbands, N_spin, N, atom)), n_eigen=1, nbands)
-            end do
-          end do
-        end do
-      elseif (index(photo_model, '1step') > 0) then
-        do atom = 1, max_atoms
-          do N = 1, num_kpoints_on_node(my_node_id)
-            do N_spin = 1, nspins
-              write (matrix_unit, '(9999(ES16.8E3))') (qe_osm(n_eigen, N_spin, N, atom), n_eigen=1, nbands)
-            end do
-          end do
-        end do
+        deallocate (tsm_reduced, stat=ierr)
+        if (ierr /= 0) call io_error('Error: write_distributed_qe_data - failed to deallocate tsm_reduced')
       end if
-      write (matrix_unit, *) '## Bulk Contribution:'
-      close (unit=matrix_unit)
-    end if
-
-    ! Write out the qe matrix of the bulk contribution on non-root nodes
-    if (my_node_id .eq. 0) then
-      token = -1; 
-    else
-      ! Receive the token to write to the output file
-      call comms_recv(token, 1, my_node_id - 1)
-      matrix_unit = io_file_unit()
-      open (unit=matrix_unit, access='append', action='write', file=filename)
-      if (index(photo_model, '3step') > 0) then
-        do N = 1, num_kpoints_on_node(my_node_id)
-          do N_spin = 1, nspins
-            write (matrix_unit, '(9999(ES16.8E3))') (sum(qe_tsm(n_eigen, 1:nbands, N_spin, N, max_atoms + 1)), n_eigen=1, nbands)
-          end do
-        end do
-      elseif (index(photo_model, '1step') > 0) then
-        do N = 1, num_kpoints_on_node(my_node_id)
-          do N_spin = 1, nspins
-            write (matrix_unit, '(9999(ES16.8E3))') (qe_osm(n_eigen, N_spin, N, max_atoms + 1), n_eigen=1, nbands)
-          end do
-        end do
-      end if
-      close (unit=matrix_unit)
-    end if
-    !Pass the token to the next node
-    call comms_send(token, 1, modulo(my_node_id + 1, num_nodes))
-    ! Write out the qe matrix of the bulk contribution on root node
-    if (my_node_id .eq. 0) then
-      call comms_recv(token, 1, num_nodes - 1)
-      matrix_unit = io_file_unit()
-      open (unit=matrix_unit, access='append', action='write', file=filename)
-      if (index(photo_model, '3step') > 0) then
-        do N = 1, num_kpoints_on_node(my_node_id)
-          do N_spin = 1, nspins
-            write (matrix_unit, '(9999(ES16.8E3))') (sum(qe_tsm(n_eigen, 1:nbands, N_spin, N, max_atoms + 1)), n_eigen=1, nbands)
-          end do
-        end do
-      elseif (index(photo_model, '1step') > 0) then
-        do N = 1, num_kpoints_on_node(my_node_id)
-          do N_spin = 1, nspins
-            write (matrix_unit, '(9999(ES16.8E3))') (qe_osm(n_eigen, N_spin, N, max_atoms + 1), n_eigen=1, nbands)
-          end do
-        end do
-      end if
-      close (unit=matrix_unit)
     end if
   end subroutine write_distributed_qe_data
 

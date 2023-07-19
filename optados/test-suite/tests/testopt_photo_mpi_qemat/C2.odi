@@ -19,6 +19,6 @@ photo_momentum : crystal
 photo_temperature : 300
 photo_theta_lower : 59
 photo_theta_upper : 61
-write_photo_matrix : qe_matrix
+write_photo_output : qe_matrix
 
 iprint : 1
