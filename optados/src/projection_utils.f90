@@ -30,7 +30,7 @@
 !    - matrix_weights: weights of desired projectors by (projector, band, kpoint, spin).
 !    - proj_{symbol,am,sites}: array of projections split by OptaDOS shortcuts.
 !
-! as well as a few global variables,  and .
+! as well as a few global variables, `num_proj` and `shortcut`.
 !-------------------------------------------------------------------------------
 module od_projection_utils
 
