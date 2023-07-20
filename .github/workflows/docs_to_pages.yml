@@ -25,7 +25,7 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - name: Checkout
         uses: actions/checkout@v3
-      - name: Build
+      - name: built
         uses: wuppersaver/ford-build@v1
         with:
           project_file: /optados/
@@ -34,7 +34,7 @@ jobs:
 #       with:
 #         name: github-pages.tar.gz
 #         path: /optados/auto_doc/
-       - name: Deploy to GitHub Pages
+      - name: Deploy to GitHub Pages
         if: success()
         uses: crazy-max/ghaction-github-pages@v3
         with:
