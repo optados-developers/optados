@@ -10,12 +10,12 @@ jobs:
         uses: actions/checkout@v3
       - name: Build
         id: build
-        uses: ResearchSoftwareActions/ford-build@v1.0
+        uses: wuppersaver/ford-build
         with:
-          project_file: optados_photo_dev/optados_photo_dev/optados/ford/project.md
-      - name: Deploy
-        if: success()
-        uses: crazy-max/ghaction-github-pages@v3.1.0
-        with:
-          target_branch: gh-pages
-          build_dir: ${{ steps.build.outputs.out_dir }}
+          project_file: /optados/ford/project.md
+#       - name: Deploy
+#         if: success()
+#         uses: crazy-max/ghaction-github-pages@v3.1.0
+#         with:
+#           target_branch: gh-pages
+#           build_dir: ${{ steps.build.outputs.out_dir }}
