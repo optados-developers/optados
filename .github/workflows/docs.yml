@@ -15,9 +15,13 @@ jobs:
         uses: wuppersaver/ford-build@v0.2
         with:
           project_file: /optados/
+      - name: Check GitHub Pages status
+        uses: crazy-max/ghaction-github-status@v3
+        with:
+          pages_threshold: major_outage
       - name: Deploy
         if: success()
         uses: crazy-max/ghaction-github-pages@v3.1.0
         with:
           target_branch: gh-pages
-          build_dir: /optados/auto_doc/
+          build_dir: /public/
