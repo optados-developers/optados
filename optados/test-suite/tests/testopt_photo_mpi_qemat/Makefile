@@ -1,8 +1,5 @@
 all: $(patsubst %.bands.bz2, %.bands, $(wildcard *.bands.bz2)) $(patsubst %.dome_fmt.bz2, %.dome_bin, $(wildcard *.dome_fmt.bz2)) $(patsubst %.fem_fmt.bz2, %.fem_bin, $(wildcard *.fem_fmt.bz2)) $(patsubst %.ome_fmt.bz2, %.ome_bin, $(wildcard *.ome_fmt.bz2)) $(patsubst %.pdos_fmt.bz2, %.pdos_bin, $(wildcard *.pdos_fmt.bz2)) $(patsubst %=C2.odi.bz2, %.odi, $(wildcard *=C2.odi.bz2))
 
-%.odi.bz2:  %=C2.odi.bz2 
-	bunzip2 benchmark.out.default.inp=C2.odi.bz2
-
 %.dome_bin:  %.dome_fmt.bz2 %.bands
 	$(eval SEEDNAME:=$(patsubst %.dome_fmt.bz2, %, $<))
 	echo $(SEEDNAME)
