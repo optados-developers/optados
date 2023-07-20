@@ -50,11 +50,12 @@ jobs:
             matplotlib  \
       - name: build
         run:  |
-          cd optados 
+          cd optados
+          sed -i "s/.*BUILD :=.*/BUILD := fast/" make.system
           make 
           make tools
       - name: run tests
         run: |
           cd optados/test-suite
-          ./run_tests -v --category=default 
+          ./run_tests -n 1 -v --category=default 
 
