@@ -1,6 +1,6 @@
 # This is a basic workflow to help you get started with Actions
 
-name: CI
+name: Docs to Pages
 
 # Controls when the workflow will run
 on:
@@ -26,7 +26,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
       - name: built
-        uses: wuppersaver/ford-build@v1
+        uses: wuppersaver/ford-build@v1.0
         with:
           project_file: /optados/
 #      - name: Upload Static Elements
