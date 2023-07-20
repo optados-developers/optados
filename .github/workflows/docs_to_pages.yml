@@ -29,11 +29,6 @@ jobs:
         uses: wuppersaver/ford-build@v1.0
         with:
           project_file: /optados/
-#      - name: Upload Static Elements
-#        uses: actions/upload-pages-artifact@v2
-#       with:
-#         name: github-pages.tar.gz
-#         path: /optados/auto_doc/
       - name: Deploy to GitHub Pages
         if: success()
         uses: crazy-max/ghaction-github-pages@v3
