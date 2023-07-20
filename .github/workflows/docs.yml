@@ -12,7 +12,7 @@ jobs:
         id: build
         uses: ResearchSoftwareActions/ford-build@v1.0
         with:
-          project_file: /github/workspace/optados/ford/project.md
+          project_file: optados_photo_dev/optados_photo_dev/optados/ford/project.md
       - name: Deploy
         if: success()
         uses: crazy-max/ghaction-github-pages@v3.1.0
