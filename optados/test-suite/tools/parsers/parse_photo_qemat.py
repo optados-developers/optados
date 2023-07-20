@@ -9,9 +9,6 @@ from collections import defaultdict
 
 from . import show_output
 
-band_energies = re.compile(" ## Spin comp:")
-kpoints = re.compile(" ## K-point: \(  ([0-9]*\.[0-9]+(\s+[0-9]*\.[0-9]+)+)\)")
-
 def parse(fname):
     """
     Open the file, parses it and return the values
@@ -26,14 +23,8 @@ def parse(fname):
         lines = f.readlines()
 
     for lno, l in enumerate(lines):
-
-        match = band_energies.search(l)
-        if match:
-            retdict["band_energies"].append([float(a) for a in lines[lno+1].split()])
-            continue
-        match = kpoints.search(l)
-        if match:
-            retdict["kpoints"].append([float(a) for a in match.groups()[0].split()])
+        if '##' not in l:
+            retdict["matrix"].append([float(a) for a in l.split()])
             continue
         ###############################################################
 
