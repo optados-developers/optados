@@ -1,6 +1,8 @@
 name: Docs
 
-on: push
+on: 
+  push
+#   workflow_dispatch
 
 jobs:
   publish:
@@ -13,9 +15,9 @@ jobs:
         uses: wuppersaver/ford-build@v0.2
         with:
           project_file: /optados/
-#       - name: Deploy
-#         if: success()
-#         uses: crazy-max/ghaction-github-pages@v3.1.0
-#         with:
-#           target_branch: gh-pages
-#           build_dir: ${{ steps.build.outputs.out_dir }}
+      - name: Deploy
+        if: success()
+        uses: crazy-max/ghaction-github-pages@v3.1.0
+        with:
+          target_branch: gh-pages
+          build_dir: /optados/auto_doc/
