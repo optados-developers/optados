@@ -38,8 +38,8 @@ program optados
   use od_io, only: io_get_seedname, io_time, io_date, io_file_unit,&! Functions
        & stdout, stderr, seedname, options, temp_dir                ! Variables
   use od_parameters, only: param_read, param_write_header, param_Dist, param_write, &
-                           param_dealloc, pdos, pdis, dos, jdos, core, optics, photo, iprint, param_write_atomic_coord, &
-                           devel_flag, photo_photon_energy, photo_model
+    param_dealloc, pdos, pdis, dos, jdos, core, optics, photo, iprint, param_write_atomic_coord, &
+    devel_flag, photo_photon_energy, photo_model
   use od_cell, only: cell_calc_lattice, cell_report_parameters, cell_dist
   use od_electronic, only: elec_read_band_energy, elec_read_band_energy_ordered, elec_report_parameters
   use od_dos, only: dos_calculate

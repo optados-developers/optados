@@ -1169,62 +1169,62 @@ program od2od
 
   ! Main case to decide what file format to read in.
   read_input:select case(trim(infile))
-  case ("ome_fmt")
+case ("ome_fmt")
   ome_conv = .true.
   call get_band_energy()
   call write_read_file()
   call read_ome_fmt()
-  case ("ome_bin")
+case ("ome_bin")
   ome_conv = .true.
   call get_band_energy()
   call write_read_file()
   call read_ome_bin()
-  case ("fem_fmt")
+case ("fem_fmt")
   fem_conv = .true.
   call get_band_energy()
   call write_read_file()
   call read_fem_fmt()
-  case ("fem_bin")
+case ("fem_bin")
   fem_conv = .true.
   call get_band_energy()
   call write_read_file()
   call read_fem_bin()
-  case ("dome_fmt")
+case ("dome_fmt")
   dome_conv = .true.
   call get_band_energy()
   call write_read_file()
   call read_dome_fmt()
-  case ("dome_bin")
+case ("dome_bin")
   dome_conv = .true.
   call get_band_energy()
   call write_read_file()
   call read_dome_bin()
-  case ("pdos_fmt")
+case ("pdos_fmt")
   pdos_conv = .true.
   call get_band_energy()
   call write_read_file()
   call read_pdos_fmt()
-  case ("pdos_bin")
+case ("pdos_bin")
   pdos_conv = .true.
   call get_band_energy()
   call write_read_file()
   call read_pdos_bin()
-  case ("elnes_fmt")
+case ("elnes_fmt")
   elnes_conv = .true.
   call get_band_energy()
   call write_read_file()
   call read_elnes_fmt()
-  case ("elnes_bin")
+case ("elnes_bin")
   elnes_conv = .true.
   call get_band_energy()
   call write_read_file()
   call read_elnes_bin()
-  case ("dummy")
+case ("dummy")
   dummy_conv = .true.
   call get_band_energy()
   call write_read_file()
   write (stdout, *) " Not reading any input file."
-  case default
+case default
   call io_error('Unknown Input File format speccified')
   end select read_input
   write (stdout, *) "+----------------------------------------------------------------------------+"
@@ -1232,47 +1232,47 @@ program od2od
   write (stdout, *) "+------------------------------- Write File ---------------------------------+"
   ! Main case to decide what file format to write.
   write_output:select case(trim(outfile))
-  case ("ome_fmt")
+case ("ome_fmt")
   if (.not. (dome_conv .or. ome_conv)) call io_error(' Input format '//trim(infile)//' not compatible with output format '&
        &//trim(outfile))
   if (dome_conv) call pad_an_ome()
   call write_ome_fmt()
-  case ("ome_bin")
+case ("ome_bin")
   if (.not. (dome_conv .or. ome_conv)) call io_error(' Input format '//trim(infile)//' not compatible with output format '&
        &//trim(outfile))
   if (dome_conv) call pad_an_ome()
   call write_ome_bin()
-  case ("fem_fmt")
+case ("fem_fmt")
   if (.not. (fem_conv)) call io_error(' Input format '//trim(infile)//' not compatible with output format '&
        &//trim(outfile))
   call write_fem_fmt()
-  case ("fem_bin")
+case ("fem_bin")
   if (.not. (fem_conv)) call io_error(' Input format '//trim(infile)//' not compatible with output format '&
        &//trim(outfile))
   call write_fem_bin()
-  case ("dome_fmt")
+case ("dome_fmt")
   if (.not. (dome_conv .or. ome_conv)) call io_error(' Input format '//trim(infile)//&
        &' not compatible with output format '//trim(outfile))
   if (ome_conv) call slice_an_ome()
   call write_dome_fmt()
-  case ("dome_bin")
+case ("dome_bin")
   if (.not. (dome_conv .or. ome_conv)) call io_error(' Input format '//trim(infile)//&
        &' not compatible with output format '//trim(outfile))
   if (ome_conv) call slice_an_ome()
   call write_dome_bin()
-  case ("pdos_fmt")
+case ("pdos_fmt")
   if (.not. pdos_conv) call io_error(' Input format '//trim(infile)//' not compatible with output format '//trim(outfile))
   call write_pdos_fmt()
-  case ("pdos_bin")
+case ("pdos_bin")
   if (.not. pdos_conv) call io_error(' Input format '//trim(infile)//' not compatible with output format '//trim(outfile))
   call write_pdos_bin()
-  case ("elnes_fmt")
+case ("elnes_fmt")
   if (.not. elnes_conv) call io_error(' Input format '//trim(infile)//' not compatible with output format '//trim(outfile))
   call write_elnes_fmt()
-  case ("elnes_bin")
+case ("elnes_bin")
   if (.not. elnes_conv) call io_error(' Input format '//trim(infile)//' not compatible with output format '//trim(outfile))
   call write_elnes_bin()
-  case ("dummy")
+case ("dummy")
   write (stdout, *) " Not writing any output file."
   if (dummy_conv) then
     write (stdout, *)
@@ -1281,7 +1281,7 @@ program od2od
     write (stdout, *)
     write (stdout, *) "                No point in taking up disk space unnecessarily, eh ?"
   end if
-  case default
+case default
   call io_error('Unknown Output File format speccified')
   end select write_output
 

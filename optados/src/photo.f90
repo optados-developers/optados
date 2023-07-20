@@ -484,7 +484,7 @@ contains
     use od_jdos_utils, only: jdos_utils_calculate, jdos_nbins, setup_energy_scale, jdos_deallocate
     use od_comms, only: comms_bcast, on_root, my_node_id
     use od_parameters, only: optics_intraband, jdos_spacing, photo_model, photo_photon_energy, photo_photon_sweep, &
-                             photo_photon_min, photo_photon_max, devel_flag, iprint
+      photo_photon_min, photo_photon_max, devel_flag, iprint
     use od_dos_utils, only: dos_utils_calculate_at_e
     use od_constants, only: epsilon_0, e_charge
 
@@ -1359,7 +1359,7 @@ contains
 
     use od_cell, only: num_kpoints_on_node, kpoint_weight
     use od_electronic, only: nbands, nspins, band_energy, efermi, electrons_per_state, elec_read_band_gradient, &
-                             elec_read_band_curvature
+      elec_read_band_curvature
     use od_comms, only: my_node_id, on_root
     use od_parameters, only: photo_surface_area, scissor_op, photo_temperature, devel_flag, photo_photon_sweep, iprint
     use od_dos_utils, only: doslin, doslin_sub_cell_corners

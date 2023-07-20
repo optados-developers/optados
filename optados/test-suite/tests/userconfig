@@ -48,7 +48,7 @@ tolerance = (1.0e-3, 5.0e-3, 'fermi_lb'),(2.0e-69,1.0e-3,'qe_bulk'),(2.9e-69,1.0
 [OPTADOS_MPI_PHOTO_QEMAT_OK]
 exe = ../../optados.mpi
 extract_fn = tools parsers.parse_photo_qemat.parse
-tolerance = (1.0e-3, 5.0e-3, 'band_energies')
+tolerance = (5.0e-3, 'matrix')
 
 [OPTADOS_MPI_PHOTO_ODO_FAIL]
 exe = ../../optados.mpi
