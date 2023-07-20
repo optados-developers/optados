@@ -23,5 +23,8 @@ jobs:
         if: success()
         uses: crazy-max/ghaction-github-pages@v3.1.0
         with:
+          domain: https://wuppersaver.github.io/optados_photo_dev/
           target_branch: gh-pages
-          build_dir: /public/
+          build_dir: /optados/auto_doc/
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
