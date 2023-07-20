@@ -10,7 +10,7 @@ jobs:
         uses: actions/checkout@v3
       - name: Build
         id: build
-        uses: wuppersaver/ford-build@v1.0
+        uses: wuppersaver/ford-build@v0.1
         with:
           project_file: /optados/ford/project.md
 #       - name: Deploy
