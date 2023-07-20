@@ -2,5 +2,6 @@
 *.pdos_bin
 *.fem_bin
 *.dome_bin
+*.dome_fmt
 *.bands
 *.odo
