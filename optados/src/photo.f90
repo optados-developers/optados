@@ -514,13 +514,15 @@ contains
       if (ierr /= 0) call io_error('Error: calc_photo_optics - allocation of index_energy failed')
       do i = 1, number_energies
         temp = (i - 1)*jdos_spacing + photo_photon_min
-        index_energy(i) = int(temp/jdos_spacing)
+        ! Account for E = 0.0
+        index_energy(i) = int(temp/jdos_spacing) + 1
       end do
     else
       number_energies = 1
       allocate (index_energy(number_energies), stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_photo_optics - allocation of index_energy failed')
-      index_energy(number_energies) = int(photo_photon_energy/jdos_spacing)
+      ! Account for E = 0.0
+      index_energy(number_energies) = int(photo_photon_energy/jdos_spacing) + 1
     end if
 
     allocate (absorp_photo(max_atoms, number_energies), stat=ierr)
