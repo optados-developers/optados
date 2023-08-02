@@ -2456,20 +2456,24 @@ contains
       else
         matrix_unit = io_file_unit()
         write (char_e, '(F7.3)') temp_photon_energy
-        filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_qe_matrix.dat'
+        if (index(devel_flag, 'final') > 0 .and. index(photo_model, '3step') > 0) then
+          filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_qe_matrix_final.dat'
+        else
+          filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_qe_matrix.dat'
+        end if
         open (unit=matrix_unit, action='write', file=filename)
         call io_date(cdate, ctime)
         write (matrix_unit, *) '## OptaDOS Photoemission: Printing QE Matrix on ', cdate, ' at ', ctime
         write (matrix_unit, *) '## Seedname: ', trim(seedname)
         write (matrix_unit, *) '## Photoemission Model: ', trim(photo_model)
         write (matrix_unit, *) '## Photon Energy: ', trim(adjustl(char_e))
-        ! if (index(devel_flag, 'final') > 0 .and. index(photo_model, '3step') > 0) then
-        !   write (matrix_unit, *) '## Writing the sum over 3-step initial states contributions'
-        !   write (matrix_unit, *) '## The written values are contributions of final states to the total'
-        ! elseif (index(devel_flag, 'final') .eq. 0 .and. index(photo_model, '3step') > 0) then
-        !   write (matrix_unit, *) '## Writing the sum over 3-step final states contributions'
-        !   write (matrix_unit, *) '## The written values are contributions of initial states to the total'
-        ! end if
+        if (index(devel_flag, 'final') > 0 .and. index(photo_model, '3step') > 0) then
+          write (matrix_unit, *) '## Writing the contributions of excitations into the !!FINAL!! states'
+          !   write (matrix_unit, *) '## The written values are contributions of final states to the total'
+          ! elseif (index(devel_flag, 'final') .eq. 0 .and. index(photo_model, '3step') > 0) then
+          !   write (matrix_unit, *) '## Writing the sum over 3-step final states contributions'
+          !   write (matrix_unit, *) '## The written values are contributions of initial states to the total'
+        end if
         write (matrix_unit, *) '## Find band energies and fractional k-point coordinates in: ', trim(seedname), '.bands'
 
         ! Printing out the info on root_node
@@ -2486,6 +2490,19 @@ contains
               do N = 1, num_kpoints_on_node(my_node_id)
                 do N_spin = 1, nspins
                   write (matrix_unit, '(9999(ES16.8E3))') (qe_tsm(n_eigen, band_num, N_spin, N, atom), n_eigen=1, nbands)
+                end do
+              end do
+            end do
+          else if (index(devel_flag, 'final') > 0) then
+            write (matrix_unit, *) '## (Reduced) QE Matrix where each row contains the contributions from each band'
+            write (matrix_unit, *) '## at a certain k-point, spin, and atom'
+            write (matrix_unit, '(1x,a31,4(1x,I5),1x,1a)') '## (Reduced) QE Matrix Shape: (', nbands, nspins, kpt_total, max_atoms,&
+                  & ')'
+            do atom = 1, max_atoms + 1
+              if (atom .eq. max_atoms + 1) write (matrix_unit, *) '## Bulk Contribution:'
+              do N = 1, num_kpoints_on_node(my_node_id)
+                do N_spin = 1, nspins
+                  write (matrix_unit, '(9999(ES16.8E3))') (sum(qe_tsm(1:nbands, n_eigen, N_spin, N, atom)), n_eigen=1, nbands)
                 end do
               end do
             end do
@@ -2612,7 +2629,11 @@ contains
     if (on_root) then
       ! Writing header to output file
       write (char_e, '(F7.3)') temp_photon_energy
-      filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_qe_matrix.dat'
+      if (index(devel_flag, 'final') > 0 .and. index(photo_model, '3step') > 0) then
+        filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_qe_matrix_final.dat'
+      else
+        filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_qe_matrix.dat'
+      end if
       matrix_unit = io_file_unit()
       open (unit=matrix_unit, action='write', file=filename)
       call io_date(cdate, ctime)
@@ -2634,7 +2655,11 @@ contains
       if (index(photo_model, '3step') > 0) then
         allocate (tsm_reduced(nbands, nspins, num_kpoints_on_node(0), max_atoms + 1), stat=ierr)
         if (ierr /= 0) call io_error('Error: write_distributed_qe_data - failed to allocate tsm_reduced')
-        tsm_reduced = sum(qe_tsm, dim=2)
+        if (index(devel_flag, 'final') > 0) then
+          tsm_reduced = sum(qe_tsm, dim=1)
+        else
+          tsm_reduced = sum(qe_tsm, dim=2)
+        end if
       end if
     end if
     ! For each atom until max_atoms+1
@@ -2669,11 +2694,19 @@ contains
         end do
         ! - write root qe_matrix elements
         if (index(photo_model, '3step') > 0) then
-          do N = 1, num_kpoints_on_node(my_node_id)
-            do N_spin = 1, nspins
-              write (matrix_unit, '(9999(ES16.8E3))') (sum(qe_tsm(n_eigen, 1:nbands, N_spin, N, atom)), n_eigen=1, nbands)
+          if (index(devel_flag, 'final') > 0) then
+            do N = 1, num_kpoints_on_node(my_node_id)
+              do N_spin = 1, nspins
+                write (matrix_unit, '(9999(ES16.8E3))') (sum(qe_tsm(1:nbands, n_eigen, N_spin, N, atom)), n_eigen=1, nbands)
+              end do
             end do
-          end do
+          else
+            do N = 1, num_kpoints_on_node(my_node_id)
+              do N_spin = 1, nspins
+                write (matrix_unit, '(9999(ES16.8E3))') (sum(qe_tsm(n_eigen, 1:nbands, N_spin, N, atom)), n_eigen=1, nbands)
+              end do
+            end do
+          end if
         elseif (index(photo_model, '1step') > 0) then
           do N = 1, num_kpoints_on_node(my_node_id)
             do N_spin = 1, nspins
