@@ -2612,7 +2612,7 @@ contains
     use od_electronic, only: nspins, nbands
     use od_comms, only: my_node_id, on_root, num_nodes, comms_send, comms_recv, root_id, comms_bcast
     use od_io, only: io_error, io_file_unit, io_date, io_time, seedname
-    use od_parameters, only: photo_model
+    use od_parameters, only: photo_model, devel_flag
 
     implicit none
     real(kind=dp), dimension(:, :, :), allocatable :: qe_mat_temp
