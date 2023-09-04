@@ -5,7 +5,7 @@ module od_conv
   use od_constants, only: dp
   use od_electronic, only: elec_read_optical_mat, elec_read_band_gradient, elec_read_elnes_mat,&
        & elec_pdos_read, elec_read_band_energy, omefile_header, domefile_header, pdosfile_header,&
-       & elnesfile_header
+       & elnesfile_header, elec_read_foptical_mat, femfile_header
   use od_parameters, only: iprint
   use od_io, only: stdout, io_error, seedname
   implicit none
@@ -33,6 +33,10 @@ contains
     write (stdout, '(A)') " <in_type> and <out_type> is one of: "
     write (stdout, '(A)') "       ome_fmt : a formatted optical matrix element file"
     write (stdout, '(A)') "       ome_bin : an unformatted optical matrix element file"
+    ! Added by F. Mildner (04/2023) for photoemission
+    write (stdout, '(A)') "       fem_fmt : a formatted free electron optical matrix element file"
+    write (stdout, '(A)') "       fem_bin : an unformatted free electron optical matrix element file"
+
     write (stdout, '(A)') "      dome_fmt : a formatted diagonal optical matrix element file"
     write (stdout, '(A)') "      dome_bin : an unformatted diagonal optical matrix element file"
     write (stdout, '(A)') "      pdos_fmt : a formatted projected density of states file"
@@ -245,6 +249,150 @@ contains
 
     write (stdout, *) " Sucesfully written an unformatted ome file --> "//trim(outseedname)//".ome_bin"
   end subroutine write_ome_bin
+
+  !=========================================================================
+  ! F R E E   E L E C T R O N   O P T I C A L   M A T R I X   E L E M E N T S
+  !=========================================================================
+
+  !=========================================================================
+  subroutine read_fem_fmt()
+    !! Read a formatted Optical Matrix Elements file.
+    use od_constants, only: dp, bohr2ang, H2eV
+    use od_io, only: io_time, filename_len, seedname, stdout, io_file_unit,&
+         & io_error
+    use od_cell, only: num_kpoints_on_node, nkpoints
+    use od_electronic, only: nspins, nbands, foptical_mat
+    use od_constants, only: bohr2ang, H2eV
+    implicit none
+
+    real(dp):: file_version = 1.0_dp          ! File version
+    character(len=100):: string, string2
+    integer :: ik, is, ib, i, jb, fem_unit = 6
+
+    write (stdout, *) " Read a formatted .fem file. "
+
+    if (.not. allocated(foptical_mat)) then
+      write (stdout, *) " Allocating foptical_mat."
+      allocate (foptical_mat(nbands + 1, nbands + 1, 3, nkpoints, nspins))
+    end if
+
+    open (unit=fem_unit, form='formatted', recl=1073741824, file=trim(seedname)//".fem_fmt")
+
+    ! Total number of elements of ome
+    write (string, '(I0,"(1x,",a,")")') 3*(nbands + 1)*(nbands + 1), trim(format_precision)
+    ! write(stdout,*) string
+
+    ! write(string,'(a)') trim(format_precision)
+
+    read (fem_unit, '('//trim(format_precision)//')') file_version
+
+    read (fem_unit, '(a80)') omefile_header
+
+    ! write(0,*) nkpoints, nspins, nbands
+
+    do ik = 1, nkpoints
+      do is = 1, nspins
+        read (fem_unit, '('//trim(string)//')') (((foptical_mat(ib, jb, i, ik, is), ib=1, nbands + 1), &
+             &jb=1, nbands + 1), i=1, 3)
+      end do
+    end do
+
+    foptical_mat = foptical_mat*(bohr2ang*H2eV)
+
+    close (unit=fem_unit)
+
+    write (stdout, *) trim(seedname)//".fem_fmt"//"--> Formatted fem sucessfully read. "
+
+  end subroutine read_fem_fmt
+
+  !=========================================================================
+  subroutine write_fem_fmt()
+    !! Write a formatted ome file.
+    use od_constants, only: dp, bohr2ang, H2eV
+    use od_io, only: io_time, filename_len, seedname, stdout, io_file_unit,&
+         & io_error
+    use od_cell, only: num_kpoints_on_node, nkpoints
+    use od_electronic, only: nspins, nbands, foptical_mat
+    use od_constants, only: bohr2ang, H2eV
+    implicit none
+
+    real(dp):: file_version = 1.0_dp          ! File version
+    character(len=100):: string
+    integer :: ik, is, ib, i, jb, fem_unit = 6
+
+    write (stdout, *) " Write a formatted .fem file. "
+
+    foptical_mat = foptical_mat/(bohr2ang*H2eV)
+
+    open (unit=fem_unit, form='formatted', file=trim(outseedname)//".fem_fmt")
+
+    write (string, '(I0,"(1x,",a,")")') 3*(nbands + 1)*(nbands + 1), trim(format_precision)
+    !   write(stdout,*) string
+
+    write (stdout, '(a80)') femfile_header
+    write (stdout, '(a80)') adjustl(femfile_header)
+
+    write (fem_unit, '('//trim(format_precision)//')') file_version
+    write (fem_unit, '(a80)') adjustl(femfile_header)
+
+    do ik = 1, nkpoints
+      do is = 1, nspins
+        write (fem_unit, '('//trim(string)//')') (((foptical_mat(ib, jb, i, ik, is), ib=1, nbands + 1), &
+             &jb=1, nbands + 1), i=1, 3)
+      end do
+    end do
+
+    close (unit=fem_unit)
+
+    write (stdout, *) " Sucesfully written a formatted fem file --> "//trim(outseedname)//".fem_fmt"
+  end subroutine write_fem_fmt
+
+  !=========================================================================
+  subroutine read_fem_bin()
+    !! Read a binary ome file. Wrapper to keep the naming tidy.
+    implicit none
+    write (stdout, *) " Read a formatted ome file. "
+
+    call elec_read_foptical_mat()
+    write (stdout, *) " "//trim(seedname)//".fem_bin"//"--> Unformatted ome sucessfully read. "
+  end subroutine read_fem_bin
+
+  !=========================================================================
+  subroutine write_fem_bin()
+    !! Write a binary ome file.
+    use od_constants, only: dp, bohr2ang, H2eV
+    use od_io, only: io_time, filename_len, seedname, stdout, io_file_unit,&
+         & io_error
+    use od_cell, only: num_kpoints_on_node, nkpoints
+    use od_electronic, only: nspins, nbands, foptical_mat
+    use od_constants, only: bohr2ang, H2eV
+    implicit none
+
+    real(dp):: file_version = 1.0_dp          ! File version
+    character(len=100):: string
+    integer :: ik, is, ib, i, jb, fem_unit = 6
+
+    write (stdout, *) " Write a binary fem file."
+
+    foptical_mat = foptical_mat/(bohr2ang*H2eV)
+
+    open (unit=fem_unit, form='unformatted', file=trim(outseedname)//".fem_bin")
+
+    write (stdout, *) "-> Femfile_version ", file_version
+    write (fem_unit) file_version
+    write (stdout, *) "-> Femfile_header ", trim(femfile_header)
+    write (fem_unit) adjustl(femfile_header)
+
+    ! write(0,*) nkpoints, nspins, nbands
+    do ik = 1, nkpoints
+      do is = 1, nspins
+        write (fem_unit) (((foptical_mat(ib, jb, i, ik, is), ib=1, nbands + 1), &
+             &jb=1, nbands + 1), i=1, 3)
+      end do
+    end do
+
+    write (stdout, *) " Sucesfully written an unformatted fem file --> "//trim(outseedname)//".fem_bin"
+  end subroutine write_fem_bin
 
   !=========================================================================
   ! D I A G O N A L  O P T I C A L   M A T R I X   E L E M E N T S
@@ -951,7 +1099,7 @@ program od2od
   implicit none
 
   logical :: file_found
-  logical :: ome_conv, dome_conv, pdos_conv, elnes_conv, dummy_conv
+  logical :: ome_conv, fem_conv, dome_conv, pdos_conv, elnes_conv, dummy_conv
   !! Flags to stop people trying to, say, read in a pdos and write out an
   !! elnes. That's not going to end well.
   real(kind=dp) :: time0, time1
@@ -1013,6 +1161,7 @@ program od2od
   write (stdout, *) "+----------------------------------------------------------------------------+"
 
   ome_conv = .false.
+  fem_conv = .false.
   dome_conv = .false.
   pdos_conv = .false.
   elnes_conv = .false.
@@ -1030,6 +1179,16 @@ case ("ome_bin")
   call get_band_energy()
   call write_read_file()
   call read_ome_bin()
+case ("fem_fmt")
+  fem_conv = .true.
+  call get_band_energy()
+  call write_read_file()
+  call read_fem_fmt()
+case ("fem_bin")
+  fem_conv = .true.
+  call get_band_energy()
+  call write_read_file()
+  call read_fem_bin()
 case ("dome_fmt")
   dome_conv = .true.
   call get_band_energy()
@@ -1083,6 +1242,14 @@ case ("ome_bin")
        &//trim(outfile))
   if (dome_conv) call pad_an_ome()
   call write_ome_bin()
+case ("fem_fmt")
+  if (.not. (fem_conv)) call io_error(' Input format '//trim(infile)//' not compatible with output format '&
+       &//trim(outfile))
+  call write_fem_fmt()
+case ("fem_bin")
+  if (.not. (fem_conv)) call io_error(' Input format '//trim(infile)//' not compatible with output format '&
+       &//trim(outfile))
+  call write_fem_bin()
 case ("dome_fmt")
   if (.not. (dome_conv .or. ome_conv)) call io_error(' Input format '//trim(infile)//&
        &' not compatible with output format '//trim(outfile))

@@ -48,6 +48,7 @@ module od_jdos_utils
   !-------------------------------------------------------------------------------
   ! P U B L I C   F U N C T I O N S
   public :: jdos_utils_calculate
+  public :: setup_energy_scale
   !-------------------------------------------------------------------------------
 
   real(kind=dp), save                   :: delta_bins ! Width of bins
@@ -63,20 +64,23 @@ contains
     ! Main routine in dos module, drives the calculation of Density of states for
     ! both task : dos and also if it is required elsewhere.
     !===============================================================================
-    use od_parameters, only: linear, fixed, adaptive, quad, iprint, dos_per_volume
-    use od_electronic, only: elec_read_band_gradient, band_gradient, nspins, electrons_per_state, &
-      num_electrons, efermi_set
-    use od_comms, only: on_root
-    use od_io, only: stdout, io_error, io_time
+    use od_parameters, only: linear, fixed, adaptive, quad, iprint, dos_per_volume, photo, photo_slab_volume,&
+                            &jdos_max_energy, jdos_spacing
+    use od_electronic, only: elec_read_band_gradient, band_gradient, nspins, efermi_set
+    use od_comms, only: on_root, comms_bcast
+    use od_io, only: stdout, io_error, io_time, seedname
     use od_cell, only: cell_volume
     use od_dos_utils, only: dos_utils_set_efermi
 
     implicit none
-    integer :: ierr
+    !integer :: ierr
     real(kind=dp) :: time0, time1
 
     real(kind=dp), intent(out), allocatable, optional    :: weighted_jdos(:, :, :)  !I've added this
     real(kind=dp), intent(in), optional  :: matrix_weights(:, :, :, :, :)               !I've added this
+
+    integer :: N_geom, is, idos, wjdos_unit = 25
+    logical :: print_weighted_jdos = .false.
 
     calc_weighted_jdos = .false.
     if (present(matrix_weights)) calc_weighted_jdos = .true.
@@ -104,7 +108,7 @@ contains
     ! Now everything is set up, we can perform the dos accumulation in parellel
     time0 = io_time()
 
-    call setup_energy_scale
+    call setup_energy_scale(E)
 
     if (fixed) then
       if (calc_weighted_jdos) then
@@ -153,16 +157,46 @@ contains
            &      ', time1 - time0, ' (sec) +'
     end if
     !-------------------------------------------------------------------------------
+    if (print_weighted_jdos) then
+      if (on_root) then
+        N_geom = size(matrix_weights, 5)
+        open (unit=wjdos_unit, action='write', file=trim(seedname)//'_weighted_jdos.dat')
+        write (wjdos_unit, '(1x,a28)') '############################'
+        write (wjdos_unit, '(1x,a19,1x,a99)') '# Weighted JDOS for', seedname
+        write (wjdos_unit, '(1x,a23,1x,F10.4,1x,a4)') '# maximum JDOS energy :', jdos_max_energy, '[eV]'
+        write (wjdos_unit, '(1x,a23,1x,F10.4,1x,a4)') '# JDOS step size      :', jdos_spacing, '[eV]'
+        write (wjdos_unit, '(1x,a28)') '############################'
+        do is = 1, nspins
+          write (wjdos_unit, *) 'Spin Channel :', is
+          do idos = 1, jdos_nbins
+            write (wjdos_unit, *) idos*jdos_spacing, ' , ', sum(weighted_jdos(idos, is, 1:N_geom))
+          end do
+        end do
+        close (unit=wjdos_unit)
+      end if
+    end if
 
     if (dos_per_volume) then
-      if (fixed) then
-        jdos_fixed = jdos_fixed/cell_volume
-      end if
-      if (adaptive) then
-        jdos_adaptive = jdos_adaptive/cell_volume
-      end if
-      if (linear) then
-        jdos_linear = jdos_linear/cell_volume
+      if (photo) then
+        if (fixed) then
+          jdos_fixed = jdos_fixed/photo_slab_volume
+        end if
+        if (adaptive) then
+          jdos_adaptive = jdos_adaptive/photo_slab_volume
+        end if
+        if (linear) then
+          jdos_linear = jdos_linear/photo_slab_volume
+        end if
+      else
+        if (fixed) then
+          jdos_fixed = jdos_fixed/cell_volume
+        end if
+        if (adaptive) then
+          jdos_adaptive = jdos_adaptive/cell_volume
+        end if
+        if (linear) then
+          jdos_linear = jdos_linear/cell_volume
+        end if
       end if
 
       ! if(quad) then
@@ -174,7 +208,7 @@ contains
   end subroutine jdos_utils_calculate
 
   !===============================================================================
-  subroutine setup_energy_scale
+  subroutine setup_energy_scale(E)
     !===============================================================================
     ! Sets up all broadening independent DOS concerns
     ! Calls the relevant dos calculator.
@@ -189,6 +223,7 @@ contains
 
     integer       :: idos, ierr
     real(kind=dp) :: max_band_energy
+    real(kind=dp), intent(out), allocatable, optional    :: E(:)
 
     if (jdos_max_energy < 0.0_dp) then ! we have to work it out ourselves
       max_band_energy = maxval(band_energy)
@@ -225,7 +260,6 @@ contains
       write (stdout, '(1x,a1,a38,f11.3,13x,a15)') '|', 'delta_bins : ', delta_bins, "<-- JDOS Grid |"
       write (stdout, '(1x,a78)') &
         '+----------------------------------------------------------------------------+'
-      write (stdout, *)
     end if
 
   end subroutine setup_energy_scale
@@ -318,7 +352,7 @@ contains
     case ("f")
       fixed = .true.
     case default
-      call io_error(" ERROR : unknown jdos_type in jcalculate_dos ")
+      call io_error(" ERROR : unknown jdos_type in calculate_jdos ")
     end select
 
     width = 0.0_dp
@@ -362,10 +396,12 @@ contains
             ! If the band is very flat linear broadening can have problems describing it. In this case, fall back to
             ! adaptive smearing (and take advantage of FBCS if required).
             force_adaptive = .false.
-            if (hybrid_linear .and. (hybrid_linear_grad_tol > sqrt(dot_product(grad, grad)))) force_adaptive = .true.
-            if (linear .and. .not. force_adaptive) call doslin_sub_cell_corners(grad, step, band_energy(jb, is, ik) -&
-&band_energy(ib, is, ik) + scissor_op, EV)
-            if (adaptive .or. force_adaptive) width = sqrt(dot_product(grad, grad))*adaptive_smearing_temp
+            if (.not. fixed) then
+              if (hybrid_linear .and. (hybrid_linear_grad_tol > sqrt(dot_product(grad, grad)))) force_adaptive = .true.
+              if (linear .and. .not. force_adaptive) call doslin_sub_cell_corners(grad, step, band_energy(jb, is, ik) -&
+  &band_energy(ib, is, ik) + scissor_op, EV)
+              if (adaptive .or. force_adaptive) width = sqrt(dot_product(grad, grad))*adaptive_smearing_temp
+            end if
 
             ! Hybrid Adaptive -- This way we don't lose weight at very flat parts of the
             ! band. It's a kind of fudge that we wouldn't need if we had infinitely small bins.
@@ -426,15 +462,17 @@ contains
     !===============================================================================
     use od_comms, only: comms_reduce
     use od_electronic, only: nspins
-    use od_comms, only: comms_reduce
 
     implicit none
     real(kind=dp), intent(inout), allocatable, optional :: weighted_jdos(:, :, :) ! bins.spins, orbitals
     real(kind=dp), allocatable, intent(inout) :: jdos(:, :)
 
+    integer :: N_geom
+    if (present(weighted_jdos)) N_geom = size(weighted_jdos, 3)
+
     call comms_reduce(jdos(1, 1), nspins*jdos_nbins, "SUM")
 
-    if (present(weighted_jdos)) call comms_reduce(weighted_jdos(1, 1, 1), nspins*jdos_nbins*1, "SUM")
+    if (present(weighted_jdos)) call comms_reduce(weighted_jdos(1, 1, 1), nspins*jdos_nbins*N_geom, "SUM")
 
 !    if(.not.on_root) then
 !       if(allocated(jdos)) deallocate(jdos,stat=ierr)

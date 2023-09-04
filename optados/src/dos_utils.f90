@@ -120,7 +120,7 @@ contains
     use od_electronic, only: band_gradient, band_energy, efermi, efermi_castep, nspins, &
          & elec_read_band_gradient, unshifted_efermi
     use od_parameters, only: linear, adaptive, fixed, quad, &
-         & dos_per_volume, iprint, set_efermi_zero, efermi_choice, iprint
+         & dos_per_volume, iprint, set_efermi_zero, efermi_choice, iprint, photo, photo_slab_volume
     use od_cell, only: cell_volume, num_kpoints_on_node
 
     implicit none
@@ -281,7 +281,11 @@ contains
           intdos_linear = intdos_linear/cell_volume
         end if
         if (calc_weighted_dos) then
-          weighted_dos = weighted_dos/cell_volume
+          if (photo) then
+            weighted_dos = weighted_dos/photo_slab_volume
+          else
+            weighted_dos = weighted_dos/cell_volume
+          end if
         end if
         ! if(quad) then
         !    dos_quad=dos_quad/cell_volume
@@ -1750,14 +1754,15 @@ contains
       do is = 1, nspins
 
         do ib = 1, nbands
-
-          if (linear .or. adaptive) grad(:) = band_gradient(ib, :, ik, is)
-          ! If the band is very flat linear broadening can have problems describing it. In this case, fall back to
-          ! adaptive smearing (and take advantage of FBCS if required).
-          force_adaptive = .false.
-          if (hybrid_linear .and. (hybrid_linear_grad_tol > sqrt(dot_product(grad, grad)))) force_adaptive = .true.
-          if (linear .and. .not. force_adaptive) call doslin_sub_cell_corners(grad, step, band_energy(ib, is, ik), EV)
-          if (adaptive .or. force_adaptive) width = sqrt(dot_product(grad, grad))*adaptive_smearing_temp
+          if (.not. fixed) then
+            if (linear .or. adaptive) grad(:) = band_gradient(ib, :, ik, is)
+            ! If the band is very flat linear broadening can have problems describing it. In this case, fall back to
+            ! adaptive smearing (and take advantage of FBCS if required).
+            force_adaptive = .false.
+            if (hybrid_linear .and. (hybrid_linear_grad_tol > sqrt(dot_product(grad, grad)))) force_adaptive = .true.
+            if (linear .and. .not. force_adaptive) call doslin_sub_cell_corners(grad, step, band_energy(ib, is, ik), EV)
+            if (adaptive .or. force_adaptive) width = sqrt(dot_product(grad, grad))*adaptive_smearing_temp
+          end if
           ! Hybrid Adaptive -- This way we don't lose weight at very flat parts of the
           ! band. It's a kind of fudge that we wouldn't need if we had infinitely small bins.
           if (finite_bin_correction) then ! Force the compiler to do this the right way around

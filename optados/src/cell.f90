@@ -69,6 +69,10 @@ module od_cell
   character(len=2), allocatable, public, save :: atoms_symbol(:)
   integer, public, save :: num_atoms
   integer, public, save :: num_species
+  character(len=maxlen), allocatable, public, save  :: atoms_label_tmp(:)
+
+  ! Added for photoemission
+  real(kind=dp), allocatable, public, save :: atoms_pos_cart_photo(:, :)
 
   !-------------------------------------------------------------------------!
   ! G L O B A L L Y   A V A I L A B L E   F U N C T I O N S
@@ -79,6 +83,9 @@ module od_cell
   public :: cell_read_cell
   public :: cell_get_symmetry
   public :: cell_dist
+  ! Added for photoemission
+  public :: cell_get_real_lattice
+  public :: cell_calc_kpoint_r_cart
   !-------------------------------------------------------------------------!
 
 contains
@@ -418,7 +425,7 @@ contains
     logical           :: found_e, found_s, frac
     character(len=maxlen) :: dummy
     character(len=maxlen), allocatable :: ctemp(:)
-    character(len=maxlen), allocatable :: atoms_label_tmp(:)
+    !character(len=maxlen), allocatable :: atoms_label_tmp(:)
     logical           :: lconvert
 
     character(len=maxlen), allocatable :: in_data(:)
@@ -554,6 +561,7 @@ contains
       atoms_pos_cart_tmp = atoms_pos_cart_tmp*bohr2ang
     end if
 
+    call cell_get_real_lattice
     if (frac) then
       do loop = 1, num_atoms
         call utility_frac_to_cart(atoms_pos_frac_tmp(:, loop), atoms_pos_cart_tmp(:, loop), real_lattice)
@@ -599,6 +607,11 @@ contains
     if (ierr /= 0) call io_error('Error allocating atoms_pos_frac in cell_get_atoms')
     allocate (atoms_pos_cart(3, max_sites, num_species), stat=ierr)
     if (ierr /= 0) call io_error('Error allocating atoms_pos_cart in cell_get_atoms')
+    allocate (atoms_pos_cart_photo(3, num_atoms), stat=ierr)
+    if (ierr /= 0) call io_error('Error allocating atoms_pos_cart_photo in cell_get_atoms')
+
+    ! Making a copy to use in the photo.f90 subroutine "calc_layer"
+    atoms_pos_cart_photo = atoms_pos_cart_tmp
 
     do loop = 1, num_species
       counter = 0
@@ -849,6 +862,8 @@ contains
       atoms_pos_cart_tmp = atoms_pos_cart_tmp*bohr2ang
     end if
 
+    call cell_get_real_lattice
+
     if (frac) then
       do loop = 1, num_atoms
         call utility_frac_to_cart(atoms_pos_frac_tmp(:, loop), atoms_pos_cart_tmp(:, loop), real_lattice)
@@ -945,6 +960,8 @@ contains
 
     ! THESE ARE IN BOHR, DON'T GET TRIPPED UP AGAIN!
     real_lattice = real_lattice*bohr2ang
+
+    call cell_get_real_lattice
 
     recip_lattice(1, 1) = real_lattice(2, 2)*real_lattice(3, 3) - &
                           real_lattice(3, 2)*real_lattice(2, 3)
@@ -1067,11 +1084,19 @@ contains
         if (ierr /= 0) call io_error('Error allocating atoms_label in cell_dist')
         allocate (atoms_symbol(num_species), stat=ierr)
         if (ierr /= 0) call io_error('Error allocating atoms_symbol in cell_dist')
+        ! For Photoemission
+        allocate (atoms_pos_cart_photo(3, num_atoms), stat=ierr)
+        if (ierr /= 0) call io_error('Error allocating atoms_pos_cart_photo in cell_dist')
+        allocate (atoms_label_tmp(num_atoms), stat=ierr)
+        if (ierr /= 0) call io_error('Error allocating atoms_label_tmp in cell_dist')
       end if
       call comms_bcast(atoms_pos_frac(1, 1, 1), 3*num_species*max_sites)
       call comms_bcast(atoms_pos_cart(1, 1, 1), 3*num_species*max_sites)
       call comms_bcast(atoms_label(1), len(atoms_label(1))*num_species)
       call comms_bcast(atoms_symbol(1), len(atoms_symbol(1))*num_species)
+      ! For Photoemission
+      call comms_bcast(atoms_pos_cart_photo(1, 1), 3*num_atoms)
+      call comms_bcast(atoms_label_tmp(1), maxlen*num_atoms)
     end if
     call comms_bcast(num_crystal_symmetry_operations, 1)
     if (num_crystal_symmetry_operations > 0) then
@@ -1087,4 +1112,102 @@ contains
 
   end subroutine cell_dist
 
+  !=========================================================================!
+  subroutine cell_get_real_lattice
+    !=========================================================================
+    ! This subroutine reads the lattice parameters from the bands file in
+    ! order to have them stored when the frac_to_cart and cart_frac subroutines
+    ! are called. Independently of having used the elec_read_band_energy
+    ! subroutine before.
+
+    use od_comms, only: on_root
+    use od_io, only: io_file_unit, seedname, filename_len, stdout, io_time, &
+      io_error
+    use od_constants, only: bohr2ang
+
+    integer :: band_unit
+    character(filename_len) :: band_filename
+
+    !Open the bands file
+    band_unit = io_file_unit()
+    band_filename = trim(seedname)//".bands"
+!    print*,'band_filename=',band_filename
+
+    ! Read the header from the bands file
+    if (on_root) then
+      open (unit=band_unit, file=band_filename, status="old", form='formatted')!,err=100)
+!100    call io_error('Error: Problem opening bands file in cell_get_real_lattice')
+      read (band_unit, *)
+      read (band_unit, *)
+      read (band_unit, *)
+      read (band_unit, *)
+      read (band_unit, *)
+      read (band_unit, *)
+      read (band_unit, *) real_lattice(:, 1)
+      read (band_unit, *) real_lattice(:, 2)
+      read (band_unit, *) real_lattice(:, 3)
+    end if
+    real_lattice = real_lattice*bohr2ang
+    if (on_root) close (unit=band_unit)
+
+  end subroutine cell_get_real_lattice
+
+  !=========================================================================!
+  subroutine cell_calc_kpoint_r_cart
+    !=========================================================================
+    ! This subroutine calculates the cartesian coordinates of the k points
+    use od_algorithms, only: utility_reciprocal_frac_to_cart
+    use od_comms, only: my_node_id
+    use od_io, only: io_file_unit, seedname, filename_len, stdout, io_time, &
+      io_error
+!    use od_electronic, only : elec_read_band_energy
+
+    integer :: i, ik, loop, ierr
+    real(kind=dp), allocatable, dimension(:, :) :: kpoint_r_tmp
+    real(kind=dp), allocatable, dimension(:, :) :: kpoint_r_cart_tmp
+
+    allocate (kpoint_r_tmp(3, num_kpoints_on_node(my_node_id)), stat=ierr)
+    if (ierr /= 0) call io_error('Error allocating kpoint_r_tmp in&
+&    cell_calc_kpoint_r_cart')
+    allocate (kpoint_r_cart_tmp(3, num_kpoints_on_node(my_node_id)), stat=ierr)
+    if (ierr /= 0) call io_error('Error allocating kpoint_r_cart_tmp in&
+&    cell_calc_kpoint_r_cart')
+
+    kpoint_r_tmp = kpoint_r
+
+    !This is to be sure that the k point fractional coordinates are stored.
+    !If they are, the elec_read_band_energy will return.
+!    call elec_read_band_energy
+
+    ! We will call this only if we have not read in the cell before. With a parallel build
+    ! the non root nodes would not get the updated cell and perform another bohr2ang
+    ! conversion. If I try to insert a comms_bcast in the cell_get_
+    ! F.Mildner 04/2023
+    if (.not. abs(cell_volume) .gt. 0.0_dp) then
+      call cell_get_real_lattice
+      call cell_calc_lattice
+    end if
+    do loop = 1, num_kpoints_on_node(my_node_id)
+      call utility_reciprocal_frac_to_cart(kpoint_r_tmp(:, loop), kpoint_r_cart_tmp(:, loop), recip_lattice)
+!      print*,kpoint_r_tmp(1,loop),kpoint_r_tmp(2,loop),kpoint_r_tmp(3,loop),&
+!       kpoint_r_cart_tmp(1,loop),kpoint_r_cart_tmp(2,loop),kpoint_r_cart_tmp(3,loop)
+!print*,loop,kpoint_r_cart_tmp(:,loop),recip_lattice
+    end do
+
+    kpoint_r_cart = kpoint_r_cart_tmp
+!      do loop=1,num_kpoints_on_node(my_node_id)
+!      print*,kpoint_r_tmp(1,loop),kpoint_r_cart(1,loop),&
+!      kpoint_r_tmp(2,loop),kpoint_r_cart(2,loop),&
+!      kpoint_r_tmp(3,loop),kpoint_r_cart(3,loop)
+!      end do
+
+    deallocate (kpoint_r_tmp, stat=ierr)
+    if (ierr /= 0) call io_error('Error: cell_calc_kpoint_r_cart - &
+&     failed to deallocate kpoint_r_tmp')
+
+    deallocate (kpoint_r_cart_tmp, stat=ierr)
+    if (ierr /= 0) call io_error('Error: cell_calc_kpoint_r_cart - &
+&     failed to deallocate kpoint_r_cart_tmp')
+
+  end subroutine cell_calc_kpoint_r_cart
 end module od_cell
