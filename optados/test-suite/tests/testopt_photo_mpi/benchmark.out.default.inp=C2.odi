@@ -1,5 +1,5 @@
- OptaDOS: Execution started on 24 Apr 2023 at 20:44:11 
-          Parallelised over    1 thread(s)
+ OptaDOS: Execution started on  4 Sep 2023 at 17:29:14 
+          Parallelised over    2 thread(s)
 
  +===========================================================================+
  |                                                                           |
@@ -45,7 +45,6 @@
  |  Use CASTEP < 6.0 file format              :  False                        |
  +-------------------------------- UNITS -------------------------------------+
  |  Length Unit                               :   Ang                         |
- |  J/P/DOS units                             :  electrons eV^-1              |
  +-------------------------- SPECTRAL PARAMETERS -----------------------------+
  |  Linear Extrapolation                      :  True                         |
  |  Smearing Width                            :    0.02600                    |
@@ -56,6 +55,8 @@
  |  Fermi energy                              :  Calculated by OptaDOS        |
  |  Compute the band energy                   :  True                         |
  |  Compute the band gap                      :  True                         |
+ |  JDOS bin spacing                          :  0.0500   eV                  |
+ |  JDOS max energy bin                       : 25.0000   eV                  |
  +-------------------------------- OPTICS ------------------------------------+
  |  Geometry for Optics Calculation           :  Unpolarised                  |
  |  Direction of q-vector (un-normalised)     :     1.00    1.00    1.00      |
@@ -72,6 +73,7 @@
  |  IMFP Constant              (Ang)          :    10.0000                    |
  |  Electric Field Strength    (V/Ang)        :     0.0000                    |
  |  Smearing Temperature       (K)            :   300.00                      |
+ |  Transverse Momentum Scheme                : crystal                       |
  |  Emission Angle Bounds for writing to *SEED*_binding_energy.dat -----------|
  |  Theta    -lower -          (deg)          :    59.00                      |
  |  Theta    -upper -          (deg)          :    61.00                      |
@@ -120,9 +122,9 @@
  +----------------------------------------------------------------------------+
 
  +------------------------------- Atomic Order  ------------------------------+
- | Atom |  Atom Order  |   Layer   |          Atomic Position (Angs)          |
- |  c           1           1                  0.0000000000000000            |
- |  c           2           1                  0.0000000000000000            |
+ | Atom |  Atom Order  |   Layer   |         Atom Z-Coordinate (Ang)          |
+ |   C          1             1                     0.0000000                 |
+ |   C          2             1                     0.0000000                 |
  +----------------------------------------------------------------------------+
  |  Max number of atoms:           2    Max  number of layers:            1   |
  +----------------------------------------------------------------------------+
@@ -133,17 +135,17 @@
  | Final State : Free Electron State                                          |
  +----------------------------------------------------------------------------+
  | Atom |  Atom Order  |   Layer   |             Quantum Efficiency           |
- |   c          1            1                 0.4385952006247511E-066        |
- |   c          2            1                 0.4385952006247512E-066        |
- | Bulk                                        0.1967267191250997E-065        |
- | Total Quantum Efficiency (electrons/photon):  0.2844457592500499E-065      |
- | Weighted Mean Transverse Energy (eV):         0.8258887817059400E-001      |
+ |   C          1            1                 0.4397602353217641E-066        |
+ |   C          2            1                 0.4397602353217641E-066        |
+ | Bulk                                        0.1971702745687052E-065        |
+ | Total Quantum Efficiency (electrons/photon):  0.2851223216330580E-065      |
+ | Weighted Mean Transverse Energy (eV):         0.8258887943817196E-001      |
  +----------------------------------------------------------------------------+
  | End of Photoemission Calculation                                           |
  |                                                                            |
- + Time to calculate Photoemission                                0.261 (sec) +
+ + Time to calculate Photoemission                                0.324 (sec) +
  +============================================================================+
   
   
 
- OptaDOS: Execution complete on 24 Apr 2023 at 20:44:11 
+ OptaDOS: Execution complete on  4 Sep 2023 at 17:29:14 
