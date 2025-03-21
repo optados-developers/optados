@@ -64,29 +64,29 @@ output = Si2.linear.dat
 # O p t a D O S   P D O S   T e s t s
 #--------------------------------------------------------------
 # Test coverage
-
-#                  +-+-+-+-+-+-+-+-+-+
-#                  |1|2|3|4|5|6|7|8|9|
-# -----------------+-+-+-+-+-+-+-+-+-+
-# Si               |x|x|x|x|x|x|x|x| |
-# GaAs             | | | | | | | | |x|
-# odo file         | |x| | |x| | | | |
-# pdos.dat file    |x| | | | | | | | |
-# generic out file | | |x|x| |x|x|x|x|
-# fixed            | |x| | | | | | | |
-# adaptive         |x| |x| | |x|x| |x|
-# linear           | | | |x|x| | |x| |
-# String 1         | |x| | | | | | | |
-# String 2         | | |x| | | | | | |
-# String 3         | | | |x| | | | | |
-# String 4         | | | | |x| | | | |
-# ome_file         |x|x| |x|x| | | | |
-# dome_file        | | |x| | |x|x|x|x|
-# no_spin          | | | |x| | | | | |
-# match "Xx:yy"    | | | | | |x| | |x| 
-# Xx == Xx:yy + Xx | | | | | | |x| | |
-# "Xx" <> Xx:yy    | | | | | | | |x| |
-# -----------------+-+-+-+-+-+-+-+-+-+
+#                  +-+-+-+-+-+-+-+-+-+-+-
+#                  |1|2|3|4|5|6|7|8|9|10|
+# -----------------+-+-+-+-+-+-+-+-+-+-+-
+# Si               |x|x|x|x|x|x|x|x| | x|
+# GaAs             | | | | | | | | |x|  |
+# odo file         | |x| | |x| | | | |  |
+# pdos.dat file    |x| | | | | | | | |  |
+# generic out file | | |x|x| |x|x|x|x|  |
+# pdos.agr file    | | | | | | | | | | x|
+# fixed            | |x| | | | | | | |  |
+# adaptive         |x| |x| | |x|x| |x| x|
+# linear           | | | |x|x| | |x| |  |
+# String 1         | |x| | | | | | | |  |
+# String 2         | | |x| | | | | | |  |
+# String 3         | | | |x| | | | | |  |
+# String 4         | | | | |x| | | | |  |
+# ome_file         |x|x| |x|x| | | | |  |
+# dome_file        | | |x| | |x|x|x|x|  |
+# no_spin          | | | |x| | | | | |  |
+# match "Xx:yy"    | | | | | |x| | |x|  |
+# Xx == Xx:yy + Xx | | | | | | |x| | |  |
+# "Xx" <> Xx:yy    | | | | | | | |x| |  |
+# -----------------+-+-+-+-+-+-+-+-+-+-+-
 
 # 1)
 # Test the PDOS using short-cut keywords, use an ome input and
@@ -141,7 +141,7 @@ program = OPTADOS_GEN_DAT_OK
 inputs_args = ('Si2.odi', '')
 output = Si2.pdos.proj-0001-0001.dat
 
-# 8) Match ONLY an atom, and not one of the same species that's 
+# 8) Match ONLY an atom, and not one of the same species that's
 # labelled.
 [testopt_pdos_match_not_label]
 program = OPTADOS_GEN_DAT_OK
@@ -155,6 +155,14 @@ output = Si2.pdos.proj-0001-0002.dat
 program = OPTADOS_GEN_DAT_OK
 inputs_args = ('GaAs.odi', '')
 output = GaAs.pdos.proj-0001-0002.dat
+
+# 10) Test the PDOS grace output.
+# We request a PDOS by species and ang. momentum and check the
+# grace output file.
+[testopt_pdos_grace]
+program = OPTADOS_GEN_AGR_OK
+inputs_args = ('Si2.odi', '')
+output = Si2.pdos.agr
 
 #--------------------------------------------------------------
 # O p t a D O S   P D I S   T e s t s

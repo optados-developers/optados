@@ -32,6 +32,7 @@ module od_pdos
   !-------------------------------------------------------------------------!
   use od_constants, only: dp
   use od_projection_utils, only: projection_array, matrix_weights, max_am, proj_symbol, num_proj, shortcut
+  use od_parameters, only: output_format
 
   implicit none
 
@@ -96,7 +97,8 @@ contains
     ! Write out the pdos that was requested. Write them all to the same file, unless
     ! we don't have a short cut. In this case, write 10 projectors per file.
     !===============================================================================
-    use od_io, only: seedname
+    use od_io, only: seedname, stdout
+    use od_parameters, only: devel_flag
     implicit none
 
     character(len=20) :: start_iproj_name, end_iproj_name
@@ -120,6 +122,18 @@ contains
       ! write everything to one file
       name = trim(seedname)//'.pdos.dat'
       call write_proj_to_file(1, num_proj, name)
+
+      ! write a xmgrace file V Ravindran 07/07/2024
+      name = trim(seedname)//'.pdos.agr'
+      if (trim(output_format) == 'xmgrace') then
+        call write_pdos_xmgrace(1, num_proj, name)
+      else if (trim(output_format) == 'gnuplot') then
+        write (stdout, *) ' WARNING: GNUPLOT output not yet available for pdos, calling xmgrace'
+        call write_pdos_xmgrace(1, num_proj, name)
+      else
+        write (stdout, *) ' WARNING: Unknown output format requested for pdos, continuing...'
+      end if
+
     else ! not shortcut
       nfile = int(num_proj/10) + 1 ! Number of output files
       do ifile = 1, nfile
@@ -134,6 +148,21 @@ contains
         write (end_iproj_name, '(I20.4)') end_iproj
         name = trim(seedname)//'.pdos.proj-'//trim(adjustl(start_iproj_name))//'-'//trim(adjustl(end_iproj_name))//'.dat'
         call write_proj_to_file(start_iproj, end_iproj, name)
+
+        ! write a xmgrace file V Ravindran 07/07/2024
+        if (index(devel_flag, 'pdos_write_grace') > 0) then
+          if (ifile == 1) write (stdout, *) ' WARNING: xmgrace output for pdos with hand-selected projectors is experimental '
+          name = trim(seedname)//'.pdos.proj-'//trim(adjustl(start_iproj_name))//'-'//trim(adjustl(end_iproj_name))//'.agr'
+          if (trim(output_format) == 'xmgrace') then
+            call write_pdos_xmgrace(start_iproj, end_iproj, name)
+          else if (trim(output_format) == 'gnuplot') then
+            if (ifile == 1) write (stdout, *) ' WARNING: GNUPLOT output not yet available for pdos, calling xmgrace'
+            call write_pdos_xmgrace(start_iproj, end_iproj, name)
+          else
+            if (ifile == 1) write (stdout, *) ' WARNING: Unknown output format requested for pdos, continuing...'
+          end if
+        end if
+
       end do
     end if
   end subroutine pdos_write
@@ -442,4 +471,162 @@ contains
 !!$    return
 !!$  end subroutine general_write_pdos
 
+  subroutine write_pdos_xmgrace(start_proj, stop_proj, pdos_name)
+    !======================================================================
+    ! Write out the PDOS to a GRACE batch file
+    ! This routine requires pdos_write_proj_to_file be called first
+    ! in order to 'flip' the PDOS for down spins for plotting.
+    !
+    ! V Ravindran : This routine is intended for use primarily with
+    ! 'SPECIES', 'SPECIES_ANG' or 'SITES' projection
+    ! Hand-selected projectors do work but the labels may be off and need
+    ! to be manually adjusted.
+    !======================================================================
+    use od_projection_utils, only: projection_array
+    use od_dos_utils, only: E, dos_utils_set_efermi
+    use od_parameters, only: dos_nbins, set_efermi_zero, projectors_string
+    use od_algorithms, only: channel_to_am
+    use od_electronic, only: pdos_mwab, efermi, efermi_set
+    use od_cell, only: atoms_species_num, num_species
+    use od_io, only: io_file_unit, io_error, io_date
+    use xmgrace_utils
+
+    implicit none
+    integer, intent(in) :: start_proj, stop_proj
+    character(len=*), intent(in) :: pdos_name
+    character(len=20) :: legend_label
+    integer :: pdos_file, dataset_no
+    integer :: iproj, iam, ispecies_num, ispecies, ispin
+    integer :: ierr
+    real(kind=dp), allocatable :: E_shift(:)
+    real(kind=dp) :: plot_efermi
+    real(kind=dp) :: min_x, max_x, min_y, max_y
+
+    if (.not. efermi_set) call dos_utils_set_efermi
+
+    ! Decide if we want to shift the energies or just write them without a shift
+    allocate (E_shift(dos_nbins), stat=ierr)
+    if (ierr /= 0) call io_error('Error allocating E_shift in write_pdos_xmgrace')
+    if (set_efermi_zero) then
+      E_shift = E - efermi
+      plot_efermi = 0.0_dp
+    else
+      E_shift = E
+      plot_efermi = efermi
+    end if
+
+    ! Now let's open the file and get ready to tango...
+    pdos_file = io_file_unit()
+    open (unit=pdos_file, file=trim(pdos_name), iostat=ierr)
+    if (ierr /= 0) call io_error(' ERROR: Cannot open output file in pdos: write_pdos_xmgrace')
+
+    ! Get the axis limits for the plot
+    max_x = maxval(E_shift)
+    min_x = minval(E_shift)
+    max_y = maxval(dos_partial)
+    min_y = 0.0_dp
+    if (pdos_mwab%nspins > 1) min_y = -max_y
+
+    ! Write out the usual xmgrace bits that we need
+    call xmgu_setup(pdos_file)
+    call xmgu_legend(pdos_file)
+    call xmgu_title(pdos_file, min_x, max_x, min_y, max_y, 'Electronic Partial Density of States')
+    call xmgu_subtitle(pdos_file, "Generated by OptaDOS")
+    call xmgu_axis(pdos_file, 'x', 'Energy (eV)')
+    call xmgu_axis(pdos_file, 'y', 'PDOS')
+
+    call xmgu_vertical_line(pdos_file, plot_efermi, max_y, min_y)
+
+    ! Now this is where the fun begins...
+    ! We need to loop around spin projectors, atoms (species and species_num) and angular momentum channels
+    ! and assign the appropriate legend labels based on how we conducted the pdos.
+    do ispin = 1, pdos_mwab%nspins
+      do iproj = start_proj, stop_proj
+        dataset_no = iproj + (ispin - 1)*num_proj
+
+        ! Some of these loops are redundant as we for instance don't need to loop over angular momentum channels
+        ! if we just care about species but this way avoids a messy set of case statements with various nested loops.
+        do ispecies = 1, num_species
+          do ispecies_num = 1, atoms_species_num(ispecies)
+            do iam = 1, max_am
+
+              if (projection_array(ispecies, ispecies_num, iam, iproj) == 1) then
+                select case (trim(projectors_string))
+                  ! The legend label will depend on how the user decided to perform the PDOS
+                  ! For instance, there is no need to label by angular momentum if the user
+                  ! just wanted it be species...
+                case ('species')
+                  if (pdos_mwab%nspins == 2) then
+                    if (ispin == 1) then
+                      legend_label = trim(proj_symbol(ispecies))//' (up)'
+                    else
+                      legend_label = trim(proj_symbol(ispecies))//' (down)'
+                    end if
+                  else
+                    legend_label = trim(proj_symbol(ispecies))
+                  end if
+                case ('species_ang')
+                  if (pdos_mwab%nspins == 2) then
+                    if (ispin == 1) then
+                      legend_label = trim(proj_symbol(ispecies))//' (\q'//channel_to_am(iam)//'\Q) (up)'
+                    else
+                      legend_label = trim(proj_symbol(ispecies))//' (\q'//channel_to_am(iam)//'\Q) (down)'
+                    end if
+                  else
+                    legend_label = trim(proj_symbol(ispecies))//' (\q'//channel_to_am(iam)//'\Q)'
+                  end if
+                case ('sites')
+                  if (pdos_mwab%nspins == 2) then
+                    if (ispin == 1) then
+                      write (legend_label, '(A3,I0," (up)")') &
+                        proj_symbol(ispecies), ispecies_num
+                    else
+                      write (legend_label, '(A3,I0," (down)")') &
+                        proj_symbol(ispecies), ispecies_num
+                    end if
+                  else
+                    write (legend_label, '(A3,I0)') &
+                      proj_symbol(ispecies), ispecies_num
+                  end if
+                case default
+                  ! Doing projectors by hand so just output everything - book-keeping is possibly going to be messed up here...
+                  if (pdos_mwab%nspins == 2) then
+                    if (ispin == 1) then
+                      write (legend_label, '(A3,I0,"(\q",A1,"\Q)",1X,A)') proj_symbol(ispecies), ispecies_num, &
+                        channel_to_am(iam), '(up)'
+                    else
+                      write (legend_label, '(A3,I0,"(\q",A1,"\Q)",1X,A)') proj_symbol(ispecies), ispecies_num, &
+                        channel_to_am(iam), '(down)'
+                    end if
+                  else
+                    write (legend_label, '(A3,I0,"(\q",A1,"\Q)")') proj_symbol(ispecies), ispecies_num, &
+                      channel_to_am(iam)
+                  end if
+                end select
+              end if
+            end do ! iam
+          end do ! ispecies_num
+        end do ! ispecies
+        ! Write the header for this dataset
+        ! V Ravindran: only 15 colours appear to be set for Grace, do we want more?
+        ! write(*,'("Dataset ",I3," has label: ", A)') dataset_no, trim(legend_label)
+        call xmgu_data_header(pdos_file, dataset_no - 1, mod(dataset_no, 15), trim(legend_label))
+      end do ! iproj
+    end do  ! ispin
+
+    ! Now let's write the actual pdos values
+    ! NB dos_partial should already be fliped if spin polarised calculation by write_proj_to_file
+    do ispin = 1, pdos_mwab%nspins
+      do iproj = start_proj, stop_proj
+        dataset_no = iproj + (ispin - 1)*num_proj
+        call xmgu_data(pdos_file, dataset_no - 1, E_shift(:), dos_partial(:, ispin, iproj))
+      end do
+    end do
+
+    ! Well that was fun...
+    close (pdos_file)
+
+    deallocate (E_shift, stat=ierr)
+    if (ierr /= 0) call io_error('Error deallocating E_shift in write_pdos_xmgrace')
+  end subroutine write_pdos_xmgrace
 end module od_pdos
