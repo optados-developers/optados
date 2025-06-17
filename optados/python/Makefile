@@ -5,7 +5,7 @@ F90_FILES=../src/algorithms.f90 ../src/cell.f90 ../src/comms.F90 ../src/constant
 KIND_MAP= kind_map
 
 python:
-	f90wrap -vvvvv -m $(MODULE_NAME) $(F90_FILES)  -k $(KIND_MAP) 
+	f90wrap -vvvvv -m $(MODULE_NAME) $(F90_FILES)  -k $(KIND_MAP)
 	f2py -c -m _OptaPyDOS -I"../src" ../src/*.o f90wrap*.f90
 
 # Utility targets
@@ -15,4 +15,4 @@ clean:
 	rm -f f90wrap*
 
 veryclean: clean
-	rm -f OptaPyDOS.py  _OptaPyDOS.so
+	rm -f  _OptaPyDOS.so
