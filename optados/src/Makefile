@@ -91,7 +91,7 @@ projection_utils.o : projection_utils.f90 cell.o comms.o constants.o cell.o elec
 xmgrace_utils.o : xmgrace_utils.f90 io.o constants.o ../make.system
 	$(F90) -c $(FFLAGS) $<
 
-build.f90 : 
+build.f90 :
 	./make_build_info.sh
 
 build.o : build.f90 ../make.system
@@ -104,11 +104,20 @@ build.o : build.f90 ../make.system
 
 
 clean:
-	rm -f *.o *.mod *.MOD build_info.f90
+	rm -f *.o *.mod *.MOD build_info.f90 build.f90
 
 
 veryclean: clean
-	rm -f optados$(EXTENSION) optados$(EXTENSION).debug optados$(EXTENSION).mpi ../od2od ../optados.x
+	rm -f optados$(EXTENSION) optados$(EXTENSION).debug optados$(EXTENSION).mpi ../od2od ../optados$(EXTENSION)
 
 install:
-	cp optados$(EXTENSION) $(INSTALL_DIR)
+	@if [ ! "$(abspath ../optados$(EXTENSION))" = "$(abspath $(PREFIX)/optados$(EXTENSION))" ]; then \
+	  cp ../optados$(EXTENSION) $(PREFIX)/optados$(EXTENSION); \
+	else \
+	  echo "Skipping copy optados$(EXTENSION): source and destination are the same"; \
+	fi
+	@if [ ! "$(abspath ../od2od)" = "$(abspath $(PREFIX)/od2od)" ]; then \
+	  cp ../od2od $(PREFIX)/od2od; \
+	else \
+	  echo "Skipping copy od2od: source and destination are the same"; \
+	fi

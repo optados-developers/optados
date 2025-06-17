@@ -9,7 +9,7 @@ all:
 	ps2pdf $(MANUAL_NAME).ps
 
 clean:
-	rm -f *.toc *.aux *.dvi *.log
+	rm -f *.toc *.aux *.dvi *.log *.bbl *.blg *.out *.ps
 
-veryclean: 
+veryclean:
 	rm -f *.pdf

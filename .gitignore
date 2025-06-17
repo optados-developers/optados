@@ -1,0 +1,12 @@
+optados/od2od
+optados/optados.x
+optados/documents/*.aux
+optados/documents/*.bbl
+optados/documents/*.blg
+optados/documents/*.dvi
+optados/documents/*.log
+optados/documents/*.out
+optados/documents/*.pdf
+optados/documents/*.ps
+optados/documents/*.toc
+optados/src/build.f90
