@@ -4,9 +4,13 @@
 %\usepackage{multirow}
 \usepackage{footnote}
 \usepackage{amsbsy}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{gensymb}
 \usepackage[dvips]{graphicx}
 %\usepackage{fancyheadings}
 \usepackage{fancyhdr}
+\usepackage{nicefrac}
 %\setlength{\parindent}{0in}
 %\setlength{\parskip}{0.05in}
 \setlength{\parskip}{0.1in}
@@ -359,6 +363,7 @@ Several different experimental geometries are possible for core-level experiment
 In core-level absorption spectra there are several sources of broadening coming from the experimental set up and lifetime effects.  These can be included in \optados\ by broadening the theoretical spectrum using a combination of Gaussian and Lorentzian functions.  To include instrumentation and lifetime effects, \verb@core_LAI_broadening@ should be set to true.
 
 \subsection{Optical properties}
+\label{subsec:opticprops}
 
 In the low-loss EELS regime, the approximations used for core-level spectroscopy do not hold and the full form of the loss function needs to be calculated.  This is done by calculating $\varepsilon_2$ using equations \ref{Eqn:Epsilon2} and \ref{Eqn:Dipole} and then using the Kramers-Kronig relations to find $\varepsilon_1$.  Once the dielectric function has been calculated, the loss-function is simulated (without local field effects) using equation \ref{Eqn:LossFn}. As the dielectric function has been calculated, several other optical properties (which are listed below) can also be computed \cite{dressel}.
 
@@ -407,7 +412,280 @@ set to $E_F$,
 \end{equation}
 where $\Gamma$ denotes the relaxation rate.
 
+\section{Photoemission model}
 
+The formalism adopted in the photoemission model adopted here requires that the excitation spectrum can be described within a quasi-particle model, with excitations represented as transitions between energy levels in a  band structure of single particle states. The one-particle transition probability for the absorption of a photon of frequency $\omega$ is defined by Fermi's golden rule,
+
+\begin{equation}
+\Gamma_{i \rightarrow j} = \frac{2 \pi}{\hbar} M (i,j,{\bf{k}},s  ) \delta(E{(j,{\bf{k}},s)}-E{(i,{\bf{k}},s)}-\hbar \omega  )
+    \label{fermi_golden_rule}
+\end{equation}
+
+where $E$ is the electronic state eigenvalue, $i$ and $j$ are the indices for the initial and final state respectively, $s$ is the spin index, $\bf{k}$ is the wave vector of the electronic wave function, $M(i,j,{\bf{k}},s)$ is the photoemission matrix element and the Dirac delta function $\delta(E{(j,{\bf{k}},s)}-E{(i,{\bf{k}},s)}-\hbar \omega)$ ensure the energy conservation in the photoemission process. The Dirac delta function can be evaluated using the fixed-width Gaussian broadening, adaptive Gaussian broadening or linear extrapolative scheme implemented in the OptaDOS code.
+
+The photoemission matrix element $M(i,j,\bf{k},s)$ in Eq.~\ref{fermi_golden_rule} is
+
+\begin{equation}
+M(i,j,{\bf{k}},s) = \left | \left \langle \psi_{{\bf{k}},j,s}\left | H'  \right | \psi_{{\bf{k}},i,s} \right \rangle \right |^2
+    \label{matrix_elements}
+\end{equation}
+
+The Fermi's golden rule describes the transition probability from an initial eigenstate $\psi_i$ to a final state $\psi_j$ as a result of a weak perturbation $H'$ cause by the light. The perturbation due to the light $H'$ can be evaluated by calculating the effect of the electromagnetic field on the electron (Eq.~\ref{matrix2}).
+
+\begin{equation}
+H' = \frac{e}{2m_{0}} (p \cdot A + A \cdot p) + \frac{e^2 A^2}{2 m_0}
+\label{matrix2}
+\end{equation}
+
+where $p = - i \hbar \nabla $ is the momentum operator and here $A$ is the polarization vector of the incoming electromagnetic wave. The $A^2$ term can be neglected under the assumption of a weak field. The Hamiltonian can be simplified due to the Coulomb gauge, $\nabla \cdot A = 0$. The perturbation due to the light field is rewritten as
+
+\begin{equation}
+H' = \frac{e}{2m_{0}} p \cdot A
+\label{matrix3}
+\end{equation}
+
+The optical matrix from which the optical properties of a solid can be obtained.
+
+\subsection{Photoemission final state}
+
+Within the one-electron photoemission approach, two distinct photoemission models have been developed and widely used in previous work in order to describe the photoemission process. The current implementation generates two distinct optical matrices (Eq.~\ref{matrix_elements}) where the final state $\psi_j$ changes according to the photoemission model.
+
+\begin{itemize}
+\item[{\bf --}]  \verb#Three step photoemission model# : The three step model divides the photoemission process into three steps. In the first step, the ground state electrons are excited into a final state in the crystal or Bloch state
+
+\begin{equation}
+\psi_{j}{(\bf{r})} = \sum C_{j,\bf{G}} e^{i(\bf{k}+\bf{G})\bf{r}}
+    \label{bloch_wave}
+\end{equation}
+
+Where $C_{j,\bf{G}}$ are the plane wave coefficients and $\bf{G}$ are the reciprocal lattice vectors. In the second step, the excited Bloch electrons will have a probability to travel to the surface of the material. Once the electrons reach the surface of the material, in the third step, the electrons will escape into the vacuum.
+
+\item[{\bf --}]  \verb#One step photoemission model# : The one step model final state in this work is described as
+
+\begin{equation}
+\psi_{j}{(\bf{r})} = e^{i \bf{k}\bf{r}}e^{-\frac{z \cdot sin (1-\theta (i,j,\bf{k}))}{\lambda(\omega) }}
+    \label{1_final_electron_wave}
+\end{equation}
+
+where $\lambda(\omega)$ is the electrons scattering length and $sin (1-\theta (i,j,\bf{k}))$ considers the scattering length increase with emission angles away from the surface normal.
+\end{itemize}
+
+\subsection{Atomic projection}
+\label{subsec:atomicproj}
+
+It is possible to project the energy bands of a periodic solid onto localised atom centred orbitals, and therefore to define atomic contributions to the excitation. This is particularly convenient as it allows to explicitly calculate the contributions from excitation in each sub-surface layer. The contribution of each atomic layer that composed the slab can be performed by projecting the delocalised Bloch functions onto localised representations such as atomic orbitals (AO) or Wannier functions. CASTEP calculates this projection $W(i, j,\bf{k}, \mu,s)$ as
+
+\begin{equation}
+W(i, j,\bf{k}, \mu,s) =\sum_{\nu} T^{*}_{\mu ij,s}({\bf{k}}) T_{\mu ij,s}({\bf{k}}) S_{\nu \mu}(\bf{k})^{-1}
+\label{weights}
+\end{equation}
+
+where $T_{\mu ij,s}({\bf k}) = \left \langle \Psi_{ij,s}({\bf k}) \mid \phi_{\mu}({\bf k}) \right \rangle$ are the overlap matrices between linear combination of atomic orbitals (LCAO) basis $\phi_{\mu}({\bf k})$ and plane wave state $\Psi_{ij,s}({\bf k})$, and $S_{\nu \mu}({\bf k}) = \left \langle \phi_{\nu}({\bf k}) \mid \phi_{\mu}({\bf k}) \right \rangle$ are the overlap matrices of the LCAO basis.
+
+\subsection{Temperature}
+
+The original formulation of the Kohn-Sham DFT describes a system of interacting particles in an external potential at zero temperature. Later, Mermin extended this formalism for a finite temperature $T>0$. In the current implementation, the finite temperature formalism of Mermin is adopted by introducing a Fermi-Dirac distribution in which the state occupancy is
+
+\begin{equation}
+n(i,{\bf{k}},T,s) = \frac{1}{e^{(E_{F}-E_i ({\bf{k}},s))/k_BT}+1}
+    \label{Fermi_dirac}
+\end{equation}
+
+where $E_F$ is the Fermi energy and $k_B$ is the Boltzmann constant.
+
+\subsection{Light decay}
+
+The intensity of the light at each atom $\mu$ of the surface, expressed as
+
+\begin{equation}
+I(\omega,\mu) = I(\omega, \mu-1)e^{-\alpha(\omega,\mu)t(\mu)}-R(\omega,\mu)
+    \label{Intensity}
+\end{equation}
+
+where $\alpha(\omega,\mu)$ is the absorption coefficient within each layer, $t(\mu)$ is the length of the light path and $R(\omega,\mu)$ is the reflective coefficient of the surface. The calculation of the optical characteristics is analogous to the equations in Section \ref{subsec:opticprops}, but the contributions from each layer is calculated by weighting the electronic structure by the weights $W$ from Section \ref{subsec:opticprops}.
+
+\subsection{Electron transport}
+Determining absorption in each sub-surface layer requires the use of an explicit electron transport model for each of the layers. In the current implementation, a simple model of the inelastic scattering rate is used for the electron transport in the three step model and the escape probability of a free electron as it travels through a material in the one step model. The inelastic mean free path theory explains that electrons can only travel a certain average distance without suffering an inelastic scattering event. The assumption that once an electron suffers an inelastic scattering event the electron will be reabsorbed is adopted in this work, resulting in an escape function for the $i \rightarrow j$ excitation as a function of the escape depth;
+
+\begin{equation}
+esc(\omega,i,j,{\bf{k}},\mu,s) = e^{-\frac{d(\mu)sin(1-\theta(i,j,{\bf{k}},s))}{\lambda(\omega)}}
+    \label{IMFP}
+\end{equation}
+
+The angle $\theta(i,j,\bf{k})$ indicates that electrons that travels with a higher angle with respect to the surface normal travels a longer distance inside the material. When passing the potential "step" at the surface it is assumed that the electron's transverse momentum is conserved, while the longitudinal momentum is reduced by the work function barrier. Therefore two sets of angles must be calculated for within the material ($\theta_{int}$) and after passing the surface ($\theta_{ext}$). These angles are calculated as
+
+\begin{equation}
+\begin{split}
+    \theta_{int}{(i,j, {\bf{k}},s)} &= acos \frac{E_\parallel(i,{\bf{k}},s)}{E_K(j,{\bf{k}},s)}\\
+ \theta_{ext}{(i,j, {\bf{k}},s)} &= acos \frac{E_\parallel(i,{\bf{k}},s)}{E_K(j,{\bf{k}},s)-W}
+\end{split}
+\label{theta}
+\end{equation}
+
+where $E_\parallel(i,\bf{k})$ is the transverse energy, $E_K(j,\bf{k})$ is the final state kinetic energy and $W$ is the work function. The angle $\theta_{ext}$ is used to determine if emission is possible under the chosen conditions, while $\theta_{int}$ is used to model the electron's propagation distance.
+
+\subsection{Transverse momentum conservation}
+
+The momentum of photons can be considered as negligible compared to the momentum of the surface electrons and therefore, the electron momentum is conserved upon excitation. In addition, since electrons can only travel very short distances inside a material, photoemission is considered as a surface phenomenon. At the surface of a crystal, the periodic transverse symmetry perpendicular to the surface is broken and so the pseudo momentum perpendicular to the surface is not a conserved quantity. The parallel momentum conservation is described by
+
+\begin{equation}
+\Theta'({\bf{k}}_\perp)
+\begin{cases}
+    1, & {\bf{k}}_\perp(i,j,s) \geq 0 \\
+    \delta((E_v - E(j,{\bf{k}}),s),& {\bf{k}}_\perp(i,j,s) < 0
+\end{cases}
+    \label{eq:Heaviside}
+\end{equation}
+
+where $E_v$ is the vacuum level and
+
+\begin{equation}
+k_{\perp}(i,j,{\bf{k}},s) = \frac{2m}{\hbar^2}(E(j,{\bf{k}},s)-E_v)- {\bf{k}_{\parallel}}(i,\bf{k},s)^2
+    \label{E_perp}
+\end{equation}
+
+Here ${\bf{k}_{\parallel}}(i,{\bf{k}},s)$ is the electron parallel momentum inside the crystal.
+
+$\Theta'$ is a modified version of the Heavyside step function $\Theta$ in which $0$ is replaced by a Dirac delta function $\delta(E_v - E_f)$ evaluated with a Gaussian function is included to account for finite temperature broadening of electrons that do not strictly fulfil the parallel momentum conservation.
+
+\begin{equation}
+    \delta(E_v - E(j,{\bf{k}},s)) = \frac{1}{\sigma \sqrt{2\pi}}exp \left (-\frac{1}{2}\frac{E_v - E(j,{\bf{k}},s)}{\sigma^2}\right )
+    \label{eq:Gaussian_vac}
+\end{equation}
+
+where the width $\sigma$ can be used to approach external parameters such as the electron temperature.
+
+\subsection{Emission from the surface}
+In the three step model the final step considers the transmission across the surface into vacuum. The approach in the OptaDOS photoemission module is based on S. Hüfner, in Advanced Texts in Physics, Springer Berlin, Heidelberg, 3 edn., 2003, ch. 6, pp. 349-357.
+
+To approximate the probability of this occuring, one can represent the propagating electron using a set of plane waves. The final bands in the three step model are bloch bands, so they can be represented as
+\begin{equation}
+    \psi_f(\mathbf{k}) = \sum_G u_f(\mathbf{k},\mathbf{G})e^{i(\mathbf{k}+\mathbf{G})\cdot\mathbf{r}}
+\end{equation}
+where $u_f$ are the plane wave coefficients, $\mathbf{G}$ are the reciprocal lattice vectors, $\mathbf{k}$ is the electron momentum, and $\mathbf{r}$ is the position vector. Each of these components is able to match onto an equal component on the other side of the surface. Since the the transverse momentum is conserved, all the components with the same $\mathbf{k_{||}+G_{||}}$ must be treated together. Thus the total transmission probability can be approximated as
+
+\begin{equation}
+    \left|T(E_f,\mathbf{k_{||}})\right|^2 = \left|t(E_f,\mathbf{k_{||}})\right|^2 \left| \sum_{(k+G)_\perp>0}u_f(\mathbf{G},\mathbf{k}) \right|^2
+\end{equation}
+
+where $\left|t(E_f,\mathbf{k_{||}})\right|^2$ represents the transmission probability for the electron in general and the sum $\sum_{(k+G)_\perp>0}$ is the contribution from all the plane wave components propagating towards the surface. The factor $\left|t(E_f,\mathbf{k_{||}})\right|^2$ is already included in Equation \eqref{eq:Heaviside}, so only the second factor is explicitly calculated in CASTEP and supplied to OptaDOS in a {\tt *.tmprob\_bin} file. Thus we can define
+
+\begin{equation}
+    T(E_f,\mathbf{k_{||}}) = \left| \sum_{(k+G)_\perp>0}u_f(\mathbf{G},\mathbf{k}) \right|^2
+    \label{eq:transmit_prob}
+\end{equation}
+
+\subsection{Field emission}
+\label{subsec:fieldemission}
+
+In applications such as the generation of free electrons for particle accelerators, an external electric field is commonly used to increase the photocathode's efficienccy for a given light energy. The effect of this external electric field is included using an approximation based on the Fowler-Nordheim (FN) theory of field emission. The external electric field is assumed to be both uniform and to only modify the vacuum potential barrier, the electron distribution is in thermodynamic equilibrium and obeys Fermi-Dirac statistics and the emission surface is flat and planar with a constant uniform local work function. The barrier height is lowered due to the presence of the electric field. This lowering is calculated as
+\begin{equation}
+W_{eff} = W - \sqrt{\frac{e^3 F}{4 \pi \varepsilon_0}}
+\end{equation}
+where $W$ is the user supplied work function, $F$ is the electric field strength in \nicefrac{V}{\AA} and $\epsilon_0$ is the vacuum permittivity.
+The vacuum potential in the FN theory in this current implementation is described using a Schottky-Nordheim barrier $M$ defined as
+
+\begin{equation}
+M = \phi - eFz - \frac{e^2}{16 \pi \epsilon_0 z}
+\label{SN_barrier}
+\end{equation}
+
+where $e$ is the electron charge, $\epsilon_0$ is the vacuum permittivity, $\phi$ is the work function barrier, $F$ is the external electric field and $z$ is the distance from the surface. The current implementation follows the arguments put forward in an article by Forbes \cite{Forbes2007} to calculate the transmission probability across the modified barrier. \\ The transmission probability $D$ is calculated as
+\begin{equation}
+D \approx exp[-G]
+\end{equation}
+which assumes that the so-called "JWKB exponent" $G$ is sufficiently large that $exp[-G] \ll 1$. $G$ is generally defined as
+\begin{equation}
+    G \equiv g_e \int M^{\frac{1}{2}}dz~~\text{with}~~g_e=\frac{2(2 m_e)^{1/2}}{\hbar}
+\end{equation}
+where the integral is over the range with $M>0$, $m_e$ is the electron mass and $\hbar$ is reduced Planck's constant. $G$ can be calculated for a triangular barrier where $M=h-eFz$ as
+\begin{equation}
+    G^{el} = \frac{bh^{3/2}}{F}~~\text{with}~~b \equiv \frac{2g_e}{3e}
+\end{equation}
+where $h$ is the height of the barrier and $F$ is the electric field strength. To generalise this to a modified barrier shape, one can define
+\begin{equation}
+    G \equiv \nu G^{el}
+\end{equation}
+where the correction factor $\nu$ is calculated using a series expansion presented in Equation (4.17) in Forbes,2007.\cite{Forbes2007}
+
+\subsection{Projected, bulk and total quantum efficiency and mean transverse energy}
+\label{subsec:QE_MTE}
+
+For the three step model the QE can be thus defined by the following. By considering Fermi's Golden rule (Eq.~\ref{fermi_golden_rule}) for the excitation probability, the projection onto atomic orbitals (Eq.~\ref{weights}), temperature effects on the electronic population (Eq.~\ref{Fermi_dirac}), light decay (Eq.~\ref{Intensity}), electron scattering effects (Eq.~\ref{IMFP}), the momentum conservation rules (Eq.~\ref{eq:Heaviside}), and the probability for transmission across the surface (Eq.~\ref{eq:transmit_prob}), the QE in this model is computed as
+
+\begin{multline}
+QE{(\omega, {\bf{k}},\mu, T, s)}=  \frac{1}{A}\sum_{i,j,s} \Gamma_{i \rightarrow j} W( i,j,{\bf{k}},\mu,s)~n(i,T,s) (1-n(j,T,s))~I(\omega,\mu) \\
+esc(\omega,f,{\bf{k}},\mu,s)\Theta({\bf{k}}_\perp) T(E_f,\mathbf{k_{||}}) (1+D(j,s))
+    \label{eq:3step_projected_qe_equation}
+\end{multline}
+
+where $A$ is the surface area of the simulation cell, $i$ and $j$ are the initial and final band respectively and $s$ is the spin channel. For the one step model the amount of factors is slightly reduced and thus the QE is calculated as
+\begin{multline}
+QE{(\omega, {\bf{k}},\mu, T, s)}=  \frac{1}{A}\sum_{i,j,s} \Gamma_{i \rightarrow j} W( i,j,{\bf{k}},\mu,s) n(i,T,s) I(\omega,\mu) \\
+esc(\omega,f,{\bf{k}},\mu,s)\Theta({\bf{k}}_\perp) (1+D(i,s))
+    \label{eq:1step_projected_qe_equation}
+\end{multline}
+
+The atomic weighting of the contributions of the atomic sites allows the projected quantum efficiency to be defined as;
+
+\begin{equation}
+QE{(\omega ,\mu, T)}= \int_{BZ} QE{(\omega, {\bf{k}},\mu, T)}\frac{d{\bf{k}}}{8\pi^3}
+    \label{projected_qe_integral}
+\end{equation}
+
+The accuracy of the computed surface photoemission can be limited by the computational resources. First principle simulations of surfaces are typically performed in using the slab model. In this model, a 2D periodic slab of material of finite thickness in the third dimension (a periodic "slab") separated from the repetitive images by a vacuum region is used to  model a semi-infinite surface. The properties of the surface simulated using the slab model usually converges quickly with respect to the slab thickness, so only a small, finite number of atomic layers is required. Sun and Ceder developed an efficient scheme for the creation and convergence of surface slabs that was able to converge the surface energy with slabs as thin as seven atomic layers. However, photoemitted electrons can be emitted from layers deeper inside the material, in the orders of nanometres (tens to hundreds of atomic layers).
+
+Since the electronic properties of the slab in a suitable construction of a surface converges with respect to the slab thickness for a small finite number of atomic layers, the centre of the slab approximates bulk conditions. It is therefore possible to compute the photoemission efficiently from layers many nanometres from the surface by replicating bulk layers to simulate the photoemission from a slab model of arbitrary thickness. In the current implementation, the contribution of the deeper atomic layers to the photoemission process is approximated by the repetition of the atomic layer at the centre of the slab. The QE contribution of the bulk states is expressed as
+
+\begin{equation}
+QE_{bulk}(\omega,T) = \sum^{\tau}_{\mu = N} QE(\omega,\mu,T)
+    \label{QE_bulk}
+\end{equation}
+
+where $N$ is the index of the atomic layer at the centre of the slab and
+
+\begin{equation}
+\tau = \frac{n_{IMFP}~\lambda}{d(N)}
+    \label{QE_bulk_tau}
+\end{equation}
+
+defines the maximum number of layers to consider as a multiple of the IMFP value supplied by the user. Here $\lambda$ is the IMFP value, $n_{IMFP}$ is an integer to determine the cutoff distance for the bulk slab approximation as a multiple of $\lambda$ (default~=~10), and $d(N)$ is the thickness of the slab layer.
+
+The total quantum efficiency $QE_{tot}{( \omega, T)}$ is the sum of the explicitly computed $N$ surface layers and the bulk contribution
+
+\begin{equation}
+QE_{tot}( \omega , T)= \sum_{\mu}^N  QE{( \omega ,\mu, T)} + QE_{bulk}(\omega,T)
+    \label{total_qe}
+\end{equation}
+
+The mean transverse energy
+
+\begin{equation}
+MTE(\omega, T) =\int_{BZ} \frac{\sum_{\mu}^N{QE(\omega,{\bf{k}},\mu, T)}\frac{\hbar^2}{m_e}\bf{k_{\parallel}}^2}{QE_{tot}( \omega , T)} \frac{d{\bf{k}}}{8\pi^3}
+    \label{mean_te}
+\end{equation}
+
+is the sum of the QE contribution at each atomic site times the transverse energy of a particular $\bf{k}$ point, normalized to the total quantum efficiency integrated over the Brillouin zone (BZ). This could also be described as a weighted sum for the contributions across all the $\mathbf{k}$ points.
+
+\subsection{Transverse momentum for supercell geometries}
+When using $\mathbf{k}$ points to calculate the electron's transverse momentum a problem arises when calculating the electronic structure of supercell (SC) structures. With a SC, a phenomenon generally called "band folding" occurs. This means, that the bands start being "folded" towards the $\Gamma$ point at the center of the BZ. More specifically a band present at the PC zone boundary is "folded" onto the $\Gamma$ point. If one now calculates the transverse momentum associated with that band using just the $\mathbf{k}$ point's one gets unsurprisingly 0, rather than \nicefrac{$\pi$}{\bf{a}}.\\
+Since that transverse momentum has an important role in deciding if an emission is allowed, this means, that this specific emission is now possible at much lower photon energies. In addition the transverse energy distribution is also reduced, here to 0 specifically. These two differences are present for all "folded" bands and in total show the effect of a much higher QE value and lower MTE value when comparing the PC and SC geometries.\\
+
+One can, however, recover the original transverse momentum. For this each of the $\mathbf{k}$ points is expanded into a grid of $\mathbf{k_{x,y} + G_{x,y}}$ points, where $\mathbf{G_{x,y}}$ are the reciprocal cell's $x$ and $y$ vectors. The grid's coordinates in \nicefrac{1}{\AA} are calculated by
+\begin{align}
+    c_x(\mathbf{k_x + G_x}) &= \mathbf{k_x + \alpha \cdot G_x(x) + \beta \cdot G_y (x)}\\
+    c_y(\mathbf{k_y + G_y}) &= \mathbf{k_y + \alpha \cdot G_x(y) + \beta \cdot G_y (y)}
+\end{align}
+where $\mathbf{k}$ is in cartesian coordinates and
+\begin{align*}
+[\alpha] = \{x \in  \mathbb{Z} \ &| -\alpha_{max} \leq x \leq \alpha_{max} \} \\
+[\beta] = \{x \in  \mathbb{Z} \ &| -\beta_{max} \leq x \leq \beta_{max} \}.
+\end{align*}
+The values of $\alpha_{max}$ and $\beta_{max}$ are chosen, so that $|c_x| < 3.8 $ \nicefrac{1}{\AA} and  $|c_y| < 3.8 $ \nicefrac{1}{\AA} to limit the number of grid points. The value on each of the grid points is calculated by summing up the $u_f$ coefficients for the $z$ direction as
+\begin{equation}
+    w_{gk}(\mathbf{k_{x,y} + G_{x,y}}) = \sum_{G_z} \left| u_f(\mathbf{G},\mathbf{k_{x,y}}) \right|^2
+\end{equation}
+where $u_f$ are the plane wave basis coefficients. The $c_{x,y}$ and $w_{gk}$ values are read from a {\tt *.gkgrid\_bin} file. The calculation of QE and MTE values is performed analogous to Section \ref{subsec:QE_MTE} for each of the grid points with $c_{x,y}$ replacing $\mathbf{k_{||}}$.
 
 \chapter{Getting Started}\label{chap:getting_started}
 \section{Installation}
@@ -427,7 +705,7 @@ Choose which compiler to use to make \optados. The valid values are:
 
 The following are no longer supported but are provided for legacy systems:
 \begin{itemize}
-\item[{\bf --}]  \verb#g95# 
+\item[{\bf --}]  \verb#g95#
 \item[{\bf --}]  \verb#pathscale#
 \item[{\bf --}]  \verb#sun#
 \end{itemize}
@@ -500,6 +778,7 @@ A description of the purpose of each module is given below.
 \item \texttt{optados}: main program
 \item \texttt{optics}: calculate dielectric function then generate optical properties
 \item \texttt{parameters}: read, store and check input file parameters
+\item \texttt{photoemission}: perform a photoemission characteristics calculation
 \item \texttt{pdos}: perform PDOS calculation
 \item \texttt{pdis}: perform a projected dispersion calculation
 \item \texttt{projection\_utils}: routines for reading and writing projectors
@@ -512,6 +791,95 @@ A description of the purpose of each module is given below.
 \caption{Schematic structure of the program} \label{fig:prog_structure}
 \end{center}
 \end{figure}
+
+\section{Structure of the Photoemission module} \label{sec:photostructure}
+\begin{itemize}
+\item  {\bf analyse\_geometry}: this subroutine identifies which atoms
+belong to each layer and which is the maximum one to include in the calculations (half slab).
+It contains:
+       \begin{itemize}
+       \item a sorting algorithm to get an ordering by the atom's z coordinate
+       \item an algorithm to calculate the center of the slab and define a set of equally spaced boxes representing layers within the slab
+       \item identification of the maximum layer to use for the calculation
+       \item identification of the maximum atom to use for the calculation
+       \item identification of the number of atoms in each of the layers
+       \end{itemize}
+
+\item {\bf calc\_band\_info}: this subroutine checks that the supplied band energies are sorted in ascending order, as that is essential in the later stages of the calculation. The included steps are:
+\begin{itemize}
+    \item check that the band energies are in ascending order at every k-point
+    \item save the index for the first unoccupied band at every k-point
+\end{itemize}
+
+\item {\bf calc\_photon\_energies}: this subroutine allows the photoemission module to calculate the photoemission and other characteristics for a number of photon energies in a single run. It calculates the number of steps to take during the run and sets all the necessary variables to properly initalise arrays later.
+
+\item  {\bf make\_pdos\_weights\_atoms}: this subroutine calculates the
+PDOS on atoms by summing the orbital contributions for a certain atom. It is taken from the {\it pdos\_merge} subroutine of
+pdos.F90, but only the sum over atoms is included.
+It contains:
+       \begin{itemize}
+       \item the sum of the orbital contribution of the same atom
+       \item the sum of all atomic contribution at fixed {\bf k}
+and band indices.
+       \end{itemize}
+
+\item {\bf calc\_photo\_optics}: this subroutine calculates the optical properties of the system using the following steps:
+\begin{itemize}
+    \item calculate the optical weights using {\bf od\_optics : make\_weights } For the photoemission calculation, the optics\_geom can be
+	\begin{itemize}
+        \item {\bf polarized}: the three indices specify the
+		vector of oscillation for the incoming radiation's electric field;
+        \item {\bf unpolarized}: the three indices define a
+		plane perpendicular to the direction
+		of the light propagation. See Section \ref{sec:opticsparams} for further details.
+	\end{itemize}
+   Full dielectric tensor calculation is not implemented for photoemission calculations.
+    \item weight the \emph{ optical weights } using the \emph{ pdos\_weights\_atoms }
+    \item calculate the atom projected joint density of states (jDOS) for each of the atoms using {\bf jdos\_utils\_calculate}
+    \item calculate the imaginary part of the dielectric function $\epsilon_2$ using {\bf od\_optics : \\ calc\_epsilon\_2 }
+    \item calculate the real part of the dielectric function $\epsilon_1$ with the Kramers-Kronig relations using {\bf od\_optics : calc\_epsilon\_1}
+    \item calculate the refractive index $n$ of each atom using {\bf od\_optics : calc\_refract}
+    \item calculate the absorption coefficient $A$ of each atom using {\bf od\_optics : calc\_absorp}
+    \item calculate the reflectivity of each atom using {\bf od\_optics : calc\_reflect}
+\end{itemize}
+
+\item  {\bf calc\_absorp\_layer}: this subroutine calculates
+	the portion of light absorbed by each layer.
+	If there is only one layer, the thickness is fixed to one.
+
+\item {\bf effective\_wf}: this subroutine calculates the reduction of the work function in line with the Nordheim-Fowler theory when applying an electric field.\cite{Nordheim1928}
+
+\item {\bf calc\_field\_emission}: this subroutine uses Nordheim-Fowler barrier theory, to calculate the probability of an electron in a band with a certain energy to tunnel through the reduced barrier height, see \ref{subsec:fieldemission} for the equations
+
+%	(write down the formula to split it
+%	layer-by-layer).
+\item  {\bf calc\_angle}: this subroutine calculates the electron's the transverse energy and its photoemission angles theta/phi within the slab and after passing into the vacuum.
+
+\item  {\bf calc\_electron\_esc}: this subroutine calculates the escape length and the probability for the emission of the electron from a each of the layers. The probability is calculated according to the inelastic mean free path (IMFP) theory. The user can supply either a {\bf single IMFP value}, that will be used for the entire material, or a {\bf list of IMFP values} for each layer being calculated. In the second case, a weighted IMFP value is calculated for each layer based on the thickness of each layer and its respective location within the slab.
+
+\item {\bf bulk\_emission}: Due to computational constraints, the thickness of a slab model cannot be made very high. To account for the lack of bulk like material, that can still contribute to the overall photoemission, the most internal layer is replicated until emitted electrons have a chance of reaching the surface of $< 1 \cdot 10^{-5}$. The contributions from these layers are summed up.
+
+\item  {\bf QE calculation}: Calculates the layer-by-layer QE.
+    Two options are available:
+	\begin{itemize}
+	\item {\bf calc\_three\_step\_model}: Calculates the QE assuming a final Bloch state (conduction band) in the crystal.
+	\item {\bf calc\_one\_step\_model}: Calculates the QE assuming a final free electron state.
+    \end{itemize}
+
+\item  {\bf weighted\_mean\_te}: Weights the contribution to the transverse energy of each individual state at a certain k-point according to its QE contribution.
+
+\item {\bf write\_qe\_data}: this subroutine takes the calculated contributions and MTE and writes it to the output file concisely for the user.
+
+\item {\bf extra calculations}: A number of options are available.
+	\begin{itemize}
+	\item {\bf qe\_tensor}: Write out the contributions of each band for all k-points, spins and atoms. This can be used to study the specific origin of photoemitted electrons, for detailed visualisations and much more.
+	\item {\bf bindenergy\_curve}: Calculate and write out a {\bf QE vs binding energy} plot. A Gaussian broadening is applied. Additionally, the ranges for emission angles $\theta$ and $\phi$ can be set to allow for comparison with ARPES data, $e.g.$ energy distribution curves (EDC).
+    \item {\bf binding\_energy\_momentum\_map}: Calculate and write a {\bf binding energy vs transverse energy} map as a matrix with the value of each grid point representing the QE contribution at that point. The contributions are Gaussian broadened and the ranges for emission angles $\theta$ and $\phi$ can be set to allow for comparison with ARPES data.
+    \item {\bf const\_binding\_energy\_map}: Calculate and write a {\boldmath $p_x$ vs $p_y$} matrix of grid points where the value at each grid point represents the total QE contribution at a specified binding energy. The specified binding energy is w.r.t. $E_F$.
+    \item {\bf p\_tensor}: Calculate and write a {\boldmath$p_x$,$p_y$,$p_z$} tensor of grid points for electron momenta in $\frac{1}{\text{\AA}}$. Each value at that grid point represents the QE contribution at that specific set of electron momenta. The contributions are Gaussian broadened and the ranges for emission angles $\theta$ and $\phi$ can be set to allow for comparison with ARPES data.
+    \end{itemize}
+\end{itemize}
+
 
 \chapter{Parameters}\label{chap:parameters}
 
@@ -764,6 +1132,7 @@ other than \verb#EFERMI: FILE# (which is the default when \verb#pdispersion# has
 been requested).
 
 \section{Optics Parameters}
+\label{sec:opticsparams}
 
 \subsection[optics\_geom]{\tt character(len=20) :: optics\_geom}
 
@@ -857,6 +1226,157 @@ Energy (in eV) above the Fermi level that the energy dependent broadening starts
 
 The default value, if \verb#core_LAI_broadening = true#, is 0.
 
+\section{Photoemission Parameters}
+
+\subsection[photo\_model]{\tt character(len=20) :: photo\_model}
+
+Set the final state for the photoemitted electrons.
+
+\begin{itemize}
+\item[{\bf --}]  \verb#3step# (default)
+
+Read the matrix elements and calculate the photoemission assuming a conduction band final state in the solid.
+\item[{\bf --}]  \verb#1step#
+
+Read the matrix elements and calculate the photoemission assuming a free electron final state.
+\item[{\bf --}] \verb#ds_like_pe#
+
+Calculate a DOS dependent emission model based on an extension of the Dowell-Schmerge Model.
+\end{itemize}
+
+\subsection[photo\_momentum]{\tt character(len=20) :: photo\_momentum}
+
+Set the way the photoelectron's transverse momentum to the surface is computed.
+
+\begin{itemize}
+\item[{\bf --}]  \verb#crystal# (default)\\ Takes the transverse crystal momentum $\mathbf{k_{x,y}}$ to compute the electrons transverse energy.
+\item[{\bf --}]  \verb#gkgrid# \\ Instead of using a set of crystal momentum \textbf{k} values on a grid, $e.g.$ Monkhorst Pack (MP), each \textbf{k} point is expanded into a set of grid points. This grid is centered on each of the crystal momenta $\mathbf{k_{x,y}}$ and expanded using the reciprocal lattice vectors $\mathbf{G_x}$ and $\mathbf{G_y}$. This option allows to get consistent results for both primitive cell (PC) and super cell (SC) slab geometries. When using {\tt crystal}, the QE/MTE values for SC slabs are over/underestimated due to the bands being folded towards the $\Gamma$ point in SC geometries.
+\end{itemize}
+
+\subsection[photon\_energy]{\tt real(kind=dp) :: photo\_photon\_energy}
+Sets the photon energy at which the photoemission characteristics are calculated. If {\tt task = photoemission}, photo\_photon\_energy has to be set. If {\tt task = photo\_energy\_sweep}, this value {\bf must not} be set, otherwise OptaDOS will give an error message and terminate.
+
+There is no default value
+
+\subsection[photo\_photon\_min]{\tt real(kind=dp) :: photo\_photon\_min}
+If {\tt task = photo\_energy\_sweep} this represents the initial energy of the photon energy sweep. The photon energy will be increased for each step by the value of {\tt jdos\_spacing}.
+
+\subsection[photo\_photon\_max]{\tt real(kind=dp) :: photo\_photon\_max}
+If {\tt task = photo\_energy\_sweep} this represents the final energy of the photon energy sweep. The photon energy will be increased for each step by the value of {\tt jdos\_spacing} up to and including {\tt photo\_photon\_max}.
+
+{\bf ATTENTION} : If setting photo\_photon\_min/max the difference between them has to be an integer multiple (including 0) of {\tt jdos\_spacing}, otherwise OptaDOS will give an error message and terminate.
+
+\subsection[photo\_slab\_min]{\tt real(kind=dp) :: photo\_slab\_min}
+Sets the assumed lower boundary of the material's slab. This value is used to calculate the slab's volume and center. It should be the same distance from the assumed center of the material slab to ensure the slab's center can be reliably found by OptaDOS. This needs to be determined/estimated by the user and could for example be the coordinate of the atom with the lowest z-coordinate plus that atom's vdW-radius.
+
+There is no default value
+
+\subsection[photo\_slab\_max]{\tt real(kind=dp) :: photo\_slab\_max}
+Sets the assumed upper boundary of the material's slab. This value is used to calculate the slab's volume and center. It should be the same distance from the assumed center of the material slab to ensure the slab's center can be reliably found by OptaDOS. This needs to be determined/estimated by the user and could for example be the coordinate of the atom with the highest z-coordinate plus that atom's vdW-radius.
+
+There is no default value
+
+\subsection[photo\_work\_function]{\tt real(kind=dp) :: photo\_work\_function}
+
+Sets the assumed work function for the calculation. This needs to be determined/estimated by the user.
+
+There is no default value
+
+\subsection[photo\_bulk\_cutoff]{\tt real(kind=dp) :: photo\_bulk\_cutoff}
+Sets the multiple of the IMFPs after which to terminate the bulk approximation. The number of layers in the bulk approximation depends on the value(s) set in {\tt photo\_imfp\_value}.
+
+The default value is 10
+
+\subsection[photo\_elec\_field]{\tt real(kind=dp) :: photo\_elec\_field}
+
+Sets the external electric field in \nicefrac{V}{\AA}.
+
+The default value is 0.0 \nicefrac{V}{\AA}
+
+\subsection[photo\_imfp\_value]{\tt character(len=20) :: photo\_imfp\_choice}
+\begin{itemize}
+    \item[{\bf --}]  \verb#const# (default)
+    \item[{\bf --}]  \verb#layers#
+    \item[{\bf --}]  \verb#curve# (experimental)
+\end{itemize}
+This sets the choice for how to treat the {\tt photo\_imfp\_value} input. For the {\tt const} option a single value is used for all layers in the slab. For the {\tt layers} option each explicit layer must be given a value. The IMFP value for a specific layer is calculated as a weighted average of all the above layers. The {\tt curve} option is only experimental and calculates an IMFP value based on each electron's excess energy during propagation within the material.
+
+\subsection[photo\_imfp\_value]{\tt real(kind=dp) :: photo\_imfp\_value}
+
+Set the inelastic mean free path (IMFP) value(s) in \AA~for the calculation. See {\tt photo\_imfp\_choice} for further explanation. When using {\tt layers} the number of values must equal the number of explicit layers being used for the calculation. This is generally \nicefrac{\# slab layers}{2} for an even number of total layers and \nicefrac{\# slab layers}{2} + 1 for an odd number of total layers.
+
+There is no default value and the parameter must be set for all calculations.
+
+\subsection[photo\_temperature]{\tt real(kind=dp) :: photo\_temperature}
+
+Sets the assumed temperature during the calculation in Kelvin. The occupation of bands is smeared using a Fermi-Dirac distribution with this temperature value.
+
+The default value is 298 K
+
+\subsection[write\_photo\_output]{\tt character(len=80) :: photo\_output}
+\begin{itemize}
+\item[{\bf --}]  \verb#off# (default)\\ \\
+No extra output is written.
+\item[{\bf --}]  \verb#qe_tensor#\\ \\
+Write out the contributions of each band for all k-points, spins and atoms. This can be used to study the specific origin of photoemitted electrons, for detailed visualisations and much more.
+\item[{\bf --}]  \verb#bindenergy_curve#\\ \\
+Calculate and write out a \textit{QE} vs \textit{binding energy} curve. A Gaussian broadening of width {\tt photo\_bindenergy\_broadening} is applied. The energy bin width $= 0.001$ eV. The emission angle ranges are limited by the values for the min/max values $\theta$ and $\phi$ set to allow for comparison with ARPES data, $e.g.$ energy distribution curves (EDC).
+\item[{\bf --}]  \verb#bindenergy_ptrans_map#\\ \\
+Calculate and write a \textit{binding energy} vs \textit{transverse momentum} map as a matrix with the value of each grid point representing the QE contribution at that point. The energy bin width $= 0.001$ eV. The transverse momentum bin width is controlled by {\tt photo\_kmat\_bin\_width}. \\
+A Gaussian broadening of width {\tt photo\_bindenergy\_broadening} is applied. The broadening in \textbf{p} has a FWHM of \nicefrac{1}{2} distance between \textbf{k} points, $i.e.$ a half step between MP grid points. The emission angle ranges are limited by the values for the min/max values $\theta$ and $\phi$ set to allow for comparison with ARPES data.
+\item[{\bf --}]  \verb#const_bindenergy_p_map#\\ \\
+Calculate and write a {\boldmath $p_x$ vs $p_y$} matrix of grid points where the value at each grid point represents the total QE contribution at a constant binding energy across the entire map. The momentum bin width is controlled by {\tt photo\_kmat\_bin\_width}. The binding energy value is set by {\tt photo\_const\_bindenergy\_value} w.r.t. the Fermi energy ($E_F$).\\
+The contributions are Gaussian broadened in energy with a width of {\tt photo\_bindenergy \_broadening}. The broadening in the {\boldmath $p_x$ vs $p_y$} direction has a FWHM of \nicefrac{1}{2} distance between \textbf{k} points, $i.e.$ a half step between MP grid points.
+The emission angle ranges are limited by the values for the min/max values $\theta$ and $\phi$ set to allow for comparison with ARPES data.
+\item[{\bf --}]  \verb#p_tensor#\\ \\
+Calculate and write a {\boldmath$p_x$,$p_y$,$p_z$} tensor of grid points for electron momenta in \nicefrac{1}{\AA}. Each value at that grid point represents the QE contribution at that specific set of electron momenta values. \\The contributions are Gaussian broadened in {\boldmath$p_x$} and {\boldmath$p_y$} with a FWHM of half a step between k grid points, $i.e.$ MP grid points. In the {\boldmath$p_z$} direction the value {\tt photo\_bindenergy \_broadening} is converted to \nicefrac{1}{\AA}. The ranges for emission angles $\theta$ and $\phi$ can be set to allow for comparison with ARPES data.
+\end{itemize}
+
+\subsection[photo\_theta\_min]{\tt real(kind=dp) :: photo\_theta\_min}
+Sets the lower limit of the polar emission angle $\mathbf{\theta}$ for contributions when calculating angle dependent quantities. See {\tt photo\_output} for examples.
+
+The default value is $0 \degree$
+
+\subsection[photo\_theta\_max]{\tt real(kind=dp) :: photo\_theta\_max}
+Sets the lower limit of the polar emission angle $\mathbf{\theta}$ for contributions when calculating angle dependent quantities. See {\tt photo\_output} for examples.
+
+The default value is $90 \degree$
+
+\subsection[photo\_phi\_min]{\tt real(kind=dp) :: photo\_phi\_min}
+Sets the lower limit of the azimuthal emission angle $\mathbf{\phi}$ for contributions when calculating angle dependent quantities. See {\tt photo\_output} for examples.
+
+The default value is $0 \degree$
+
+\subsection[photo\_phi\_max]{\tt real(kind=dp) :: photo\_phi\_max}
+Sets the lower limit of the azimuthal emission angle $\mathbf{\phi}$ for contributions when calculating angle dependent quantities. See {\tt photo\_output} for examples.
+
+The default value is $90 \degree$
+
+\subsection[photo\_bindenergy\_broadening]{\tt real(kind=dp) :: photo\_bindenergy\_broadening}
+Sets the Gaussian broadening width in the energy dimension for {\tt photo\_output}. \\
+
+The default value is $0.0257$ eV $ = k_b \cdot 298$ K
+
+\subsection[photo\_pmat\_bind\_width]{\tt real(kind=dp) :: photo\_pmat\_bind\_width}
+Sets the bin width in the momentum dimension for {\tt photo\_output}.
+
+The default value is $0.005$ \nicefrac{1}{\AA}
+
+\subsection[photo\_const\_bindenergy\_value]{\tt real(kind=dp) :: photo\_const\_bindenergy\_value}
+Sets the binding energy value for the {\tt photo\_output} option {\tt const\_bindenergy\_p\_map} w.r.t the Fermi energy.
+
+The default value is $0.0$ eV, $i.e.$ $E_F$
+
+\subsection[photo\_gk\_max\_vectors]{\tt integer :: photo\_gk\_max\_vectors}
+The number of {$\mathbf{G + k}$} grid points present in the {\tt SEEDNAME.gkgrid\_bin} file.
+If {\tt photo\_momentum} is {\tt gkgrid} this value has to be set. The correct value is printed in the Castep output file when running the Spectral task {\tt PHOTOOPTICS}.\\
+
+The default value is 1, $i.e.$ correct behaviour for {\tt photo\_momentum = crystal}
+
+\subsection[photo\_use\_tmprob]{\tt logical :: photo\_use\_tmprob}
+Defines if the probability for transmission across the surface step should be included when calculating the three step model.
+
+The default value is {\tt True}. This requires a {\tt SEEDNAME.tmprob\_bin} file to be present.
 
 \chapter{CASTEP Examples}
 
@@ -1318,13 +1838,13 @@ Na 2|1.3|14|16|18|20U:30:21(qc=7)
 \end{verbatim}
 To run a singlepoint calculation, we want to remove the \verb#CHARGE : +1# that we added in the \verb#.param# file and change the task to \verb#task : singlepoint# so your \verb#NaGe-singlepoint.param# file should look like:
 \begin{verbatim}
-task : singlepoint 
+task : singlepoint
 cut_off_energy : 250 eV
 xc_functional : PBE
 ! charge : +1
 write_checkpoint : None
 \end{verbatim}
-Here we have commented out the line for charge inclusion, and changed the task keyword. Run the \castep\ calculation and compare the ground state total energies of your two different files. You should see that the groundstate energy of -11848.48889250 eV is less than the core hole groundstate energy. 
+Here we have commented out the line for charge inclusion, and changed the task keyword. Run the \castep\ calculation and compare the ground state total energies of your two different files. You should see that the groundstate energy of -11848.48889250 eV is less than the core hole groundstate energy.
 \item Now we want to calculate the Mizoguchi chemical shift associated with this difference in energies. To do this, we will use the code located at \verb#tools/miz_chemical_shift#. This code is written in \python\ and you can see the different keywords it takes using the \verb#--help# flag. To calculate the shift for our system we will use the command:
 \begin{verbatim}
 ../../tools/miz_chemical_shift -i NaGe -e Ge -s NaGe-singlepoint
@@ -1339,6 +1859,180 @@ core_chemical_shift : 11142.275218
 \end{verbatim}
 Now when we run \optados\ again, the energy scale on the x-axis will be shifted by the amount specified in your input file for \optados\ . This is especially useful when comparing your results to experimental data, as it will allow you to apply a shift to your output from optados into the experimentally relevant energy range. For reference, the known experimental absorption edge for Ge is 11.1031 eV, very close to the shift calculated using the Mizoguchi method. In addition, this is a useful tool when calculating this shift across different core-hole sites in your cell, when your cell has more than one symmetry-inequivalent atom, such that the relative absorption energies of each atom are accounted for.
 \end{enumerate}
+
+\section{Photoemission}
+
+This is an example of using photoemission module for calculating the photoemission properties of Cu(100) surface using a 16 atomic layers slab.\\
+\begin{itemize}
+\item Input Files
+\begin{itemize}
+\item \verb#examples/Cu_photo/Cu.cell# - The \castep\ cell file containing information about the simulation cell.
+\item \verb#examples/Cu_photo/Cu.param# - The \castep\ parameter file containing information about the parameters for the SCF and spectral calculations.
+\item \verb#examples/Cu_photo/Cu.odi# - The \optados\ input file, containing the parameters necessary to run \optados.
+\end{itemize}
+\end{itemize}
+
+\begin{enumerate}
+%%%%  Step 1 %%%%%
+\item Perform a \castep\ calculation using the  \verb#Cu.cell#  and \verb#Cu.param# input files. Slab calculations are time-consuming calculations, a high performing computer should be used.
+
+  \verb#$ castep Cu#
+
+More help can be found in  the tutorials  on  the \castep\ website \verb#www.castep.org#.
+
+%%%%  Step 2 %%%%%
+\item Perform an \optados~calculation.
+
+\verb#$ optados.x Cu#
+
+This generates several files:
+\begin{itemize}
+\item \verb#Cu.odo# -- \optados~general output file.
+\item \verb#Cu_bindenergy_curve.dat# -- The Gaussian broadened angle-resolved binding energy spectra raw output data.
+\end{itemize}
+
+%%%%  Step 3 %%%%%
+\item Open the \verb#Cu.odo# file in a text editor (\emph{$e.g.$} vi or emacs). The relevant \optados~parameters for the optical properties and photoemission are printed. The input file provided creates the following ouput of photoemission parameters:
+
+\begin{verbatim}
++----------------------- PHOTOEMISSION PARAMETERS ---------------------------+
+|  Photoemission Model                       :     3-Step Model              |
+|  Photoemission Final State                 :     Bloch State               |
+|      *** Including transmission probability across surface ***             |
+|  Photon Energy              (eV)           :     5.0000                    |
+|  Work Function              (eV)           :     4.5430                    |
+|  Slab Max Z-Coord.          (Ang)          :    43.2730                    |
+|  Slab Min Z-Coord.          (Ang)          :    13.4180                    |
+|  IMFP Constant              (Ang)          :     5.3000                    |
+|  Bulk cutoff dist. (int. multiple of IMFP) :    10.0                       |
+|  Electric Field Strength    (V/Ang)        :     0.0000                    |
+|  Smearing Temperature       (K)            :   300.00                      |
+|  Transverse Momentum Scheme                :     crystal                   |
+|  Theta    - min -           (deg)          :     0.00                      |
+|  Theta    - max -           (deg)          :    90.00                      |
+|  Phi      - min -           (deg)          :     0.00                      |
+|  Phi      - max -           (deg)          :    90.00                      |
+|  Binding Energy Broad. Width (eV)          :     0.0257                    |
++----------------------------------------------------------------------------+
+\end{verbatim}
+
+\begin{verbatim}
++----------------------- Electronic Data ------------------------------------+
+|  Number of Bands                           :           190                 |
+|  Grid size                                 :       27 x 27 x  1            |
+|  Number of K-points                        :           105                 |
+|  Spin-Polarised Calculation                :           False               |
+|  Number of electrons                       :           176.00              |
++----------------------------------------------------------------------------+
+\end{verbatim}
+
+By default \optados~calculates the Fermi energy from the supplied bands file and the calculated DOS, but can also be supplied by the user. An exemplary output for the calculated Fermi energy this is as follows:
+
+\begin{verbatim}
++----------------------------- Fermi Energy Analysis ------------------------+
+| From Adaptive broadening                                                   |
+|   Spin Component : 1 occupation between  175.99388 and  176.00354   <- Occ |
+|         Fermi energy (Adaptive broadening) :   0.1564 eV            <- EfA |
++----------------------------------------------------------------------------+
+|                      Fermi energy from DOS :   0.1564 eV            <- EfD |
++----------------------------------------------------------------------------+
+
+\end{verbatim}
+
+Since we had \verb#efermi : optados#, \optados~sets the internal value of the Fermi level to the one it has derived from the DOS. In a slab model, the top and bottom surfaces are equivalent by symmetry and therefore, only the top half is used for the photoemission calculation.
+
+\begin{verbatim}
++------------------------------- Atomic Order  ------------------------------+
+| Atom |  Atom Order  | Box/Layer |         Atom Z-Coordinate (Ang)          |
+|  Cu          1             1                    41.6231471                 |
+|  Cu          2             2                    39.8961554                 |
+|  Cu          3             3                    38.1122009                 |
+|  Cu          4             4                    36.3320172                 |
+|  Cu          5             5                    34.5547056                 |
+|  Cu          6             6                    32.7843275                 |
+|  Cu          7             7                    31.0032436                 |
+|  Cu          8             8                    29.2256894                 |
+|  Cu          9                                  27.4397504                 |
+|  Cu         10                                  25.6609942                 |
+|  Cu         11                                  23.8772995                 |
+|  Cu         12                                  22.1048226                 |
+|  Cu         13                                  20.3261459                 |
+|  Cu         14                                  18.5453609                 |
+|  Cu         15                                  16.7608782                 |
+|  Cu         16                                  15.0335815                 |
++----------------------------------------------------------------------------+
+|  Max number of atoms:           8    Total number of boxes:            8   |
+|  Volume of box for layer selection (Ang^3) :                 11.33627      |
++----------------------------------------------------------------------------+
+\end{verbatim}
+
+The optical properties for each of the explicit layers is calculated, but not explicitly printed. To get more info on timing of each step we can use a higher printing level (iprint = 2). We can set the printing level (iprint = 3) to write out files of the relevant optical properties for each layer. An exemplary output for a box/layer is as follows:
+\begin{verbatim}
++------------------------ Starting BOX  #   1 of   8 ------------------------+
+
++----------------------------------------------------------------------------+
+|max_band_energy (before correction) :      25.987             <-- JDOS Grid |
+|                             efermi :       0.156             <-- JDOS Grid |
+|                    jdos_max_energy :      25.830             <-- JDOS Grid |
+|                         jdos_nbins :        2583             <-- JDOS Grid |
+|                       jdos_spacing :       0.010             <-- JDOS Grid |
+|                         delta_bins :       0.010             <-- JDOS Grid |
++----------------------------------------------------------------------------+
++------------------------------ Calculate JDOS ------------------------------+
++----------------------------------------------------------------------------+
++ Time to calculate Joint Density of States                      1.867 (sec) +
++------------ Using atom_volume =     11.33626961   ------------------------+
+\end{verbatim}
+
+After calculation of the optical properties for a set of energies, we can start calculating the photoemission characteristics for a specific photon energy. We also calculate an approximation for a bulk like slab of material to extend the explicit surface slab layers. Some information on light intensity and electron escape probability of this extended slab is printed:
+
+\begin{verbatim}
++---------------------- Bulk Approximation Slab Info ------------------------+
+|     Number Bulk layers =    29                                             |
+|     Vol. per layer     =    11.3363                                        |
+|     Total Volume       =   328.7518                                        |
++---- P_esc values for an electron with E = E_fermi and E_transverse = 0 ----+
+|     Layer #   1     I_light =  0.517860E+00  P_esc =  0.688302E-01         |
+|     Layer #   2     I_light =  0.501957E+00  P_esc =  0.491400E-01         |
+|     Layer #   3     I_light =  0.479013E+00  P_esc =  0.350825E-01         |
+|                                   ......                                   |
+|     Layer #  27     I_light =  0.144792E-02  P_esc =  0.107853E-04         |
+|     Layer #  28     I_light =  0.935618E-03  P_esc =  0.769998E-05         |
+|     Layer #  29     I_light =  0.595220E-03  P_esc =  0.549725E-05         |
++----------------------------------------------------------------------------+
+\end{verbatim}
+
+Finally the layer QE, total QE and MTE are calculated and printed:
+
+\begin{verbatim}
++----------------------------------------------------------------------------+
+| Work Function              4.5430 eV         Photon Energy     5.0000 eV   |
+| Effective Work Function    4.5430 eV         Electric Field    0.0000 V/A  |
+| Final State : Bloch State                                                  |
++----------------------------------------------------------------------------+
+| Atom |  Atom Order  |   Layer   |             Quantum Efficiency           |
+|  Cu          1            1                      0.1220E-006               |
+|  Cu          2            2                      0.3016E-017               |
+|  Cu          3            3                      0.5586E-008               |
+|  Cu          4            4                      0.9952E-008               |
+|  Cu          5            5                      0.1400E-007               |
+|  Cu          6            6                      0.9265E-008               |
+|  Cu          7            7                      0.4518E-008               |
+|  Cu          8            8                      0.1398E-008               |
+| Bulk                                             0.4176E-007               |
+| Total Quantum Efficiency (electrons/photon):         0.2085E-006           |
+| Weighted Mean Transverse Energy (eV):                0.3414E-001           |
++----------------------------------------------------------------------------+
+\end{verbatim}
+
+With debug printing {\tt iprint = 3} many more digits are printed.\\
+
+%%%%  Step 4 %%%%%
+
+\item With the option \verb#photo_output : bindenergy_curve# a QE vs binding energy curve, also known as energy distribution curve (EDC) for ARPES experiments will be printed. To visualise this file, use: \verb#xmgrace -nxy Cu_bindenergy_curve.dat#.
+
+\end{enumerate}
+
 
 \chapter{ONETEP Examples}
 \section{(L)PDOS}
@@ -1383,7 +2077,6 @@ More can be found on EELS/ELNES here: \footnote{http://www2.tcm.phy.cam.ac.uk/on
 %A paper on EELS in \onetep\  is in press: E. W. Tait, L. E. Ratcliff, M. C. Payne, P. D. Haynes and N. D. M. Hine, J. Phys: Condens Matter, (2016).
 
 %A paper on PDOS in \onetep\  is in preparation.
-
 
 \chapter{Frequently Asked Questions}
 
@@ -1489,7 +2182,7 @@ do ik=1,num_kpoints
  end do
 end do
 \end{verbatim}
-%\begin{landscape}
+\begin{landscape}
 \section{\texttt{.ome\_bin} file}
 The \texttt{.ome\_bin} file is required for adaptive and linear broadening, and for optics calculations.
 %
@@ -1519,6 +2212,90 @@ do ik=1,num_kpoints
 end do
 \end{verbatim}
 %\end{landscape}
+\clearpage
+
+\section{\texttt{.fem\_bin} file}
+The \texttt{.fem\_bin} file is required for the one step model.
+The \texttt{.fem\_bin} file is an unformatted file.
+\begin{verbatim}
+integer,parameter:: dp=selected_real_kind(15,300) ! Define double precision
+real(dp):: file_version=1.0_dp     ! File version
+character(len=80):: file_header    ! File header comment
+integer:: num_kpoints              ! Number of k-points
+integer:: num_spins                ! Number of spins
+integer:: max_eigenv               ! Number of bands included in matrix elements
+integer:: num_eigenvalues(1:num_spins)   ! Number of eigenvalues per spin channel
+! Information on: (num_energy_step, min_e_photon, size_energy_step,
+! assumed E_Fermi, assumed E_workfct)
+real(dp):: fem_energy_info(5)
+! FEMs
+complex(dp):: foptical_mat(max_eigenv,1:3,1:num_energy_step,1:num_kpoints,num_spins)
+
+write(fem_unit) file_version
+write(fem_unit) file_header
+write(fem_unit) fem_energy_info(1:5)
+
+do ik=1,num_kpoints
+ do is=1,num_spins
+  write(fem_unit) (((foptical_mat(ib,i,ne,ik,is),ib=1,num_eigenvalues(is)),&
+                  i=1,3),ne=1,num_energy_step)
+ end do
+end do
+\end{verbatim}
+
+\clearpage
+
+\section{\texttt{.tmprob\_bin} file}
+The \texttt{.tmprob\_bin} file is required for the three step model if {\tt photo\_use\_tmprob} is {\tt True}.
+The \texttt{.tmprob\_bin} file is an unformatted file.
+\begin{verbatim}
+integer,parameter:: dp=selected_real_kind(15,300) ! Define double precision
+real(dp):: file_version=1.0_dp     ! File version
+character(len=80):: file_header    ! File header comment
+integer:: num_kpoints              ! Number of k-points
+integer:: num_spins                ! Number of spins
+integer:: max_eigenv               ! Number of bands included in tmprobs
+integer:: num_eigenvalues(1:num_spins)   ! Number of eigenvalues per spin channel
+complex(dp):: transmit_prob(max_eigenv, num_spins,1:num_kpoints)! OMEs
+
+write(tmprob_unit) file_version
+write(tmprob_unit) file_header
+
+do ik=1,num_kpoints
+ do is=1,num_spins
+  write(tmprob_unit) (transmit_prob(ib,is,ik),ib=1,num_eigenvalues(is))
+ end do
+end do
+\end{verbatim}
+
+\clearpage
+
+\section{\texttt{.gkgrid\_bin} file}
+The \texttt{.gkgrid\_bin} file is required if {\tt photo\_momentum} is set to {\tt gkgrid}.
+The \texttt{.gkgrid\_bin} file is an unformatted file.
+\begin{verbatim}
+integer,parameter:: dp=selected_real_kind(15,300) ! Define double precision
+real(dp):: file_version=1.0_dp     ! File version
+character(len=80):: file_header    ! File header comment
+integer:: num_kpoints              ! Number of k-points
+integer:: num_spins                ! Number of spins
+integer:: max_eigenv               ! Number of bands included in tmprobs
+integer:: max_gkgrid               ! Number of grid points
+integer:: num_eigenvalues(1:num_spins) ! Number of eigenvalues per spin channel
+complex(dp):: photo_gkgrid(3,max_gkgrid,max_eigenv,num_spins,num_kpoints)! OMEs
+
+write(gkgrid_unit) file_version
+write(gkgrid_unit) file_header
+
+do ik=1,num_kpoints
+ do is=1,num_spins
+  write(gkgrid_unit) (((photo_gkgrid(i,gdx,ib,is,ik),i=1,3),gdx=1,max_gkgrid),&
+                     ib=1,num_eigenvalues(is))
+ end do
+end do
+\end{verbatim}
+\clearpage
+
 %\begin{landscape}
 \section{\texttt{.pdos\_bin} file}
 The \texttt{.pdos\_bin} file is required for PDOS calculations.
@@ -1548,7 +2325,9 @@ write(pdos_file) max_eigenv
 write(pdos_file) species(1_:num_popn_orb)
 write(pdos_file) ion(1:num_popn_orb)
 write(pdos_file) am_channel(1:num_popn_orb)
-
+\end{verbatim}
+\clearpage
+\begin{verbatim}
 do nk=1,num_kpoints
  write(pdos_file) nk, kpoint_positions(nk,:)
  do ns = 1,num_spins
@@ -1562,8 +2341,8 @@ end do
 \end{verbatim}
 %\end{landscape}
 
-
-\begin{landscape}
+\clearpage
+% \begin{landscape}
 \section{\texttt{.elnes\_bin} file}
 The \texttt{.elnes\_bin} file is required for ELNES calculations.
 %
@@ -1594,6 +2373,62 @@ do nk = 1,num_kpoints
  do ns = 1, num_spins
   write(elnes_file) (((elnes_mat(orb,nb,indx,nk,ns),orb=1,&
        &tot_core_projectors),nb=1,num_eigenvalues(ns)),indx=1,3)
+ end do
+end do
+\end{verbatim}
+
+\section{\texttt{.dome\_bin} file}
+The \texttt{.dome\_bin} file contains the first derivative of a band with respect to k. Also known as electron velocity.
+
+The \texttt{.dome\_bin} file is an unformatted file.
+\begin{verbatim}
+integer,parameter:: dp=selected_real_kind(15,300) ! Define double precision
+real(dp):: file_version=1.0_dp     ! File version
+character(len=80):: file_header    ! File header comment
+integer:: num_kpoints              ! Number of k-points
+integer:: num_spins                ! Number of spins
+integer:: max_eigenv               ! Number of bands included in matrix elements
+integer:: num_eigenvalues(1:num_spins)   ! Number of eigenvalues per spin channel
+real(dp):: band_gradient(max_eigenv,1:3,1:num_kpoints,num_spins)!
+
+write(gradient_unit) file_version
+write(gradient_unit) file_headerphoto_gkgrid
+
+do ik=1,num_kpoints
+ do is=1,num_spins
+  write(gradient_unit) ((band_gradient(ib,i,ik,is),ib=1,num_eigenvalues(is)),i=1,3)
+ end do
+end do
+\end{verbatim}
+
+\clearpage
+
+\section{\texttt{.effmass\_bin} file}
+The \texttt{.effmass\_bin} file contains the second derivative of a band with respect to k. Also known as effective mass. It is currently not used for any application, but this definition is included for future reference.
+
+The \texttt{.effmass\_bin} file is an unformatted file.
+\begin{verbatim}
+integer,parameter:: dp=selected_real_kind(15,300) ! Define double precision
+real(dp):: file_version=1.0_dp     ! File version
+character(len=80):: file_header    ! File header comment
+integer:: num_kpoints              ! Number of k-points
+integer:: num_spins                ! Number of spins
+integer:: max_eigenv               ! Number of bands included in matrix elements
+integer:: num_eigenvalues(1:num_spins)   ! Number of eigenvalues per spin channel
+real(dp):: band_curvature(max_eigenv,1:3,1:3,1:num_kpoints,num_spins)! OMEs
+
+write(curvature_unit) file_version
+write(curvature_unit) file_header
+
+do ik=1,num_kpoints
+ do is=1,num_spins
+  do ib = 1,nbands
+   do i = 1,3
+    do j= 1,3
+       write(curvature_unit) optical_mat(ib,i,j,ik,is)
+     end do
+    end do
+   end do
  end do
 end do
 \end{verbatim}

@@ -11,7 +11,9 @@ sort: permission-alpha
 source: true
 coloured_edges: true
 graph: true
+display: public
+        #private
 
 For high quality theoretical DOS, Projected-DOS, Joint-DOS, Optics and core-loss spectroscopy.
 
-A collaboration between the Departments of Materials at the Unvieristies of Birmimgham, Oxford and Cambridge.
+A collaboration between the Departments of Materials at the Universities of Birmimgham, Oxford and Cambridge.

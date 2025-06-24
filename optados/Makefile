@@ -41,6 +41,7 @@ veryclean:
 	cd ./documents && $(MAKE) veryclean
 	cd ./python &&  $(MAKE) veryclean
 	cd ./test-suite && $(PYTHON_VER) clean_tests -i
+	cd ./ford && $(MAKE) veryclean
 
 dist: optados-$(VER).tar.gz
 

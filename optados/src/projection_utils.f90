@@ -588,9 +588,9 @@ contains
         write (stderr, *) "PDOS string atom ", trim(c_symbol), " matches none of ", adjustl(proj_symbol(:))
       elseif (atom_label) then
         write (stderr, *) "PDOS string atom ", trim(c_symbol)//":"//trim(catom_label), " matches none of ", adjustl(proj_symbol(:))
-      endif
+      end if
       call io_error('projection_analyse_atom: Failed to match atomic symbol in pdos string')
-    endif
+    end if
 
     !! Parse if there's a particular species site number. ie. He3
     counter = 0

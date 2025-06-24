@@ -5,7 +5,7 @@
 !  Young-Su Lee, Nicola Marzari, Ivo Souza, David Vanderbilt !
 !                                                            !
 ! This file is distributed under the terms of the GNU        !
-! General Public License. See the file `COPYING' in          !
+! General Public License. See the file 'COPYING' in          !
 ! the root directory of the present distribution, or         !
 ! http://www.gnu.org/copyleft/gpl.txt .                      !
 !                                                            !
@@ -59,6 +59,7 @@ module od_parameters
   logical, public, save :: compare_jdos
   logical, public, save :: optics
   logical, public, save :: core
+  logical, public, save :: photo
 
   !Broadening parameters
   logical, public, save :: fixed
@@ -118,6 +119,34 @@ module od_parameters
   logical, public, save :: LAI_lorentzian
   real(kind=dp), public, save :: core_chemical_shift ! used in conjunction with miz_chemical_shift script in tools
 
+  ! Photoemission parameters - F.Mildner, et al. Jun-2025
+  character(len=20), public, save :: photo_model
+  character(len=90), public, save :: photo_output
+  character(len=20), public, save :: photo_momentum
+  real(kind=dp), public, save :: photo_photon_energy
+  logical, public, save       :: photo_energy_sweep
+  real(kind=dp), public, save :: photo_photon_min
+  real(kind=dp), public, save :: photo_photon_max
+  real(kind=dp), public, save :: photo_slab_min
+  real(kind=dp), public, save :: photo_slab_max
+  real(kind=dp), public, save :: photo_work_function
+  real(kind=dp), public, save :: photo_bulk_cutoff
+  real(kind=dp), public, save :: photo_temperature
+  real(kind=dp), public, save :: photo_elec_field
+  integer, public, save       :: photo_len_imfp_value
+  real(kind=dp), dimension(:), allocatable, public, save :: photo_imfp_value
+  character(len=20), public, save :: photo_imfp_choice
+  real(kind=dp), public, save :: photo_phi_min
+  real(kind=dp), public, save :: photo_phi_max
+  real(kind=dp), public, save :: photo_theta_min
+  real(kind=dp), public, save :: photo_theta_max
+  real(kind=dp), public, save :: photo_bindenergy_broadening
+  real(kind=dp), public, save :: photo_pmat_bin_width
+  real(kind=dp), public, save :: photo_const_bindenergy_value
+  logical, public, save       :: photo_remove_box_states
+  logical, public, save       :: photo_use_tmprob
+  integer, public, save       :: photo_gk_max_vectors
+
   real(kind=dp), public, save :: lenconfac
 
   private
@@ -168,7 +197,7 @@ contains
       call io_error('Error: value of energy_unit not recognised in param_read')
 
     dos = .false.; pdos = .false.; pdis = .false.; jdos = .false.; optics = .false.
-    core = .false.; compare_dos = .false.; compare_jdos = .false.
+    core = .false.; compare_dos = .false.; compare_jdos = .false.; photo = .false.; photo_energy_sweep = .false.
     call param_get_vector_length('task', found, i_temp)
     if (found .and. i_temp > 0) then
       allocate (task_string(i_temp), stat=ierr)
@@ -191,6 +220,10 @@ contains
           dos = .true.; compare_dos = .true.
         elseif (index(task_string(loop), 'dos') > 0) then
           dos = .true.
+        elseif (index(task_string(loop), 'photoemission') > 0) then
+          photo = .true.
+        elseif (index(task_string(loop), 'photo_energy_sweep') > 0) then
+          photo = .true.; photo_energy_sweep = .true.
         elseif (index(task_string(loop), 'none') > 0) then
           dos = .false.; pdos = .false.; jdos = .false.; optics = .false.; core = .false.
         elseif (index(task_string(loop), 'all') > 0) then
@@ -202,13 +235,12 @@ contains
       deallocate (task_string, stat=ierr)
       if (ierr /= 0) call io_error('Error: param_read - deallocation failed for task_string')
     end if
-    if ((compare_dos .or. compare_jdos) .and. (pdos .or. core .or. optics)) &
-      call io_error('Error: compare_dos/compare_jdos are not comptable with pdos, core or optics tasks')
+    if ((compare_dos .or. compare_jdos) .and. (pdos .or. core .or. optics .or. photo)) &
+      call io_error('Error: compare_dos/compare_jdos are not comptable with pdos, core, optics or photoemission tasks')
 
-    if (pdis .and. (optics .or. core .or. jdos .or. pdos .or. dos .or. compare_dos .or. compare_jdos)) &
+    if (pdis .and. (optics .or. core .or. jdos .or. pdos .or. dos .or. compare_dos .or. compare_jdos .or. photo)) &
       call io_error('Error: projected bandstructure not compatible with any other tasks')
 
-    i_temp = 0
     fixed = .false.; adaptive = .false.; linear = .false.; quad = .false.
     call param_get_keyword('broadening', found, c_value=c_string)
     if (found) then
@@ -252,7 +284,7 @@ contains
     linear_smearing = 0.0_dp
     call param_get_keyword('linear_smearing', found, r_value=linear_smearing)
 
-    efermi_user = -990.0_dp
+    efermi_user = -999.0_dp
     if (.not. pdis) then
       efermi_choice = "optados"
     else
@@ -411,10 +443,120 @@ contains
     call param_get_keyword('lai_lorentzian_offset', found, r_value=LAI_lorentzian_offset)
     if (LAI_lorentzian_offset .lt. 0.0_dp) call io_error('Error: LAI_lorentzian_offset must be positive')
 
+    ! Photoemission parameters - V.Chang Nov-2020, F.Mildner Nov-2022/Mar-2025
+    if (photo .and. index(optics_geom, 'tensor') > 0) then
+      call io_error('Error: optics_geom tensor requested, but this does not currently work with photoemission')
+    end if
+    photo_model = '1step'
+    call param_get_keyword('photo_model', found, c_value=photo_model)
+    if (index(photo_model, '3step') > 0 .and. index(photo_model, '1step') > 0 .or. &
+        index(photo_model, '3step') > 0 .and. index(photo_model, 'ds_like_pe') > 0 .or. &
+        index(photo_model, '1step') > 0 .and. index(photo_model, 'ds_like_pe') > 0) then
+      call io_error('Error: value of photoemission model not recognised in param_read')
+    end if
+
+    photo_momentum = 'crystal'
+    call param_get_keyword('photo_momentum', found, c_value=photo_momentum)
+    if (index(photo_momentum, 'kp') == 0 .and. index(photo_momentum, 'crystal') == 0 .and. index(photo_momentum, 'operator') == 0 &
+        .and. index(photo_momentum, 'gkgrid') == 0) &
+      call io_error('Error: value of momentum not recognised in param_read')
+
+    call param_get_keyword('photo_photon_energy', found, r_value=photo_photon_energy)
+    if (found .and. photo_energy_sweep) call io_error('Error: cannot set photon energy for photon energy sweep calculation')
+    if (photo .and. .not. found .and. .not. photo_energy_sweep) &
+      call io_error('Error: please set photon energy for photoemission calculation')
+
+    photo_photon_min = 3.0_dp
+    call param_get_keyword('photo_photon_min', found, r_value=photo_photon_min)
+    photo_photon_max = 2.0_dp
+    call param_get_keyword('photo_photon_max', found, r_value=photo_photon_max)
+    if (photo_photon_min .gt. photo_photon_max .and. photo_energy_sweep) &
+      call io_error('Error: max photon value is lower than min photon value or they have not been set')
+
+    call param_get_keyword('photo_work_function', found, r_value=photo_work_function)
+    if (photo .and. .not. found) &
+      call io_error('Error: please set workfunction for photoemission calculation')
+
+    photo_slab_min = 0.0_dp
+    call param_get_keyword('photo_slab_min', found, r_value=photo_slab_min)
+    photo_slab_max = 0.0_dp
+    call param_get_keyword('photo_slab_max', found, r_value=photo_slab_max)
+
+    if (photo_slab_max .lt. 0.0_dp .or. photo_slab_min .lt. 0.0_dp) then
+      call io_error('Error: the supplied min or max values are negative, which causes faulty calculations!')
+    end if
+    if (photo_slab_max .lt. photo_slab_min) then
+      call io_error('Error: the supplied slab_max value is less than the slab_min value!')
+    end if
+
+    photo_elec_field = 0.00_dp
+    call param_get_keyword('photo_elec_field', found, r_value=photo_elec_field)
+
+    photo_remove_box_states = .False.
+    call param_get_keyword('photo_remove_box_states', found, l_value=photo_remove_box_states)
+
+    photo_imfp_choice = 'const'
+    call param_get_keyword('photo_imfp_choice', found, c_value=photo_imfp_choice)
+
+    i_temp = 0
+    call param_get_vector_length('photo_imfp_value', found, i_temp)
+
+    if (index(photo_imfp_choice, 'const') > 0) then
+      if (i_temp .gt. 1) call io_error('Error: IMFP choice set to const, but supplied more than 1 value')
+      photo_len_imfp_value = i_temp
+      allocate (photo_imfp_value(i_temp), stat=ierr)
+      if (ierr /= 0) call io_error('Error: param_read - allocation failed for photo_imfp_value')
+      call param_get_keyword_vector('photo_imfp_value', found, i_temp, r_value=photo_imfp_value)
+
+    else if (index(photo_imfp_choice, 'layers') > 0) then
+      photo_len_imfp_value = i_temp
+      allocate (photo_imfp_value(i_temp), stat=ierr)
+      if (ierr /= 0) call io_error('Error: param_read - allocation failed for photo_imfp_value')
+      call param_get_keyword_vector('photo_imfp_value', found, i_temp, r_value=photo_imfp_value)
+
+    else if (index(photo_imfp_choice, 'curve') > 0) then
+      allocate (photo_imfp_value(1), stat=ierr)
+      if (ierr /= 0) call io_error('Error: param_read - allocation failed for photo_imfp_value')
+      call param_get_keyword_vector('photo_imfp_value', found, i_temp, r_value=photo_imfp_value)
+      photo_imfp_value = 0.0_dp
+    end if
+
+    photo_bulk_cutoff = 10.0_dp
+    call param_get_keyword('photo_bulk_cutoff', found, r_value=photo_bulk_cutoff)
+
+    photo_temperature = 298.0_dp
+    call param_get_keyword('photo_temperature', found, r_value=photo_temperature)
+
+    photo_output = 'off'
+    call param_get_keyword('photo_output', found, c_value=photo_output)
+
+    photo_theta_min = 0.0_dp
+    call param_get_keyword('photo_theta_min', found, r_value=photo_theta_min)
+    photo_theta_max = 90.0_dp
+    call param_get_keyword('photo_theta_max', found, r_value=photo_theta_max)
+    photo_phi_min = 0.0_dp
+    call param_get_keyword('photo_phi_min', found, r_value=photo_phi_min)
+    photo_phi_max = 90.0_dp
+    call param_get_keyword('photo_phi_max', found, r_value=photo_phi_max)
+
+    photo_bindenergy_broadening = 0.01285_dp
+    call param_get_keyword('photo_bindenergy_broadening', found, r_value=photo_bindenergy_broadening)
+    photo_pmat_bin_width = 0.005_dp
+    call param_get_keyword('photo_pmat_bin_width', found, r_value=photo_pmat_bin_width)
+    photo_const_bindenergy_value = 0.0_dp
+    call param_get_keyword('photo_const_bindenergy_value', found, r_value=photo_const_bindenergy_value)
+    photo_gk_max_vectors = 1
+    call param_get_keyword('photo_gk_max_vectors', found, i_value=photo_gk_max_vectors)
+    if ((photo_gk_max_vectors .gt. 1) .and. (index(photo_momentum, 'gkgrid') .eq. 0)) then
+      call io_error('Error: When choosing a photo_momentum other than gkgrid, photo_gk_max_vectors must = 1')
+    end if
+    photo_use_tmprob = .True.
+    call param_get_keyword('photo_use_tmprob', found, l_value=photo_use_tmprob)
+
     num_atoms = 0
     num_species = 0
     num_crystal_symmetry_operations = 0
-    if (pdos .or. pdis .or. core .or. optics) then
+    if (pdos .or. pdis .or. core .or. optics .or. photo .or. jdos) then
       ! try to read in the atoms from the cell file.
       ! We don't need them otherwise, so let's not bother
       !  if(index(devel_flag,'old_filename')>0) then
@@ -571,7 +713,7 @@ contains
               temp_symb = atoms_label(nsp)
             else
               temp_symb = atoms_symbol(nsp)
-            endif
+            end if
             write (stdout, '(1x,a1,1x,a7,1x,i3,7x,3F8.4,3x,a1,1x,3F8.4,4x,a1)') '|', trim(temp_symb), nat, &
               atoms_pos_frac(:, nat, nsp), '|', atoms_pos_cart(:, nat, nsp)*lenconfac, '|'
           end do
@@ -682,6 +824,12 @@ contains
     else
       write (stdout, '(1x,a78)') '|  Output Core-level Spectra                 :  False                        |'
     end if
+    !Photoemission
+    if (photo) then
+      write (stdout, '(1x,a78)') '|  Photoemission Calculation                 :  True                         |'
+    else
+      write (stdout, '(1x,a78)') '|  Photoemission Calculation                 :  False                        |'
+    end if
     write (stdout, '(1x,a46,2x,i3,26x,a1)') '|  iprint level                              :', iprint, '|'
     if (legacy_file_format) then
       write (stdout, '(1x,a78)') '|  Use CASTEP < 6.0 file format              :  True                         |'
@@ -699,25 +847,26 @@ contains
       end if
     end if
 
-    write (stdout, '(1x,a78)') '+--------------------------SPECTRAL PARAMETERS ------------------------------+'
+    write (stdout, '(1x,a78)') '+-------------------------- SPECTRAL PARAMETERS -----------------------------+'
     if (fixed) then
       write (stdout, '(1x,a78)') '|  Fixed Width Smearing                      :  True                         |'
-      write (stdout, '(1x,a46,1x,1F10.5,20x,a1)') '|  Smearing Width                            :', fixed_smearing, '|'
+      write (stdout, '(1x,a46,1x,F10.5,20x,a1)') '|  Smearing Width                            :', fixed_smearing, '|'
     end if
     if (adaptive) then
       write (stdout, '(1x,a78)') '|  Adaptive Width Smearing                   :  True                         |'
-      write (stdout, '(1x,a46,1x,1F10.5,20x,a1)') '|  Adaptive Smearing ratio                   :', adaptive_smearing, '|'
+      write (stdout, '(1x,a46,1x,F10.5,20x,a1)') '|  Adaptive Smearing ratio                   :', adaptive_smearing, '|'
     end if
-    if (linear) &
+    if (linear) then
       write (stdout, '(1x,a78)') '|  Linear Extrapolation                      :  True                         |'
-    write (stdout, '(1x,a46,1x,1F10.5,20x,a1)') '|  Smearing Width                            :', linear_smearing, '|'
+      write (stdout, '(1x,a46,1x,F10.5,20x,a1)') '|  Smearing Width                            :', linear_smearing, '|'
+    end if
     if (quad) &
       write (stdout, '(1x,a78)') '|  Quadratic Extrapolation                   :  True                         |'
     if (finite_bin_correction) &
       write (stdout, '(1x,a78)') '|  Finite Bin Correction                     :  True                         |'
     if (hybrid_linear) then
-      write (stdout, '(1x,a78)') '|  Hybrid Linear Correction                     :  True                         |'
-      write (stdout, '(1x,a46,2x,F10.8,19x,a1)') '|  Hybrid Linear Gradient Tolerance             :', hybrid_linear_grad_tol, '|'
+      write (stdout, '(1x,a78)') '|  Hybrid Linear Correction                  :  True                         |'
+      write (stdout, '(1x,a46,1x,F10.5,20x,a1)') '|  Hybrid Linear Gradient Tolerance          :', hybrid_linear_grad_tol, '|'
     end if
     if (numerical_intdos) &
       write (stdout, '(1x,a78)') '|  Numerical Integration of P/DOS            :  True                         |'
@@ -752,7 +901,12 @@ contains
       write (stdout, '(1x,a78)') '|  Compute the band gap                      :  False                        |'
     end if
 
-    if (optics) then
+    if (photo) then
+      write (stdout, '(1x,a19,26x,a2,f7.4,3x,21a)') '|  JDOS bin spacing', ': ', jdos_spacing, 'eV                  |'
+      write (stdout, '(1x,a22,23x,a2,f7.4,3x,21a)') '|  JDOS max energy bin', ': ', jdos_max_energy, 'eV                  |'
+    end if
+
+    if (optics .or. photo) then
       write (stdout, '(1x,a78)') '+-------------------------------- OPTICS ------------------------------------+'
       if (index(optics_geom, 'polycrys') > 0) then
         write (stdout, '(1x,a78)') '|  Geometry for Optics Calculation           :  Polycrystalline              |'
@@ -816,10 +970,91 @@ contains
         write (stdout, '(1x,a78)') '|  Include lifetime and Instrument Broadening:  False                        |'
       end if
     end if
-
+    ! Added for Photoemission output - F. Mildner, 12/2022
+    if (photo) then
+      write (stdout, '(1x,a78)') '+----------------------- PHOTOEMISSION PARAMETERS ---------------------------+'
+      if (index(photo_model, '1step') > 0) then
+        write (stdout, '(1x,a78)') '|  Photoemission Model                       :     1-Step Model              |'
+        write (stdout, '(1x,a78)') '|  Photoemission Final State                 :     Free Electron State       |'
+      elseif (index(photo_model, '3step') > 0) then
+        write (stdout, '(1x,a78)') '|  Photoemission Model                       :     3-Step Model              |'
+        write (stdout, '(1x,a78)') '|  Photoemission Final State                 :     Bloch State               |'
+        if (photo_use_tmprob) then
+          write (stdout, '(1x,a78)') '|         *** Including transmission probability across surface ***          |'
+        else
+          write (stdout, '(1x,a78)') '|       *** NOT Including transmission probability across surface ***        |'
+        end if
+      elseif (index(photo_model, 'ds_like_pe') > 0) then
+        write (stdout, '(1x,a78)') '|  Photoemission Model                       :     Simplified PE Model       |'
+      end if
+      if (photo_energy_sweep) then
+        write (stdout, '(1x,a46,1x,1f10.4,a4,1f7.4,a10)') '|  Photon Energy Sweep                       :', photo_photon_min,&
+                                                        & ' -> ', photo_photon_max, ' eV      |'
+      else
+        write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Photon Energy              (eV)           :', photo_photon_energy, '|'
+      end if
+      write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Work Function              (eV)           :', photo_work_function, '|'
+      ! write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Surface Area               (Ang**2)       :', photo_surface_area, '|'
+      ! write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Slab Volume                (Ang**3)       :', photo_slab_volume, '|'
+      write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Slab Max Z-Coord.          (Ang)          :', photo_slab_max, '|'
+      write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Slab Min Z-Coord.          (Ang)          :', photo_slab_min, '|'
+      if (index(photo_imfp_choice, 'const') > 0) then
+        write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  IMFP Constant              (Ang)          :', photo_imfp_value(1), '|'
+      else if (index(photo_imfp_choice, 'layers') > 0) then
+        write (stdout, '(1x,a78)') '|  Layer by Layer IMFP Constants     (Ang)   : Layer values provided by user |'
+        write (stdout, '(1x,a78)') '|                                              will be printed later         |'
+      else if (index(photo_imfp_choice, 'curve') > 0) then
+        write (stdout, '(1x,a78)') '|  Energy Dependent IMFP Curve               : Values will be printed later  |'
+      end if
+      write (stdout, '(1x,a46,3x,f5.1,23x,a1)') '|  Bulk cutoff dist. (int. multiple of IMFP) :', photo_bulk_cutoff, '|'
+      if ((photo_elec_field .gt. 1.0E-4_dp) .or. (photo_elec_field .lt. 1.0E-25_dp)) then
+        write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Electric Field Strength    (V/Ang)        :', photo_elec_field, '|'
+      else
+        write (stdout, '(1x,a46,1x,E17.9,13x,a1)') '|  Electric Field Strength    (V/Ang)        :', photo_elec_field, '|'
+      end if
+      write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Smearing Temperature       (K)            :', photo_temperature, '|'
+      write (stdout, '(1x,a46,5x,a9,17x,a1)') '|  Transverse Momentum Scheme                :', photo_momentum, '|'
+      if (photo_remove_box_states) then
+        write (stdout, '(1x,a78)') '|  Identify and remove box states            :     True                      |'
+      end if
+      if (index(photo_momentum, 'gkgrid') > 0) then
+        write (stdout, '(1x,a47,1x,1i6,23x,a1)') '| # of G + k Grid Contributions              : ', photo_gk_max_vectors, '|'
+      end if
+      if (index(photo_output, 'off') == 0 .or. index(photo_output, 'qe_tensor') == 0) then
+        write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Theta    - min -           (deg)          :', photo_theta_min, '|'
+        write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Theta    - max -           (deg)          :', photo_theta_max, '|'
+        write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Phi      - min -           (deg)          :', photo_phi_min, '|'
+        write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Phi      - max -           (deg)          :', photo_phi_max, '|'
+      end if
+      if (index(photo_output, 'off') == 0 .or. index(photo_output, 'qe_tensor') == 0) then
+        write (stdout, '(1x,a46,4x,1f7.4,20x,a1)') '|  Binding Energy Broad. Width (eV)          :', &
+        & photo_bindenergy_broadening, '|'
+      end if
+      if (index(photo_output, 'bindenergy_ptrans_map') > 0 .or. index(photo_output, 'p_tensor') > 0) then
+        write (stdout, '(1x,a46,4x,1f8.5,19x,a1)') '|  Binding Energy P Matrix Bin Width (1/A)   :', photo_pmat_bin_width, '|'
+      end if
+      if (index(photo_output, 'const_bindenergy_p_map') > 0) then
+        write (stdout, '(1x,a46,2x,1f8.3,21x,a1)') '|  Binding Energy for const. E Map (eV)      :', &
+          photo_const_bindenergy_value, '|'
+      end if
+      if (index(photo_output, 'off') == 0) then
+        write (stdout, '(1x,a78)') '|  ------ List of extra values to be calculated and written to file -------  |'
+        write (stdout, '(1x,a78)') '|  ------------------------------------------------------------------------  |'
+        if (index(photo_output, 'bindenergy_ptrans_map') > 0) write (stdout, '(1x,a78)') &
+          '|  --------------- Binding Energy vs transverse Energy map ----------------  |'
+        if (index(photo_output, 'p_tensor') > 0) write (stdout, '(1x,a78)') &
+          '|  -------------------- Full momentum (px,py,pz) tensor -------------------  |'
+        if (index(photo_output, 'bindenergy_curve') > 0) write (stdout, '(1x,a78)') &
+          '|  ---------------------- Binding Energy curve (EDC) ----------------------  |'
+        if (index(photo_output, 'const_bindenergy_p_map') > 0) write (stdout, '(1x,a78)') &
+          '|  --------------------- Constant binding Energy map ----------------------  |'
+        if (index(photo_output, 'qe_tensor') > 0) write (stdout, '(1x,a78)') &
+          '|  ---------------------------- Full QE tensor ----------------------------  |'
+      end if
+    end if
     write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
-    write (stdout, *) ' '
-
+    if (num_exclude_bands > 0) write (stdout, '(1x,a16,1x,999(1x,I3))') 'excluded_bands :', exclude_bands(:)
+    if (scan(devel_flag, "AEIOUaeiou") > 0) write (stdout, '(1x,a12,1x,a100)') 'devel_flag :', devel_flag
   end subroutine param_write
 
   !==================================================================!
@@ -849,7 +1084,7 @@ contains
     ! to lowercase characters               !
     !=======================================!
 
-    use od_io, only: io_file_unit, io_error, seedname
+    use od_io, only: io_file_unit, io_error, seedname, options
     use od_algorithms, only: utility_lowercase
 
     implicit none
@@ -859,7 +1094,6 @@ contains
 
     in_unit = io_file_unit()
     open (in_unit, file=trim(seedname)//'.odi', form='formatted', status='old', err=101)
-
     num_lines = 0; tot_num_lines = 0
     do
       read (in_unit, '(a)', iostat=ierr, err=200, end=210) dummy
@@ -1496,6 +1730,8 @@ contains
     call comms_bcast(pdos, 1)
     call comms_bcast(jdos, 1)
     call comms_bcast(optics, 1)
+    call comms_bcast(photo, 1)
+    call comms_bcast(photo_energy_sweep, 1)
     call comms_bcast(core, 1)
     call comms_bcast(compare_dos, 1)
     call comms_bcast(compare_jdos, 1)
@@ -1542,6 +1778,39 @@ contains
     call comms_bcast(projectors_string, len(projectors_string))
     call comms_bcast(set_efermi_zero, 1)
     !
+    ! Photoemission
+    call comms_bcast(photo_model, len(photo_model))
+    call comms_bcast(photo_momentum, len(photo_momentum))
+    call comms_bcast(photo_photon_energy, 1)
+    if (photo_energy_sweep) then
+      call comms_bcast(photo_photon_min, 1)
+      call comms_bcast(photo_photon_max, 1)
+    end if
+    call comms_bcast(photo_work_function, 1)
+    call comms_bcast(photo_slab_max, 1)
+    call comms_bcast(photo_slab_min, 1)
+    call comms_bcast(photo_elec_field, 1)
+    call comms_bcast(photo_remove_box_states, 1)
+    call comms_bcast(photo_len_imfp_value, 1)
+    if (.not. on_root) then
+      allocate (photo_imfp_value(photo_len_imfp_value), stat=ierr)
+      if (ierr /= 0) call io_error('Error: param_dist - allocation failed for photo_imfp_value')
+    end if
+    call comms_bcast(photo_imfp_value(1), photo_len_imfp_value)
+    call comms_bcast(photo_imfp_choice, len(photo_imfp_choice))
+    call comms_bcast(photo_bulk_cutoff, 1)
+    call comms_bcast(photo_temperature, 1)
+    call comms_bcast(photo_output, len(photo_output))
+    call comms_bcast(photo_theta_min, 1)
+    call comms_bcast(photo_theta_max, 1)
+    call comms_bcast(photo_phi_min, 1)
+    call comms_bcast(photo_phi_max, 1)
+    call comms_bcast(photo_bindenergy_broadening, 1)
+    call comms_bcast(photo_pmat_bin_width, 1)
+    call comms_bcast(photo_const_bindenergy_value, 1)
+    call comms_bcast(photo_gk_max_vectors, 1)
+    call comms_bcast(photo_use_tmprob, 1)
+
     call comms_bcast(num_exclude_bands, 1)
     if (num_exclude_bands > 1) then
       if (.not. on_root) then

@@ -48,6 +48,7 @@ module od_jdos_utils
   !-------------------------------------------------------------------------------
   ! P U B L I C   F U N C T I O N S
   public :: jdos_utils_calculate
+  public :: setup_energy_scale
   !-------------------------------------------------------------------------------
 
   real(kind=dp), save                   :: delta_bins ! Width of bins
@@ -63,9 +64,9 @@ contains
     ! Main routine in dos module, drives the calculation of Density of states for
     ! both task : dos and also if it is required elsewhere.
     !===============================================================================
-    use od_parameters, only: linear, fixed, adaptive, quad, iprint, dos_per_volume
+    use od_parameters, only: linear, fixed, adaptive, quad, iprint, dos_per_volume, photo
     use od_electronic, only: elec_read_band_gradient, band_gradient, nspins, electrons_per_state, &
-      num_electrons, efermi_set
+                             num_electrons, efermi_set
     use od_comms, only: on_root
     use od_io, only: stdout, io_error, io_time
     use od_cell, only: cell_volume
@@ -104,11 +105,10 @@ contains
     ! Now everything is set up, we can perform the dos accumulation in parellel
     time0 = io_time()
 
-    call setup_energy_scale
-
+    call setup_energy_scale(E)
     if (fixed) then
       if (calc_weighted_jdos) then
-        call calculate_jdos('f', jdos_fixed, matrix_weights, weighted_jdos)
+        call calculate_jdos('f', jdos_fixed, matrix_weights, weighted_jdos=weighted_jdos)
         call jdos_utils_merge(jdos_fixed, weighted_jdos)
       else
         call calculate_jdos('f', jdos_fixed)
@@ -118,7 +118,7 @@ contains
     end if
     if (adaptive) then
       if (calc_weighted_jdos) then
-        call calculate_jdos('a', jdos_adaptive, matrix_weights, weighted_jdos)
+        call calculate_jdos('a', jdos_adaptive, matrix_weights, weighted_jdos=weighted_jdos)
         call jdos_utils_merge(jdos_adaptive, weighted_jdos)
       else
         call calculate_jdos('a', jdos_adaptive)
@@ -127,7 +127,7 @@ contains
     end if
     if (linear) then
       if (calc_weighted_jdos) then
-        call calculate_jdos('l', jdos_linear, matrix_weights, weighted_jdos)
+        call calculate_jdos('l', jdos_linear, matrix_weights, weighted_jdos=weighted_jdos)
         call jdos_utils_merge(jdos_linear, weighted_jdos)
       else
         call calculate_jdos('l', jdos_linear)
@@ -155,14 +155,26 @@ contains
     !-------------------------------------------------------------------------------
 
     if (dos_per_volume) then
-      if (fixed) then
-        jdos_fixed = jdos_fixed/cell_volume
-      end if
-      if (adaptive) then
-        jdos_adaptive = jdos_adaptive/cell_volume
-      end if
-      if (linear) then
-        jdos_linear = jdos_linear/cell_volume
+      if (photo) then
+        if (fixed) then
+          jdos_fixed = jdos_fixed
+        end if
+        if (adaptive) then
+          jdos_adaptive = jdos_adaptive
+        end if
+        if (linear) then
+          jdos_linear = jdos_linear
+        end if
+      else
+        if (fixed) then
+          jdos_fixed = jdos_fixed/cell_volume
+        end if
+        if (adaptive) then
+          jdos_adaptive = jdos_adaptive/cell_volume
+        end if
+        if (linear) then
+          jdos_linear = jdos_linear/cell_volume
+        end if
       end if
 
       ! if(quad) then
@@ -174,7 +186,7 @@ contains
   end subroutine jdos_utils_calculate
 
   !===============================================================================
-  subroutine setup_energy_scale
+  subroutine setup_energy_scale(E)
     !===============================================================================
     ! Sets up all broadening independent DOS concerns
     ! Calls the relevant dos calculator.
@@ -189,6 +201,7 @@ contains
 
     integer       :: idos, ierr
     real(kind=dp) :: max_band_energy
+    real(kind=dp), intent(out), allocatable, optional    :: E(:)
 
     if (jdos_max_energy < 0.0_dp) then ! we have to work it out ourselves
       max_band_energy = maxval(band_energy)
@@ -285,17 +298,20 @@ contains
     use od_cell, only: num_kpoints_on_node, kpoint_grid_dim, kpoint_weight,&
          &recip_lattice
     use od_parameters, only: adaptive_smearing, fixed_smearing, iprint, &
-         &finite_bin_correction, scissor_op, hybrid_linear_grad_tol, hybrid_linear, exclude_bands, num_exclude_bands
+                             finite_bin_correction, scissor_op, hybrid_linear_grad_tol, &
+                             hybrid_linear, exclude_bands, num_exclude_bands, &
+                             photo, photo_slab_max, photo_slab_min
     use od_io, only: io_error, stdout
     use od_electronic, only: band_gradient, nbands, band_energy, nspins, electrons_per_state, &
          & efermi
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
+    use od_constants, only: pi
     implicit none
 
     integer :: ik, is, ib, idos, jb, i
     integer :: N2, N_geom, ierr
-    real(kind=dp) :: dos_temp, cuml, width, adaptive_smearing_temp
+    real(kind=dp) :: dos_temp, cuml, width, adaptive_smearing_temp, mean_height
     real(kind=dp) :: grad(1:3), step(1:3), EV(0:4), sub_cell_length(1:3)
 
     character(len=1), intent(in)                      :: jdos_type
@@ -318,7 +334,7 @@ contains
     case ("f")
       fixed = .true.
     case default
-      call io_error(" ERROR : unknown jdos_type in jcalculate_dos ")
+      call io_error(" ERROR : unknown jdos_type in calculate_jdos ")
     end select
 
     width = 0.0_dp
@@ -328,6 +344,10 @@ contains
       do i = 1, 3
         sub_cell_length(i) = sqrt(recip_lattice(i, 1)**2 + recip_lattice(i, 2)**2 + recip_lattice(i, 3)**2)*step(i)
       end do
+      if (photo) then
+        mean_height = (photo_slab_min + photo_slab_max)/(2*2)
+        sub_cell_length(3) = sqrt(recip_lattice(3, 1)**2 + recip_lattice(3, 2)**2 + (pi/mean_height)**2)*step(3)
+      end if
       adaptive_smearing_temp = adaptive_smearing*sum(sub_cell_length)/3.0_dp
     end if
 
@@ -426,15 +446,17 @@ contains
     !===============================================================================
     use od_comms, only: comms_reduce
     use od_electronic, only: nspins
-    use od_comms, only: comms_reduce
 
     implicit none
     real(kind=dp), intent(inout), allocatable, optional :: weighted_jdos(:, :, :) ! bins.spins, orbitals
     real(kind=dp), allocatable, intent(inout) :: jdos(:, :)
 
+    integer :: N_geom
+    if (present(weighted_jdos)) N_geom = size(weighted_jdos, 3)
+
     call comms_reduce(jdos(1, 1), nspins*jdos_nbins, "SUM")
 
-    if (present(weighted_jdos)) call comms_reduce(weighted_jdos(1, 1, 1), nspins*jdos_nbins*1, "SUM")
+    if (present(weighted_jdos)) call comms_reduce(weighted_jdos(1, 1, 1), nspins*jdos_nbins*N_geom, "SUM")
 
 !    if(.not.on_root) then
 !       if(allocated(jdos)) deallocate(jdos,stat=ierr)

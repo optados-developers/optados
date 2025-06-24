@@ -43,6 +43,8 @@ module od_algorithms
   public :: utility_lowercase
   public :: utility_cart_to_frac
   public :: utility_frac_to_cart
+  public :: utility_reciprocal_frac_to_cart
+  public :: utility_reciprocal_cart_to_frac
   public :: channel_to_am
   public :: algorithms_erf
   public :: algor_dist_array
@@ -248,6 +250,57 @@ contains
     return
 
   end subroutine utility_cart_to_frac
+
+  !===================================================================
+  subroutine utility_reciprocal_frac_to_cart(frac_rec, cart_rec, recip_lattice)
+    !==================================================================!
+    !                                                                  !
+    !  Convert k points from fractional to Cartesian coordinates       !
+    !                                                                  !
+    !===================================================================
+
+    implicit none
+
+    real(kind=dp), intent(in)  :: recip_lattice(3, 3)
+    real(kind=dp), intent(in)  :: frac_rec(3)
+    real(kind=dp), intent(out) :: cart_rec(3)
+
+    integer :: i
+
+    do i = 1, 3
+      cart_rec(i) = recip_lattice(1, i)*frac_rec(1) + recip_lattice(2, i)*frac_rec(2) + recip_lattice(3, i)*frac_rec(3)
+    end do
+
+    return
+
+  end subroutine utility_reciprocal_frac_to_cart
+
+  !===================================================================
+  subroutine utility_reciprocal_cart_to_frac(cart, frac, real_lattice)
+    !==================================================================!
+    !                                                                  !
+    !  Convert from fractional to Cartesian coordinates in reicprocal  !
+    !                                                                  !
+    !===================================================================
+    use od_constants, only: twopi
+    implicit none
+
+    real(kind=dp), intent(in)  :: real_lattice(3, 3)
+    real(kind=dp), intent(out)  :: frac(3)
+    real(kind=dp), intent(in)  :: cart(3)
+
+    integer :: i
+
+    do i = 1, 3
+      frac(i) = real_lattice(1, i)*cart(1) + real_lattice(2, i)*cart(2) + real_lattice(3, i)*cart(3)
+
+    end do
+
+    frac = frac/twopi
+
+    return
+
+  end subroutine utility_reciprocal_cart_to_frac
 
   function algorithms_erf(x)
 ! Calculate the error function

@@ -1,0 +1,17 @@
+task : photoemission
+JDOS_SPACING : 0.01
+BROADENING : adaptive
+optics_geom : unpolar
+optics_qdir : 1 1 0
+efermi: -1.1049
+
+photo_model : 3step
+photo_work_function : 4.2202
+photo_slab_min : 7.559
+photo_slab_max : 18.282
+photo_elec_field : 0.00
+photo_imfp_value : 5.3
+photo_momentum : crystal
+photo_temperature : 300
+
+iprint : 1
