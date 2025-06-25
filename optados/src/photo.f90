@@ -108,11 +108,11 @@ contains
   subroutine photo_calculate
     !! Main subroutine calling all the other subroutine steps.
     use od_electronic, only: elec_dealloc_optical, elec_pdos_read, elec_read_optical_mat, &
-                             efermi, efermi_set, elec_read_foptical_mat, elec_dealloc_pdos
+      efermi, efermi_set, elec_read_foptical_mat, elec_dealloc_pdos
     use od_jdos_utils, only: jdos_utils_calculate, setup_energy_scale
     use od_comms, only: on_root
     use od_parameters, only: photo_work_function, photo_model, photo_elec_field, photo_output, photo_energy_sweep, &
-                             photo_photon_min, jdos_spacing, photo_photon_energy, photo_momentum, iprint
+      photo_photon_min, jdos_spacing, photo_photon_energy, photo_momentum, iprint
     use od_dos_utils, only: dos_utils_set_efermi, dos_utils_calculate_at_e, dos_utils_deallocate
     use od_io, only: stdout, io_error, io_time
     use od_pdos, only: pdos_calculate
@@ -726,10 +726,10 @@ contains
   subroutine calc_photo_optics
     !! This subroutine calculates the projected optical characteristics for each layer.
     use od_optics, only: make_weights, calc_epsilon_2, calc_epsilon_1, calc_refract, calc_absorp, calc_reflect, &
-                         epsilon, refract, absorp, reflect, intra, write_absorp, write_epsilon, write_reflect, write_refract
+      epsilon, refract, absorp, reflect, intra, write_absorp, write_epsilon, write_reflect, write_refract
     use od_io, only: stdout, io_error, io_time, seedname, io_date
     use od_electronic, only: elec_read_optical_mat, nbands, nspins, efermi, elec_dealloc_optical, elec_read_band_gradient, &
-                             nbands, nspins, band_energy
+      nbands, nspins, band_energy
     use od_cell, only: num_kpoints_on_node, num_kpoints_on_node, cell_calc_kpoint_r_cart
     use od_jdos_utils, only: jdos_utils_calculate, jdos_nbins, setup_energy_scale, jdos_deallocate, E
     use od_comms, only: comms_bcast, on_root, my_node_id
@@ -1259,7 +1259,7 @@ contains
     !===============================================================================
     use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_r_cart
     use od_electronic, only: nbands, nspins, band_energy, band_gradient, elec_read_band_gradient, elec_read_band_curvature, &
-                             band_curvature, photo_gkgrid, elec_read_gk_grid_points
+      band_curvature, photo_gkgrid, elec_read_gk_grid_points
     use od_comms, only: my_node_id, on_root
     use od_parameters, only: photo_model, photo_momentum, devel_flag, iprint, photo_gk_max_vectors
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
@@ -1763,10 +1763,10 @@ contains
     !===============================================================================
     use od_cell, only: num_kpoints_on_node, kpoint_weight
     use od_electronic, only: nbands, nspins, band_energy, efermi, electrons_per_state, elec_read_band_gradient, &
-                             elec_read_band_curvature
+      elec_read_band_curvature
     use od_comms, only: my_node_id, on_root, num_nodes, comms_send, comms_recv, comms_bcast
     use od_parameters, only: photo_temperature, devel_flag, iprint, num_exclude_bands, &
-                             exclude_bands, photo_model
+      exclude_bands, photo_model
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
     use od_io, only: stdout, io_error, io_file_unit, io_time, seedname, io_date
@@ -1938,10 +1938,10 @@ contains
     !===============================================================================
     use od_cell, only: num_kpoints_on_node, kpoint_weight
     use od_electronic, only: nbands, nspins, band_energy, efermi, electrons_per_state, elec_read_band_gradient, &
-                             elec_read_band_curvature, transmit_prob, elec_read_transmit_prob
+      elec_read_band_curvature, transmit_prob, elec_read_transmit_prob
     use od_comms, only: my_node_id, on_root, num_nodes, comms_send, comms_recv, comms_bcast
     use od_parameters, only: scissor_op, photo_temperature, devel_flag, photo_energy_sweep, iprint, &
-                             photo_model, photo_gk_max_vectors, photo_output, photo_use_tmprob
+      photo_model, photo_gk_max_vectors, photo_output, photo_use_tmprob
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
     use od_io, only: stdout, io_error, io_file_unit, io_time, seedname, io_date
@@ -2383,8 +2383,8 @@ contains
     use od_comms, only: my_node_id, on_root
     use od_cell, only: num_kpoints_on_node, kpoint_grid_dim, recip_lattice
     use od_parameters, only: adaptive_smearing, fixed_smearing, iprint, finite_bin_correction, &
-                             scissor_op, hybrid_linear_grad_tol, hybrid_linear, exclude_bands, &
-                             num_exclude_bands, jdos_max_energy, photo_slab_max
+      scissor_op, hybrid_linear_grad_tol, hybrid_linear, exclude_bands, &
+      num_exclude_bands, jdos_max_energy, photo_slab_max
     use od_io, only: io_error, stdout
     use od_electronic, only: band_gradient, nbands, band_energy, nspins, efermi
     use od_jdos_utils, only: jdos_nbins
@@ -2735,7 +2735,7 @@ contains
     & elec_read_band_curvature
     use od_comms, only: my_node_id, num_nodes
     use od_parameters, only: scissor_op, photo_temperature, devel_flag, photo_energy_sweep, &
-                             iprint, photo_model, photo_gk_max_vectors
+      iprint, photo_model, photo_gk_max_vectors
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
     use od_comms, only: on_root, comms_recv, comms_send
@@ -3055,7 +3055,7 @@ contains
         ! Calculate the qe contribution of each atom/layer
         layer_qe(atom) = sum(qe_osm(:, :, :, atom))
       end do
-      call FLUSH (stdout)
+      call FLUSH(stdout)
 
       ! Sum the data from other nodes that have more k-points stored
       call comms_reduce(layer_qe(1), max_atoms + 1, 'SUM')
@@ -3622,9 +3622,9 @@ contains
     ! written by Felix Mildner, after May 2025
     !===============================================================================
     use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_r_cart, kpoint_weight, &
-                       kpoint_grid_dim, recip_lattice
+      kpoint_grid_dim, recip_lattice
     use od_electronic, only: nbands, nspins, band_energy, efermi, electrons_per_state, transmit_prob, &
-                             photo_gkgrid, elec_read_gk_grid_points
+      photo_gkgrid, elec_read_gk_grid_points
     use od_parameters, only: photo_work_function, photo_model, photo_theta_min, photo_theta_max, photo_temperature, &
     & photo_phi_min, photo_phi_max, photo_bindenergy_broadening, photo_gk_max_vectors, scissor_op, iprint, &
     & photo_momentum, photo_pmat_bin_width, optics_geom, optics_qdir
@@ -4062,7 +4062,7 @@ contains
     if (on_root .and. iprint > 1) then
       write (stdout, '(1x,a47,12x,f11.3,a8)') '+ Time to calculate binding energy momentum map', time1 - time0, ' (sec) +'
       write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
-      call FLUSH (stdout)
+      call FLUSH(stdout)
     end if
   end subroutine binding_energy_momentum_map
 
@@ -4076,9 +4076,9 @@ contains
     ! written by Felix Mildner, after May 2025
     !===============================================================================
     use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_r_cart, kpoint_weight, &
-                       kpoint_grid_dim, recip_lattice
+      kpoint_grid_dim, recip_lattice
     use od_electronic, only: nbands, nspins, band_energy, efermi, electrons_per_state, transmit_prob, &
-                             photo_gkgrid, elec_read_gk_grid_points
+      photo_gkgrid, elec_read_gk_grid_points
     use od_parameters, only: photo_work_function, photo_model, photo_theta_min, photo_theta_max, photo_temperature, &
     & photo_phi_min, photo_phi_max, photo_bindenergy_broadening, photo_gk_max_vectors, scissor_op, iprint, &
     & photo_momentum, photo_pmat_bin_width, optics_geom, optics_qdir
@@ -4532,7 +4532,7 @@ contains
     if (on_root .and. iprint > 1) then
       write (stdout, '(1x,a47,12x,f11.3,a8)') '+ Time to calculate binding energy momentum map', time1 - time0, ' (sec) +'
       write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
-      call FLUSH (stdout)
+      call FLUSH(stdout)
     end if
   end subroutine binding_energy_momentum_map_gkgrid
 
@@ -4543,7 +4543,7 @@ contains
     ! written by Felix Mildner, after May 2025
     !===============================================================================
     use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_r_cart, kpoint_weight, &
-                       kpoint_grid_dim, recip_lattice, num_crystal_symmetry_operations, crystal_symmetry_operations
+      kpoint_grid_dim, recip_lattice, num_crystal_symmetry_operations, crystal_symmetry_operations
     use od_electronic, only: nbands, nspins, band_energy, efermi, electrons_per_state, transmit_prob
     use od_parameters, only: photo_model, photo_theta_min, photo_theta_max, photo_temperature, &
     & photo_phi_min, photo_phi_max, photo_bindenergy_broadening, photo_gk_max_vectors, scissor_op, iprint, &
@@ -5048,7 +5048,7 @@ contains
     if (on_root .and. iprint > 1) then
       write (stdout, '(1x,a40,19x,f11.3,a8)') '+ Time to calculate full momentum tensor', time1 - time0, ' (sec) +'
       write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
-      call FLUSH (stdout)
+      call FLUSH(stdout)
     end if
   end subroutine full_momentum_tensor
 
@@ -5059,11 +5059,11 @@ contains
     ! written by Felix Mildner, after Jan 2025
     !===============================================================================
     use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_r_cart, kpoint_weight, &
-                       kpoint_grid_dim, recip_lattice, num_crystal_symmetry_operations, crystal_symmetry_operations
+      kpoint_grid_dim, recip_lattice, num_crystal_symmetry_operations, crystal_symmetry_operations
     use od_electronic, only: nbands, nspins, band_energy, efermi, electrons_per_state, transmit_prob
     use od_parameters, only: photo_model, photo_theta_min, photo_theta_max, photo_temperature, photo_phi_min, photo_phi_max, &
-                             photo_bindenergy_broadening, photo_gk_max_vectors, scissor_op, iprint, photo_pmat_bin_width, &
-                             devel_flag, optics_geom, optics_qdir, photo_const_bindenergy_value
+      photo_bindenergy_broadening, photo_gk_max_vectors, scissor_op, iprint, photo_pmat_bin_width, &
+      devel_flag, optics_geom, optics_qdir, photo_const_bindenergy_value
     use od_algorithms, only: gaussian
     use od_comms, only: my_node_id, comms_reduce, comms_bcast, on_root
     use od_io, only: io_error, io_file_unit, stdout, io_time, io_date, seedname
@@ -5519,7 +5519,7 @@ contains
     if (on_root .and. iprint > 1) then
       write (stdout, '(1x,a45,14x,f11.3,a8)') '+ Time to calculate const. binding energy map', time1 - time0, ' (sec) +'
       write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
-      call FLUSH (stdout)
+      call FLUSH(stdout)
     end if
 
   end subroutine const_binding_energy_map
@@ -5532,12 +5532,12 @@ contains
     ! written by Felix Mildner, after May 2025
     !===============================================================================
     use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_r_cart, kpoint_weight, &
-                       kpoint_grid_dim, recip_lattice, num_crystal_symmetry_operations, crystal_symmetry_operations
+      kpoint_grid_dim, recip_lattice, num_crystal_symmetry_operations, crystal_symmetry_operations
     use od_electronic, only: nbands, nspins, band_energy, efermi, electrons_per_state, transmit_prob, &
-                             photo_gkgrid, elec_read_gk_grid_points
+      photo_gkgrid, elec_read_gk_grid_points
     use od_parameters, only: photo_model, photo_theta_min, photo_theta_max, photo_temperature, photo_phi_min, photo_phi_max, &
-                             photo_bindenergy_broadening, photo_gk_max_vectors, scissor_op, iprint, photo_pmat_bin_width, &
-                             devel_flag, optics_geom, optics_qdir, photo_const_bindenergy_value
+      photo_bindenergy_broadening, photo_gk_max_vectors, scissor_op, iprint, photo_pmat_bin_width, &
+      devel_flag, optics_geom, optics_qdir, photo_const_bindenergy_value
     use od_algorithms, only: gaussian
     use od_comms, only: my_node_id, comms_reduce, comms_bcast, on_root
     use od_io, only: io_error, io_file_unit, stdout, io_time, io_date, seedname
@@ -5983,7 +5983,7 @@ contains
     if (on_root .and. iprint > 1) then
       write (stdout, '(1x,a45,14x,f11.3,a8)') '+ Time to calculate const. binding energy map', time1 - time0, ' (sec) +'
       write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
-      call FLUSH (stdout)
+      call FLUSH(stdout)
     end if
 
   end subroutine const_binding_energy_map_gkgrid
