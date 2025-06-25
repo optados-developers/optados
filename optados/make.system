@@ -2,7 +2,7 @@
 SYSTEM := gfortran
 
 # fast / debug
-BUILD := debug 
+BUILD := fast
 
 # serial / mpi
 COMMS_ARCH :=  serial
@@ -99,7 +99,7 @@ ifeq ($(SYSTEM), oneAPI)
    FFLAGS_PARALLEL= -DMPI
    FFLAGS_FAST=
    FFLAGS_DEBUG= -O0 -C -pg -g
-   EXTENSION=.sunf95
+   EXTENSION=.oneAPI
 endif
 
 ifeq ($(SYSTEM), AOCC)
@@ -109,7 +109,7 @@ ifeq ($(SYSTEM), AOCC)
    FFLAGS_PARALLEL= -DMPI
    FFLAGS_FAST=
    FFLAGS_DEBUG= -O0 -C -pg -g
-   EXTENSION=.sunf95
+   EXTENSION=.AOCC
 endif
 
 export OMPI_FC   := $(F90_SERIAL)
