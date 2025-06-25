@@ -1084,7 +1084,7 @@ contains
     ! to lowercase characters               !
     !=======================================!
 
-    use od_io, only: io_file_unit, io_error, seedname, options
+    use od_io, only: io_file_unit, io_error, seedname
     use od_algorithms, only: utility_lowercase
 
     implicit none

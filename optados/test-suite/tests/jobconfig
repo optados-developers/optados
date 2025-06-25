@@ -394,9 +394,6 @@ output = Si2_out.ome_fmt
 # Photoemission
 # Wrong inputs:
 #  - leaving out photoemission
-#  TODO:
-#  - setting wrong min > max photon energies
-#  - setting wrong distance of min/max energies
 # Testing the QE matrix file output for correct numbers in mpi
 # MPI gives same result as serial
 # photon_sweep task gives same result as the photoemission task
@@ -422,7 +419,7 @@ max_nprocs = 0
 inputs_args = ('Cu100_5L.odi','')
 output = Cu100_5L.odo
 
-# This tests the performance of the photon sweep vs singular photoemission runs.
+# This tests the performance of the photon sweep but parallelised.
 [testopt_photo_mpi]
 program = OPTADOS_MPI_PHOTO_ODO_OK
 min_nprocs = 2
@@ -430,7 +427,7 @@ nprocs = 2
 inputs_args = ('Cu100_5L.odi','')
 output = Cu100_5L.odo
 
-# This tests the performance of the photon sweep vs singular photoemission runs.
+# This tests the printing of the full QE tensor in a parallelised setup.
 [testopt_photo_mpi_qemat]
 program = OPTADOS_MPI_PHOTO_QEMAT_OK
 min_nprocs = 2

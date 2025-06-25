@@ -4,18 +4,18 @@
 # Still, specifying it helps understanding what the test will compare.
 
 [OPTADOS_ODO_OK]
-exe = ../../optados.x
+exe = ../../optados.x.x86_64
 extract_fn = tools parsers.parse_odo.parse
 #tolerance = ( 1.0e-3, 1.0e-3, 'fermi_fb'))
 
 [OPTADOS_DOS_DAT_OK]
-exe = ../../optados.x
+exe = ../../optados.x.x86_64
 extract_fn = tools parsers.parse_dos_dat.parse
 
 # We can use od2od's general formatted parser to 
 # read a pdos file
 [OPTADOS_GEN_DAT_OK]
-exe = ../../optados.x
+exe = ../../optados.x.x86_64
 extract_fn = tools parsers.parse_od2od_fmt.parse
 
 [OPTADOS_MIZ_OUT_OK]
@@ -31,37 +31,37 @@ exe = ../../od2od
 extract_fn = tools parsers.parse_od2od_fmt.parse
 
 [OPTADOS_PHOTO_ODO_OK]
-exe = ../../optados.x
+exe = ../../optados.x.x86_64
 extract_fn = tools parsers.parse_photo_odo.parse
 tolerance = (1.0e-3, 5.0e-3, 'fermi_lb'),(1e-8,1.0e-6,'qe_bulk'),(1e-8,1.0e-6,'qe_total'),(1E-8,1.0e-6,'mte')
 
 [OPTADOS_PHOTO_ODODBG_OK]
-exe = ../../optados.debug
+exe = ../../optados.debug.x86_64
 extract_fn = tools parsers.parse_photo_odo.parse
 tolerance = (1.0e-3, 5.0e-3, 'fermi_lb'),(1e-8,1.0e-6,'qe_bulk'),(1e-8,1.0e-6,'qe_total'),(1E-8,1.0e-6,'mte')
 
 [OPTADOS_PHOTO_QEMAT_OK]
-exe = ../../optados.x
+exe = ../../optados.x.x86_64
 extract_fn = tools parsers.parse_photo_qemat.parse
 tolerance = (1.0e-3,1.0e-3, "matrix")
 
 [OPTADOS_PHOTO_OPTERR_FAIL]
-exe = ../../optados.x
+exe = ../../optados.x.x86_64
 can_fail = true
 extract_fn = tools parsers.parse_photo_opterr.parse
 
 [OPTADOS_MPI_PHOTO_ODO_OK]
-exe = ../../optados.mpi
+exe = ../../optados.mpi.x86_64
 extract_fn = tools parsers.parse_photo_odo.parse
 tolerance = (1.0e-3, 5.0e-3, 'fermi_lb'),(1e-8,1.0e-6,'qe_bulk'),(1e-8,1.0e-6,'qe_total'),(1E-8,1.0e-6,'mte')
 
 [OPTADOS_MPI_PHOTO_QEMAT_OK]
-exe = ../../optados.mpi
+exe = ../../optados.mpi.x86_64
 extract_fn = tools parsers.parse_photo_qemat.parse
 tolerance = (5.0e-2, 5E-5)
 
 [OPTADOS_MPI_PHOTO_ODO_FAIL]
-exe = ../../optados.mpi
+exe = ../../optados.mpi.x86_64
 can_fail = true
 extract_fn = tools parsers.parse_photo_opterr.parse
 tolerance = (1.0e-3, 5.0e-3, 'fermi_lb'),(2.0e-69,1.0e-3,'qe_bulk'),(2.9e-69,1.0e-3,'qe_total'),(8.5E-4,1.0e-3,'mte')
@@ -72,5 +72,3 @@ tolerance = (1.0e-3, 5.0e-3, 'fermi_lb'),(2.0e-69,1.0e-3,'qe_bulk'),(2.9e-69,1.0
 benchmark = default
 date_fmt = %d%m%Y
 vcs = git
-
-              
