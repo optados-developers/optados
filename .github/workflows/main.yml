@@ -53,7 +53,7 @@ jobs:
           cd optados
           make tools
           make
-          sed -i '0,/.*COMMS_ARCH :=.*/s//COMMS_ARCH :=  mpi/' ${CASE_IN}_submission.sh
+          sed -i '0,/.*COMMS_ARCH :=.*/s//COMMS_ARCH :=  mpi/' make.system
           make
       - name: run tests
         run: |
