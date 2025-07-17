@@ -102,7 +102,7 @@ UK\\
  \thispagestyle{empty}
 
 \begin{centering}
-\vspace*{40mm}
+\vspace*{15mm}
 University of Cambridge, University of Oxford and University College London\\
 \vspace{5mm}
 \copyright\ 2013-2022 A.~J. Morris, R.~J. Nicholls, C.~J. Pickard and J.~R. Yates.\\
@@ -111,6 +111,27 @@ First published 2010\\
 This edition 2019\\
 \vspace{5mm}
 10 9 8 7 6 5 4 3 2 1
+\vspace{5mm}
+
+For the Photoemission Module:\\
+\vspace{2mm}
+Felix Mildner, Victor C. Chang, Bruno Camino, Nicholas M. Harrison\\
+\vspace{4mm}
+Department of Materials\\
+Imperial College London\\
+Royal School of Mines\\
+South Kensington Campus\\
+London SW7 2AZ\\
+UK\\
+\vspace{2mm}
+{\small and} \\
+\vspace{2mm}
+Department of Chemistry\\
+Imperial College London\\
+South Kensington Campus\\
+London SW7 2AZ\\
+UK\\
+
 \vspace{5mm}
 
 Part of this work published in:\\
@@ -922,12 +943,16 @@ The valid options for this parameter are:
 \item[{\bf --}]  \verb#pdispersion#
 \item[{\bf --}]  \verb#optics#
 \item[{\bf --}]  \verb#core#
+\item[{\bf --}]  \verb#photoemission#
+\item[{\bf --}]  \verb#photo_energy_sweep#
 \item[{\bf --}]  \verb#all#
 \end{itemize}
 Several tasks can be specified \emph{e.g.} to compute dos and jdos use
 \verb#task : dos jdos#.
 However, the \verb#compare_dos# and \verb#compare_jdos# tasks can only be combined with each other, and no additional tasks.
 \verb#compare_dos# and \verb#compare_jdos# calculate the DOS and JDOS respectively using all broadening schemes. It is good practice to check the quality of the underlying DOS before other tasks are requested.
+When setting the task to \verb#photoemission#, a photoemission calculation for a single photon energy is performed.
+By choosing \verb#photo_energy_sweep# as range of photon energies can be defined to do a series of photoemission calculations at different photon energies.
 
 \subsection[broadening]{\tt character(len=50) :: broadening}
 

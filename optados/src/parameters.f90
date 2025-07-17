@@ -227,7 +227,7 @@ contains
         elseif (index(task_string(loop), 'none') > 0) then
           dos = .false.; pdos = .false.; jdos = .false.; optics = .false.; core = .false.
         elseif (index(task_string(loop), 'all') > 0) then
-          dos = .true.; pdos = .true.; jdos = .true.; optics = .true.; core = .true.
+          dos = .true.; pdos = .true.; jdos = .true.; optics = .true.; core = .true.; photo = .false.
         else
           call io_error('Error: value of task unrecognised in param_read')
         end if
@@ -447,7 +447,7 @@ contains
     if (photo .and. index(optics_geom, 'tensor') > 0) then
       call io_error('Error: optics_geom tensor requested, but this does not currently work with photoemission')
     end if
-    photo_model = '1step'
+    photo_model = '3step'
     call param_get_keyword('photo_model', found, c_value=photo_model)
     if (index(photo_model, '3step') > 0 .and. index(photo_model, '1step') > 0 .or. &
         index(photo_model, '3step') > 0 .and. index(photo_model, 'ds_like_pe') > 0 .or. &
