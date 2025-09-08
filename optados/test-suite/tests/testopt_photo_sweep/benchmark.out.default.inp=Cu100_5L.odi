@@ -1,4 +1,4 @@
- OptaDOS: Execution started on 17 Jun 2025 at 17:44:38 
+ OptaDOS: Execution started on 29 Aug 2025 at 17:43:29 
           Parallelised over    1 thread(s)
 
  +===========================================================================+
@@ -68,6 +68,7 @@
  |  Work Function              (eV)           :     4.2202                    |
  |  Slab Max Z-Coord.          (Ang)          :    18.2820                    |
  |  Slab Min Z-Coord.          (Ang)          :     7.5590                    |
+ |  Slab middle and layers will be inferred from boundaries, check geometry!  |
  |  IMFP Constant              (Ang)          :     5.3000                    |
  |  Bulk cutoff dist. (int. multiple of IMFP) :    10.0                       |
  |  Electric Field Strength    (V/Ang)        :     0.0000                    |
@@ -77,7 +78,7 @@
  |  Theta    - max -           (deg)          :    90.00                      |
  |  Phi      - min -           (deg)          :     0.00                      |
  |  Phi      - max -           (deg)          :    90.00                      |
- |  Binding Energy Broad. Width (eV)          :     0.0257                    |
+ |  Binding Energy Broad. Width (eV)          :     0.0129                    |
  +----------------------------------------------------------------------------+
   
  +----------------------------------------------------------------------------+
@@ -125,7 +126,7 @@
  |  Max number of atoms:           3    Total number of boxes:            3   |
  |  Volume of box for layer selection (Ang^3) :                 12.00706      |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.0000 eV ---------------+
+ +------------------ Starting Photoemission with  4.0000 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -153,7 +154,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.0100 eV ---------------+
+ +------------------ Starting Photoemission with  4.0100 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -181,7 +182,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.0200 eV ---------------+
+ +------------------ Starting Photoemission with  4.0200 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -209,7 +210,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.0300 eV ---------------+
+ +------------------ Starting Photoemission with  4.0300 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -237,7 +238,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.0400 eV ---------------+
+ +------------------ Starting Photoemission with  4.0400 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -265,7 +266,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.0500 eV ---------------+
+ +------------------ Starting Photoemission with  4.0500 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -293,7 +294,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.0600 eV ---------------+
+ +------------------ Starting Photoemission with  4.0600 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -321,7 +322,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.0700 eV ---------------+
+ +------------------ Starting Photoemission with  4.0700 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -349,7 +350,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.0800 eV ---------------+
+ +------------------ Starting Photoemission with  4.0800 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -377,7 +378,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.0900 eV ---------------+
+ +------------------ Starting Photoemission with  4.0900 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -405,7 +406,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.1000 eV ---------------+
+ +------------------ Starting Photoemission with  4.1000 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -433,7 +434,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.1100 eV ---------------+
+ +------------------ Starting Photoemission with  4.1100 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -461,7 +462,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.1200 eV ---------------+
+ +------------------ Starting Photoemission with  4.1200 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -489,7 +490,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.1300 eV ---------------+
+ +------------------ Starting Photoemission with  4.1300 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -517,7 +518,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.1400 eV ---------------+
+ +------------------ Starting Photoemission with  4.1400 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -545,7 +546,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.1500 eV ---------------+
+ +------------------ Starting Photoemission with  4.1500 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -573,7 +574,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.1600 eV ---------------+
+ +------------------ Starting Photoemission with  4.1600 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -601,7 +602,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.1700 eV ---------------+
+ +------------------ Starting Photoemission with  4.1700 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -629,7 +630,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.1800 eV ---------------+
+ +------------------ Starting Photoemission with  4.1800 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -657,7 +658,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.1900 eV ---------------+
+ +------------------ Starting Photoemission with  4.1900 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -685,7 +686,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.2000 eV ---------------+
+ +------------------ Starting Photoemission with  4.2000 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -713,7 +714,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.2100 eV ---------------+
+ +------------------ Starting Photoemission with  4.2100 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -741,7 +742,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.2200 eV ---------------+
+ +------------------ Starting Photoemission with  4.2200 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -769,7 +770,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.2300 eV ---------------+
+ +------------------ Starting Photoemission with  4.2300 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -797,7 +798,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.2400 eV ---------------+
+ +------------------ Starting Photoemission with  4.2400 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -825,7 +826,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.2500 eV ---------------+
+ +------------------ Starting Photoemission with  4.2500 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -853,7 +854,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.2600 eV ---------------+
+ +------------------ Starting Photoemission with  4.2600 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -881,7 +882,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.2700 eV ---------------+
+ +------------------ Starting Photoemission with  4.2700 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -909,7 +910,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.2800 eV ---------------+
+ +------------------ Starting Photoemission with  4.2800 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -937,7 +938,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.2900 eV ---------------+
+ +------------------ Starting Photoemission with  4.2900 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -965,7 +966,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.3000 eV ---------------+
+ +------------------ Starting Photoemission with  4.3000 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -993,7 +994,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.3100 eV ---------------+
+ +------------------ Starting Photoemission with  4.3100 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -1021,7 +1022,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.3200 eV ---------------+
+ +------------------ Starting Photoemission with  4.3200 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -1049,7 +1050,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.3300 eV ---------------+
+ +------------------ Starting Photoemission with  4.3300 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -1077,7 +1078,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.3400 eV ---------------+
+ +------------------ Starting Photoemission with  4.3400 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -1105,7 +1106,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.3500 eV ---------------+
+ +------------------ Starting Photoemission with  4.3500 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -1133,7 +1134,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.3600 eV ---------------+
+ +------------------ Starting Photoemission with  4.3600 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -1161,7 +1162,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.3700 eV ---------------+
+ +------------------ Starting Photoemission with  4.3700 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -1189,7 +1190,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.3800 eV ---------------+
+ +------------------ Starting Photoemission with  4.3800 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -1217,7 +1218,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.3900 eV ---------------+
+ +------------------ Starting Photoemission with  4.3900 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -1245,7 +1246,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.4000 eV ---------------+
+ +------------------ Starting Photoemission with  4.4000 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -1273,7 +1274,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.4100 eV ---------------+
+ +------------------ Starting Photoemission with  4.4100 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -1301,7 +1302,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.4200 eV ---------------+
+ +------------------ Starting Photoemission with  4.4200 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -1329,7 +1330,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.4300 eV ---------------+
+ +------------------ Starting Photoemission with  4.4300 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -1357,7 +1358,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.4400 eV ---------------+
+ +------------------ Starting Photoemission with  4.4400 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -1385,7 +1386,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.4500 eV ---------------+
+ +------------------ Starting Photoemission with  4.4500 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -1413,7 +1414,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.4600 eV ---------------+
+ +------------------ Starting Photoemission with  4.4600 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -1441,7 +1442,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.4700 eV ---------------+
+ +------------------ Starting Photoemission with  4.4700 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -1469,7 +1470,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.4800 eV ---------------+
+ +------------------ Starting Photoemission with  4.4800 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -1497,7 +1498,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.4900 eV ---------------+
+ +------------------ Starting Photoemission with  4.4900 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -1525,7 +1526,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.5000 eV ---------------+
+ +------------------ Starting Photoemission with  4.5000 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -1553,7 +1554,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.5100 eV ---------------+
+ +------------------ Starting Photoemission with  4.5100 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -1581,7 +1582,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.5200 eV ---------------+
+ +------------------ Starting Photoemission with  4.5200 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -1609,7 +1610,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.5300 eV ---------------+
+ +------------------ Starting Photoemission with  4.5300 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -1637,7 +1638,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.5400 eV ---------------+
+ +------------------ Starting Photoemission with  4.5400 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -1665,7 +1666,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.5500 eV ---------------+
+ +------------------ Starting Photoemission with  4.5500 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -1693,7 +1694,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.5600 eV ---------------+
+ +------------------ Starting Photoemission with  4.5600 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -1721,7 +1722,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.5700 eV ---------------+
+ +------------------ Starting Photoemission with  4.5700 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -1749,7 +1750,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.5800 eV ---------------+
+ +------------------ Starting Photoemission with  4.5800 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -1777,7 +1778,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.5900 eV ---------------+
+ +------------------ Starting Photoemission with  4.5900 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -1805,7 +1806,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.6000 eV ---------------+
+ +------------------ Starting Photoemission with  4.6000 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -1833,7 +1834,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.6100 eV ---------------+
+ +------------------ Starting Photoemission with  4.6100 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -1861,7 +1862,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.6200 eV ---------------+
+ +------------------ Starting Photoemission with  4.6200 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -1889,7 +1890,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.6300 eV ---------------+
+ +------------------ Starting Photoemission with  4.6300 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -1917,7 +1918,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.6400 eV ---------------+
+ +------------------ Starting Photoemission with  4.6400 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -1945,7 +1946,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.6500 eV ---------------+
+ +------------------ Starting Photoemission with  4.6500 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -1973,7 +1974,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.6600 eV ---------------+
+ +------------------ Starting Photoemission with  4.6600 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -2001,7 +2002,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.6700 eV ---------------+
+ +------------------ Starting Photoemission with  4.6700 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -2029,7 +2030,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.6800 eV ---------------+
+ +------------------ Starting Photoemission with  4.6800 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -2057,7 +2058,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.6900 eV ---------------+
+ +------------------ Starting Photoemission with  4.6900 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -2085,7 +2086,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.7000 eV ---------------+
+ +------------------ Starting Photoemission with  4.7000 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -2113,7 +2114,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.7100 eV ---------------+
+ +------------------ Starting Photoemission with  4.7100 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -2141,7 +2142,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.7200 eV ---------------+
+ +------------------ Starting Photoemission with  4.7200 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -2169,7 +2170,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.7300 eV ---------------+
+ +------------------ Starting Photoemission with  4.7300 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -2197,7 +2198,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.7400 eV ---------------+
+ +------------------ Starting Photoemission with  4.7400 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -2225,7 +2226,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.7500 eV ---------------+
+ +------------------ Starting Photoemission with  4.7500 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -2253,7 +2254,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.7600 eV ---------------+
+ +------------------ Starting Photoemission with  4.7600 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -2281,7 +2282,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.7700 eV ---------------+
+ +------------------ Starting Photoemission with  4.7700 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -2309,7 +2310,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.7800 eV ---------------+
+ +------------------ Starting Photoemission with  4.7800 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -2337,7 +2338,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.7900 eV ---------------+
+ +------------------ Starting Photoemission with  4.7900 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -2365,7 +2366,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.8000 eV ---------------+
+ +------------------ Starting Photoemission with  4.8000 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -2393,7 +2394,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.8100 eV ---------------+
+ +------------------ Starting Photoemission with  4.8100 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -2421,7 +2422,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.8200 eV ---------------+
+ +------------------ Starting Photoemission with  4.8200 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -2449,7 +2450,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.8300 eV ---------------+
+ +------------------ Starting Photoemission with  4.8300 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -2477,7 +2478,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.8400 eV ---------------+
+ +------------------ Starting Photoemission with  4.8400 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -2505,7 +2506,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.8500 eV ---------------+
+ +------------------ Starting Photoemission with  4.8500 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -2533,7 +2534,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.8600 eV ---------------+
+ +------------------ Starting Photoemission with  4.8600 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -2561,7 +2562,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.8700 eV ---------------+
+ +------------------ Starting Photoemission with  4.8700 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -2589,7 +2590,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.8800 eV ---------------+
+ +------------------ Starting Photoemission with  4.8800 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -2617,7 +2618,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.8900 eV ---------------+
+ +------------------ Starting Photoemission with  4.8900 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -2645,7 +2646,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.9000 eV ---------------+
+ +------------------ Starting Photoemission with  4.9000 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -2673,7 +2674,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.9100 eV ---------------+
+ +------------------ Starting Photoemission with  4.9100 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -2701,7 +2702,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.9200 eV ---------------+
+ +------------------ Starting Photoemission with  4.9200 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -2729,7 +2730,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.9300 eV ---------------+
+ +------------------ Starting Photoemission with  4.9300 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -2757,7 +2758,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.9400 eV ---------------+
+ +------------------ Starting Photoemission with  4.9400 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -2785,7 +2786,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.9500 eV ---------------+
+ +------------------ Starting Photoemission with  4.9500 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -2813,7 +2814,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.9600 eV ---------------+
+ +------------------ Starting Photoemission with  4.9600 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -2841,7 +2842,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.9700 eV ---------------+
+ +------------------ Starting Photoemission with  4.9700 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -2869,7 +2870,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.9800 eV ---------------+
+ +------------------ Starting Photoemission with  4.9800 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -2897,7 +2898,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  4.9900 eV ---------------+
+ +------------------ Starting Photoemission with  4.9900 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -2925,7 +2926,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.0000 eV ---------------+
+ +------------------ Starting Photoemission with  5.0000 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -2953,7 +2954,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.0100 eV ---------------+
+ +------------------ Starting Photoemission with  5.0100 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -2981,7 +2982,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.0200 eV ---------------+
+ +------------------ Starting Photoemission with  5.0200 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -3009,7 +3010,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.0300 eV ---------------+
+ +------------------ Starting Photoemission with  5.0300 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -3037,7 +3038,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.0400 eV ---------------+
+ +------------------ Starting Photoemission with  5.0400 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -3065,7 +3066,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.0500 eV ---------------+
+ +------------------ Starting Photoemission with  5.0500 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -3093,7 +3094,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.0600 eV ---------------+
+ +------------------ Starting Photoemission with  5.0600 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -3121,7 +3122,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.0700 eV ---------------+
+ +------------------ Starting Photoemission with  5.0700 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -3149,7 +3150,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.0800 eV ---------------+
+ +------------------ Starting Photoemission with  5.0800 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -3177,7 +3178,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.0900 eV ---------------+
+ +------------------ Starting Photoemission with  5.0900 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -3205,7 +3206,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.1000 eV ---------------+
+ +------------------ Starting Photoemission with  5.1000 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -3233,7 +3234,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.1100 eV ---------------+
+ +------------------ Starting Photoemission with  5.1100 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -3261,7 +3262,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.1200 eV ---------------+
+ +------------------ Starting Photoemission with  5.1200 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -3289,7 +3290,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.1300 eV ---------------+
+ +------------------ Starting Photoemission with  5.1300 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -3317,7 +3318,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.1400 eV ---------------+
+ +------------------ Starting Photoemission with  5.1400 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -3345,7 +3346,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.1500 eV ---------------+
+ +------------------ Starting Photoemission with  5.1500 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -3373,7 +3374,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.1600 eV ---------------+
+ +------------------ Starting Photoemission with  5.1600 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -3401,7 +3402,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.1700 eV ---------------+
+ +------------------ Starting Photoemission with  5.1700 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -3429,7 +3430,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.1800 eV ---------------+
+ +------------------ Starting Photoemission with  5.1800 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -3457,7 +3458,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.1900 eV ---------------+
+ +------------------ Starting Photoemission with  5.1900 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -3485,7 +3486,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.2000 eV ---------------+
+ +------------------ Starting Photoemission with  5.2000 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -3513,7 +3514,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.2100 eV ---------------+
+ +------------------ Starting Photoemission with  5.2100 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -3541,7 +3542,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.2200 eV ---------------+
+ +------------------ Starting Photoemission with  5.2200 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -3569,7 +3570,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.2300 eV ---------------+
+ +------------------ Starting Photoemission with  5.2300 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -3597,7 +3598,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.2400 eV ---------------+
+ +------------------ Starting Photoemission with  5.2400 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -3625,7 +3626,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.2500 eV ---------------+
+ +------------------ Starting Photoemission with  5.2500 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -3653,7 +3654,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.2600 eV ---------------+
+ +------------------ Starting Photoemission with  5.2600 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -3681,7 +3682,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.2700 eV ---------------+
+ +------------------ Starting Photoemission with  5.2700 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -3709,7 +3710,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.2800 eV ---------------+
+ +------------------ Starting Photoemission with  5.2800 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -3737,7 +3738,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.2900 eV ---------------+
+ +------------------ Starting Photoemission with  5.2900 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -3765,7 +3766,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.3000 eV ---------------+
+ +------------------ Starting Photoemission with  5.3000 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -3793,7 +3794,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.3100 eV ---------------+
+ +------------------ Starting Photoemission with  5.3100 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -3821,7 +3822,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.3200 eV ---------------+
+ +------------------ Starting Photoemission with  5.3200 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -3849,7 +3850,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.3300 eV ---------------+
+ +------------------ Starting Photoemission with  5.3300 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -3877,7 +3878,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.3400 eV ---------------+
+ +------------------ Starting Photoemission with  5.3400 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -3905,7 +3906,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.3500 eV ---------------+
+ +------------------ Starting Photoemission with  5.3500 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -3933,7 +3934,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.3600 eV ---------------+
+ +------------------ Starting Photoemission with  5.3600 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -3961,7 +3962,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.3700 eV ---------------+
+ +------------------ Starting Photoemission with  5.3700 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -3989,7 +3990,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.3800 eV ---------------+
+ +------------------ Starting Photoemission with  5.3800 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -4017,7 +4018,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.3900 eV ---------------+
+ +------------------ Starting Photoemission with  5.3900 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -4045,7 +4046,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.4000 eV ---------------+
+ +------------------ Starting Photoemission with  5.4000 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -4073,7 +4074,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.4100 eV ---------------+
+ +------------------ Starting Photoemission with  5.4100 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -4101,7 +4102,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.4200 eV ---------------+
+ +------------------ Starting Photoemission with  5.4200 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -4129,7 +4130,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.4300 eV ---------------+
+ +------------------ Starting Photoemission with  5.4300 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -4157,7 +4158,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.4400 eV ---------------+
+ +------------------ Starting Photoemission with  5.4400 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -4185,7 +4186,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.4500 eV ---------------+
+ +------------------ Starting Photoemission with  5.4500 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -4213,7 +4214,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.4600 eV ---------------+
+ +------------------ Starting Photoemission with  5.4600 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -4241,7 +4242,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.4700 eV ---------------+
+ +------------------ Starting Photoemission with  5.4700 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -4262,14 +4263,14 @@
  | Final State : Bloch State                                                  |
  +----------------------------------------------------------------------------+
  | Atom |  Atom Order  |   Layer   |             Quantum Efficiency           |
- |  Cu          1            1                      0.0000E+000               |
- |  Cu          2            2                      0.0000E+000               |
- |  Cu          3            3                      0.0000E+000               |
- | Bulk                                             0.0000E+000               |
- | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
+ |  Cu          1            1                      0.4112E-019               |
+ |  Cu          2            2                      0.2170E-019               |
+ |  Cu          3            3                      0.1496E-019               |
+ | Bulk                                             0.3265E-019               |
+ | Total Quantum Efficiency (electrons/photon):         0.1104E-018           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.4800 eV ---------------+
+ +------------------ Starting Photoemission with  5.4800 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -4290,14 +4291,14 @@
  | Final State : Bloch State                                                  |
  +----------------------------------------------------------------------------+
  | Atom |  Atom Order  |   Layer   |             Quantum Efficiency           |
- |  Cu          1            1                      0.0000E+000               |
- |  Cu          2            2                      0.0000E+000               |
- |  Cu          3            3                      0.0000E+000               |
- | Bulk                                             0.0000E+000               |
- | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
+ |  Cu          1            1                      0.1561E-018               |
+ |  Cu          2            2                      0.8237E-019               |
+ |  Cu          3            3                      0.5678E-019               |
+ | Bulk                                             0.1239E-018               |
+ | Total Quantum Efficiency (electrons/photon):         0.4191E-018           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.4900 eV ---------------+
+ +------------------ Starting Photoemission with  5.4900 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -4318,14 +4319,14 @@
  | Final State : Bloch State                                                  |
  +----------------------------------------------------------------------------+
  | Atom |  Atom Order  |   Layer   |             Quantum Efficiency           |
- |  Cu          1            1                      0.0000E+000               |
- |  Cu          2            2                      0.0000E+000               |
- |  Cu          3            3                      0.0000E+000               |
- | Bulk                                             0.0000E+000               |
- | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
+ |  Cu          1            1                      0.1877E-018               |
+ |  Cu          2            2                      0.9904E-019               |
+ |  Cu          3            3                      0.6827E-019               |
+ | Bulk                                             0.1489E-018               |
+ | Total Quantum Efficiency (electrons/photon):         0.5039E-018           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.5000 eV ---------------+
+ +------------------ Starting Photoemission with  5.5000 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -4346,14 +4347,14 @@
  | Final State : Bloch State                                                  |
  +----------------------------------------------------------------------------+
  | Atom |  Atom Order  |   Layer   |             Quantum Efficiency           |
- |  Cu          1            1                      0.0000E+000               |
- |  Cu          2            2                      0.0000E+000               |
- |  Cu          3            3                      0.0000E+000               |
- | Bulk                                             0.0000E+000               |
- | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
+ |  Cu          1            1                      0.7149E-019               |
+ |  Cu          2            2                      0.3772E-019               |
+ |  Cu          3            3                      0.2600E-019               |
+ | Bulk                                             0.5669E-019               |
+ | Total Quantum Efficiency (electrons/photon):         0.1919E-018           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.5100 eV ---------------+
+ +------------------ Starting Photoemission with  5.5100 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -4374,14 +4375,14 @@
  | Final State : Bloch State                                                  |
  +----------------------------------------------------------------------------+
  | Atom |  Atom Order  |   Layer   |             Quantum Efficiency           |
- |  Cu          1            1                      0.0000E+000               |
- |  Cu          2            2                      0.0000E+000               |
- |  Cu          3            3                      0.0000E+000               |
- | Bulk                                             0.0000E+000               |
- | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
+ |  Cu          1            1                      0.8625E-020               |
+ |  Cu          2            2                      0.4551E-020               |
+ |  Cu          3            3                      0.3137E-020               |
+ | Bulk                                             0.6836E-020               |
+ | Total Quantum Efficiency (electrons/photon):         0.2315E-019           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.5200 eV ---------------+
+ +------------------ Starting Photoemission with  5.5200 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -4402,14 +4403,14 @@
  | Final State : Bloch State                                                  |
  +----------------------------------------------------------------------------+
  | Atom |  Atom Order  |   Layer   |             Quantum Efficiency           |
- |  Cu          1            1                      0.0000E+000               |
- |  Cu          2            2                      0.0000E+000               |
- |  Cu          3            3                      0.0000E+000               |
- | Bulk                                             0.0000E+000               |
- | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
+ |  Cu          1            1                      0.3296E-021               |
+ |  Cu          2            2                      0.1739E-021               |
+ |  Cu          3            3                      0.1199E-021               |
+ | Bulk                                             0.2611E-021               |
+ | Total Quantum Efficiency (electrons/photon):         0.8845E-021           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.5300 eV ---------------+
+ +------------------ Starting Photoemission with  5.5300 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -4430,14 +4431,14 @@
  | Final State : Bloch State                                                  |
  +----------------------------------------------------------------------------+
  | Atom |  Atom Order  |   Layer   |             Quantum Efficiency           |
- |  Cu          1            1                      0.0000E+000               |
- |  Cu          2            2                      0.0000E+000               |
- |  Cu          3            3                      0.0000E+000               |
- | Bulk                                             0.0000E+000               |
- | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
+ |  Cu          1            1                      0.3991E-023               |
+ |  Cu          2            2                      0.2105E-023               |
+ |  Cu          3            3                      0.1451E-023               |
+ | Bulk                                             0.3160E-023               |
+ | Total Quantum Efficiency (electrons/photon):         0.1071E-022           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.5400 eV ---------------+
+ +------------------ Starting Photoemission with  5.5400 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -4465,7 +4466,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.5500 eV ---------------+
+ +------------------ Starting Photoemission with  5.5500 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -4493,7 +4494,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.5600 eV ---------------+
+ +------------------ Starting Photoemission with  5.5600 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -4521,7 +4522,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.5700 eV ---------------+
+ +------------------ Starting Photoemission with  5.5700 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -4549,7 +4550,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.5800 eV ---------------+
+ +------------------ Starting Photoemission with  5.5800 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -4570,14 +4571,14 @@
  | Final State : Bloch State                                                  |
  +----------------------------------------------------------------------------+
  | Atom |  Atom Order  |   Layer   |             Quantum Efficiency           |
- |  Cu          1            1                      0.0000E+000               |
- |  Cu          2            2                      0.0000E+000               |
- |  Cu          3            3                      0.0000E+000               |
- | Bulk                                             0.0000E+000               |
- | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
+ |  Cu          1            1                      0.4640E-025               |
+ |  Cu          2            2                      0.6072E-026               |
+ |  Cu          3            3                      0.1599E-026               |
+ | Bulk                                             0.3477E-026               |
+ | Total Quantum Efficiency (electrons/photon):         0.5755E-025           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.5900 eV ---------------+
+ +------------------ Starting Photoemission with  5.5900 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -4598,14 +4599,14 @@
  | Final State : Bloch State                                                  |
  +----------------------------------------------------------------------------+
  | Atom |  Atom Order  |   Layer   |             Quantum Efficiency           |
- |  Cu          1            1                      0.0000E+000               |
- |  Cu          2            2                      0.0000E+000               |
- |  Cu          3            3                      0.0000E+000               |
- | Bulk                                             0.0000E+000               |
- | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
+ |  Cu          1            1                      0.2871E-024               |
+ |  Cu          2            2                      0.3484E-025               |
+ |  Cu          3            3                      0.7245E-026               |
+ | Bulk                                             0.1575E-025               |
+ | Total Quantum Efficiency (electrons/photon):         0.3449E-024           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.6000 eV ---------------+
+ +------------------ Starting Photoemission with  5.6000 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -4626,14 +4627,14 @@
  | Final State : Bloch State                                                  |
  +----------------------------------------------------------------------------+
  | Atom |  Atom Order  |   Layer   |             Quantum Efficiency           |
- |  Cu          1            1                      0.0000E+000               |
- |  Cu          2            2                      0.0000E+000               |
- |  Cu          3            3                      0.0000E+000               |
- | Bulk                                             0.0000E+000               |
- | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
+ |  Cu          1            1                      0.6952E-024               |
+ |  Cu          2            2                      0.7698E-025               |
+ |  Cu          3            3                      0.1035E-025               |
+ | Bulk                                             0.2251E-025               |
+ | Total Quantum Efficiency (electrons/photon):         0.8050E-024           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.6100 eV ---------------+
+ +------------------ Starting Photoemission with  5.6100 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -4654,14 +4655,14 @@
  | Final State : Bloch State                                                  |
  +----------------------------------------------------------------------------+
  | Atom |  Atom Order  |   Layer   |             Quantum Efficiency           |
- |  Cu          1            1                      0.0000E+000               |
- |  Cu          2            2                      0.0000E+000               |
- |  Cu          3            3                      0.0000E+000               |
- | Bulk                                             0.0000E+000               |
- | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
+ |  Cu          1            1                      0.7642E-024               |
+ |  Cu          2            2                      0.7763E-025               |
+ |  Cu          3            3                      0.4598E-026               |
+ | Bulk                                             0.9997E-026               |
+ | Total Quantum Efficiency (electrons/photon):         0.8564E-024           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.6200 eV ---------------+
+ +------------------ Starting Photoemission with  5.6200 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -4682,14 +4683,14 @@
  | Final State : Bloch State                                                  |
  +----------------------------------------------------------------------------+
  | Atom |  Atom Order  |   Layer   |             Quantum Efficiency           |
- |  Cu          1            1                      0.0000E+000               |
- |  Cu          2            2                      0.0000E+000               |
- |  Cu          3            3                      0.0000E+000               |
- | Bulk                                             0.0000E+000               |
- | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
+ |  Cu          1            1                      0.3366E-024               |
+ |  Cu          2            2                      0.3278E-025               |
+ |  Cu          3            3                      0.6445E-027               |
+ | Bulk                                             0.1401E-026               |
+ | Total Quantum Efficiency (electrons/photon):         0.3715E-024           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.6300 eV ---------------+
+ +------------------ Starting Photoemission with  5.6300 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -4710,14 +4711,14 @@
  | Final State : Bloch State                                                  |
  +----------------------------------------------------------------------------+
  | Atom |  Atom Order  |   Layer   |             Quantum Efficiency           |
- |  Cu          1            1                      0.0000E+000               |
- |  Cu          2            2                      0.0000E+000               |
- |  Cu          3            3                      0.0000E+000               |
- | Bulk                                             0.0000E+000               |
- | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
+ |  Cu          1            1                      0.5866E-016               |
+ |  Cu          2            2                      0.1271E-016               |
+ |  Cu          3            3                      0.7179E-019               |
+ | Bulk                                             0.1561E-018               |
+ | Total Quantum Efficiency (electrons/photon):         0.7160E-016           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.6400 eV ---------------+
+ +------------------ Starting Photoemission with  5.6400 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -4738,14 +4739,14 @@
  | Final State : Bloch State                                                  |
  +----------------------------------------------------------------------------+
  | Atom |  Atom Order  |   Layer   |             Quantum Efficiency           |
- |  Cu          1            1                      0.0000E+000               |
- |  Cu          2            2                      0.0000E+000               |
- |  Cu          3            3                      0.0000E+000               |
- | Bulk                                             0.0000E+000               |
- | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
+ |  Cu          1            1                      0.1681E-015               |
+ |  Cu          2            2                      0.3642E-016               |
+ |  Cu          3            3                      0.2057E-018               |
+ | Bulk                                             0.4473E-018               |
+ | Total Quantum Efficiency (electrons/photon):         0.2051E-015           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.6500 eV ---------------+
+ +------------------ Starting Photoemission with  5.6500 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -4766,14 +4767,14 @@
  | Final State : Bloch State                                                  |
  +----------------------------------------------------------------------------+
  | Atom |  Atom Order  |   Layer   |             Quantum Efficiency           |
- |  Cu          1            1                      0.0000E+000               |
- |  Cu          2            2                      0.0000E+000               |
- |  Cu          3            3                      0.0000E+000               |
- | Bulk                                             0.0000E+000               |
- | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
+ |  Cu          1            1                      0.1523E-015               |
+ |  Cu          2            2                      0.3301E-016               |
+ |  Cu          3            3                      0.1864E-018               |
+ | Bulk                                             0.4054E-018               |
+ | Total Quantum Efficiency (electrons/photon):         0.1859E-015           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.6600 eV ---------------+
+ +------------------ Starting Photoemission with  5.6600 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -4794,14 +4795,14 @@
  | Final State : Bloch State                                                  |
  +----------------------------------------------------------------------------+
  | Atom |  Atom Order  |   Layer   |             Quantum Efficiency           |
- |  Cu          1            1                      0.0000E+000               |
- |  Cu          2            2                      0.0000E+000               |
- |  Cu          3            3                      0.0000E+000               |
- | Bulk                                             0.0000E+000               |
- | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
+ |  Cu          1            1                      0.4355E-016               |
+ |  Cu          2            2                      0.9440E-017               |
+ |  Cu          3            3                      0.5331E-019               |
+ | Bulk                                             0.1159E-018               |
+ | Total Quantum Efficiency (electrons/photon):         0.5316E-016           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.6700 eV ---------------+
+ +------------------ Starting Photoemission with  5.6700 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -4822,14 +4823,14 @@
  | Final State : Bloch State                                                  |
  +----------------------------------------------------------------------------+
  | Atom |  Atom Order  |   Layer   |             Quantum Efficiency           |
- |  Cu          1            1                      0.0000E+000               |
- |  Cu          2            2                      0.0000E+000               |
- |  Cu          3            3                      0.0000E+000               |
- | Bulk                                             0.0000E+000               |
- | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
+ |  Cu          1            1                      0.3938E-017               |
+ |  Cu          2            2                      0.8536E-018               |
+ |  Cu          3            3                      0.4821E-020               |
+ | Bulk                                             0.1048E-019               |
+ | Total Quantum Efficiency (electrons/photon):         0.4807E-017           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.6800 eV ---------------+
+ +------------------ Starting Photoemission with  5.6800 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -4850,14 +4851,14 @@
  | Final State : Bloch State                                                  |
  +----------------------------------------------------------------------------+
  | Atom |  Atom Order  |   Layer   |             Quantum Efficiency           |
- |  Cu          1            1                      0.0000E+000               |
- |  Cu          2            2                      0.0000E+000               |
- |  Cu          3            3                      0.0000E+000               |
- | Bulk                                             0.0000E+000               |
- | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
+ |  Cu          1            1                      0.1127E-018               |
+ |  Cu          2            2                      0.2443E-019               |
+ |  Cu          3            3                      0.1380E-021               |
+ | Bulk                                             0.3001E-021               |
+ | Total Quantum Efficiency (electrons/photon):         0.1376E-018           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.6900 eV ---------------+
+ +------------------ Starting Photoemission with  5.6900 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -4878,14 +4879,14 @@
  | Final State : Bloch State                                                  |
  +----------------------------------------------------------------------------+
  | Atom |  Atom Order  |   Layer   |             Quantum Efficiency           |
- |  Cu          1            1                      0.0000E+000               |
- |  Cu          2            2                      0.0000E+000               |
- |  Cu          3            3                      0.0000E+000               |
- | Bulk                                             0.0000E+000               |
- | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
+ |  Cu          1            1                      0.9146E-018               |
+ |  Cu          2            2                      0.1982E-018               |
+ |  Cu          3            3                      0.1120E-020               |
+ | Bulk                                             0.2435E-020               |
+ | Total Quantum Efficiency (electrons/photon):         0.1116E-017           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.7000 eV ---------------+
+ +------------------ Starting Photoemission with  5.7000 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -4913,7 +4914,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.7100 eV ---------------+
+ +------------------ Starting Photoemission with  5.7100 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -4941,7 +4942,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.7200 eV ---------------+
+ +------------------ Starting Photoemission with  5.7200 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -4969,7 +4970,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.7300 eV ---------------+
+ +------------------ Starting Photoemission with  5.7300 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -4997,7 +4998,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.7400 eV ---------------+
+ +------------------ Starting Photoemission with  5.7400 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -5025,7 +5026,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.7500 eV ---------------+
+ +------------------ Starting Photoemission with  5.7500 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -5053,7 +5054,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.7600 eV ---------------+
+ +------------------ Starting Photoemission with  5.7600 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -5081,7 +5082,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.7700 eV ---------------+
+ +------------------ Starting Photoemission with  5.7700 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -5109,7 +5110,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.7800 eV ---------------+
+ +------------------ Starting Photoemission with  5.7800 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -5137,7 +5138,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.7900 eV ---------------+
+ +------------------ Starting Photoemission with  5.7900 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -5165,7 +5166,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.8000 eV ---------------+
+ +------------------ Starting Photoemission with  5.8000 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -5193,7 +5194,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.8100 eV ---------------+
+ +------------------ Starting Photoemission with  5.8100 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -5221,7 +5222,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.0000E+000           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.8200 eV ---------------+
+ +------------------ Starting Photoemission with  5.8200 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -5249,7 +5250,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.2142E-012           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.8300 eV ---------------+
+ +------------------ Starting Photoemission with  5.8300 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -5277,7 +5278,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.1368E-009           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.8400 eV ---------------+
+ +------------------ Starting Photoemission with  5.8400 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -5305,7 +5306,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.3223E-007           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.8500 eV ---------------+
+ +------------------ Starting Photoemission with  5.8500 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -5333,7 +5334,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.2802E-005           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.8600 eV ---------------+
+ +------------------ Starting Photoemission with  5.8600 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -5361,7 +5362,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.9000E-004           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.8700 eV ---------------+
+ +------------------ Starting Photoemission with  5.8700 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -5389,7 +5390,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.1048E-002           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.8800 eV ---------------+
+ +------------------ Starting Photoemission with  5.8800 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -5417,7 +5418,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.4195E-002           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.8900 eV ---------------+
+ +------------------ Starting Photoemission with  5.8900 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -5445,7 +5446,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.6035E-002           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.9000 eV ---------------+
+ +------------------ Starting Photoemission with  5.9000 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -5473,7 +5474,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.3395E-002           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.9100 eV ---------------+
+ +------------------ Starting Photoemission with  5.9100 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -5501,7 +5502,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.7408E-003           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.9200 eV ---------------+
+ +------------------ Starting Photoemission with  5.9200 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -5529,7 +5530,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.6063E-004           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.9300 eV ---------------+
+ +------------------ Starting Photoemission with  5.9300 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -5557,7 +5558,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.1795E-005           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.9400 eV ---------------+
+ +------------------ Starting Photoemission with  5.9400 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -5585,7 +5586,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.1795E-005           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.9500 eV ---------------+
+ +------------------ Starting Photoemission with  5.9500 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -5613,7 +5614,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.7626E-010           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.9600 eV ---------------+
+ +------------------ Starting Photoemission with  5.9600 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -5641,7 +5642,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.1108E-012           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.9700 eV ---------------+
+ +------------------ Starting Photoemission with  5.9700 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -5669,7 +5670,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.1367E-013           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.9800 eV ---------------+
+ +------------------ Starting Photoemission with  5.9800 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -5697,7 +5698,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.1910E-012           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  5.9900 eV ---------------+
+ +------------------ Starting Photoemission with  5.9900 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -5725,7 +5726,7 @@
  | Total Quantum Efficiency (electrons/photon):         0.1034E-011           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
- +--------------- Starting Photoemission Sweep with  6.0000 eV ---------------+
+ +------------------ Starting Photoemission with  6.0000 eV ------------------+
  +---------------------- Bulk Approximation Slab Info ------------------------+
  |     Number Bulk layers =    29                                             |
  |     Vol. per layer     =    12.0071                                        |
@@ -5755,9 +5756,9 @@
  +----------------------------------------------------------------------------+
  | End of Photoemission Calculation                                           |
  |                                                                            |
- + Time to calculate Photoemission                                0.315 (sec) +
+ + Time to calculate Photoemission                                0.303 (sec) +
  +============================================================================+
   
   
 
- OptaDOS: Execution complete on 17 Jun 2025 at 17:44:39 
+ OptaDOS: Execution complete on 29 Aug 2025 at 17:43:29 

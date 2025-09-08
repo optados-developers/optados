@@ -131,7 +131,7 @@ module od_electronic
   public :: elec_read_band_curvature
   public :: elec_read_foptical_mat
   public :: elec_read_transmit_prob
-  public :: elec_read_gk_grid_points
+  public :: elec_read_gk_grid
 
   !-------------------------------------------------------------------------!
 
@@ -832,7 +832,7 @@ contains
 102 call io_error('Error: Problem opening tmprob_bin file in read_transmit_probabil')
   end subroutine elec_read_transmit_prob
 
-  subroutine elec_read_gk_grid_points(max_gkgrid)
+  subroutine elec_read_gk_grid()
     !=========================================================================
     ! Read the .gkgrid_bin file containing the contributions from a list of
     ! k + G vectors. These can be used to "unfold" bands into their respective
@@ -860,16 +860,14 @@ contains
         & io_error
     use od_cell, only: num_kpoints_on_node, nkpoints, kpoint_r
     use od_constants, only: bohr2ang, H2eV
-    use od_parameters, only: legacy_file_format, iprint, photo_gk_max_vectors, devel_flag
+    use od_parameters, only: legacy_file_format, iprint, devel_flag
     use od_algorithms, only: algor_dist_array
     implicit none
 
-    integer :: photo_gkgrid_unit, i, gdx, ib, is, ik, inodes, ierr
+    integer :: photo_gkgrid_unit, i, gdx, ib, is, ik, inodes, ierr, max_gkgrid
     real(kind=dp) :: time0, time1, file_version
     real(kind=dp), parameter :: file_ver = 1.0_dp
     character(filename_len) :: gkgrid_filename
-
-    integer, intent(inout) :: max_gkgrid
 
     time0 = io_time()
 
@@ -881,12 +879,14 @@ contains
       if (iprint > 1) write (stdout, '(1x,a)') 'Reading gkgrid contributions from file: '//trim(gkgrid_filename)
       open (unit=photo_gkgrid_unit, file=gkgrid_filename, status="old", form='unformatted', err=102)
       read (photo_gkgrid_unit) file_version
+      read (photo_gkgrid_unit) max_gkgrid
       if ((file_version - file_ver) > 0.001_dp) &
         call io_error('Error: Trying to read newer version of gkgrid_bin file. Update optados!')
       read (photo_gkgrid_unit) photo_gkgrid_file_header
       if (iprint > 1) write (stdout, '(1x,a)') trim(photo_gkgrid_file_header)
     end if
 
+    call comms_bcast(max_gkgrid, 1)
     call algor_dist_array(nkpoints, num_kpoints_on_node)
     allocate (photo_gkgrid(3, max_gkgrid, nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
     if (ierr /= 0) call io_error('Error: Problem allocating photo_gkgrid in elec_read_gk_grid_points')
@@ -927,7 +927,7 @@ contains
     return
 
 102 call io_error('Error: Problem opening gkgrid_bin file in read_gk_grid_points')
-  end subroutine elec_read_gk_grid_points
+  end subroutine elec_read_gk_grid
 
   !=========================================================================
   subroutine elec_read_band_energy !(band_energy,kpoint_r,kpoint_weight)

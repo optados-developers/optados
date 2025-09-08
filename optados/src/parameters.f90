@@ -119,7 +119,7 @@ module od_parameters
   logical, public, save :: LAI_lorentzian
   real(kind=dp), public, save :: core_chemical_shift ! used in conjunction with miz_chemical_shift script in tools
 
-  ! Photoemission parameters - F.Mildner, et al. Jun-2025
+  ! Photoemission parameters - F.Mildner, V.Chang Lee, B.Camino, N.Harrison - until Sep-2025
   character(len=20), public, save :: photo_model
   character(len=90), public, save :: photo_output
   character(len=20), public, save :: photo_momentum
@@ -129,6 +129,9 @@ module od_parameters
   real(kind=dp), public, save :: photo_photon_max
   real(kind=dp), public, save :: photo_slab_min
   real(kind=dp), public, save :: photo_slab_max
+  real(kind=dp), public, save :: photo_slab_middle
+  integer, public, save       :: photo_len_layers_value
+  real(kind=dp), dimension(:), allocatable, public, save :: photo_layers_tops
   real(kind=dp), public, save :: photo_work_function
   real(kind=dp), public, save :: photo_bulk_cutoff
   real(kind=dp), public, save :: photo_temperature
@@ -145,7 +148,6 @@ module od_parameters
   real(kind=dp), public, save :: photo_const_bindenergy_value
   logical, public, save       :: photo_remove_box_states
   logical, public, save       :: photo_use_tmprob
-  integer, public, save       :: photo_gk_max_vectors
 
   real(kind=dp), public, save :: lenconfac
 
@@ -462,7 +464,8 @@ contains
       call io_error('Error: value of momentum not recognised in param_read')
 
     call param_get_keyword('photo_photon_energy', found, r_value=photo_photon_energy)
-    if (found .and. photo_energy_sweep) call io_error('Error: cannot set photon energy for photon energy sweep calculation')
+    if (found .and. photo_energy_sweep) call io_error('Error: cannot set photo_photon_energy for photon energy sweep &
+    & calculation, only photo_photon_min and photo_photon_max')
     if (photo .and. .not. found .and. .not. photo_energy_sweep) &
       call io_error('Error: please set photon energy for photoemission calculation')
 
@@ -488,6 +491,25 @@ contains
     if (photo_slab_max .lt. photo_slab_min) then
       call io_error('Error: the supplied slab_max value is less than the slab_min value!')
     end if
+
+    photo_slab_middle = -1.0_dp
+    call param_get_keyword('photo_slab_middle', found, r_value=photo_slab_middle)
+    if (found .and. photo_slab_middle .lt. 0.0_dp) then
+      call io_error('Error: photo_slab_middle must be a positive value!')
+    end if
+
+    i_temp = 0
+    call param_get_vector_length('photo_layers_tops', found, i_temp)
+    if (photo_slab_middle .lt. 0.0_dp .and. found) then
+      call io_error('Error: the tops of layers must be defined with photo_layers_tops when defining photo_slab_middle!')
+    end if
+
+    photo_len_layers_value = i_temp
+
+    allocate (photo_layers_tops(i_temp), stat=ierr)
+    if (ierr /= 0) call io_error('Error: param_read - allocation failed for photo_layers_tops')
+    call param_get_keyword_vector('photo_layers_tops', found, i_temp, r_value=photo_layers_tops)
+    if (photo_slab_middle .gt. 0.0_dp) photo_slab_max = photo_layers_tops(1)
 
     photo_elec_field = 0.00_dp
     call param_get_keyword('photo_elec_field', found, r_value=photo_elec_field)
@@ -545,11 +567,6 @@ contains
     call param_get_keyword('photo_pmat_bin_width', found, r_value=photo_pmat_bin_width)
     photo_const_bindenergy_value = 0.0_dp
     call param_get_keyword('photo_const_bindenergy_value', found, r_value=photo_const_bindenergy_value)
-    photo_gk_max_vectors = 1
-    call param_get_keyword('photo_gk_max_vectors', found, i_value=photo_gk_max_vectors)
-    if ((photo_gk_max_vectors .gt. 1) .and. (index(photo_momentum, 'gkgrid') .eq. 0)) then
-      call io_error('Error: When choosing a photo_momentum other than gkgrid, photo_gk_max_vectors must = 1')
-    end if
     photo_use_tmprob = .True.
     call param_get_keyword('photo_use_tmprob', found, l_value=photo_use_tmprob)
 
@@ -970,7 +987,7 @@ contains
         write (stdout, '(1x,a78)') '|  Include lifetime and Instrument Broadening:  False                        |'
       end if
     end if
-    ! Added for Photoemission output - F. Mildner, 12/2022
+    ! Added for Photoemission output - F. Mildner, after 12/2022
     if (photo) then
       write (stdout, '(1x,a78)') '+----------------------- PHOTOEMISSION PARAMETERS ---------------------------+'
       if (index(photo_model, '1step') > 0) then
@@ -994,10 +1011,15 @@ contains
         write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Photon Energy              (eV)           :', photo_photon_energy, '|'
       end if
       write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Work Function              (eV)           :', photo_work_function, '|'
-      ! write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Surface Area               (Ang**2)       :', photo_surface_area, '|'
-      ! write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Slab Volume                (Ang**3)       :', photo_slab_volume, '|'
-      write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Slab Max Z-Coord.          (Ang)          :', photo_slab_max, '|'
-      write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Slab Min Z-Coord.          (Ang)          :', photo_slab_min, '|'
+      if (photo_slab_middle .gt. 0.0_dp) then
+        write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Slab Middle Z-Coord.       (Ang)          :', photo_slab_middle, '|'
+        write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Inferred Slab Max Z-Coord. (Ang)          :', photo_slab_max, '|'
+        write (stdout, '(1x,a78)') '|  User supplied layer boundaries, check geometry and layer #s carefully!    |'
+      else
+        write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Slab Max Z-Coord.          (Ang)          :', photo_slab_max, '|'
+        write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Slab Min Z-Coord.          (Ang)          :', photo_slab_min, '|'
+        write (stdout, '(1x,a78)') '|  Slab middle and layers will be inferred from boundaries, check geometry!  |'
+      end if
       if (index(photo_imfp_choice, 'const') > 0) then
         write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  IMFP Constant              (Ang)          :', photo_imfp_value(1), '|'
       else if (index(photo_imfp_choice, 'layers') > 0) then
@@ -1016,9 +1038,6 @@ contains
       write (stdout, '(1x,a46,5x,a9,17x,a1)') '|  Transverse Momentum Scheme                :', photo_momentum, '|'
       if (photo_remove_box_states) then
         write (stdout, '(1x,a78)') '|  Identify and remove box states            :     True                      |'
-      end if
-      if (index(photo_momentum, 'gkgrid') > 0) then
-        write (stdout, '(1x,a47,1x,1i6,23x,a1)') '| # of G + k Grid Contributions              : ', photo_gk_max_vectors, '|'
       end if
       if (index(photo_output, 'off') == 0 .or. index(photo_output, 'qe_tensor') == 0) then
         write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Theta    - min -           (deg)          :', photo_theta_min, '|'
@@ -1789,6 +1808,13 @@ contains
     call comms_bcast(photo_work_function, 1)
     call comms_bcast(photo_slab_max, 1)
     call comms_bcast(photo_slab_min, 1)
+    call comms_bcast(photo_slab_middle, 1)
+    call comms_bcast(photo_len_layers_value, 1)
+    if (.not. on_root) then
+      allocate (photo_layers_tops(photo_len_layers_value), stat=ierr)
+      if (ierr /= 0) call io_error('Error: param_dist - allocation failed for photo_layers_tops')
+    end if
+    call comms_bcast(photo_layers_tops(1), photo_len_layers_value)
     call comms_bcast(photo_elec_field, 1)
     call comms_bcast(photo_remove_box_states, 1)
     call comms_bcast(photo_len_imfp_value, 1)
@@ -1808,7 +1834,6 @@ contains
     call comms_bcast(photo_bindenergy_broadening, 1)
     call comms_bcast(photo_pmat_bin_width, 1)
     call comms_bcast(photo_const_bindenergy_value, 1)
-    call comms_bcast(photo_gk_max_vectors, 1)
     call comms_bcast(photo_use_tmprob, 1)
 
     call comms_bcast(num_exclude_bands, 1)

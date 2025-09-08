@@ -6,7 +6,7 @@ module od_conv
   use od_electronic, only: elec_read_optical_mat, elec_read_band_gradient, elec_read_elnes_mat,&
        & elec_pdos_read, elec_read_band_energy, omefile_header, domefile_header, pdosfile_header,&
        & elnesfile_header, elec_read_foptical_mat, femfile_header, fem_energy_info, tmprob_file_header, &
-       & elec_read_transmit_prob, photo_gkgrid, photo_gkgrid_file_header, elec_read_gk_grid_points
+       & elec_read_transmit_prob, photo_gkgrid, photo_gkgrid_file_header, elec_read_gk_grid
   use od_parameters, only: iprint
   use od_io, only: stdout, io_error, seedname
   implicit none
@@ -20,8 +20,7 @@ module od_conv
   !! Type of file to convert to.
   character(len=10), save :: format_precision = "es23.10"
   !! Things get messy below 10 s.f. between bin files and fmt files
-  integer :: max_gvec
-  character(len=7), save :: str_gvec
+
 contains
   !=========================================================================
   subroutine print_usage()
@@ -90,9 +89,6 @@ contains
       case ("-w", "--out_seedname")
         i = i + 1
         call get_command_argument(i, outseedname)
-      case ("-gv")
-        i = i + 1
-        call get_command_argument(i, str_gvec)
       case ("--") !! End of flags
         i = i + 1
         call get_command_argument(i, seedname)
@@ -556,17 +552,17 @@ contains
 
     real(dp):: file_version = 1.0_dp          ! File version
     character(len=100):: string
-    integer :: ik, is, ib, i, gdx, ierr, gkgrid_unit = 6
+    integer :: ik, is, ib, i, gdx, ierr, max_gvec, gkgrid_unit = 6
 
     write (stdout, *) " Read a formatted .gkgrid_fmt file. "
 
     open (unit=gkgrid_unit, form='formatted', recl=1073741824, file=trim(seedname)//".gkgrid_fmt")
     read (gkgrid_unit, '('//trim(format_precision)//')') file_version
+    read (gkgrid_unit, '(I6)') max_gvec
 
     read (gkgrid_unit, '(a80)') photo_gkgrid_file_header
-    read (str_gvec, *) max_gvec
     if (.not. allocated(photo_gkgrid)) then
-      write (stdout, *) " Allocating spectral function."
+      write (stdout, *) " Allocating gk grid contributions. --> number of gkgrid elements: ", max_gvec
       allocate (photo_gkgrid(3, max_gvec, nbands, nspins, nkpoints), stat=ierr)
     end if
     ! ! Total number of elements of tmprob
@@ -583,6 +579,8 @@ contains
                                                     ib=1, nbands)
       end do
     end do
+
+    photo_gkgrid(1:2, :, :, :, :) = photo_gkgrid(1:2, :, :, :, :)/bohr2ang
 
     close (unit=gkgrid_unit)
 
@@ -603,7 +601,9 @@ contains
 
     real(dp):: file_version = 1.0_dp          ! File version
     character(len=100):: string
-    integer :: ik, is, ib, i, gdx, gkgrid_unit = 6
+    integer :: ik, is, ib, i, gdx, max_gvec, gkgrid_unit = 6
+
+    max_gvec = size(photo_gkgrid, 2)
 
     write (stdout, *) " Write a formatted .gkgrid file. "
 
@@ -616,7 +616,10 @@ contains
     write (stdout, '(a80)') adjustl(photo_gkgrid_file_header)
 
     write (gkgrid_unit, '('//trim(format_precision)//')') file_version
+    write (gkgrid_unit, '(I6)') max_gvec
     write (gkgrid_unit, '(a80)') adjustl(photo_gkgrid_file_header)
+
+    photo_gkgrid(1:2, :, :, :, :) = photo_gkgrid(1:2, :, :, :, :)*bohr2ang
 
     do ik = 1, nkpoints
       do is = 1, nspins
@@ -635,8 +638,8 @@ contains
     !! Read a binary ome file. Wrapper to keep the naming tidy.
     implicit none
     write (stdout, *) " Read an unformatted gkgrid file. "
-    read (str_gvec, *) max_gvec
-    call elec_read_gk_grid_points(max_gvec)
+    call elec_read_gk_grid()
+    write (stdout, *) "-> number of gk grid elements", size(photo_gkgrid, 2)
     write (stdout, *) " "//trim(seedname)//".gkgrid_bin"//"--> Unformatted gkgrid sucessfully read. "
   end subroutine read_gkgrid_bin
 
@@ -651,16 +654,20 @@ contains
     implicit none
 
     real(dp):: file_version = 1.0_dp          ! File version
-    integer :: ik, is, ib, i, gdx, gkgrid_unit = 6
+    integer :: ik, is, ib, i, gdx, max_gvec, gkgrid_unit = 6
 
     write (stdout, *) " Write a binary gkgrid file."
-
+    max_gvec = size(photo_gkgrid, 2)
     open (unit=gkgrid_unit, form='unformatted', file=trim(outseedname)//".gkgrid_bin")
 
     write (stdout, *) "-> gkgrid file_version ", file_version
+    write (stdout, *) "-> number of gk grid elements", max_gvec
     write (gkgrid_unit) file_version
+    write (gkgrid_unit) max_gvec
     write (stdout, *) "-> gkgrid file_header ", trim(photo_gkgrid_file_header)
     write (gkgrid_unit) adjustl(photo_gkgrid_file_header)
+
+    photo_gkgrid(1:2, :, :, :, :) = photo_gkgrid(1:2, :, :, :, :)*bohr2ang
 
     ! write(0,*) nkpoints, nspins, nbands
     do ik = 1, nkpoints
