@@ -115,7 +115,7 @@ This edition 2019\\
 
 For the Photoemission Module:\\
 \vspace{2mm}
-Felix Mildner, Victor C. Chang, Bruno Camino, Nicholas M. Harrison\\
+Felix Mildner, Victor Chang Lee, Bruno Camino, Nicholas M. Harrison\\
 \vspace{4mm}
 Department of Materials\\
 Imperial College London\\
@@ -537,8 +537,8 @@ The angle $\theta(i,j,\bf{k})$ indicates that electrons that travels with a high
 
 \begin{equation}
 \begin{split}
-    \theta_{int}{(i,j, {\bf{k}},s)} &= acos \frac{E_\parallel(i,{\bf{k}},s)}{E_K(j,{\bf{k}},s)}\\
- \theta_{ext}{(i,j, {\bf{k}},s)} &= acos \frac{E_\parallel(i,{\bf{k}},s)}{E_K(j,{\bf{k}},s)-W}
+\theta_{int}{(i,j, {\bf{k}},s)} &= acos \frac{E_\parallel(i,{\bf{k}},s)}{E_K(j,{\bf{k}},s)+W}\\
+\theta_{ext}{(i,j, {\bf{k}},s)} &= acos \frac{E_\parallel(i,{\bf{k}},s)}{E_K(j,{\bf{k}},s)}
 \end{split}
 \label{theta}
 \end{equation}
@@ -1292,12 +1292,23 @@ If {\tt task = photo\_energy\_sweep} this represents the final energy of the pho
 {\bf ATTENTION} : If setting photo\_photon\_min/max the difference between them has to be an integer multiple (including 0) of {\tt jdos\_spacing}, otherwise OptaDOS will give an error message and terminate.
 
 \subsection[photo\_slab\_min]{\tt real(kind=dp) :: photo\_slab\_min}
-Sets the assumed lower boundary of the material's slab. This value is used to calculate the slab's volume and center. It should be the same distance from the assumed center of the material slab to ensure the slab's center can be reliably found by OptaDOS. This needs to be determined/estimated by the user and could for example be the coordinate of the atom with the lowest z-coordinate plus that atom's vdW-radius.
+Sets the assumed lower boundary of the material's slab in case only the upper and lower limit are given. This value is used to calculate the slab's volume and center. It should be the same distance from the assumed center of the material slab to ensure the slab's center can be reliably found by OptaDOS. This needs to be determined/estimated by the user and could for example be the coordinate of the atom with the lowest z-coordinate plus that atom's vdW-radius.
 
 There is no default value
 
 \subsection[photo\_slab\_max]{\tt real(kind=dp) :: photo\_slab\_max}
-Sets the assumed upper boundary of the material's slab. This value is used to calculate the slab's volume and center. It should be the same distance from the assumed center of the material slab to ensure the slab's center can be reliably found by OptaDOS. This needs to be determined/estimated by the user and could for example be the coordinate of the atom with the highest z-coordinate plus that atom's vdW-radius.
+Sets the assumed upper boundary of the material's slab in case only the upper and lower limit are given. This value is used to calculate the slab's volume and center. It should be the same distance from the assumed center of the material slab to ensure the slab's center can be reliably found by OptaDOS. This needs to be determined/estimated by the user and could for example be the coordinate of the atom with the highest z-coordinate plus that atom's vdW-radius.
+
+There is no default value
+
+\subsection[photo\_slab\_middle]{\tt real(kind=dp) :: photo\_slab\_middle}
+Sets the assumed middle of the slab in the case that the layer boundaries are determined by the user input. When this is set, {\tt photo\_slab\_min} and {\tt photo\_slab\_max} \textbf{cannot} be set and {\tt photo\_layers\_tops} \textbf{must} be set. This value is used to calculate the height of the innermost layer with the last value in the vector of {\tt photo\_layers\_tops}.
+
+There is no default value
+
+\subsection[photo\_layers\_tops]{\tt real(kind=dp) :: photo\_layers\_tops(\#layers)}
+
+This vector sets the assumed top $z$-coordinate for the layers going from the surface towards the middle. Split each value by a space. The first value is inferred to be the slab boundary and each layer that the user wants to include in the calculation needs to be represented in the vector. This makes it possible to calculate the layer heights, layer volumes and atoms in a layer. Some more user input is needed than if {\tt photo\_slab\_min} and {\tt photo\_slab\_max} were set, but there are way less assumptions by the program.
 
 There is no default value
 
@@ -1310,7 +1321,7 @@ There is no default value
 \subsection[photo\_bulk\_cutoff]{\tt real(kind=dp) :: photo\_bulk\_cutoff}
 Sets the multiple of the IMFPs after which to terminate the bulk approximation. The number of layers in the bulk approximation depends on the value(s) set in {\tt photo\_imfp\_value}.
 
-The default value is 10
+The default value is 10.0
 
 \subsection[photo\_elec\_field]{\tt real(kind=dp) :: photo\_elec\_field}
 
@@ -1326,9 +1337,9 @@ The default value is 0.0 \nicefrac{V}{\AA}
 \end{itemize}
 This sets the choice for how to treat the {\tt photo\_imfp\_value} input. For the {\tt const} option a single value is used for all layers in the slab. For the {\tt layers} option each explicit layer must be given a value. The IMFP value for a specific layer is calculated as a weighted average of all the above layers. The {\tt curve} option is only experimental and calculates an IMFP value based on each electron's excess energy during propagation within the material.
 
-\subsection[photo\_imfp\_value]{\tt real(kind=dp) :: photo\_imfp\_value}
+\subsection[photo\_imfp\_value]{\tt real(kind=dp) :: photo\_imfp\_value(1 or \#layers)}
 
-Set the inelastic mean free path (IMFP) value(s) in \AA~for the calculation. See {\tt photo\_imfp\_choice} for further explanation. When using {\tt layers} the number of values must equal the number of explicit layers being used for the calculation. This is generally \nicefrac{\# slab layers}{2} for an even number of total layers and \nicefrac{\# slab layers}{2} + 1 for an odd number of total layers.
+Set the inelastic mean free path (IMFP) value(s) in \AA~for the calculation. See {\tt photo\_imfp\_choice} for further explanation. When using {\tt layers} the number of values must equal the number of explicit layers being used for the calculation. This is generally \nicefrac{\# slab layers}{2} for an even number of total layers and \nicefrac{\# slab layers}{2} + 1 for an odd number of total layers. In case the user gives the layer boundaries, the number of layers determined, has to match the number of layers given in {\tt photo\_layers\_tops}.
 
 There is no default value and the parameter must be set for all calculations.
 
@@ -1345,16 +1356,16 @@ No extra output is written.
 \item[{\bf --}]  \verb#qe_tensor#\\ \\
 Write out the contributions of each band for all k-points, spins and atoms. This can be used to study the specific origin of photoemitted electrons, for detailed visualisations and much more.
 \item[{\bf --}]  \verb#bindenergy_curve#\\ \\
-Calculate and write out a \textit{QE} vs \textit{binding energy} curve. A Gaussian broadening of width {\tt photo\_bindenergy\_broadening} is applied. The energy bin width $= 0.001$ eV. The emission angle ranges are limited by the values for the min/max values $\theta$ and $\phi$ set to allow for comparison with ARPES data, $e.g.$ energy distribution curves (EDC).
-\item[{\bf --}]  \verb#bindenergy_ptrans_map#\\ \\
-Calculate and write a \textit{binding energy} vs \textit{transverse momentum} map as a matrix with the value of each grid point representing the QE contribution at that point. The energy bin width $= 0.001$ eV. The transverse momentum bin width is controlled by {\tt photo\_kmat\_bin\_width}. \\
+Calculate and write out a \textit{QE} vs \textit{binding energy} curve. A Gaussian broadening of width {\tt photo\_bindenergy\_broadening} is applied. The energy bin width $= 0.001$ eV. The considered emission angle ranges are limited by the values for the min/max values $\theta$ and $\phi$ set to allow for comparison with ARPES data, $e.g.$ energy distribution curves (EDC).
+\item[{\bf --}]  \verb#ekin_ptrans_map#\\ \\
+Calculate and write a \textit{kinetic energy} vs \textit{transverse momentum} map as a matrix with the value of each grid point representing the QE contribution at that point. The energy bin width $= 0.001$ eV. The transverse momentum bin width is controlled by {\tt photo\_kmat\_bin\_width}. \\
 A Gaussian broadening of width {\tt photo\_bindenergy\_broadening} is applied. The broadening in \textbf{p} has a FWHM of \nicefrac{1}{2} distance between \textbf{k} points, $i.e.$ a half step between MP grid points. The emission angle ranges are limited by the values for the min/max values $\theta$ and $\phi$ set to allow for comparison with ARPES data.
 \item[{\bf --}]  \verb#const_bindenergy_p_map#\\ \\
 Calculate and write a {\boldmath $p_x$ vs $p_y$} matrix of grid points where the value at each grid point represents the total QE contribution at a constant binding energy across the entire map. The momentum bin width is controlled by {\tt photo\_kmat\_bin\_width}. The binding energy value is set by {\tt photo\_const\_bindenergy\_value} w.r.t. the Fermi energy ($E_F$).\\
 The contributions are Gaussian broadened in energy with a width of {\tt photo\_bindenergy \_broadening}. The broadening in the {\boldmath $p_x$ vs $p_y$} direction has a FWHM of \nicefrac{1}{2} distance between \textbf{k} points, $i.e.$ a half step between MP grid points.
 The emission angle ranges are limited by the values for the min/max values $\theta$ and $\phi$ set to allow for comparison with ARPES data.
 \item[{\bf --}]  \verb#p_tensor#\\ \\
-Calculate and write a {\boldmath$p_x$,$p_y$,$p_z$} tensor of grid points for electron momenta in \nicefrac{1}{\AA}. Each value at that grid point represents the QE contribution at that specific set of electron momenta values. \\The contributions are Gaussian broadened in {\boldmath$p_x$} and {\boldmath$p_y$} with a FWHM of half a step between k grid points, $i.e.$ MP grid points. In the {\boldmath$p_z$} direction the value {\tt photo\_bindenergy \_broadening} is converted to \nicefrac{1}{\AA}. The ranges for emission angles $\theta$ and $\phi$ can be set to allow for comparison with ARPES data.
+Calculate and write a {\boldmath$p_x$,$p_y$,$p_z$} tensor of grid points for electron momenta in \nicefrac{1}{\AA}. Each value at that grid point represents the QE contribution at that specific set of electron momenta values. \\The contributions are Gaussian broadened in {\boldmath$p_x$} and {\boldmath$p_y$} with a FWHM of half a step between k grid points, $i.e.$ MP grid points. In the {\boldmath$p_z$} direction the value {\tt photo\_bindenergy \_broadening} is converted to \nicefrac{1}{\AA} to broaden in the {\boldmath$p_z$} direction. The ranges for emission angles $\theta$ and $\phi$ can be set to allow for comparison with ARPES data.
 \end{itemize}
 
 \subsection[photo\_theta\_min]{\tt real(kind=dp) :: photo\_theta\_min}
@@ -1382,7 +1393,7 @@ Sets the Gaussian broadening width in the energy dimension for {\tt photo\_outpu
 
 The default value is $0.0257$ eV $ = k_b \cdot 298$ K
 
-\subsection[photo\_pmat\_bind\_width]{\tt real(kind=dp) :: photo\_pmat\_bind\_width}
+\subsection[photo\_pmat\_bin\_width]{\tt real(kind=dp) :: photo\_pmat\_bin\_width}
 Sets the bin width in the momentum dimension for {\tt photo\_output}.
 
 The default value is $0.005$ \nicefrac{1}{\AA}
@@ -1391,12 +1402,6 @@ The default value is $0.005$ \nicefrac{1}{\AA}
 Sets the binding energy value for the {\tt photo\_output} option {\tt const\_bindenergy\_p\_map} w.r.t the Fermi energy.
 
 The default value is $0.0$ eV, $i.e.$ $E_F$
-
-\subsection[photo\_gk\_max\_vectors]{\tt integer :: photo\_gk\_max\_vectors}
-The number of {$\mathbf{G + k}$} grid points present in the {\tt SEEDNAME.gkgrid\_bin} file.
-If {\tt photo\_momentum} is {\tt gkgrid} this value has to be set. The correct value is printed in the Castep output file when running the Spectral task {\tt PHOTOOPTICS}.\\
-
-The default value is 1, $i.e.$ correct behaviour for {\tt photo\_momentum = crystal}
 
 \subsection[photo\_use\_tmprob]{\tt logical :: photo\_use\_tmprob}
 Defines if the probability for transmission across the surface step should be included when calculating the three step model.

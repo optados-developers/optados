@@ -38,8 +38,10 @@ contains
     ! Added by F. Mildner (04/2023+02/2025) for photoemission
     write (stdout, '(A)') "       fem_fmt : a formatted free electron optical matrix element file"
     write (stdout, '(A)') "       fem_bin : an unformatted free electron optical matrix element file"
-    write (stdout, '(A)') "   tmprob_fmt : a formatted bandwise electron transmission coefficient file"
-    write (stdout, '(A)') "   tmprob_bin : an unformatted bandwise electron transmission coefficient file"
+    write (stdout, '(A)') "    tmprob_fmt : a formatted bandwise electron transmission coefficient file"
+    write (stdout, '(A)') "    tmprob_bin : an unformatted bandwise electron transmission coefficient file"
+    write (stdout, '(A)') "    gkgrid_fmt : a formatted bandwise list of transverse momenta values and contributions"
+    write (stdout, '(A)') "    gkgrid_bin : an unformatted bandwise list of transverse momenta values and contributions"
 
     write (stdout, '(A)') "      dome_fmt : a formatted diagonal optical matrix element file"
     write (stdout, '(A)') "      dome_bin : an unformatted diagonal optical matrix element file"

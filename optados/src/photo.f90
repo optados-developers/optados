@@ -209,11 +209,11 @@ contains
         if (index(photo_output, 'qe_tensor') > 0) call write_qe_tensor
         !Broaden ouputs using a gaussian function
         if (index(photo_output, 'bindenergy_curve') > 0) call binding_energy_curve
-        if (index(photo_output, 'bindenergy_ptrans_map') > 0) then
+        if (index(photo_output, 'ekin_ptrans_map') > 0) then
           if (index(photo_momentum, 'gkgrid') > 0) then
-            call binding_energy_momentum_map_gkgrid
+            call kinetic_energy_momentum_map_gkgrid
           else
-            call binding_energy_momentum_map
+            call kinetic_energy_momentum_map
           end if
         end if
         if (index(photo_output, 'const_bindenergy_p_map') > 0) then
@@ -2631,9 +2631,9 @@ contains
       end if
     end if
     ! Is the energy_workfct within error?
-    if (abs(energy_workfct - photo_work_function) .gt. tolerance) then
+    if (abs(energy_workfct - work_function_eff) .gt. tolerance) then
       if (on_root) then
-        write (stdout, *) 'optados workfct:', photo_work_function, '1step OME workfct:', energy_workfct
+        write (stdout, *) 'optados workfct:', work_function_eff, '1step OME workfct:', energy_workfct
         write (stdout, *) 'The Workfct from OptaDOS input and supplied from the .fem_bin are incompatible!'
         call io_error('The Workfct from OptaDOS input and supplied from the .fem_bin are incompatible!')
       end if
@@ -3307,8 +3307,8 @@ contains
     norm_vac = inv_sqrt_two_pi/width
     ! How many SD out from the center should the Gaussian broadening be summed up?
     window_width = 12
-    max_energy = int((temp_photon_energy - photo_work_function)*1000) + 500
-    if (max_energy .lt. 500) return
+    max_energy = int((temp_photon_energy - work_function_eff)*1000) + 500
+    if (max_energy .lt. -250) return
 
     if (.not. allocated(fermi_dirac)) then
       allocate (fermi_dirac(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
@@ -3605,7 +3605,7 @@ contains
         photo_theta_min, photo_theta_max
       write (binding_unit, '(1x,a54,2(1x,f7.2))') '## Emission angle phi min, max (w.r.t. x-axis) [deg]: ', &
         photo_phi_min, photo_phi_max
-      write (binding_unit, '(1x,a34,f9.5)') '## Fermi Energy Ekin offset [eV]: ', (temp_photon_energy - photo_work_function)
+      write (binding_unit, '(1x,a34,f9.5)') '## Fermi Energy Ekin offset [eV]: ', (temp_photon_energy - work_function_eff)
       write (binding_unit, '(1x,a66,1x,a50)') '## Binding Energy (EB) [eV] | Total QE from sum(atoms + bulk) @ EB',&
       &'| Contributions from: atom1 | atom2 | ... | bulk |'
       write (out_string, '(a,I0,"(1x,",a,")")') "1x,ES25.6E2,", max_atoms + 2, "ES25.12E3"
@@ -3645,7 +3645,7 @@ contains
     end if
   end subroutine binding_energy_curve
 
-  subroutine binding_energy_momentum_map
+  subroutine kinetic_energy_momentum_map
     !*===============================================================================
     ! This subroutine calculates a binding energy vs reciprocal transverse momentum
     ! map of the gaussian broadened band contributions and writes it to a file.
@@ -3697,36 +3697,36 @@ contains
     norm_vac = inv_sqrt_two_pi/width
     ! How many standard deviations out from the center should the Gaussian broadening be summed up?
     window_width = 12
-    max_energy = int((temp_photon_energy - photo_work_function)*1000) + 500
-    if (max_energy .lt. 500) return
+    max_energy = int((temp_photon_energy - work_function_eff)*1000) + 500
+    if (max_energy .lt. -250) return
 
     if (.not. allocated(fermi_dirac)) then
       allocate (fermi_dirac(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
-      if (ierr /= 0) call io_error('Error: binding_energy_momentum_map - allocation of fermi_dirac failed')
+      if (ierr /= 0) call io_error('Error: kinetic_energy_momentum_map - allocation of fermi_dirac failed')
     end if
     fermi_dirac = 0.0_dp
 
     if (.not. allocated(arpes_mask)) then
       allocate (arpes_mask(1, nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
-      if (ierr /= 0) call io_error('Error: binding_energy_momentum_map - allocation of arpes_mask failed')
+      if (ierr /= 0) call io_error('Error: kinetic_energy_momentum_map - allocation of arpes_mask failed')
     end if
     arpes_mask = 0.00_dp
 
     if (.not. allocated(emission_gauss)) then
       allocate (emission_gauss(1, nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
-      if (ierr /= 0) call io_error('Error: binding_energy_momentum_map - allocation of emission_gauss failed')
+      if (ierr /= 0) call io_error('Error: kinetic_energy_momentum_map - allocation of emission_gauss failed')
     end if
     emission_gauss = 0.0_dp
 
     if (.not. allocated(transverse_gauss)) then
       allocate (transverse_gauss(1, nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
-      if (ierr /= 0) call io_error('Error: binding_energy_momentum_map - allocation of transverse_gauss failed')
+      if (ierr /= 0) call io_error('Error: kinetic_energy_momentum_map - allocation of transverse_gauss failed')
     end if
     transverse_gauss = 0.0_dp
 
     if (.not. allocated(vacuum_gauss)) then
       allocate (vacuum_gauss(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
-      if (ierr /= 0) call io_error('Error: binding_energy_momentum_map - allocation of vacuum_gauss failed')
+      if (ierr /= 0) call io_error('Error: kinetic_energy_momentum_map - allocation of vacuum_gauss failed')
     end if
     vacuum_gauss = 0.0_dp
 
@@ -3771,13 +3771,13 @@ contains
     ! set up the matrix of energy vs transverse k
     if (.not. allocated(ekin_k_matrix)) then
       allocate (ekin_k_matrix(max_bin_k, max_bin_e), stat=ierr)
-      if (ierr /= 0) call io_error('Error: binding_energy_momentum_map - allocation of ekin_k_matrix failed')
+      if (ierr /= 0) call io_error('Error: kinetic_energy_momentum_map - allocation of ekin_k_matrix failed')
     end if
     ekin_k_matrix = 0.0_dp
 
     if (.not. allocated(gauss_k)) then
       allocate (gauss_k(max_bin_k), stat=ierr)
-      if (ierr /= 0) call io_error('Error: binding_energy_momentum_map - allocation of gauss_k failed')
+      if (ierr /= 0) call io_error('Error: kinetic_energy_momentum_map - allocation of gauss_k failed')
     end if
     gauss_k = 0.0_dp
 
@@ -4015,12 +4015,12 @@ contains
       matrix_unit = io_file_unit()
       write (char_e, '(F7.3)') temp_photon_energy
       filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))// &
-                 '_Ebind_ptrans_map.dat'
+                 '_Ekin_ptrans_map.dat'
       write (stdout, '(1x,a)') '| Writing out to *SEEDNAME*_'//trim(photo_model)//'_' &
         //trim(adjustl(char_e))//'_Ebind_ptrans_map.dat'
       open (unit=matrix_unit, action='write', file=filename)
       call io_date(cdate, ctime)
-      write (matrix_unit, '(a56,a11,a4,a9)') '## OptaDOS Photoemission: Energy vs P_transverse matrix ',&
+      write (matrix_unit, '(a64,a11,a4,a9)') '## OptaDOS Photoemission: Kinetic Energy vs P_transverse matrix ',&
       & cdate, ' at ', ctime
       write (matrix_unit, '(a14,a)') '## Seedname : ', trim(adjustl(seedname))
       write (matrix_unit, '(a25,a12)') '## Photoemission Model : ', trim(adjustl(photo_model))
@@ -4051,17 +4051,17 @@ contains
 
     if (allocated(arpes_mask)) then
       deallocate (arpes_mask, stat=ierr)
-      if (ierr /= 0) call io_error('Error: binding_energy_momentum_map - failed to deallocate arpes_mask')
+      if (ierr /= 0) call io_error('Error: kinetic_energy_momentum_map - failed to deallocate arpes_mask')
     end if
 
     if (allocated(binding_temp)) then
       deallocate (binding_temp, stat=ierr)
-      if (ierr /= 0) call io_error('Error: binding_energy_momentum_map - failed to deallocate binding_temp')
+      if (ierr /= 0) call io_error('Error: kinetic_energy_momentum_map - failed to deallocate binding_temp')
     end if
 
     if (allocated(gauss_k)) then
       deallocate (gauss_k, stat=ierr)
-      if (ierr /= 0) call io_error('Error : binding_energy_momentum_map - failed to deallocate gauss_k')
+      if (ierr /= 0) call io_error('Error : kinetic_energy_momentum_map - failed to deallocate gauss_k')
     end if
 
     if (allocated(ekin_k_matrix)) then
@@ -4071,15 +4071,15 @@ contains
 
     time1 = io_time()
     if (on_root .and. iprint > 1) then
-      write (stdout, '(1x,a47,12x,f11.3,a8)') '+ Time to calculate binding energy momentum map', time1 - time0, ' (sec) +'
+      write (stdout, '(1x,a47,12x,f11.3,a8)') '+ Time to calculate kinetic energy momentum map', time1 - time0, ' (sec) +'
       write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
       call FLUSH(stdout)
     end if
-  end subroutine binding_energy_momentum_map
+  end subroutine kinetic_energy_momentum_map
 
-  subroutine binding_energy_momentum_map_gkgrid
+  subroutine kinetic_energy_momentum_map_gkgrid
     !*===============================================================================
-    ! This subroutine calculates a binding energy vs reciprocal transverse momentum
+    ! This subroutine calculates a kinetic energy vs reciprocal transverse momentum
     ! map of the gaussian broadened band contributions and writes it to a file.
     ! This is the optimised version for the photo_momentum option to allow supercell
     ! calculations. Can be thought of the bandstructure projection along the
@@ -4124,43 +4124,43 @@ contains
     character(len=11)                           :: cdate             ! Temp. date string
 
     time0 = io_time()
-    if (on_root) write (stdout, '(1x,a78)') '+--------- Starting Binding Energy vs Transverse P Map Calculation ----------+'
+    if (on_root) write (stdout, '(1x,a78)') '+--------- Starting kinetic Energy vs Transverse P Map Calculation ----------+'
     ! We are redoing parts of the QE calculation, so we need these factors
     qe_factor = 1.0_dp/(cell_area)
     width = kB*photo_temperature
     norm_vac = inv_sqrt_two_pi/width
     ! How many standard deviations out from the center should the Gaussian broadening be summed up?
     window_width = 12
-    max_energy = int((temp_photon_energy - photo_work_function)*1000) + 500
-    if (max_energy .lt. 500) return
+    max_energy = int((temp_photon_energy - work_function_eff)*1000) + 500
+    if (max_energy .lt. -250) return
 
     if (.not. allocated(fermi_dirac)) then
       allocate (fermi_dirac(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
-      if (ierr /= 0) call io_error('Error: binding_energy_momentum_map - allocation of fermi_dirac failed')
+      if (ierr /= 0) call io_error('Error: kinetic_energy_momentum_map - allocation of fermi_dirac failed')
     end if
     fermi_dirac = 0.0_dp
 
     if (.not. allocated(arpes_mask)) then
       allocate (arpes_mask(photo_gkmax, nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
-      if (ierr /= 0) call io_error('Error: binding_energy_momentum_map - allocation of arpes_mask failed')
+      if (ierr /= 0) call io_error('Error: kinetic_energy_momentum_map - allocation of arpes_mask failed')
     end if
     arpes_mask = 0.00_dp
 
     if (.not. allocated(emission_gauss)) then
       allocate (emission_gauss(photo_gkmax, nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
-      if (ierr /= 0) call io_error('Error: binding_energy_momentum_map - allocation of emission_gauss failed')
+      if (ierr /= 0) call io_error('Error: kinetic_energy_momentum_map - allocation of emission_gauss failed')
     end if
     emission_gauss = 0.0_dp
 
     if (.not. allocated(transverse_gauss)) then
       allocate (transverse_gauss(photo_gkmax, nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
-      if (ierr /= 0) call io_error('Error: binding_energy_momentum_map - allocation of transverse_gauss failed')
+      if (ierr /= 0) call io_error('Error: kinetic_energy_momentum_map - allocation of transverse_gauss failed')
     end if
     transverse_gauss = 0.0_dp
 
     if (.not. allocated(vacuum_gauss)) then
       allocate (vacuum_gauss(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
-      if (ierr /= 0) call io_error('Error: binding_energy_momentum_map - allocation of vacuum_gauss failed')
+      if (ierr /= 0) call io_error('Error: kinetic_energy_momentum_map - allocation of vacuum_gauss failed')
     end if
     vacuum_gauss = 0.0_dp
 
@@ -4200,7 +4200,7 @@ contains
     ! set up the matrix of energy vs transverse k
     if (.not. allocated(ekin_k_matrix)) then
       allocate (ekin_k_matrix(max_bin_k, max_bin_e), stat=ierr)
-      if (ierr /= 0) call io_error('Error: binding_energy_momentum_map - allocation of ekin_k_matrix failed')
+      if (ierr /= 0) call io_error('Error: kinetic_energy_momentum_map - allocation of ekin_k_matrix failed')
     end if
     ekin_k_matrix = 0.0_dp
 
@@ -4461,7 +4461,7 @@ contains
       matrix_unit = io_file_unit()
       write (char_e, '(F7.3)') temp_photon_energy
       filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))// &
-                 '_Ebind_ptrans_map.dat'
+                 '_Ekin_ptrans_map.dat'
       write (stdout, '(1x,a)') '| Writing out to *SEEDNAME*_'//trim(photo_model)//'_' &
         //trim(adjustl(char_e))//'_Ebind_ptrans_map.dat'
       open (unit=matrix_unit, action='write', file=filename)
@@ -4497,22 +4497,22 @@ contains
 
     if (allocated(arpes_mask)) then
       deallocate (arpes_mask, stat=ierr)
-      if (ierr /= 0) call io_error('Error: binding_energy_momentum_map - failed to deallocate arpes_mask')
+      if (ierr /= 0) call io_error('Error: kinetic_energy_momentum_map - failed to deallocate arpes_mask')
     end if
 
     if (allocated(binding_temp)) then
       deallocate (binding_temp, stat=ierr)
-      if (ierr /= 0) call io_error('Error: binding_energy_momentum_map - failed to deallocate binding_temp')
+      if (ierr /= 0) call io_error('Error: kinetic_energy_momentum_map - failed to deallocate binding_temp')
     end if
 
     if (allocated(gauss_k)) then
       deallocate (gauss_k, stat=ierr)
-      if (ierr /= 0) call io_error('Error : binding_energy_momentum_map - failed to deallocate gauss_k')
+      if (ierr /= 0) call io_error('Error : kinetic_energy_momentum_map - failed to deallocate gauss_k')
     end if
 
     if (allocated(photo_gkgrid)) then
       deallocate (photo_gkgrid, stat=ierr)
-      if (ierr /= 0) call io_error('Error : binding_energy_momentum_map - failed to deallocate photo_gkgrid')
+      if (ierr /= 0) call io_error('Error : kinetic_energy_momentum_map - failed to deallocate photo_gkgrid')
     end if
 
     if (allocated(ekin_k_matrix)) then
@@ -4522,11 +4522,11 @@ contains
 
     time1 = io_time()
     if (on_root .and. iprint > 1) then
-      write (stdout, '(1x,a47,12x,f11.3,a8)') '+ Time to calculate binding energy momentum map', time1 - time0, ' (sec) +'
+      write (stdout, '(1x,a47,12x,f11.3,a8)') '+ Time to calculate kinetic energy momentum map', time1 - time0, ' (sec) +'
       write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
       call FLUSH(stdout)
     end if
-  end subroutine binding_energy_momentum_map_gkgrid
+  end subroutine kinetic_energy_momentum_map_gkgrid
 
   subroutine full_momentum_tensor
     !*===============================================================================
@@ -5502,31 +5502,31 @@ contains
 
     if (.not. allocated(fermi_dirac)) then
       allocate (fermi_dirac(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
-      if (ierr /= 0) call io_error('Error: const_binding_energy_map - allocation of fermi_dirac failed')
+      if (ierr /= 0) call io_error('Error: const_binding_energy_map_gkgrid - allocation of fermi_dirac failed')
     end if
     fermi_dirac = 0.0_dp
 
     if (.not. allocated(arpes_mask)) then
       allocate (arpes_mask(photo_gkmax, nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
-      if (ierr /= 0) call io_error('Error: const_binding_energy_map - allocation of arpes_mask failed')
+      if (ierr /= 0) call io_error('Error: const_binding_energy_map_gkgrid - allocation of arpes_mask failed')
     end if
     arpes_mask = 0.0_dp
 
     if (.not. allocated(transverse_gauss)) then
       allocate (transverse_gauss(photo_gkmax, nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
-      if (ierr /= 0) call io_error('Error: const_binding_energy_map - allocation of transverse_gauss failed')
+      if (ierr /= 0) call io_error('Error: const_binding_energy_map_gkgrid - allocation of transverse_gauss failed')
     end if
     transverse_gauss = 0.0_dp
 
     if (.not. allocated(emission_gauss)) then
       allocate (emission_gauss(photo_gkmax, nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
-      if (ierr /= 0) call io_error('Error: const_binding_energy_map - allocation of emission_gauss failed')
+      if (ierr /= 0) call io_error('Error: const_binding_energy_map_gkgrid - allocation of emission_gauss failed')
     end if
     emission_gauss = 0.0_dp
 
     if (.not. allocated(vacuum_gauss)) then
       allocate (vacuum_gauss(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
-      if (ierr /= 0) call io_error('Error: const_binding_energy_map - allocation of vacuum_gauss failed')
+      if (ierr /= 0) call io_error('Error: const_binding_energy_map_gkgrid - allocation of vacuum_gauss failed')
     end if
     vacuum_gauss = 0.0_dp
 
@@ -5566,17 +5566,17 @@ contains
 
     ! set up the kx x ky matrix
     allocate (kxky_matrix(px_max, py_max), stat=ierr)
-    if (ierr /= 0) call io_error('Error: const_binding_energy_map - allocation of kxky_matrix failed')
+    if (ierr /= 0) call io_error('Error: const_binding_energy_map_gkgrid - allocation of kxky_matrix failed')
     kxky_matrix = 0.0_dp
 
     if (.not. allocated(gauss_x)) then
       allocate (gauss_x(px_max), stat=ierr)
-      if (ierr /= 0) call io_error('Error: const_binding_energy_map - allocation of gauss_x failed')
+      if (ierr /= 0) call io_error('Error: const_binding_energy_map_gkgrid - allocation of gauss_x failed')
     end if
     gauss_x = 0.0_dp
     if (.not. allocated(gauss_y)) then
       allocate (gauss_y(py_max), stat=ierr)
-      if (ierr /= 0) call io_error('Error: const_binding_energy_map - allocation of gauss_y failed')
+      if (ierr /= 0) call io_error('Error: const_binding_energy_map_gkgrid - allocation of gauss_y failed')
     end if
     gauss_y = 0.0_dp
 
@@ -5867,27 +5867,27 @@ contains
 
     if (allocated(arpes_mask)) then
       deallocate (arpes_mask, stat=ierr)
-      if (ierr /= 0) call io_error('Error: const_binding_energy_map - failed to deallocate arpes_mask')
+      if (ierr /= 0) call io_error('Error: const_binding_energy_map_gkgrid - failed to deallocate arpes_mask')
     end if
     if (allocated(binding_temp)) then
       deallocate (binding_temp, stat=ierr)
-      if (ierr /= 0) call io_error('Error: const_binding_energy_map - failed to deallocate binding_temp')
+      if (ierr /= 0) call io_error('Error: const_binding_energy_map_gkgrid - failed to deallocate binding_temp')
     end if
     if (allocated(kxky_matrix)) then
       deallocate (kxky_matrix, stat=ierr)
-      if (ierr /= 0) call io_error('Error: const_binding_energy_map - deallocation of kxky_matrix failed')
+      if (ierr /= 0) call io_error('Error: const_binding_energy_map_gkgrid - deallocation of kxky_matrix failed')
     end if
     if (allocated(gauss_x)) then
       deallocate (gauss_x, stat=ierr)
-      if (ierr /= 0) call io_error('Error: const_binding_energy_map - failed to deallocate gauss_x')
+      if (ierr /= 0) call io_error('Error: const_binding_energy_map_gkgrid - failed to deallocate gauss_x')
     end if
     if (allocated(gauss_y)) then
       deallocate (gauss_y, stat=ierr)
-      if (ierr /= 0) call io_error('Error: const_binding_energy_map - failed to deallocate gauss_y')
+      if (ierr /= 0) call io_error('Error: const_binding_energy_map_gkgrid - failed to deallocate gauss_y')
     end if
     if (allocated(photo_gkgrid)) then
       deallocate (photo_gkgrid, stat=ierr)
-      if (ierr /= 0) call io_error('Error: const_binding_energy_map - failed to deallocate photo_gkgrid')
+      if (ierr /= 0) call io_error('Error: const_binding_energy_map_gkgrid - failed to deallocate photo_gkgrid')
     end if
 
     time1 = io_time()
