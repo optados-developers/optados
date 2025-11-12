@@ -25,9 +25,9 @@ if [[ "$1" == "pack" ]]; then
 	fi
 
 elif [[ "$1" == "unpack" ]]; then
-	for FILE in *.bz;
+	for FILE in *.bz2;
 	do
-		bunzip $FILE
+		bunzip2 $FILE
 	done	
 
 	for FILE in *.dome_fmt *.elnes_fmt *.ome_fmt *.pdos_fmt;
@@ -39,7 +39,7 @@ elif [[ "$1" == "unpack" ]]; then
                         SEEDNAME=`basename $FILE .$EXT`
                         FILETYPE=${EXT%_*}
                         echo $EXE ${FILETYPE}_fmt ${FILETYPE}_bin $SEEDNAME
-                        $EXE ${FILETYPE}_fmt ${FILETYPE}_bin $SEEDNAME
+                        $EXE -i ${FILETYPE}_fmt -o ${FILETYPE}_bin $SEEDNAME
                   
                 fi
         done

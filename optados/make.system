@@ -3,7 +3,7 @@ SYSTEM := ifort
 
 
 # fast / debug
-BUILD := fast 
+BUILD := debug 
 
 # serial / mpi
 COMMS_ARCH :=  serial

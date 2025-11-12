@@ -1,0 +1,6 @@
+PDOS_CALCULATE_WEIGHTS : TRUE
+TASK                   : SPECTRAL
+SPECTRAL_TASK          : DOS
+CUT_OFF_ENERGY         : 200
+IPRINT                 : 1
+NEXTRA_BANDS           : 15

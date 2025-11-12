@@ -1,0 +1,36 @@
+###########################################################
+#                   OptaDOS example file 
+###########################################################
+
+# Choose the task to perform
+TASK               : pdos
+
+# Sample the DOS at 0.01 eV intervals
+DOS_SPACING       : 0.01 
+
+PDOS :  "Ga:Ext"(s):Ga(p)
+
+IPRINT : 3
+###########################################################
+#            A D V A N C E D   K E Y W O R D S 
+###########################################################
+
+# The keywords below are all at their default value
+# They are presented here to indicate the internal
+# workings of OptaDOS and allow you to tweak the 
+# output
+
+# The broadening used, (also try linear, or fixed)
+BROADENING         : adaptive # Default
+
+# The broadening parameter, A, when using adaptive smearing, 
+# set by eye to be similar to the linear smearing method
+ADAPTIVE_SMEARING  : 0.4  # Default
+
+# Specify the geometry to be used in the optics calculation
+CORE_GEOM          : polycrystalline  # Default
+
+# Include life-time and instrumentaion broadening
+CORE_LAI_BROADENING : true  # Default
+
+

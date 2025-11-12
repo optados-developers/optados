@@ -64,20 +64,29 @@ output = Si2.linear.dat
 # O p t a D O S   P D O S   T e s t s
 #--------------------------------------------------------------
 # Test coverage
-#                  +-------+----------+--------+
-#                  | fixed | adaptive | linear |
-# -----------------+-------+----------+--------+
-# odo file         |  2    |          |   5    |
-# pdos.dat file    |       |    1     |        |
-# generic out file |       |    3     |   4    |
-# String 1         |  2    |          |        |
-# String 2         |       |    3     |        |
-# String 3         |       |          |   4    |
-# String 4         |       |          |   5    |
-# ome_file         |  2    |    1     |  4,5   |
-# dome_file        |       |    3     |        |
-# no_spin          |       |          |   4    |
-# -----------------+-------+----------+--------+
+
+#                  +-+-+-+-+-+-+-+-+-+
+#                  |1|2|3|4|5|6|7|8|9|
+# -----------------+-+-+-+-+-+-+-+-+-+
+# Si               |x|x|x|x|x|x|x|x| |
+# GaAs             | | | | | | | | |x|
+# odo file         | |x| | |x| | | | |
+# pdos.dat file    |x| | | | | | | | |
+# generic out file | | |x|x| |x|x|x|x|
+# fixed            | |x| | | | | | | |
+# adaptive         |x| |x| | |x|x| |x|
+# linear           | | | |x|x| | |x| |
+# String 1         | |x| | | | | | | |
+# String 2         | | |x| | | | | | |
+# String 3         | | | |x| | | | | |
+# String 4         | | | | |x| | | | |
+# ome_file         |x|x| |x|x| | | | |
+# dome_file        | | |x| | |x|x|x|x|
+# no_spin          | | | |x| | | | | |
+# match "Xx:yy"    | | | | | |x| | |x| 
+# Xx == Xx:yy + Xx | | | | | | |x| | |
+# "Xx" <> Xx:yy    | | | | | | | |x| |
+# -----------------+-+-+-+-+-+-+-+-+-+
 
 # 1)
 # Test the PDOS using short-cut keywords, use an ome input and
@@ -119,6 +128,33 @@ output = Si2.pdos.proj-0001-0002.dat
 program = OPTADOS_ODO_OK
 inputs_args = ('Si2.odi', '')
 output = Si2.odo
+
+# 6) Match a label in a PDOS string
+[testopt_pdos_match_label]
+program = OPTADOS_GEN_DAT_OK
+inputs_args = ('Si2.odi', '')
+output = Si2.pdos.proj-0001-0001.dat
+
+# 7) Match an atom including one that's labelled.
+[testopt_pdos_match_inc_label]
+program = OPTADOS_GEN_DAT_OK
+inputs_args = ('Si2.odi', '')
+output = Si2.pdos.proj-0001-0001.dat
+
+# 8) Match ONLY an atom, and not one of the same species that's 
+# labelled.
+[testopt_pdos_match_not_label]
+program = OPTADOS_GEN_DAT_OK
+inputs_args = ('Si2.odi', '')
+output = Si2.pdos.proj-0001-0002.dat
+
+# 9) Match a label in a PDOS string
+# This is a more complicated number of atoms than 6. Two species and
+# two labels
+[testopt_pdos_Ga_label]
+program = OPTADOS_GEN_DAT_OK
+inputs_args = ('GaAs.odi', '')
+output = GaAs.pdos.proj-0001-0002.dat
 
 #--------------------------------------------------------------
 # O p t a D O S   P D I S   T e s t s
@@ -251,24 +287,26 @@ tolerance = ( (1.0e-5, 1.0e-5, 'col2'), (1.0e-5, 1.0e-5, 'col3'))
 # 2 testopt_core_emisson
 # 3 testopt_core_polarised
 # 4 testopt_core_all
+# 5 testopt_core_chemical_shift
 
-#                           |1|2|3|4|
-# --------------------------+-+-+-+-+
-# Si                        |x|x|x|x|
-# absorbtion                |x| | | |
-# emision                   | |x|x| |
-# all                       | | | |x|
-# poly                      |x| |x|x|
-# polarised                 | |x|x| |
-# core broadening           | |x|x|x|
-# LAI gaussian width        | |@| |@|
-# LAI lorentzian width      | | |@|@|
-# LAI lorentzian scale      | | |@|@|
-# LAI lorentzian offset     | | |@|@|
-# --------------------------+-+-+-+-+
-# odo file                  |x| | | |
-# core_edge file            | |x|x|x|
-# --------------------------+-+-+-+-+
+#                           |1|2|3|4|5|
+# --------------------------+-+-+-+-+-+
+# Si                        |x|x|x|x| |
+# NaGe                      | | | | |x|
+# absorbtion                |x| | | |x|
+# emision                   | |x|x| | |
+# all                       | | | |x| |
+# poly                      |x| |x|x| |
+# polarised                 | |x|x| | |
+# core broadening           | |x|x|x|x|
+# LAI gaussian width        | |@| |@|@|
+# LAI lorentzian width      | | |@|@|@|
+# LAI lorentzian scale      | | |@|@|@|
+# LAI lorentzian offset     | | |@|@|@|
+# --------------------------+-+-+-+-+-+
+# odo file                  |x| | | | |
+# core_edge file            | |x|x|x|x|
+# --------------------------+-+-+-+-+-+
 #
 # @= change from default
 
@@ -295,6 +333,26 @@ output = Si2_core_edge.dat
 program = OPTADOS_GEN_DAT_OK
 inputs_args = ('Si2.odi', '')
 output = Si2_core_edge.dat
+
+#5
+[testopt_core_chemical_shift]
+program = OPTADOS_GEN_DAT_OK
+inputs_args = ('NaGe.odi', '')
+output = NaGe_core_edge.dat
+
+#--------------------------------------------------------------
+# miz_chemical_shift Tests
+#--------------------------------------------------------------
+
+# Test that miz_chemical_shift produces a NaGe-mizoguchi.out file and
+# that the "Mizoguchi chemical shift" has the same value as in our
+# input for the test
+
+#1
+[testopt_miz_chemical_shift]
+program = OPTADOS_MIZ_OUT_OK
+inputs_args = ('NaGe.castep','-e Ge -exe castep -s NaGe-singlepoint -i')
+output = NaGe-mizoguchi.out
 
 #--------------------------------------------------------------
 # O p t a D O S   I n t e r n a l   S t u f f    T e s t s

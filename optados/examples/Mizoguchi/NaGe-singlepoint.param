@@ -1,0 +1,4 @@
+task : singlepoint
+cut_off_energy : 250 eV
+xc_functional : PBE
+write_checkpoint : None

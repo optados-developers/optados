@@ -1,0 +1,44 @@
+Mizoguchi Shift: Execution started on 17/11/2022 at 10:9:53
++============================================================================+
+|                                                                            |
+|            M M  IIIII  ZZZZZ  OOO   GGG  U   U  CCC  H  H IIIII            |
+|           M M M   I       Z  O   O G     U   U C   C H  H   I              |
+|           M   M   I      Z   O   O G  GG U   U C     HHHH   I              |
+|           M   M   I     Z    O   O G   G U   U C   C H  H   I              |
+|           M   M IIIII  ZZZZZ  OOO   GGG   UUU   CCC  H  H IIIII            |
+|                                                                            |
++----------------------------------------------------------------------------+
+
++-------------------------------- FLAGS -------------------------------------+
+|  Element with core hole                    :      Ge                       |
+|  Core hole label                           :      exc                      |
+|  Input file to read from                   :      NaGe                     |
+|  Non core hole gr. state energy from file  :      NaGe-singlepoint         |
+|  CASTEP Executable                         :      castep.serial            |
++----------------------------------------------------------------------------+
+
++-------------------------------- ECORE -------------------------------------+
+|  E excited all electrons                   :               -45958.58 eV    |
+|  E excited valence electrons               :                -9005.19 eV    |
++----------------------------------------------------------------------------+
+|  Castep dryrun information from file       :      NaGe                     |
++----------------------------------------------------------------------------+
+|  E ground state valence electrons          :                -8017.43 eV    |
+|  E ground state all electrons              :               -57112.12 eV    |
++----------------------------------------------------------------------------+
+|  E core from pseudopotentials              :                12141.30 eV    |
++----------------------------------------------------------------------------+
+
++---------------------------- MIZOGUCHI SHIFT -------------------------------+
+|                Exc state energy from "NB est. 0K energy"                   |
+|  Core hole total energy                    :               -12847.52 eV    |
+|                Groundstate energy from "NB est. 0K energy"                 |
+|  Singlepoint total energy                  :               -11848.49 eV    |
++----------------------------------------------------------------------------+
+|  Mizoguchi chemical shift of E_TE          :                11142.28 eV    |
++----------------------------------------------------------------------------+                                                                                                                                                            
++----------------------------------------------------------------------------+
+|                                  FINISHED                                  |
++----------------------------------------------------------------------------+
+Mizoguchi Shift: Execution finished on 17/11/2022 at 10:9:59
+ 

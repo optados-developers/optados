@@ -1,0 +1,431 @@
+#!/usr/bin/python3
+import os,sys
+import re
+import argparse
+import shutil
+import datetime
+from argparse import RawTextHelpFormatter
+
+
+    
+def get_Egs(infile,outfile,numatoms):
+    """Get the singlepoint energy from a file
+    """
+    
+    # First open the castep file in <infile>.castep
+    try:
+        castepfile = open('%s.castep'%infile).readlines()
+    except:
+        outfile.write(('\n%s.castep not found in folder for singlepoint calculation'%infile))
+        outfile.write(('\n...EXITING...'))
+        exit()
+    
+
+    E_gs_cell = 0
+    # Read through the castep file to find the groundstate energy of the singlepoint calculation
+    for i,line in enumerate(castepfile):
+        if 'single point' in line:
+            j = i+1
+            newline = castepfile[i+1]
+            while 'Calculation time' not in newline:
+                if 'Total number of ions in cell' in newline:
+                    numatoms_sp = newline.split('=  ')[1].split(' ')[0]
+                    if numatoms != numatoms_sp:
+                        outfile.write('\nWARNING the number of atoms used in your singlepoint calculation %s.castep file'%infile)
+                        outfile.write('\ndoes not match that in your core-hole calculation castep file. Fix this, or scale up total')
+                        outfile.write('\nenergy and use the -t flag')
+                        exit()
+                if 'NB est. 0K energy' in newline:
+                    outfile.write('''|                Groundstate energy from "NB est. 0K energy"                 |
+''')
+                    try:
+                        E_gs_cell = float(newline.split('=  ')[1].split(' ')[0])
+                    except:
+                        E_gs_cell = float(newline.split('=    ')[1].split(' ')[0])
+                #This is only useful if you haven't used the dm method so there is no estimated 0K energy
+                elif 'Final energy = ' in newline:
+                    outfile.write('''|                Groundstate energy from "Final energy"                      |
+''')
+                    E_gs_cell = float(newline.split('=  ')[1].split(' ')[0])
+                j += 1
+                newline = castepfile[j]
+
+        #this linesearching cannot distinguish between multiple castep runs in one file and will just find the last energy supplied
+        if 'DRYRUN' in line: 
+            outfile.write('\nWARNING you have already run a DRYRUN calculation within this %s.castep file'%infile)
+            outfile.write('\nFinal shift may not be accurate, remove this dryrun calculation from the %s.castep file'%infile)
+            outfile.write('\n...EXITING...')
+            exit()
+    
+
+    # Check that the Final energy of the singlepoint calc was found
+    if E_gs_cell == 0:
+        outfile.write('The signlepoint energy is 0 eV')
+        outfile.write('\nFailed to find Final energy in file %s.castep '%(infile))
+        outfile.write('\n...EXITING...')
+        exit()
+
+    return E_gs_cell
+
+def get_Ecore(element,label,infile,exe,outfile):
+    """Calculate the energy difference between the excited and valence states for the pseudopotentials
+    used in the coreloss calculation"""
+    
+    outfile.write('''
++-------------------------------- ECORE -------------------------------------+
+''')
+
+    # First open the castep file in <infile>.castep
+    try:
+        castepfile = open('%s.castep'%infile).readlines()
+    except:
+        outfile.write(('\n%s.castep not found in folder'%infile))
+        outfile.write(('\n...EXITING...'))
+        exit()
+    
+
+    E_exc_all = 0
+    E_gs_all = 0
+    E_exc_val = 0
+    E_gs_val = 0
+    # Read through the castep file to get each variable needed for Ecore
+    # First find that we are doing the electronic spectroscopy calculation then search backwards
+    for i,line in enumerate(castepfile):
+        if 'Electronic Spectroscopy' in line and 'type of calculation' in line:
+            j = i-1
+            newline = castepfile[i-1]
+            while 'Run started:' not in newline:
+                if ('Atomic calculation' in newline) and ('%s:%s:'%(element,label) in newline):
+                    E_exc_all = float(castepfile[j+2].split(' ')[-2])
+                if ('Pseudo atomic' in newline) and ('%s:%s '%(element,label) in newline):
+                    E_exc_val = float(castepfile[j+2].split(' ')[-2])
+                if ('Pseudo atomic' in newline) and ('%s'%element in newline) and ('%s:%s '%(element,label) not in newline):
+                    E_gs_val = float(castepfile[j+2].split(' ')[-2])
+                j -= 1
+                newline = castepfile[j]        
+
+        #this linesearching cannot distinguish between multiple castep runs in one file and will just find the last energy supplied
+        if 'DRYRUN' in line: 
+            outfile.write('\nWARNING you have already run a DRYRUN calculation within this %s.castep file'%infile)
+            outfile.write('\nFinal shift may not be accurate, remove this dryrun calculation from the %s.castep file'%infile)
+            outfile.write('\n...EXITING...')
+            exit()
+
+    outfile.write('''|  E excited all electrons                   : {:>23.2f} eV    |
+'''.format(E_exc_all))
+    outfile.write('''|  E excited valence electrons               : {:>23.2f} eV    |
+'''.format(E_exc_val))
+    
+    # Check to be sure all values are supplied
+    if E_exc_all == 0 or E_exc_val == 0:
+        outfile.write('One or more values above is 0 eV')
+        outfile.write('\nFailed to find all values for Ecore with element %s in %s.castep'%(element,infile))
+        outfile.write('\n...EXITING...')
+        exit()
+
+   
+    # Get E_gs_all by doing dryrun
+    cellfile = open('%s.cell'%infile).readlines()
+    newcellfile = open('%s-dryrun.cell'%infile,'w')
+    for line in cellfile:
+        if '%s:%s '%(element,label) in line and '{' in line:
+            #newline = line.replace('{.*}','',regex=True)
+            newline = re.sub('{.*}','',line)
+            newcellfile.write('%s\n'%newline)
+        else:
+            newcellfile.write(line)
+    newcellfile.close()
+    os.system('cp %s.param %s-dryrun.param'%(infile,infile))
+
+    if os.path.isfile('%s-dryrun.castep'%infile):
+        outfile.write('''+----------------------------------------------------------------------------+
+''')
+        outfile.write('''|  Castep dryrun information from file       :      {:20}     |
+'''.format(infile))
+        outfile.write('''+----------------------------------------------------------------------------+
+''')
+    else:
+        outfile.write('''+----------------------------------------------------------------------------+
+''')
+        outfile.write('''|  Castep dryrun information from file       :      {:20}     |
+'''.format(infile))
+        outfile.write('''+----------------------------------------------------------------------------+
+''')
+        os.system('%s --dryrun %s-dryrun'%(exe,infile))
+        
+    try:
+        newcastepfile = open('%s-dryrun.castep'%infile).readlines()
+    except:
+        outfile.write('CASTEP --dryrun execution failed...check your castep binary is on your path')
+        outfile.write('\n...EXITING...')
+        exit()
+
+
+    # If the dryrun is successful, get the E_gs_all
+    for i,line in enumerate(newcastepfile):
+        if ('Atomic calculation' in line) and ('%s:%s'%(element,label) in line):
+            E_gs_all = float(newcastepfile[i+2].split(' ')[-2])
+        if ('Pseudo atomic' in line) and ('%s:%s'%(element,label) in line):
+            if E_gs_val == 0:
+                E_gs_val = float(newcastepfile[i+2].split(' ')[-2])
+
+    outfile.write('''|  E ground state valence electrons          : {:>23.2f} eV    |
+'''.format(E_gs_val))
+    outfile.write('''|  E ground state all electrons              : {:>23.2f} eV    |
+'''.format(E_gs_all))
+
+    if E_gs_all == 0 or E_gs_val == 0:
+        outfile.write('One or more values above is 0 eV')
+        outfile.write('\nFailed to find all values for Ecore with element %s in %s.castep or %s-dryrun.castep'%(element,infile,infile))
+        outfile.write('\nTry deleting all of the dryrun files and running the command again')
+        outfile.write('\n...EXITING...')
+        exit()
+
+    Ecore = (E_exc_all - E_gs_all) - (E_exc_val - E_gs_val)
+    outfile.write('''+----------------------------------------------------------------------------+
+''')
+    outfile.write('''|  E core from pseudopotentials              : {:>23.2f} eV    |
+'''.format(Ecore))
+    outfile.write('''+----------------------------------------------------------------------------+
+''')
+    return Ecore
+
+def get_exc_cell(element,infile):
+    '''Find the excited state total energy calculated as part of the core loss calculation
+    '''
+
+    outfile.write('''
++---------------------------- MIZOGUCHI SHIFT -------------------------------+
+''')
+
+    # First open the castep file in <infile>.castep
+    try:
+        castepfile = open('%s.castep'%infile).readlines()
+    except:
+        outfile.write('%s.castep not found in folder'%infile)
+        outfile.write('\n...EXITING...')
+        exit()
+
+    E_exc_cell = 0
+    numatoms = 0
+    for i,line in enumerate(castepfile):
+        if 'Electronic Spectroscopy' in line and 'type of calculation' in line:
+            j = i+1
+            newline = castepfile[i+1]
+            #FIXME WHY IS THIS WRITING OUT THREE TIMES IN MIZ.OUT FILE
+            while 'Calculation time' not in newline:
+                if 'Total number of ions in cell' in newline:
+                    numatoms = newline.split('=  ')[1].split(' ')[0]
+                if 'NB est. 0K energy' in newline:
+                    outfile.write('''|                Exc state energy from "NB est. 0K energy"                   |
+''')
+                    try:
+                        E_exc_cell = float(newline.split('=  ')[1].split(' ')[0])
+                    except:
+                        E_exc_cell = float(newline.split('=    ')[1].split(' ')[0])
+                #This is only useful if you haven't used the dm method so there is no estimated 0K energy
+                elif 'Final energy = ' in newline:
+                    outfile.write('''|                Exc state energy from "Final energy"                        |
+''')
+                    E_exc_cell = float(newline.split('=  ')[1].split(' ')[0])
+                j += 1
+                newline = castepfile[j]        
+        
+    if E_exc_cell == 0:
+        outfile.write('Final energy in %s.castep not found'%infile) 
+        outfile.write('\n...EXITING...')
+        exit()
+
+    outfile.write('''|  Core hole total energy                    : {:>23.2f} eV    |
+'''.format(E_exc_cell))
+
+    return E_exc_cell,numatoms
+
+
+def write_header(outfile,e):
+     
+    outfile.write('Mizoguchi Shift: Execution started on %s/%s/%s at %s:%s:%s\n'%(e.day,e.month,e.year,e.hour,e.minute,e.second))
+    
+    outfile.write('''+============================================================================+
+|                                                                            |
+|            M M  IIIII  ZZZZZ  OOO   GGG  U   U  CCC  H  H IIIII            |
+|           M M M   I       Z  O   O G     U   U C   C H  H   I              |
+|           M   M   I      Z   O   O G  GG U   U C     HHHH   I              |
+|           M   M   I     Z    O   O G   G U   U C   C H  H   I              |
+|           M   M IIIII  ZZZZZ  OOO   GGG   UUU   CCC  H  H IIIII            |
+|                                                                            |
++----------------------------------------------------------------------------+
+''')
+    return
+
+def flags(args,outfile):
+    outfile.write('''
++-------------------------------- FLAGS -------------------------------------+
+''')
+
+    outfile.write('''|  Element with core hole                    :      {:20}     |
+'''.format(args.element))
+    outfile.write('''|  Core hole label                           :      {:20}     |
+'''.format(args.label))
+    
+    outfile.write('''|  Input file to read from                   :      {:20}     |
+'''.format(args.inputfile))
+
+    if args.totalenergy:
+        outfile.write('''|  Non core hole ground state energy         : {:>23.2f} eV    |
+'''.format(args.totalenergy))
+    elif args.singlepoint:
+        outfile.write('''|  Non core hole gr. state energy from file  :      {:20}     |
+'''.format(args.singlepoint))
+    else:
+        outfile.write('''|  Non core hole ground state energy         :                      None     |
+''')
+
+    outfile.write('''|  CASTEP Executable                         :      {:20}     |
+'''.format(args.executable.split('/')[-1]))
+    outfile.write('''+----------------------------------------------------------------------------+
+''')
+
+
+def write_odi_file(infile,E_TE):
+    odifile = open('%s.odi'%infile).readlines()
+    outfile = open('%s-miz.odi'%infile,'w')
+    write_mizo = True
+    for line in odifile:
+        if 'core_chemical_shift' in line:
+            outfile.write('core_chemical_shift : %f'%E_TE)
+            write_mizo = False
+        else:
+            outfile.write(line)
+    if write_mizo: 
+        outfile.write('core_chemical_shift : %f'%E_TE)
+    outfile.close()
+    os.system('cp %s-miz.odi %s.odi'%(infile,infile))
+    os.system('rm %s-miz.odi '%(infile))
+    return
+#############
+#Main script#
+#############
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='''Calculates the Mizoguchi et al. chemical shift to the transition energy
+for plane wave pseudopotential calculated EELS/XAS spectra from a .castep file.
+Requires castep to be on your path, and the .castep, .cell, and .param files to be
+in the current working directory. This calculation will perform a castep dryrun.
+Example usage is `./miz_chemical_shift -i NaGe -e Ge -t -11848.48889250 -exe /usr/bin/castep.mpi`
+In the NaGe-mizoguchi.out file this provides the calculated shift as
++----------------------------------------------------------------------------+
+|  Mizoguchi chemical shift of E_TE              :            11142.28 eV    |
++----------------------------------------------------------------------------+
+
+IMPORTANT NOTE: miz_chemical_shift looks for the Free energy of the core-hole calculation i.e.
+NB est. 0K energy (E-0.5TS)      =  -11848.48889652     eV
+
+If it cannot find this it looks for the final energy i.e.
+Final energy, E             =  -145368.4497361     eV
+
+Therefore you must also supply a singlepoint calculation with the same settings or energy
+from the same Final energy value to get accurate results. This is printed in the .out file as
++---------------------------- MIZOGUCHI SHIFT -------------------------------+
+|                Exc state energy from "NB est. 0K energy"                   |
+|  Core hole total energy                    :               -12847.52 eV    |
+|                Groundstate energy from "NB est. 0K energy"                 |
+|  Singlepoint total energy                  :               -11848.49 eV    |
++----------------------------------------------------------------------------+
+''',formatter_class=RawTextHelpFormatter)
+
+
+    #Options
+    parser.add_argument('-e','--element',type=str,required=True,
+                        help='Element on which the core loss calculation has been performed ("-e Ge").\n\
+This is the element that should have the core hole placed on it')
+    parser.add_argument('-l','--label',type=str,
+                        help='Flag used to denote the core hole in the cell file.\n\
+Default is "exc". Usage is "--label 2" or "--label core"')
+    parser.add_argument('-i', '--inputfile', type=str,required=True,
+                        help='Name of the input file (<input>.castep only) in which the core loss calculation has been performed')
+    parser.add_argument('-s', '--singlepoint', type=str,
+                        help='Name of the file where the singlepoint energy was calculated.\n\
+NOTE that the singlepoint energy must be calculated on the same supercell as the core hole calc')
+    parser.add_argument('-t', '--totalenergy', type=float,
+                        help='Total energy of unit cell without a core hole.\n\
+If included this will calculate the full Mizoguchi chemical shift of the transition energy using this value as\n\
+the total singlepoint free energy (E-0.5TS)')
+    parser.add_argument('-exe', '--executable', type=str,
+                        help='This is the castep binary name e.g. castep.mpi or castep19.1\n\
+or path to castep binary. This will look for a castep binary on your $PATH if not supplied')
+
+    starttime = datetime.datetime.now()
+    args = parser.parse_args()
+
+    # remove the .castep ending in order to use this variable later
+    if args.inputfile.endswith('.castep'):
+        args.inputfile = args.inputfile.split('.castep')[0]
+
+    outfile = open('%s-mizoguchi.out'%args.inputfile,'w')
+
+
+    # Create the output file for the Mizoguchi shift
+    write_header(outfile,starttime)
+
+    # Check for CASTEP on the path and if found then use first exe found
+    if args.executable is None:
+        castep_exe = ['castep','castep.mpi','castep.serial']
+        for exe in castep_exe:
+            onpath = shutil.which(exe)
+            if onpath is not None:
+                continue
+
+        args.executable = onpath
+
+    # If we still couldn't find CASTEP then quit, because we can't do the DRYRUN calculation
+    if args.executable is None:
+        outfile.write('Cannot find a castep executable on your path please supply one with the -exe flag')
+        outfile.write('\n...EXITING...')
+        exit()
+
+    # If no label is supplied for the core hole use the default "exc"
+    if args.label is None:
+        args.label = 'exc'
+
+    # Write out which options we are using
+    flags(args,outfile)
+
+    # Get the second term of E_TE the core orbitals difference in energy between excited and ground state
+    Ecore = get_Ecore(element=args.element,label=args.label,infile=args.inputfile,exe=args.executable,outfile=outfile)
+
+    # Get excited state singlepoint energy and number of atoms
+    E_exc_cell,numatoms = get_exc_cell(element=args.element,infile=args.inputfile)
+
+    # Get singlepoint total energy either as supplied or from file
+    if args.totalenergy:
+        E_gs_cell = args.totalenergy
+    elif args.singlepoint:
+        E_gs_cell = get_Egs(infile=args.singlepoint,outfile=outfile,numatoms=numatoms)
+    else:
+        outfile.write('No ground state energy supplied, exiting without calculating full Mizoguchi chemical shift.')
+        outfile.write('\n...EXITING...')
+        exit()
+
+    outfile.write('''|  Singlepoint total energy                  : {:>23.2f} eV    |
+'''.format(E_gs_cell))
+    E_TE = (E_exc_cell - E_gs_cell)+Ecore
+    outfile.write('''+----------------------------------------------------------------------------+''')
+    outfile.write('''
+|  Mizoguchi chemical shift of E_TE          : {:>23.2f} eV    |'''.format(E_TE))
+    outfile.write('''
++----------------------------------------------------------------------------+''')
+    
+
+    write_odi_file(args.inputfile,E_TE)
+    outfile.write('''                                                                              ''')
+    outfile.write('''                                                                              ''')
+    outfile.write('''
++----------------------------------------------------------------------------+''')
+    outfile.write('''
+|                                  FINISHED                                  |''')
+    outfile.write('''
++----------------------------------------------------------------------------+''')
+    e = datetime.datetime.now()
+    outfile.write('\nMizoguchi Shift: Execution finished on %s/%s/%s at %s:%s:%s'%(e.day,e.month,e.year,e.hour,e.minute,e.second))
+    outfile.write('''\n ''')
+

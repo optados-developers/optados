@@ -1,0 +1,10 @@
+task : core
+dos_spacing : 0.1
+broadening : adaptive
+adaptive_smearing : 0.2
+core_type : absorption
+core_LAI_broadening : true
+LAI_gaussian_width : 1
+LAI_lorentzian_width : 0.5
+LAI_lorentzian_scale : 0.1
+core_chemical_shift : 11142.275322

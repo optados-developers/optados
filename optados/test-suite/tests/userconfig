@@ -18,6 +18,10 @@ extract_fn = tools parsers.parse_dos_dat.parse
 exe = ../../optados.x
 extract_fn = tools parsers.parse_od2od_fmt.parse
 
+[OPTADOS_MIZ_OUT_OK]
+exe = ../../tools/miz_chemical_shift
+extract_fn = tools parsers.parse_miz_out.parse
+
 [OD2OD_LOG_OK]
 exe = ../../od2od
 extract_fn = tools parsers.parse_od2od_log.parse

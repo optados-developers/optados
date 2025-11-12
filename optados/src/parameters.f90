@@ -36,7 +36,7 @@ module od_parameters
 
   use od_constants, only: dp
   use od_io, only: stdout, maxlen
-  use od_cell, only: atoms_label, num_atoms, num_species, atoms_symbol, &
+  use od_cell, only: atoms_label, num_atoms, num_species, atoms_symbol, atoms_label, &
        & atoms_species_num, atoms_pos_frac, atoms_pos_cart, num_crystal_symmetry_operations
 
   implicit none
@@ -117,6 +117,7 @@ module od_parameters
   real(kind=dp), public, save :: LAI_lorentzian_scale
   real(kind=dp), public, save :: LAI_lorentzian_offset
   logical, public, save :: LAI_lorentzian
+  real(kind=dp), public, save :: core_chemical_shift ! used in conjunction with miz_chemical_shift script in tools
 
   !! Phonon EELS parameters
   character(len=maxlen), public, save :: phonon_eels_task
@@ -267,6 +268,14 @@ contains
     end if
     call param_get_efermi('efermi', found, efermi_choice, efermi_user)
 
+    compute_band_energy = .true.
+    call param_get_keyword('compute_band_energy', found, l_value=compute_band_energy)
+
+    ! Here we apply a chemical shift to the core energy if supplied by the user
+    core_chemical_shift = -1.0_dp ! Mizoguchi chemical shift is always +ve
+    call param_get_keyword('core_chemical_shift', found, r_value=core_chemical_shift)
+    if (core_chemical_shift > 0.0_dp) compute_band_gap = .true.
+
     ! Force all Gaussians to be greater than the width of a bin. When using numerical_indos
     ! this is critical for counting all of the Gaussian DOS peaks.
     ! When using semi-analytic integration it is desirable to show up very sharp peaks in the
@@ -286,9 +295,6 @@ contains
     call param_get_keyword('hybrid_linear', found, l_value=hybrid_linear)
     hybrid_linear_grad_tol = 0.01_dp ! Seems about right for getting semi-core states correctly integrated.
     call param_get_keyword('hybrid_linear_grad_tol', found, r_value=hybrid_linear_grad_tol)
-
-    compute_band_energy = .true.
-    call param_get_keyword('compute_band_energy', found, l_value=compute_band_energy)
 
     set_efermi_zero = .false.
     if (pdis) set_efermi_zero = .true.
@@ -560,6 +566,7 @@ contains
     implicit none
 
     integer :: nat, nsp, atom_counter
+    character(len=maxlen) :: temp_symb
 
     ! System
 
@@ -569,14 +576,20 @@ contains
       if (iprint > 2) then
         write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
         if (lenconfac .eq. 1.0_dp) then
-          write (stdout, '(1x,a)') '|   Site       Fractional Coordinate          Cartesian Coordinate (Ang)     |'
+          write (stdout, '(1x,a)') '|      Site            Fractional Coordinate     Cartesian Coordinate (Ang)  |'
         else
-          write (stdout, '(1x,a)') '|   Site       Fractional Coordinate          Cartesian Coordinate (Bohr)    |'
+          write (stdout, '(1x,a)') '|      Site            Fractional Coordinate     Cartesian Coordinate (Bohr)  |'
         end if
         write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
         do nsp = 1, num_species
           do nat = 1, atoms_species_num(nsp)
-            write (stdout, '(1x,a1,1x,a2,1x,i3,3F10.5,3x,a1,1x,3F10.5,4x,a1)') '|', atoms_symbol(nsp), nat, &
+            ! Use the atoms species unless atom label is present
+            if (trim(atoms_symbol(nsp)) .ne. trim(atoms_label(nsp))) then
+              temp_symb = atoms_label(nsp)
+            else
+              temp_symb = atoms_symbol(nsp)
+            endif
+            write (stdout, '(1x,a1,1x,a7,1x,i3,7x,3F8.4,3x,a1,1x,3F8.4,4x,a1)') '|', trim(temp_symb), nat, &
               atoms_pos_frac(:, nat, nsp), '|', atoms_pos_cart(:, nat, nsp)*lenconfac, '|'
           end do
         end do
@@ -803,6 +816,12 @@ contains
         write (stdout, '(1x,a78)') '|  Absorption or Emission Spectrum           :  Emission                     |'
       else
         write (stdout, '(1x,a78)') '|  Absorption or Emission Spectrum           :  Both                         |'
+      end if
+      ! Write out if mizoguchi shift is applied
+      if (core_chemical_shift == -1.0_dp) then ! mizoguchi shift not set
+        write (stdout, '(1x,a78)') '|  Core chemical shift                       :  None                         |'
+      else ! It is set
+        write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Core chemical shift                       :', core_chemical_shift, '|'
       end if
       if (core_LAI_broadening) then
         write (stdout, '(1x,a78)') '|  Include lifetime and Instrument Broadening:  True                         |'
@@ -1521,6 +1540,7 @@ contains
     call comms_bcast(optics_qdir(1), 3)
     call comms_bcast(optics_intraband, 1)
     call comms_bcast(optics_drude_broadening, 1)
+    call comms_bcast(core_chemical_shift, 1)
     call comms_bcast(core_geom, len(core_geom))
     call comms_bcast(core_type, len(core_type))
     call comms_bcast(core_qdir(1), 3)
