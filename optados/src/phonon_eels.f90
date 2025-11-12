@@ -24,7 +24,7 @@
 !=========================================================================!
 ! MODULE od_phonon_eels
 ! This module contains routines for calculating a phonon EELS spectrum
-!-------------------------------------------------------------------------------
+!---------------------------------------------------------------------------
 module od_phonon_eels
 
   !-------------------------------------------------------------------------!
@@ -48,12 +48,14 @@ module od_phonon_eels
 
   public :: phonon_eels_calculate
 
-  real(kind=dp), allocatable, save  :: adf(:, :) !(iatom,1:6)
-  real(kind=dp), allocatable, save  :: debye_waller(:) !(iatom)
+  real(kind=dp), allocatable, save     :: adf(:, :) !(iatom,1:6)
+  real(kind=dp), allocatable, save     :: debye_waller(:) !(iatom)
   complex(kind=dp), allocatable, save  :: phonon_eigenvectors(:, :, :, :) ! iqpoint, ieigenvalues, iatom, i=1,3)
-  real(kind=dp), allocatable, save  :: phonon_eigenvalues(:, :)
-  real(kind=dp), allocatable, save :: qpoint_positions(:, :)
-    real(dp), allocatable :: atomic_positions(:, :) ! one day this ought to go in the right module, this includes mass as the 4th coordinate 
+  real(kind=dp), allocatable, save     :: phonon_eigenvalues(:, :)
+  real(kind=dp), allocatable, save     :: qpoint_positions(:, :)
+  real(dp), allocatable                :: atomic_positions(:, :) ! one day
+  ! this ought to go in the right module, this includes mass as the 4th
+  ! coordinate
   
   real(kind=dp), allocatable, save  :: lf_dielectric_tensor(:, :, :) ! low frequency dielectric tensor
 
@@ -73,8 +75,9 @@ module od_phonon_eels
 
   
 contains
-
+!=========================================================================!
   subroutine phonon_eels_calculate
+!=========================================================================!
     use od_io, only: stdout, io_error
     use od_electronic, only: elec_read_optical_mat, elec_read_band_energy
     use od_parameters, only: iprint, phonon_eels_task, phonon_eels_aloof_method
@@ -90,9 +93,9 @@ contains
     integer :: N
  
     
-    aloof_scattering = .false.
-    impact_scattering = .false.
-    dipole_aloof = .false.
+    aloof_scattering    = .false.
+    impact_scattering   = .false.
+    dipole_aloof        = .false.
     semiclassical_aloof = .false.
 
     if (on_root) then
@@ -174,7 +177,9 @@ contains
 
   end subroutine phonon_eels_calculate
 
-  subroutine phonon_eels_set_frequency_scale ! Need to tidy this up to include freq/nbands.neq.integer etc
+  !=========================================================================!
+  subroutine phonon_eels_set_frequency_scale
+  !=========================================================================!! Need to tidy this up to include freq/nbands.neq.integer etc
     use od_io, only: stdout
     implicit none
     real(kind=dp) :: dE
@@ -187,7 +192,9 @@ contains
 
   end subroutine  phonon_eels_set_frequency_scale
 
+  !=========================================================================!
   subroutine phonon_eels_read_inf_dielectric_tensor
+  !=========================================================================!
     use od_io, only: stdout, io_file_unit, io_error
     use od_io, only: seedname
     use od_parameters, only: iprint
@@ -196,7 +203,7 @@ contains
    
     phonon_in_unit = io_file_unit()
     open (unit=phonon_in_unit, file=trim(seedname)//".inf_dielectric_tensor", form='formatted', iostat=ierr)
-    if (ierr .ne. 0) call io_error(" ERROR: Cannot open .inf_dielectric_tensor file in phonon_eels_read_inf_dielectric_tendor") ! this doesn't work....
+    if (ierr .ne. 0) call io_error(" ERROR: Cannot open .inf_dielectric_tensor file in phonon_eels_read_inf_dielectric_tensor") ! this doesn't work....
 
     read (phonon_in_unit, *) (inf_dielectric_tensor(1, i), i=1, 3)
     read (phonon_in_unit, *) (inf_dielectric_tensor(2, i), i=1, 3)
@@ -205,7 +212,9 @@ contains
     
   endsubroutine phonon_eels_read_inf_dielectric_tensor 
 
+  !=========================================================================!
   subroutine phonon_eels_read_born_eff_charges
+  !=========================================================================!
     use od_io, only: stdout, io_file_unit, io_error, maxlen
     use od_io, only: seedname
     use od_parameters, only: iprint
@@ -227,7 +236,9 @@ contains
     
   endsubroutine phonon_eels_read_born_eff_charges
 
+!=========================================================================!
   subroutine phonon_eels_calculate_mode_osc()
+!=========================================================================!
     implicit none
     real(kind=dp), allocatable :: mode_osc_1(:, :)
     real(kind=dp), allocatable :: mode_eff_charge(:, :)
@@ -274,7 +285,9 @@ contains
     
   endsubroutine phonon_eels_calculate_mode_osc
   
+!=========================================================================!
   subroutine phonon_eels_calculate_lf_dielectric_tensor(lf_dielectric_tensor, inf_dielectric_tensor, broadening)
+!=========================================================================!
     use od_constants, only: pi
     use od_cell, only: cell_volume
     implicit none 
@@ -315,7 +328,9 @@ contains
 
   end subroutine phonon_eels_calculate_lf_dielectric_tensor
 
+  !=========================================================================!
   complex function polarizability(ibin, kx, ky)
+  !=========================================================================!
     implicit none
     real, intent(in) ::  kx, ky
     integer, intent(in):: ibin
@@ -331,7 +346,9 @@ contains
 
   end function polarizability
 
+  !=========================================================================!
    subroutine phonon_eels_read_phonon_file
+  !=========================================================================!
     use od_io, only: stdout, maxlen, io_file_unit, io_error
     use od_io, only: seedname
     use od_parameters, only: iprint
@@ -419,8 +436,9 @@ contains
 
   end subroutine phonon_eels_read_phonon_file
 
- 
+ !=========================================================================!
   subroutine phonon_eels_read_task
+ !=========================================================================!
     use od_io, only: stdout, io_error
     use od_parameters, only: phonon_eels_task
     implicit none
