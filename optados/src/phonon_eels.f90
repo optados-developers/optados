@@ -37,8 +37,10 @@ module od_phonon_eels
 
   real(kind=dp), public, allocatable, save  :: temp(:, :, :)
 
-  logical, public, save :: aloof_scattering
+
   logical, public, save :: impact_scattering
+  logical, public, save :: aloof_scattering
+  ! Types of aloof
   logical, public, save :: semiclassical_aloof
   logical, public, save :: dipole_aloof
 
@@ -49,8 +51,10 @@ module od_phonon_eels
   public :: phonon_eels_calculate
 
   real(kind=dp), allocatable, save     :: adf(:, :) !(iatom,1:6)
+  real(kind=dp), allocatable, save     :: aff(:) !(natom)
   real(kind=dp), allocatable, save     :: debye_waller(:) !(iatom)
-  complex(kind=dp), allocatable, save  :: phonon_eigenvectors(:, :, :, :) ! iqpoint, ieigenvalues, iatom, i=1,3)
+  complex(kind=dp), allocatable, save  :: phonon_eigenvectors(:, :, :, :)
+  ! iqpoint, ieigenvalues, iatom, i=1,3)
   real(kind=dp), allocatable, save     :: phonon_eigenvalues(:, :)
   real(kind=dp), allocatable, save     :: qpoint_positions(:, :)
   real(dp), allocatable                :: atomic_positions(:, :) ! one day
@@ -112,13 +116,16 @@ contains
     ! Need to think about the frequency scale freq(1,nomega)
     ! O to maximum mode frequency+10%
 
-  !  if (impact_scattering) then
-      !  call phonon_eels_get_thermal_noise() ! PE_read_adf && PE_make_dewall or PE_read_debwall
-                                              !  Completed       DUMMY             DUMMY
-      !    call elec_read_band_energy()   ! Completed - shouldn't need this 
-   !   call phonon_eels_read_phonon_file() ! Completed
-   !   call phonon_eels_read_chge_trans()  ! DUMMY Subroutine
-   !  endif
+    if (impact_scattering) then
+      call phonon_eels_get_thermal_noise()
+      ! P E_read_adf && PE_make_dewall
+      ! or PE_read_debwall --  Completed
+    ! call elec_read_band_energy()   ! Don't think we need this?
+      call phonon_eels_read_phonon_file() ! Completed
+      call phonon_eels_get_chge_trans()  ! DUMMY Subroutine
+
+      ! copy and paste the code into here.
+   end if
 
     if (aloof_scattering) then
       call phonon_eels_read_aloof_method   ! Completed
@@ -147,6 +154,8 @@ contains
         if (ierr /= 0) call io_error(" Error : cannot allocate lf_dielectric_tensor")
         mode_osc=0.0_dp
 
+        ! Think things go wrong from here. The modes oscs don't
+        ! correlate with CASTEP.
         call phonon_eels_calculate_mode_osc()
         broadening=0.01_dp ! probably needs to be in the input file
 
@@ -176,6 +185,49 @@ contains
 
 
   end subroutine phonon_eels_calculate
+
+  !=========================================================================!
+  subroutine phonon_eels_get_chge_trans
+  !=========================================================================!
+    implicit none
+
+    ! Options
+    ! =======
+    ! call phonon_eels_read_chge_trans_method ! Needs coding
+    ! !chge_trans_method [xray_aff | xray_aff_ct | abinitio? | elec_aff? ]
+    !  - Read from lookup table
+    !  - Read from lookup + additional charge transfer info. (i.e. add
+    !       Hirshfeld / Mulikan)
+    !  - Calculate from CASTEP (Ben Shi)
+
+    ! call phonon_eels_get_xray_aff
+
+  end subroutine phonon_eels_get_chge_trans
+
+  !=========================================================================!
+  subroutine phonon_eels_get_xray_aff
+  !=========================================================================!
+    implicit none
+
+    !loop over natoms
+    ! aff(:) = call subroutine xray_aff_function(iatom_species)
+
+    contains
+
+    real function xray_aff_function(species)
+      implicit none
+      character(len=3), intent(in) species
+
+      ! look through the table 6.1.1.4 (should be in a
+      ! phonon_eels_constants.f90 module)
+      ! https://onlinelibrary.wiley.com/iucr/itc/Cb/ch6o1v0001/table6o1o1o4.pdf
+      ! find the species
+      ! apply the function
+      ! retun function
+
+    end function xray_aff_function(species)
+
+  end subroutine phonon_eels_get_xray_aff
 
   !=========================================================================!
   subroutine phonon_eels_set_frequency_scale
@@ -459,7 +511,10 @@ contains
 
   end subroutine phonon_eels_read_task
 
+
+ !=========================================================================!
   subroutine phonon_eels_read_aloof_method
+!=========================================================================!
     use od_io, only: stdout, io_error
     use od_parameters, only: phonon_eels_aloof_method
     ! use od_parameters, only: phonon_eels_aloof_methof
