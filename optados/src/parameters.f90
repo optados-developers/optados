@@ -536,7 +536,7 @@ contains
       if (ierr /= 0) call io_error('Error: param_read - allocation failed for photo_imfp_value')
       call param_get_keyword_vector('photo_imfp_value', found, i_temp, r_value=photo_imfp_value)
 
-    else if (index(photo_imfp_choice, 'curve') > 0) then
+    else if (index(photo_imfp_choice, 'cu_curve') > 0) then
       allocate (photo_imfp_value(1), stat=ierr)
       if (ierr /= 0) call io_error('Error: param_read - allocation failed for photo_imfp_value')
       call param_get_keyword_vector('photo_imfp_value', found, i_temp, r_value=photo_imfp_value)
@@ -991,18 +991,18 @@ contains
     if (photo) then
       write (stdout, '(1x,a78)') '+----------------------- PHOTOEMISSION PARAMETERS ---------------------------+'
       if (index(photo_model, '1step') > 0) then
-        write (stdout, '(1x,a78)') '|  Photoemission Model                       :     1-Step Model              |'
-        write (stdout, '(1x,a78)') '|  Photoemission Final State                 :     Free Electron State       |'
+        write (stdout, '(1x,a78)') '|  Photoemission Model                       :  1-Step Model                 |'
+        write (stdout, '(1x,a78)') '|  Photoemission Final State                 :  Free Electron State          |'
       elseif (index(photo_model, '3step') > 0) then
-        write (stdout, '(1x,a78)') '|  Photoemission Model                       :     3-Step Model              |'
-        write (stdout, '(1x,a78)') '|  Photoemission Final State                 :     Bloch State               |'
+        write (stdout, '(1x,a78)') '|  Photoemission Model                       :  3-Step Model                 |'
+        write (stdout, '(1x,a78)') '|  Photoemission Final State                 :  Bloch State                  |'
         if (photo_use_tmprob) then
-          write (stdout, '(1x,a78)') '|         *** Including transmission probability across surface ***          |'
+          write (stdout, '(1x,a78)') '|  *** Including transmission probability across surface ***                 |'
         else
-          write (stdout, '(1x,a78)') '|       *** NOT Including transmission probability across surface ***        |'
+          write (stdout, '(1x,a78)') '|  *** NOT Including transmission probability across surface ***             |'
         end if
       elseif (index(photo_model, 'ds_like_pe') > 0) then
-        write (stdout, '(1x,a78)') '|  Photoemission Model                       :     Simplified PE Model       |'
+        write (stdout, '(1x,a78)') '|  Photoemission Model                       :  Simplified PE Model          |'
       end if
       if (photo_energy_sweep) then
         write (stdout, '(1x,a46,1x,1f10.4,a4,1f7.4,a10)') '|  Photon Energy Sweep                       :', photo_photon_min,&
@@ -1014,19 +1014,19 @@ contains
       if (photo_slab_middle .gt. 0.0_dp) then
         write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Slab Middle Z-Coord.       (Ang)          :', photo_slab_middle, '|'
         write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Inferred Slab Max Z-Coord. (Ang)          :', photo_slab_max, '|'
-        write (stdout, '(1x,a78)') '|  User supplied layer boundaries, check geometry and layer #s carefully!    |'
+        write (stdout, '(1x,a78)') '|  User supplied layer boundaries, check printout and layer #s carefully!    |'
       else
         write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Slab Max Z-Coord.          (Ang)          :', photo_slab_max, '|'
         write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Slab Min Z-Coord.          (Ang)          :', photo_slab_min, '|'
-        write (stdout, '(1x,a78)') '|  Slab middle and layers will be inferred from boundaries, check geometry!  |'
+        write (stdout, '(1x,a78)') '|  Slab middle and layers will be inferred from boundaries, check printout!  |'
       end if
       if (index(photo_imfp_choice, 'const') > 0) then
         write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  IMFP Constant              (Ang)          :', photo_imfp_value(1), '|'
       else if (index(photo_imfp_choice, 'layers') > 0) then
         write (stdout, '(1x,a78)') '|  Layer by Layer IMFP Constants     (Ang)   : Layer values provided by user |'
         write (stdout, '(1x,a78)') '|                                              will be printed later         |'
-      else if (index(photo_imfp_choice, 'curve') > 0) then
-        write (stdout, '(1x,a78)') '|  Energy Dependent IMFP Curve               : Values will be printed later  |'
+      else if (index(photo_imfp_choice, 'cu_curve') > 0) then
+        write (stdout, '(1x,a78)') '|  Energy Dependent IMFP Curve for Cu        : Values will be printed later  |'
       end if
       write (stdout, '(1x,a46,3x,f5.1,23x,a1)') '|  Bulk cutoff dist. (int. multiple of IMFP) :', photo_bulk_cutoff, '|'
       if ((photo_elec_field .gt. 1.0E-4_dp) .or. (photo_elec_field .lt. 1.0E-25_dp)) then
@@ -1045,30 +1045,42 @@ contains
         write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Phi      - min -           (deg)          :', photo_phi_min, '|'
         write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Phi      - max -           (deg)          :', photo_phi_max, '|'
       end if
-      if (index(photo_output, 'off') == 0 .or. index(photo_output, 'qe_tensor') == 0) then
-        write (stdout, '(1x,a46,4x,1f7.4,20x,a1)') '|  Binding Energy Broad. Width (eV)          :', &
-        & photo_bindenergy_broadening, '|'
-      end if
-      if (index(photo_output, 'bindenergy_ptrans_map') > 0 .or. index(photo_output, 'p_tensor') > 0) then
-        write (stdout, '(1x,a46,4x,1f8.5,19x,a1)') '|  Binding Energy P Matrix Bin Width (1/A)   :', photo_pmat_bin_width, '|'
+      if (index(photo_output, 'ekin_ptrans_map') > 0 .or. index(photo_output, 'p_tensor') > 0) then
+        write (stdout, '(1x,a46,4x,1f8.5,19x,a1)') '|  P Matrix Bin Width (1/A)                  :', photo_pmat_bin_width, '|'
       end if
       if (index(photo_output, 'const_bindenergy_p_map') > 0) then
-        write (stdout, '(1x,a46,2x,1f8.3,21x,a1)') '|  Binding Energy for const. E Map (eV)      :', &
+        write (stdout, '(1x,a46,2x,1f8.3,21x,a1)') '|  (E_bind - E_F) -> const E_bind p-map (eV) :', &
           photo_const_bindenergy_value, '|'
       end if
       if (index(photo_output, 'off') == 0) then
+        write (stdout, '(1x,a46,4x,1f7.4,20x,a1)') '|  Binding Energy Broad. Width (eV)          :', &
+        & photo_bindenergy_broadening, '|'
         write (stdout, '(1x,a78)') '|  ------ List of extra values to be calculated and written to file -------  |'
-        write (stdout, '(1x,a78)') '|  ------------------------------------------------------------------------  |'
-        if (index(photo_output, 'bindenergy_ptrans_map') > 0) write (stdout, '(1x,a78)') &
-          '|  --------------- Binding Energy vs transverse Energy map ----------------  |'
-        if (index(photo_output, 'p_tensor') > 0) write (stdout, '(1x,a78)') &
-          '|  -------------------- Full momentum (px,py,pz) tensor -------------------  |'
-        if (index(photo_output, 'bindenergy_curve') > 0) write (stdout, '(1x,a78)') &
-          '|  ---------------------- Binding Energy curve (EDC) ----------------------  |'
-        if (index(photo_output, 'const_bindenergy_p_map') > 0) write (stdout, '(1x,a78)') &
-          '|  --------------------- Constant binding Energy map ----------------------  |'
-        if (index(photo_output, 'qe_tensor') > 0) write (stdout, '(1x,a78)') &
-          '|  ---------------------------- Full QE tensor ----------------------------  |'
+        if (index(photo_output, 'bindenergy_curve') > 0) then
+          write (stdout, '(1x,a78)') '|  E_binding curve (EDC)                     :  True                         |'
+        else
+          write (stdout, '(1x,a78)') '|  E_binding curve (EDC)                     :  False                        |'
+        end if
+        if (index(photo_output, 'ekin_ptrans_map') > 0) then
+          write (stdout, '(1x,a78)') '|  E_kinetic vs p_transverse map             :  True                         |'
+        else
+          write (stdout, '(1x,a78)') '|  E_kinetic vs p_transverse map             :  False                        |'
+        end if
+        if (index(photo_output, 'p_tensor') > 0) then
+          write (stdout, '(1x,a78)') '|  Full momentum (px,py,pz) tensor           :  True                         |'
+        else
+          write (stdout, '(1x,a78)') '|  Full momentum (px,py,pz) tensor           :  False                        |'
+        end if
+        if (index(photo_output, 'const_bindenergy_p_map') > 0) then
+          write (stdout, '(1x,a78)') '|  Constant E_binding,  px vs py map         :  True                         |'
+        else
+          write (stdout, '(1x,a78)') '|  Constant E_binding,  px vs py map         :  False                        |'
+        end if
+        if (index(photo_output, 'qe_tensor') > 0) then
+          write (stdout, '(1x,a78)') '|  Full QE tensor                            :  True                         |'
+        else
+          write (stdout, '(1x,a78)') '|  Full QE tensor                            :  False                        |'
+        end if
       end if
     end if
     write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
@@ -1810,19 +1822,23 @@ contains
     call comms_bcast(photo_slab_min, 1)
     call comms_bcast(photo_slab_middle, 1)
     call comms_bcast(photo_len_layers_value, 1)
-    if (.not. on_root) then
-      allocate (photo_layers_tops(photo_len_layers_value), stat=ierr)
-      if (ierr /= 0) call io_error('Error: param_dist - allocation failed for photo_layers_tops')
+    if (photo_len_layers_value .gt. 0) then
+      if (.not. on_root) then
+        allocate (photo_layers_tops(photo_len_layers_value), stat=ierr)
+        if (ierr /= 0) call io_error('Error: param_dist - allocation failed for photo_layers_tops')
+      end if
+      call comms_bcast(photo_layers_tops(1), photo_len_layers_value)
     end if
-    call comms_bcast(photo_layers_tops(1), photo_len_layers_value)
     call comms_bcast(photo_elec_field, 1)
     call comms_bcast(photo_remove_box_states, 1)
     call comms_bcast(photo_len_imfp_value, 1)
-    if (.not. on_root) then
-      allocate (photo_imfp_value(photo_len_imfp_value), stat=ierr)
-      if (ierr /= 0) call io_error('Error: param_dist - allocation failed for photo_imfp_value')
+    if (photo_len_imfp_value .gt. 0) then
+      if (.not. on_root) then
+        allocate (photo_imfp_value(photo_len_imfp_value), stat=ierr)
+        if (ierr /= 0) call io_error('Error: param_dist - allocation failed for photo_imfp_value')
+      end if
+      call comms_bcast(photo_imfp_value(1), photo_len_imfp_value)
     end if
-    call comms_bcast(photo_imfp_value(1), photo_len_imfp_value)
     call comms_bcast(photo_imfp_choice, len(photo_imfp_choice))
     call comms_bcast(photo_bulk_cutoff, 1)
     call comms_bcast(photo_temperature, 1)

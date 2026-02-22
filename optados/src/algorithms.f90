@@ -71,25 +71,47 @@ contains
 
   end function channel_to_am
 
+! !=========================================================================!
+!   function gaussian(m, w, x)
+! !=========================================================================!
+! ! ** Return value of Gaussian(mean=m,width=w) at position x
+! ! I don't know who's this function originally was, CJP? MIJP?
+! !=========================================================================!
+!     implicit none
+
+!     real(kind=dp), intent(in) :: m, w, x
+!     real(kind=dp)             :: gaussian
+
+!     if (0.5_dp*((x - m)/w)**2 .gt. 30.0_dp) then
+
+!       gaussian = 0.0_dp
+!       return
+!     else
+!       gaussian = inv_sqrt_two_pi*exp(-0.5_dp*((x - m)/w)**2)/w
+!     end if
+!     return
+!   end function gaussian
+
 !=========================================================================!
-  function gaussian(m, w, x)
+  pure function gaussian(m, w, x) result(g)
 !=========================================================================!
 ! ** Return value of Gaussian(mean=m,width=w) at position x
 ! I don't know who's this function originally was, CJP? MIJP?
+! Edited by Felix Mildner, Feb 2026, for performance improvements
 !=========================================================================!
     implicit none
-
     real(kind=dp), intent(in) :: m, w, x
-    real(kind=dp)             :: gaussian
+    real(kind=dp)             :: g
+    real(kind=dp)             :: t, t2
 
-    if (0.5_dp*((x - m)/w)**2 .gt. 30.0_dp) then
+    t = (x - m)/w
+    t2 = 0.5_dp*t*t
 
-      gaussian = 0.0_dp
-      return
+    if (t2 .gt. 30.0_dp) then
+      g = 0.0_dp
     else
-      gaussian = inv_sqrt_two_pi*exp(-0.5_dp*((x - m)/w)**2)/w
+      g = inv_sqrt_two_pi*exp(-t2)/w
     end if
-    return
   end function gaussian
 
 !=========================================================================!

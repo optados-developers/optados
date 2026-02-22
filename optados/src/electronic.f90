@@ -40,14 +40,12 @@ module od_electronic
   complex(kind=dp), allocatable, public, save  :: optical_mat(:, :, :, :, :)
   complex(kind=dp), allocatable, public, save  :: elnes_mat(:, :, :, :, :)
 
-  !Additional variables for photoemission.- V.Chang Nov-2020,
+  !Additional variables for photoemission.- V.Chang Nov-2020, F. Mildner April-2023 and later
   real(kind=dp), allocatable, public, save     :: band_curvature(:, :, :, :, :)
   complex(kind=dp), allocatable, public, save  :: foptical_mat(:, :, :, :, :)
-  ! F. Mildner April-2023
   character(len=80), public, save              :: femfile_header
   ! fem_energy_info: energy_count, energy_min, energy_step, energy_fermi, energy_workfct
   real(kind=dp), dimension(5), public, save            :: fem_energy_info
-  ! F.Mildner Feb/Mar-2025
   real(kind=dp), allocatable, public, save     :: transmit_prob(:, :, :)
   character(len=80), public, save              :: tmprob_file_header
   real(kind=dp), allocatable, public, save     :: photo_gkgrid(:, :, :, :, :)
