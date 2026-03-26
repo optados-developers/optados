@@ -12,7 +12,7 @@ SMEARING_WIDTH: 300.0 K
 
 geom_force_tol : 0.005
 
-SPECTRAL_TASK: Photofem
+SPECTRAL_TASK: All
 MIXING_SCHEME: Pulay
 
 WRITE_FORMATTED_POTENTIAL: TRUE
@@ -22,10 +22,8 @@ PDOS_CALCULATE_WEIGHTS: TRUE
 write_cell_structure : T
 write_cif_structure  : T
 
-CONTINUATION
-
 IPRINT : 1
 
-%BLOCK devel_code
-fem_spec: energy_min: 5.9 energy_max: 6 energy_step: 0.01 energy_fermi: -1.1049 energy_workfct: 4.2202 new_approach :endfem_spec
-%ENDBLOCK devel_code
+#%BLOCK devel_code
+#fem_spec: energy_min: 5.9 energy_max: 6 energy_step: 0.01 energy_fermi: **** energy_workfct: 4.2202 new_approach :endfem_spec
+#%ENDBLOCK devel_code

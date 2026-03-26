@@ -1,0 +1,8 @@
+*.ome_bin
+*.pdos_bin
+*.fem_bin
+*.dome_bin
+*.dome_fmt
+*.bands
+*.tmprob_bin
+*.odoS

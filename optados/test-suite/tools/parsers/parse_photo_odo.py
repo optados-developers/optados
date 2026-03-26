@@ -14,8 +14,12 @@ e_fermi_ab = re.compile(r"Fermi\ energy\ \(Adaptive\ broadening\)\ \:\s*([0-9\.-
 e_fermi_lb = re.compile(r"Fermi\ energy\ \(Linear\ broadening\)\ \:\s*([0-9\.-]+)\s*")
 
 qe_bulk = re.compile(r"Bulk \s*([+-]?(?=\.\d|\d)(?:\d+)?(?:\.?\d*))(?:[Ee]([+-]?\d+))?\s*")
-qe_total = re.compile(r"Total Quantum Efficiency \(electrons/photon\):\s+([+-]?(?=\.\d|\d)(?:\d+)?(?:\.?\d*))(?:[Ee]([+-]?\d+))?\s*") 
+qe_total = re.compile(r"Total Quantum Efficiency \(electrons/photon\):\s+([+-]?(?=\.\d|\d)(?:\d+)?(?:\.?\d*))(?:[Ee]([+-]?\d+))?\s*")
 mte = re.compile(r"Weighted\ Mean\ Transverse\ Energy\ \(eV\)\:\s+([+-]?(?=\.\d|\d)(?:\d+)?(?:\.?\d*))(?:[Ee]([+-]?\d+))?\s*")
+layer_imfp = re.compile(r"\|\s*(\S+)\s+(\d+)\s+(\d+)\s+([+-]?\d+(?:\.\d+)?(?:[Ee][+-]?\d+)?)\s+([+-]?\d+(?:\.\d+)?(?:[Ee][+-]?\d+)?)\s+([+-]?\d+(?:\.\d+)?(?:[Ee][+-]?\d+)?)\s*\|$")
+ds_band_qe = re.compile(r"^\s*\|\s*QE from single band contributions\s*:\s*([+-]?\d+(?:\.\d+)?E[+-]?\d+)\s*\|$")
+ds_band_mte = re.compile(r"^\s*\|\s*MTE from single band contrib\.\s*\(eV\)\s*:\s*([+-]?\d+(?:\.\d+)?E[+-]?\d+)\s*\|$")
+ds_dos_mte = re.compile(r"^\s*\|\s*MTE estimate from DOS\s*\(eV\)\s*:\s*([+-]?\d+(?:\.\d+)?E[+-]?\d+)\s*\|$")
 
 def parse(fname):
     """
@@ -57,6 +61,18 @@ def parse(fname):
         if match:
             retdict['mte'].append(float(match.groups()[0]+'E'+match.groups()[1]))
             continue
+        match = layer_imfp.search(l)
+        if match:
+            retdict['layer_imfp'].append([float(x) for x in match.groups()[1:]])
+        match = ds_band_qe.search(l)
+        if match:
+            retdict['ds_band_qe'].append(float(match.groups()[0]))
+        match = ds_band_mte.search(l)
+        if match:
+            retdict['ds_band_mte'].append(float(match.groups()[0]))
+        match = ds_dos_mte.search(l)
+        if match:
+            retdict['ds_dos_mte'].append(float(match.groups()[0]))
         ###############################################################
 
 

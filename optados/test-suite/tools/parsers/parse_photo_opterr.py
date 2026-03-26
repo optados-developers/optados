@@ -9,7 +9,7 @@ from collections import defaultdict
 
 from . import show_output
 
-error_msg = re.compile("Error: ([A-Za-z]+)")
+error_msg = re.compile(r"Error\s*:\s*(.*)$")
 
 def parse(fname):
     """

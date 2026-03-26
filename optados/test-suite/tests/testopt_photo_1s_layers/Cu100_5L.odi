@@ -1,0 +1,39 @@
+# Full-feature Cu(100) ODI for photoemission exploration
+# This should be a *valid* input that runs successfully.
+
+task                 : photoemission
+
+photo_model          : 1step
+
+photo_photon_energy  : 6.0
+photo_photon_min     : 4.0
+photo_photon_max     : 6.0
+
+jdos_spacing         : 0.01
+broadening           : adaptive
+efermi               : -0.9875
+
+optics_geom          : unpolar
+optics_qdir          : 1 1 0
+
+photo_slab_min       : 7.559
+photo_slab_max       : 18.282
+
+photo_work_function  : 4.20491
+
+photo_imfp_model    : layers
+photo_imfp_value     : 19.0   6.9   5.3
+photo_bulk_cutoff    : 10.0
+
+photo_elec_field     : 0.0
+
+photo_temperature    : 300.0
+
+photo_momentum       : crystal
+
+photo_theta_min      : 0.0
+photo_theta_max      : 90.0
+photo_phi_min        : 0.0
+photo_phi_max        : 90.0
+
+iprint               : 2

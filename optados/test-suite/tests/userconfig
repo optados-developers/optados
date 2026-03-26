@@ -12,7 +12,7 @@ extract_fn = tools parsers.parse_odo.parse
 exe = ../../optados.x.x86_64
 extract_fn = tools parsers.parse_dos_dat.parse
 
-# We can use od2od's general formatted parser to 
+# We can use od2od's general formatted parser to
 # read a pdos file
 [OPTADOS_GEN_DAT_OK]
 exe = ../../optados.x.x86_64
@@ -35,36 +35,30 @@ exe = ../../optados.x.x86_64
 extract_fn = tools parsers.parse_photo_odo.parse
 tolerance = (1.0e-3, 5.0e-3, 'fermi_lb'),(1e-8,1.0e-6,'qe_bulk'),(1e-8,1.0e-6,'qe_total'),(1E-8,1.0e-6,'mte')
 
-[OPTADOS_PHOTO_ODODBG_OK]
+[OPTADOS_DBG_PHOTO_ODO_OK]
 exe = ../../optados.debug.x86_64
 extract_fn = tools parsers.parse_photo_odo.parse
 tolerance = (1.0e-3, 5.0e-3, 'fermi_lb'),(1e-8,1.0e-6,'qe_bulk'),(1e-8,1.0e-6,'qe_total'),(1E-8,1.0e-6,'mte')
-
-[OPTADOS_PHOTO_QEMAT_OK]
-exe = ../../optados.x.x86_64
-extract_fn = tools parsers.parse_photo_qemat.parse
-tolerance = (1.0e-3,1.0e-3, "matrix")
-
-[OPTADOS_PHOTO_OPTERR_FAIL]
-exe = ../../optados.x.x86_64
-can_fail = true
-extract_fn = tools parsers.parse_photo_opterr.parse
 
 [OPTADOS_MPI_PHOTO_ODO_OK]
 exe = ../../optados.mpi.x86_64
 extract_fn = tools parsers.parse_photo_odo.parse
 tolerance = (1.0e-3, 5.0e-3, 'fermi_lb'),(1e-8,1.0e-6,'qe_bulk'),(1e-8,1.0e-6,'qe_total'),(1E-8,1.0e-6,'mte')
 
-[OPTADOS_MPI_PHOTO_QEMAT_OK]
-exe = ../../optados.mpi.x86_64
-extract_fn = tools parsers.parse_photo_qemat.parse
+[OPTADOS_PHOTO_ADD_FILE_OK]
+exe = ../../optados.x.x86_64
+extract_fn = tools parsers.parse_photo_add_output.parse
 tolerance = (5.0e-2, 5E-5)
 
-[OPTADOS_MPI_PHOTO_ODO_FAIL]
+[OPTADOS_MPI_PHOTO_ADD_FILE_OK]
 exe = ../../optados.mpi.x86_64
+extract_fn = tools parsers.parse_photo_add_output.parse
+tolerance = (5.0e-2, 5E-5)
+
+[OPTADOS_PHOTO_OPTERR_FAIL]
+exe = ../../optados.x.x86_64
 can_fail = true
 extract_fn = tools parsers.parse_photo_opterr.parse
-tolerance = (1.0e-3, 5.0e-3, 'fermi_lb'),(2.0e-69,1.0e-3,'qe_bulk'),(2.9e-69,1.0e-3,'qe_total'),(8.5E-4,1.0e-3,'mte')
 
 [user]
 # This is the string (or list of strings) that identifies sets of tests
