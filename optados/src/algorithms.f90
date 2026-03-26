@@ -71,27 +71,6 @@ contains
 
   end function channel_to_am
 
-! !=========================================================================!
-!   function gaussian(m, w, x)
-! !=========================================================================!
-! ! ** Return value of Gaussian(mean=m,width=w) at position x
-! ! I don't know who's this function originally was, CJP? MIJP?
-! !=========================================================================!
-!     implicit none
-
-!     real(kind=dp), intent(in) :: m, w, x
-!     real(kind=dp)             :: gaussian
-
-!     if (0.5_dp*((x - m)/w)**2 .gt. 30.0_dp) then
-
-!       gaussian = 0.0_dp
-!       return
-!     else
-!       gaussian = inv_sqrt_two_pi*exp(-0.5_dp*((x - m)/w)**2)/w
-!     end if
-!     return
-!   end function gaussian
-
 !=========================================================================!
   pure function gaussian(m, w, x) result(g)
 !=========================================================================!
