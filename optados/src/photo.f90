@@ -138,7 +138,7 @@ contains
     call calc_band_info
     call calc_photon_energies
 
-    if (.not. index(photo_model, 'ds_like_pe') .gt. 0) then
+    if (index(photo_model, 'dosds') .eq. 0) then
       call elec_read_optical_mat
       call elec_pdos_read
       call make_pdos_weights_atoms
@@ -152,7 +152,6 @@ contains
     ! Electric field and field emission
     if (photo_elec_field .gt. 1.0E-30_dp) then
       call effective_wf
-      call calc_field_emission
     else
       evacuum_eff = efermi + photo_work_function
       work_function_eff = photo_work_function
@@ -169,6 +168,8 @@ contains
         ' eV ------------------+'
       current_photo_energy_index = idx
       current_energy_index = index_energy(idx)
+
+      if (photo_elec_field .gt. 1.0E-30_dp) call calc_field_emission
 
       ! Three-step-model
       if (index(photo_model, '3step') .gt. 0) then
@@ -195,7 +196,7 @@ contains
         call calc_one_step_model
 
         ! Simplified DS like model
-      elseif (index(photo_model, 'ds_like_pe') .gt. 0) then
+      elseif (index(photo_model, 'dosds') .gt. 0) then
         call calc_ds_like_model
       end if
 
@@ -227,7 +228,13 @@ contains
             call const_binding_energy_map
           end if
         end if
-        if (index(photo_output, 'p_tensor') .gt. 0) call full_momentum_tensor
+        if (index(photo_output, 'p_tensor') .gt. 0) then
+          if (index(photo_momentum, 'gkgrid') .gt. 0) then
+            call full_momentum_tensor_gkgrid
+          else
+            call full_momentum_tensor
+          end if
+        end if
         if (index(photo_output, 'qe_tensor') .gt. 0) call write_qe_tensor
       end if
       time_b = io_time()
@@ -246,7 +253,7 @@ contains
     ! that represent layers, with a height = interlayer distance
     ! at the middle of the slab. All atoms are then sorted into
     ! these boxes for later use.
-    use od_constants, only: dp, periodic_table_name, periodic_table_vdw, deg_to_rad
+    use od_constants, only: dp, periodic_table_name, deg_to_rad
     use od_cell, only: num_atoms, atoms_pos_cart_photo, atoms_label_tmp, cell_volume, real_lattice
     use od_io, only: stdout, io_error
     use od_comms, only: on_root
@@ -260,19 +267,17 @@ contains
     allocate (atom_order(num_atoms), stat=ierr)
     if (ierr /= 0) call io_error('Error: analyse_geometry - allocation of atom_order failed')
 
-    allocate (box_atom(num_atoms), stat=ierr)
-    if (ierr /= 0) call io_error('Error: analyse_geometry - allocation of box_atom failed')
-    box_atom = 1000
-
-    ! allocate (layer(num_atoms), stat=ierr)
-    if (ierr /= 0) call io_error('Error: analyse_geometry - allocation of layer failed')
     do i = 1, num_atoms
       atom_order(i) = i
     end do
 
+    allocate (box_atom(num_atoms), stat=ierr)
+    if (ierr /= 0) call io_error('Error: analyse_geometry - allocation of box_atom failed')
+    box_atom = 1000
+
     ! Check that we have gamma = 90 deg as that is currently assumed for a lot of calculations!!
     if (real_lattice(3, 1) .gt. 1.0E-5_dp .and. real_lattice(3, 2) .gt. 1.0E-5_dp) then
-      call io_error('ERROR: analyse_geometry - The c axis is not parallel to the cart. z axis - not currently implemented!')
+      call io_error('Error: analyse_geometry - The c axis is not parallel to the cart. z axis - not currently implemented!')
     end if
 
     do atom_1 = 1, num_atoms - 1
@@ -489,11 +494,11 @@ contains
 228 format(1x, a27, i6, a19, f14.5, 11x, a1)
 229 format(1x, a52, f14.5, 11x, a1)
 
-    ! Test if the supplied IMFP list is long enough
+    ! Test if the supplied IMFP list has same length as # of layers
     ! Otherwise, we run out of imfp values for layers
-    if (allocated(photo_imfp_value) .and. size(photo_imfp_value, 1) .gt. 1 .and. &
-        size(photo_imfp_value, 1) .lt. num_boxes - 1) then
-      call io_error('The supplied list of layer dependent imfp values is less than the calculated max_layer. Check input!')
+    if ((size(photo_imfp_value, 1) .gt. 1) .and. &
+        (size(photo_imfp_value, 1) .ne. num_boxes)) then
+      call io_error('Error : the # supplied IMFP values does not match the # layers. Check input!')
     end if
   end subroutine analyse_geometry
 
@@ -559,14 +564,14 @@ contains
 
     if (photo_energy_sweep) then
       num_energies = (photo_photon_max - photo_photon_min)/jdos_spacing
-      number_energies = int(num_energies) + 1
-      if (photo_photon_max - photo_photon_min .eq. 0.0_dp) then
+      if (photo_photon_max - photo_photon_min .lt. 1.0e-12_dp) then
         number_energies = 1
       else if (mod(num_energies, 1.0_dp) .gt. 1.0E-10_dp) then
         number_energies = number_energies + 1
         if (abs(mod(num_energies, 1.0_dp) - 1) .gt. 1.0E-10_dp) &
           call io_error('Error: calc_photon_energies - given photon sweep min/max values do not give integer # of photon steps')
       end if
+      number_energies = int(num_energies) + 1
       allocate (index_energy(number_energies), stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_photon_energies - allocation of index_energy failed')
       do i = 1, number_energies
@@ -802,7 +807,7 @@ contains
       call make_weights(matrix_weights)
       call elec_dealloc_optical
 
-      if (index(photo_model, '3step') .gt. 0 .or. index(photo_model, 'ds_like_pe') .gt. 0) then
+      if (index(photo_model, '3step') .gt. 0 .or. index(photo_model, 'dosds') .gt. 0) then
         ! Flip the kpt and spin indices in the matrix_weights array for contiguous memory access later
         allocate (photo_matrix_weights(nbands, nbands, nspins, num_kpoints_on_node(my_node_id)))
         if (ierr /= 0) call io_error('Error: calc_photo_optics - allocation of photo_matrix_weights failed')
@@ -853,10 +858,9 @@ contains
         & (band_energy(n_eigen, 1, is) - efermi)
       end do
       close (unit=ome_unit)
-      call io_error('Finalised the exporting of the OMEs')
     end if
 
-    if (index(photo_model, 'ds_like_pe') == 0) then
+    if (index(photo_model, 'dosds') == 0) then
       allocate (projected_matrix_weights(nbands, nbands, num_kpoints_on_node(my_node_id), nspins, N_geom), stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_photo_optics  - allocation of projected_matrix_weights failed')
       do box = 1, num_boxes                           ! Loop over boxes
@@ -1046,7 +1050,7 @@ contains
     ! Deallocating this out of the loop to reduce memory operations - could lead to higher memory consumption
     deallocate (projected_matrix_weights, stat=ierr)
     if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate projected_matrix_weights')
-    if (index(photo_model, '3step') .gt. 0 .or. index(photo_model, 'ds_like_pe') .gt. 0) then
+    if (index(photo_model, '3step') .gt. 0 .or. index(photo_model, 'dosds') .gt. 0) then
       ! Flip the kpt and spin indices in the matrix_weights array for contiguous memory access later
       allocate (photo_matrix_weights(nbands, nbands, nspins, num_kpoints_on_node(my_node_id)))
       if (ierr /= 0) call io_error('Error: calc_photo_optics - allocation of photo_matrix_weights failed')
@@ -1204,12 +1208,11 @@ contains
   subroutine effective_wf
     use od_parameters, only: photo_work_function, photo_elec_field
     use od_electronic, only: efermi
-    use od_constants, only: pi, epsilon_zero, e_charge
+    use od_constants, only: pi, epsilon_0, e_charge, j_to_ev, ev_to_j
     implicit none
 
-    !photo_elec_field given in eV/A
-    work_function_eff = photo_work_function - sqrt(e_charge**3*1.0E4_dp*photo_elec_field/(4*pi*epsilon_zero))
-
+    !photo_elec_field given in V/m
+    work_function_eff = photo_work_function - sqrt((e_charge**3*photo_elec_field)/(4*pi*epsilon_0*ev_to_j**2))
     evacuum_eff = work_function_eff + efermi
   end subroutine effective_wf
 
@@ -1222,19 +1225,23 @@ contains
     ! updated by Felix Mildner, after Mar 2023
     !===============================================================================
     use od_cell, only: num_kpoints_on_node
-    use od_parameters, only: photo_work_function, photo_elec_field, photo_temperature, photo_model
+    use od_parameters, only: photo_work_function, photo_elec_field, photo_temperature, iprint
     use od_electronic, only: efermi, band_energy, nbands, nspins
-    use od_io, only: io_error
-    use od_comms, only: my_node_id, comms_reduce
-    use od_constants, only: pi, epsilon_zero, kB, e_charge, b_factor, p1, p2, p3, p4, q1, q2, q3, q4
+    use od_io, only: io_error, stdout, io_time
+    use od_comms, only: my_node_id, comms_reduce, on_root
+    use od_constants, only: pi, epsilon_0, kB, ev_to_j, e_charge
     implicit none
     real(kind=dp), allocatable, dimension(:, :, :) :: temp_emission
     real(kind=dp) :: field_energy_squared, fermi_dirac, barrier_height, argument, exponent
-    real(kind=dp) :: l_prime, p_term, q_term, v_function, transmission_prob
+    real(kind=dp) :: transmission_prob
+    real(kind=dp)    :: time0, time1
     integer :: N_k, N_spin, n_eigen, ierr
 
-    allocate (field_emission(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
-    if (ierr /= 0) call io_error('Error: calc_field_emission - allocation of field_emission failed')
+    time0 = io_time()
+    if (.not. allocated(field_emission)) then
+      allocate (field_emission(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
+      if (ierr /= 0) call io_error('Error: calc_field_emission - allocation of field_emission failed')
+    end if
     field_emission = 0.0_dp
 
     field_energy_squared = 0.0_dp
@@ -1250,15 +1257,9 @@ contains
         do n_eigen = 1, nbands
           ! Calculate how much the final electron energy is below
           ! the unmodified work function.
-          ! 3-step -.gt. final band energy
-          ! 1-step -.gt. initial band energy + photon energy
-          if (index(photo_model, '1step') .gt. 0) then
-            barrier_height = evacuum - band_energy(n_eigen, N_spin, N_k) + temp_photon_energy
-          elseif (index(photo_model, '3step') .gt. 0) then
-            barrier_height = evacuum - band_energy(n_eigen, N_spin, N_k)
-          end if
+          ! initial band energy + photon energy
+          barrier_height = evacuum - band_energy(n_eigen, N_spin, N_k) + temp_photon_energy
           field_energy_squared = (barrier_height)**2
-
           ! Calculate the fermi dirac occupations
           argument = (band_energy(n_eigen, N_spin, N_k) - efermi)/(kB*photo_temperature)
           ! This is a bit of an arbitrary condition, but exp(+-230) ~ 1E(+-100)
@@ -1272,25 +1273,21 @@ contains
             fermi_dirac = 1.0_dp/(exp(argument) + 1.0_dp)
           end if
 
-          ! Calculating if the "scaled barrier field" - f - is 0 .lt. f .lt. 1 and not f .gt. 1
+          ! Calculating if the "scaled barrier field" - f - is 0 < f < 1 and not f > 1
           ! otherwise the integral borders are not real and the approximation is not defined.
           ! This can happen if the final electron energy is above the barrier, or if the field
           ! is very strong.
-          if (photo_elec_field**2*1.0E4_dp/(4.0_dp*pi*epsilon_zero) .lt. field_energy_squared) then
+          if ((e_charge**3*photo_elec_field)/(4*pi*epsilon_0*ev_to_j**2) .lt. field_energy_squared) then
             if (barrier_height .le. 0.0_dp) then
               field_emission(n_eigen, N_spin, N_k) = 1.0_dp
             else
-              l_prime = (e_charge**3*1.0E4_dp/(4*pi*epsilon_zero))*photo_elec_field/barrier_height**2
-              p_term = 1.0_dp + (p1*l_prime) + (p2*l_prime**2.0_dp) + (p3*l_prime**3.0_dp) + (p4*l_prime**4.0_dp)
-              q_term = q1 + (q2*l_prime) + (q3*l_prime**2.0_dp) + (q4*l_prime**3.0_dp)
-              v_function = (1.0_dp - l_prime)*p_term + q_term*l_prime*log(l_prime)
-
-              exponent = -1.0_dp*v_function*b_factor*sqrt(barrier_height**3.0_dp)/photo_elec_field
-              if (exponent .lt. -575.0_dp) then
+              call compute_G(barrier_height, photo_elec_field, exponent)
+              if ((exponent .lt. -230.0_dp)) then
+                transmission_prob = 1.0_dp
+              else if (exponent .gt. 230.0_dp) then
                 transmission_prob = 0.0_dp
               else
-                transmission_prob = exp(exponent)
-                transmission_prob = transmission_prob/(1 + transmission_prob)
+                transmission_prob = exp(-1.0_dp*exponent)
               end if
               field_emission(n_eigen, N_spin, N_k) = transmission_prob
             end if
@@ -1307,11 +1304,137 @@ contains
 
     total_field_emission = sum(temp_emission(1:nbands, 1:nspins, 1:num_kpoints_on_node(my_node_id)))/cell_area
     call comms_reduce(total_field_emission, 1, "SUM")
-
     deallocate (temp_emission, stat=ierr)
     if (ierr /= 0) call io_error('Error: calc_field_emission - failed to deallocate temp_emission')
 
+    time1 = io_time()
+    if (on_root .and. iprint .gt. 1) then
+      write (stdout, '(1x,a48,11x,f11.3,a8)') '+ Time to calculate Field Emission Probabilities', time1 - time0, ' (sec) +'
+    end if
   end subroutine calc_field_emission
+
+  subroutine compute_G(barrier_eV, F, G)
+    use od_io, only: stdout
+    use od_constants, only: dp, pi, e_mass, h_planck, ev_to_j, e_charge, epsilon_0
+    implicit none
+    real(kind=dp), intent(in)  :: barrier_eV, F
+    real(kind=dp), intent(out) :: G
+    ! The tolerance for adaptive simpson integrator
+    real(kind=dp), parameter :: eps = 1.0e-14_dp
+    ! Max recursion depth for adaptive simpson integrator
+    integer, parameter       :: max_depth = 30
+    real(kind=dp) :: phi, g_e_si, tmp, z1, z2
+    real(kind=dp) :: fa, fm, fb, whole, integral
+    real(kind=dp) :: mval, Mmid, disc, root
+
+    phi = barrier_eV*ev_to_j
+    g_e_si = 4.0_dp*pi*sqrt(2.0_dp*e_mass)/h_planck
+
+    ! analytic turning points
+    disc = phi*phi - (e_charge**3*F)/(4.0_dp*pi*epsilon_0)
+
+    if (disc < 0.0_dp) then
+      write (stdout, *) 'No real turning points: discriminant < 0'
+      write (stdout, *) 'discriminant = ', disc
+      stop
+    end if
+
+    root = sqrt(disc)
+    z1 = (phi - root)/(2.0_dp*e_charge*F)
+    z2 = (phi + root)/(2.0_dp*e_charge*F)
+
+    ! Make sure, that z2 > z1
+    if (z1 > z2) then
+      tmp = z1
+      z1 = z2
+      z2 = tmp
+    end if
+
+    ! Calculate barrier height M at z1 and calculate fa = sqrt(M) if M > 0 or fa = 0 if M < 0
+    call barrier_M(z1, phi, F, mval)
+    call sqrt_clamped(mval, fa)
+
+    ! Calculate barrier height M at z2 and calculate fb = sqrt(M) if M > 0 or fb = 0 if M < 0
+    call barrier_M(z2, phi, F, mval)
+    call sqrt_clamped(mval, fb)
+
+    ! Calculate barrier height M at middlepoint z and calculate fm = sqrt(M) if M > 0 or fm = 0 if M < 0
+    mval = 0.5_dp*(z1 + z2)
+    call barrier_M(mval, phi, F, Mmid)
+    call sqrt_clamped(Mmid, fm)
+
+    whole = (z2 - z1)*(fa + 4.0_dp*fm + fb)/6.0_dp
+
+    call adaptive_simpson(z1, z2, fa, fm, fb, whole, phi, F, eps, max_depth, integral)
+    G = g_e_si*integral
+  end subroutine compute_G
+
+  subroutine barrier_M(z, phi, F, M)
+    ! Helper function, which computes the value of the Schottky-Nordheim barrier
+    ! function
+    use od_constants, only: dp, pi, e_charge, epsilon_0
+    implicit none
+    real(kind=dp), intent(in)  :: z, phi, F
+    real(kind=dp), intent(out) :: M
+    real(kind=dp) :: image_term
+
+    image_term = (e_charge**2)/(16.0_dp*pi*epsilon_0*z)
+    M = phi - e_charge*F*z - image_term
+  end subroutine barrier_M
+
+  subroutine sqrt_clamped(x, y)
+    use od_constants, only: dp
+    implicit none
+    real(kind=dp), intent(in)  :: x
+    real(kind=dp), intent(out) :: y
+
+    if (x < 0.0_dp) then
+      y = 0.0_dp
+    else
+      y = sqrt(x)
+    end if
+  end subroutine sqrt_clamped
+
+  recursive subroutine adaptive_simpson(a, b, fa, fm, fb, whole, phi, F, eps, depth, integral)
+    ! adaptive Simpson rule based integrator, which calculates the integral until the
+    ! integral is within eps
+    use od_constants, only: dp
+    implicit none
+    real(kind=dp), intent(in)   :: a, b, fa, fm, fb, whole, phi, F, eps
+    integer, intent(in)   :: depth
+    real(kind=dp), intent(out)  :: integral
+    real(kind=dp) :: m, lm, rm
+    real(kind=dp) :: flm, frm
+    real(kind=dp) :: left, right
+    real(kind=dp) :: Mval
+    real(kind=dp) :: left_int, right_int
+
+    if (depth <= 0) then
+      integral = whole
+      return
+    end if
+
+    m = 0.5_dp*(a + b)
+    lm = 0.5_dp*(a + m)
+    rm = 0.5_dp*(m + b)
+
+    call barrier_M(lm, phi, F, Mval)
+    call sqrt_clamped(Mval, flm)
+
+    call barrier_M(rm, phi, F, Mval)
+    call sqrt_clamped(Mval, frm)
+
+    left = (m - a)*(fa + 4.0_dp*flm + fm)/6.0_dp
+    right = (b - m)*(fm + 4.0_dp*frm + fb)/6.0_dp
+
+    if (abs(left + right - whole) < 15.0_dp*eps) then
+      integral = left + right + (left + right - whole)/15.0_dp
+    else
+      call adaptive_simpson(a, m, fa, flm, fm, left, phi, F, eps/2.0_dp, depth - 1, left_int)
+      call adaptive_simpson(m, b, fm, frm, fb, right, phi, F, eps/2.0_dp, depth - 1, right_int)
+      integral = left_int + right_int
+    end if
+  end subroutine adaptive_simpson
 
   subroutine calc_angle
     !*******=======================================================================
@@ -1521,7 +1644,7 @@ contains
     use od_cell, only: num_kpoints_on_node, atoms_pos_cart_photo, atoms_label_tmp
     use od_io, only: io_error, stdout, io_time
     use od_comms, only: my_node_id, on_root
-    use od_parameters, only: photo_imfp_value, photo_imfp_choice, iprint, scissor_op
+    use od_parameters, only: photo_imfp_value, photo_imfp_model, iprint, scissor_op
     implicit none
     integer :: atom, N_k, N_spin, n_eigen, ierr, i, gdx
     real(kind=dp) :: tolerance, conduction_band, total_depth
@@ -1550,7 +1673,7 @@ contains
       if (ierr /= 0) call io_error('Error: calc_electron_esc_list - allocation of atom_imfp failed')
     end if
     atom_imfp = 0.0_dp
-    if (index(photo_imfp_choice, 'layers') .gt. 0) then
+    if (index(photo_imfp_model, 'layers') .gt. 0) then
       if (on_root) then
         write (stdout, '(1x,a78)') '+--------------- User Supplied and Calculated IMFP Constants ----------------+'
         write (stdout, '(1x,a78)') '| Atom | Atom Order | Layer | Layer Thickness | User Input IMFP | Calc. IMFP |'
@@ -1572,11 +1695,11 @@ contains
       end do
       if (on_root) write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
 
-    else if (index(photo_imfp_choice, 'const') .gt. 0) then
+    else if (index(photo_imfp_model, 'const') .gt. 0) then
       atom_imfp = photo_imfp_value(1)
 
       ! This is a Cu specific IMFP curve by Nagy,Echenique - https://www.doi.org/10.1103/PhysRevB.85.115131
-    else if (index(photo_imfp_choice, 'cu_curve') .gt. 0) then
+    else if (index(photo_imfp_model, 'cu_curve') .gt. 0) then
       if (.not. allocated(band_imfp)) then
         allocate (band_imfp(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
         if (ierr /= 0) call io_error('Error: calc_electron_esc_list - allocation of atom_imfp failed')
@@ -1610,7 +1733,7 @@ contains
       atom_imfp = 2.50_dp
     end if
 
-    if ((index(photo_imfp_choice, 'const') .gt. 0) .or. (index(photo_imfp_choice, 'layers') .gt. 0)) then
+    if ((index(photo_imfp_model, 'const') .gt. 0) .or. (index(photo_imfp_model, 'layers') .gt. 0)) then
       do atom = 1, max_atoms
         do N_k = 1, num_kpoints_on_node(my_node_id)
           do N_spin = 1, nspins
@@ -1634,7 +1757,7 @@ contains
           end do
         end do
       end do
-    else if ((index(photo_imfp_choice, 'cu_curve') .gt. 0)) then
+    else if ((index(photo_imfp_model, 'cu_curve') .gt. 0)) then
       do atom = 1, max_atoms
         do N_k = 1, num_kpoints_on_node(my_node_id)
           do N_spin = 1, nspins
@@ -1681,7 +1804,7 @@ contains
     use od_electronic, only: nbands, nspins
     use od_cell, only: num_kpoints_on_node
     use od_comms, only: my_node_id, on_root, comms_reduce, comms_bcast
-    use od_parameters, only: photo_imfp_value, photo_imfp_choice, photo_bulk_cutoff, iprint
+    use od_parameters, only: photo_imfp_value, photo_imfp_model, photo_bulk_cutoff, iprint
     use od_io, only: io_error, io_time, stdout
     implicit none
     real(kind=dp), dimension(:), allocatable :: bulk_light_tmp
@@ -1689,11 +1812,11 @@ contains
     real(kind=dp) :: exponent, time0, time1, band_imfp_max
 
     time0 = io_time()
-    if (index(photo_imfp_choice, 'layers') .gt. 0) then
+    if (index(photo_imfp_model, 'layers') .gt. 0) then
       num_layers = int((atom_imfp(max_atoms)*photo_bulk_cutoff)/box_heights(num_boxes))
-    else if (index(photo_imfp_choice, 'const') .gt. 0) then
+    else if (index(photo_imfp_model, 'const') .gt. 0) then
       num_layers = int((photo_imfp_value(1)*photo_bulk_cutoff)/box_heights(num_boxes))
-    else if (index(photo_imfp_choice, 'cu_curve') .gt. 0) then
+    else if (index(photo_imfp_model, 'cu_curve') .gt. 0) then
       ! Calculate the emission probability for at most 1000 layers,
       ! since the propagation IMFPs for low energy electrons can be
       ! quite large in the curve case.
@@ -1714,7 +1837,7 @@ contains
                           exp(-(absorp_photo(box_atom(max_atoms), current_photo_energy_index)*i*box_heights(num_boxes)*1E-10))
     end do
 
-    if ((index(photo_imfp_choice, 'layers') .gt. 0) .or. (index(photo_imfp_choice, 'const') .gt. 0)) then
+    if ((index(photo_imfp_model, 'layers') .gt. 0) .or. (index(photo_imfp_model, 'const') .gt. 0)) then
       do i = 1, num_layers
         do N_k = 1, num_kpoints_on_node(my_node_id)
           do N_spin = 1, nspins
@@ -1735,7 +1858,7 @@ contains
           end do
         end do
       end do
-    else if (index(photo_imfp_choice, 'cu_curve') .gt. 0) then
+    else if (index(photo_imfp_model, 'cu_curve') .gt. 0) then
       do i = 1, num_layers
         do N_k = 1, num_kpoints_on_node(my_node_id)
           do N_spin = 1, nspins
@@ -1828,31 +1951,30 @@ contains
       elec_read_band_curvature
     use od_comms, only: my_node_id, on_root, num_nodes, comms_send, comms_recv, comms_bcast
     use od_parameters, only: photo_temperature, devel_flag, iprint, num_exclude_bands, &
-      exclude_bands, photo_model
-    use od_dos_utils, only: doslin, doslin_sub_cell_corners
+      exclude_bands, photo_model, fixed, adaptive, linear
+    use od_dos_utils, only: dos_adaptive, dos_fixed, dos_linear, doslin_sub_cell_corners, dos_utils_calculate, dos_E => E
     use od_algorithms, only: gaussian
     use od_io, only: stdout, io_error, io_file_unit, io_time, seedname, io_date
-    use od_jdos_utils, only: jdos_utils_calculate, setup_energy_scale
+    use od_jdos_utils, only: jdos_utils_calculate, jdos_energy_scale => setup_energy_scale
     use od_constants, only: pi, kB, inv_sqrt_two_pi
     implicit none
     real(kind=dp), allocatable, dimension(:, :, :, :) :: delta_temp
-    real(kind=dp), allocatable, dimension(:, :, :) :: fermi_dirac
-    real(kind=dp), allocatable, dimension(:) :: qe_k_temp
-    real(kind=dp) :: width, norm_vac, qe_factor, argument, time0, time1, final_fd, initial_fd, excess_energy
-    integer :: N_k, N_spin, n_eigen, n_eigen_final, ierr, i, qe_unit, token, inode
+    real(kind=dp), allocatable, dimension(:, :, :)    :: fermi_dirac
+    real(kind=dp), allocatable, dimension(:)          :: fd
+    real(kind=dp), allocatable, dimension(:)          :: dos_temp
+    real(kind=dp), allocatable, dimension(:)          :: qe_k_temp
+    real(kind=dp) :: argument, time0, time1, final_fd, initial_fd, excess_energy, delta_e, diff, &
+                     initial_dos, final_dos, temp_value
+    integer :: N_k, N_spin, n_eigen, n_eigen_final, ierr, i, qe_unit, token, inode, N_E, delta_index_photon, index_e
     character(len=10)                           :: char_e
     character(len=99)                           :: filename
     character(len=9)                            :: ctime             ! Temp. time string
     character(len=11)                           :: cdate             ! Temp. date string
 
-    width = (1.0_dp/11604.45_dp)*photo_temperature
-    qe_factor = 1.0_dp/(cell_area)
-    norm_vac = inv_sqrt_two_pi/width
-
     time0 = io_time()
 
     if (.not. allocated(qe_tsm)) then
-      allocate (qe_tsm(nbands, nbands, nspins, num_kpoints_on_node(my_node_id), 3), stat=ierr)
+      allocate (qe_tsm(nbands, nbands, nspins, num_kpoints_on_node(my_node_id), 5), stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_ds_like_model - allocation of qe_tsm failed')
     end if
     qe_tsm = 0.0_dp
@@ -1887,7 +2009,7 @@ contains
       end do
     end do
 
-    call setup_energy_scale(E)
+    call jdos_energy_scale(E)
     i = 0
     if (on_root) write (stdout, *) '***   Calculating a simplified Dowell Schmerge like model for PE   ***'
 
@@ -1919,6 +2041,50 @@ contains
           end do
         end do
       end do
+    end do
+    call dos_utils_calculate()
+    allocate (dos_temp(size(dos_E)), stat=ierr)
+    if (fixed) then
+      dos_temp = sum(dos_fixed, dim=2)
+    end if
+    if (adaptive) then
+      dos_temp = sum(dos_adaptive, dim=2)
+    end if
+    if (linear) then
+      dos_temp = sum(dos_linear, dim=2)
+    end if
+    ! get the
+    allocate (fd(size(dos_E)), stat=ierr)
+    delta_e = dos_E(2) - dos_E(1)
+    write (stdout, *) 'delta_e', delta_e
+    diff = 1.0E6_dp
+    do N_e = 1, size(dos_E)
+      if (abs(dos_E(N_e) - work_function_eff + temp_photon_energy - efermi) .lt. diff) then
+        diff = abs(dos_E(N_e) - work_function_eff + temp_photon_energy - efermi)
+        index_e = N_e
+      end if
+      argument = (dos_E(N_e) - efermi)/(kB*photo_temperature)
+      if (argument .gt. 230.0_dp) then
+        fd(N_e) = 0.0_dp
+      elseif (argument .lt. -230.0_dp) then
+        fd(N_e) = 1.0_dp
+      else
+        fd(N_e) = 1.0_dp/(exp(argument) + 1.0_dp)
+      end if
+    end do
+    delta_index_photon = int(temp_photon_energy/delta_e)
+    write (stdout, *) 'delta_index_photon', delta_index_photon
+    initial_fd = fd(index_e)
+    do while ((initial_fd .gt. 1.0E-50_dp) .or. ((index_e + delta_index_photon) .lt. (size(dos_E) - delta_index_photon - 2)))
+      initial_fd = fd(index_e)
+      final_fd = 1 - fd(index_e + delta_index_photon)
+      initial_dos = dos_temp(index_e)
+      final_dos = dos_temp(index_e + delta_index_photon)
+      excess_energy = dos_E(index_e + delta_index_photon) - work_function_eff - efermi
+      temp_value = initial_dos*initial_fd*final_dos*final_fd*excess_energy
+      qe_tsm(1, 1, 1, 1, 4) = qe_tsm(1, 1, 1, 1, 4) + temp_value*excess_energy
+      qe_tsm(1, 1, 1, 1, 5) = qe_tsm(1, 1, 1, 1, 5) + temp_value
+      index_e = index_e + 1
     end do
 
     if (allocated(delta_temp)) then
@@ -1988,6 +2154,10 @@ contains
       deallocate (qe_k_temp, stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_ds_like_model - failed to deallocate qe_k_temp')
     end if
+    deallocate (dos_temp, stat=ierr)
+    if (ierr /= 0) call io_error('Error: calc_ds_like_model - failed to deallocate dos_temp')
+    deallocate (fd, stat=ierr)
+    if (ierr /= 0) call io_error('Error: calc_ds_like_model - failed to deallocate fd')
 
   end subroutine calc_ds_like_model
 
@@ -2322,7 +2492,7 @@ contains
     ! Victor Chang, 7th February 2020
     ! edited by Felix Mildner, after March 2023
     !===============================================================================
-    use od_parameters, only: linear, fixed, adaptive, quad, iprint, devel_flag
+    use od_parameters, only: linear, fixed, adaptive, quad, iprint
     use od_electronic, only: elec_read_band_gradient, band_gradient, efermi_set
     use od_comms, only: on_root
     use od_io, only: stdout, io_error, io_time
@@ -2358,51 +2528,51 @@ contains
     time0 = io_time()
 
     call setup_energy_scale(E)
-    if (index(devel_flag, 'old_delta') .gt. 0) then
-      if (fixed) then
-        if (calculate_bulk) then
-          call calculate_delta('f', delta_temp, .true.)
-        else
-          call calculate_delta('f', delta_temp, .false.)
-        end if
-      end if
-      if (adaptive) then
-        if (calculate_bulk) then
-          call calculate_delta('a', delta_temp, .true.)
-        else
-          call calculate_delta('a', delta_temp, .false.)
-        end if
-      end if
-      if (linear) then
-        if (calculate_bulk) then
-          call calculate_delta('l', delta_temp, .true.)
-        else
-          call calculate_delta('l', delta_temp, .false.)
-        end if
-      end if
-    else
-      if (fixed) then
-        if (calculate_bulk) then
-          call calculate_delta_new('f', delta_temp, .true.)
-        else
-          call calculate_delta_new('f', delta_temp, .false.)
-        end if
-      end if
-      if (adaptive) then
-        if (calculate_bulk) then
-          call calculate_delta_new('a', delta_temp, .true.)
-        else
-          call calculate_delta_new('a', delta_temp, .false.)
-        end if
-      end if
-      if (linear) then
-        if (calculate_bulk) then
-          call calculate_delta_new('l', delta_temp, .true.)
-        else
-          call calculate_delta_new('l', delta_temp, .false.)
-        end if
+    ! if (index(devel_flag, 'old_delta') .gt. 0) then
+    !   if (fixed) then
+    !     if (calculate_bulk) then
+    !       call calculate_delta('f', delta_temp, .true.)
+    !     else
+    !       call calculate_delta('f', delta_temp, .false.)
+    !     end if
+    !   end if
+    !   if (adaptive) then
+    !     if (calculate_bulk) then
+    !       call calculate_delta('a', delta_temp, .true.)
+    !     else
+    !       call calculate_delta('a', delta_temp, .false.)
+    !     end if
+    !   end if
+    !   if (linear) then
+    !     if (calculate_bulk) then
+    !       call calculate_delta('l', delta_temp, .true.)
+    !     else
+    !       call calculate_delta('l', delta_temp, .false.)
+    !     end if
+    !   end if
+    ! else
+    if (fixed) then
+      if (calculate_bulk) then
+        call calculate_delta('f', delta_temp, .true.)
+      else
+        call calculate_delta('f', delta_temp, .false.)
       end if
     end if
+    if (adaptive) then
+      if (calculate_bulk) then
+        call calculate_delta('a', delta_temp, .true.)
+      else
+        call calculate_delta('a', delta_temp, .false.)
+      end if
+    end if
+    if (linear) then
+      if (calculate_bulk) then
+        call calculate_delta('l', delta_temp, .true.)
+      else
+        call calculate_delta('l', delta_temp, .false.)
+      end if
+    end if
+    ! end if
 
     if (quad) then
       call io_error("quadratic broadening not implemented")
@@ -2422,153 +2592,147 @@ contains
 
     time1 = io_time()
     if (on_root .and. iprint .gt. 1) then
-      write (stdout, '(1x,a34,25x,f11.3,1x,a7)') &
-        '+ Time to calculate Delta Function', time1 - time0, '(sec) +'
-    end if
-    !-------------------------------------------------------------------------------
-
-  end subroutine photo_calculate_delta
-
-  subroutine calculate_delta(delta_type, delta_temp, calculate_bulk)
-    !*===============================================================================
-    ! This subroutine evaluates the delta function between the valence band
-    ! and the conduction band using the method specified in the input.
-    ! The calculate_bulk paramater controls for the correct smearing step
-    ! width calculation for either an explicit layer or a set of extrapolated
-    ! bulk like layers.
-    ! This is the old version, where only occupied bands up to the fermi energy
-    ! are considered (not exactly, what we want for the photoemission)
-    ! orig. Victor Chang, 7 February 2020
-    ! edited by Felix Mildner, after March 2022
-    !===============================================================================
-    use od_comms, only: my_node_id, on_root
-    use od_cell, only: num_kpoints_on_node, kpoint_grid_dim, recip_lattice
-    use od_parameters, only: adaptive_smearing, fixed_smearing, iprint, finite_bin_correction, &
-      scissor_op, hybrid_linear_grad_tol, hybrid_linear, exclude_bands, &
-      num_exclude_bands, jdos_max_energy, photo_slab_max, photo_slab_middle
-    use od_io, only: io_error, stdout
-    use od_electronic, only: band_gradient, nbands, band_energy, nspins, efermi
-    use od_jdos_utils, only: jdos_nbins
-    use od_dos_utils, only: doslin, doslin_sub_cell_corners
-    use od_algorithms, only: gaussian
-    use od_constants, only: pi, inv_sqrt_two_pi
-    implicit none
-
-    integer :: ik, is, ib, jb, i, ierr
-    real(kind=dp) :: cuml, width, adaptive_smearing_temp
-    real(kind=dp) :: grad(1:3), step(1:3), EV(0:4), sub_cell_length(1:3)
-    real(kind=dp), save                   :: delta_bins
-
-    character(len=1), intent(in)                      :: delta_type
-    real(kind=dp), intent(inout), allocatable, optional :: delta_temp(:, :, :, :)
-    logical, intent(in)                               :: calculate_bulk
-
-    logical :: linear, fixed, adaptive, force_adaptive
-    real(kind=dp) :: half_slab_height, norm_width
-
-    linear = .false.
-    fixed = .false.
-    adaptive = .false.
-
-    select case (delta_type)
-    case ("l")
-      linear = .true.
-    case ("a")
-      adaptive = .true.
-    case ("f")
-      fixed = .true.
-    case default
-      call io_error(" ERROR : unknown jdos_type in calculate_delta ")
-    end select
-
-    width = 0.0_dp
-    delta_bins = jdos_max_energy/real(jdos_nbins - 1, dp)
-    if (photo_slab_middle .gt. 0.0_dp) then
-      half_slab_height = photo_slab_max - photo_slab_middle
-    else
-      half_slab_height = photo_slab_max - slab_middle_ref
-    end if
-
-    if (linear .or. adaptive) step(:) = 1.0_dp/real(kpoint_grid_dim(:), dp)/2.0_dp
-    if (adaptive .or. hybrid_linear) then
-      do i = 1, 2
-        sub_cell_length(i) = sqrt(recip_lattice(i, 1)**2 + recip_lattice(i, 2)**2 + recip_lattice(i, 3)**2)*step(i)
-      end do
-      if (calculate_bulk) then
-        sub_cell_length(3) = sqrt(recip_lattice(3, 1)**2 + recip_lattice(3, 1)**2 + (pi/box_heights(num_boxes))**2)*step(3)
-      else
-        sub_cell_length(3) = sqrt(recip_lattice(3, 1)**2 + recip_lattice(3, 1)**2 + (pi/half_slab_height)**2)*step(3)
-      end if
-      adaptive_smearing_temp = adaptive_smearing*sum(sub_cell_length)/3.0_dp
-    end if
-
-    if (fixed) width = fixed_smearing
-
-    if (.not. allocated(delta_temp)) then
-      allocate (delta_temp(nbands, nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
-      if (ierr /= 0) call io_error('Error: calculate_delta - allocation of delta_temp failed')
-    end if
-    delta_temp = 0.0_dp
-
-    do ik = 1, num_kpoints_on_node(my_node_id)
-      if (iprint .gt. 2 .and. on_root) then
-        if (mod(real(ik, dp), 10.0_dp) == 0.0_dp) write (stdout, '(1x,a1,a38,i4,a3,i4,1x,a14,2x,a11)') '^', &
-          "Calculating k-point ", ik, " of", num_kpoints_on_node(my_node_id), 'on this node.', ".lt.-- Delta |"
-      end if
-      do is = 1, nspins
-        occ_states: do ib = 1, nbands
-          if (num_exclude_bands .gt. 0) then
-            if (any(exclude_bands == ib)) cycle
-          end if
-          if (band_energy(ib, is, ik) .ge. efermi) cycle occ_states
-          unocc_states: do jb = 1, nbands
-            if (band_energy(jb, is, ik) .lt. efermi) cycle unocc_states
-            if (linear .or. adaptive) grad(:) = band_gradient(jb, :, ik, is) - band_gradient(ib, :, ik, is)
-
-            ! If the band is very flat linear broadening can have problems describing it. In this case, fall back to
-            ! adaptive smearing (and take advantage of FBCS if required).
-            force_adaptive = .false.
-            if (.not. fixed) then
-              if (hybrid_linear .and. (hybrid_linear_grad_tol .gt. sqrt(dot_product(grad, grad)))) force_adaptive = .true.
-              if (linear .and. .not. force_adaptive) call doslin_sub_cell_corners(grad, step, band_energy(jb, is, ik) - &
-                                                                                  band_energy(ib, is, ik) + scissor_op, EV)
-              if (adaptive .or. force_adaptive) width = sqrt(dot_product(grad, grad))*adaptive_smearing_temp
-            end if
-            ! Hybrid Adaptive -- This way we don't lose weight at very flat parts of the
-            ! band. It's a kind of fudge that we wouldn't need if we had infinitely small bins.
-            if (finite_bin_correction .and. (width .lt. delta_bins)) width = delta_bins
-            norm_width = inv_sqrt_two_pi/width
-
-            ! The linear method has a special way to calculate the integrated dos
-            ! we have to take account for this here.
-            if (linear .and. .not. force_adaptive) then
-              delta_temp(ib, jb, is, ik) = doslin(EV(0), EV(1), EV(2), EV(3), EV(4), E(current_energy_index), cuml)
-            else
-              delta_temp(ib, jb, is, ik) = gaussian((band_energy(jb, is, ik) - band_energy(ib, is, ik)) + scissor_op, width, &
-                                                    E(current_energy_index))
-            end if
-
-          end do unocc_states
-        end do occ_states
-      end do
-    end do
-
-    if (iprint .gt. 1 .and. on_root) then
+      write (stdout, '(1x,a34,25x,f11.3,1x,a7)') '+ Time to calculate Delta Function', time1 - time0, '(sec) +'
       write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
     end if
+  end subroutine photo_calculate_delta
 
-  end subroutine calculate_delta
+  ! subroutine calculate_delta(delta_type, delta_temp, calculate_bulk)
+  !   !*===============================================================================
+  !   ! This subroutine evaluates the delta function between the valence band
+  !   ! and the conduction band using the method specified in the input.
+  !   ! The calculate_bulk paramater controls for the correct smearing step
+  !   ! width calculation for either an explicit layer or a set of extrapolated
+  !   ! bulk like layers.
+  !   ! This is the old version, where only occupied bands up to the fermi energy
+  !   ! are considered (not exactly, what we want for the photoemission)
+  !   ! orig. Victor Chang, 7 February 2020
+  !   ! edited by Felix Mildner, after March 2022
+  !   !===============================================================================
+  !   use od_comms, only: my_node_id, on_root
+  !   use od_cell, only: num_kpoints_on_node, kpoint_grid_dim, recip_lattice
+  !   use od_parameters, only: adaptive_smearing, fixed_smearing, iprint, finite_bin_correction, &
+  !     scissor_op, hybrid_linear_grad_tol, hybrid_linear, exclude_bands, &
+  !     num_exclude_bands, jdos_max_energy, photo_slab_max, photo_slab_middle
+  !   use od_io, only: io_error, stdout
+  !   use od_electronic, only: band_gradient, nbands, band_energy, nspins, efermi
+  !   use od_jdos_utils, only: jdos_nbins
+  !   use od_dos_utils, only: doslin, doslin_sub_cell_corners
+  !   use od_algorithms, only: gaussian
+  !   use od_constants, only: pi, inv_sqrt_two_pi
+  !   implicit none
 
-  subroutine calculate_delta_new(delta_type, delta_temp, calculate_bulk)
+  !   integer :: ik, is, ib, jb, i, ierr
+  !   real(kind=dp) :: cuml, width, adaptive_smearing_temp
+  !   real(kind=dp) :: grad(1:3), step(1:3), EV(0:4), sub_cell_length(1:3)
+  !   real(kind=dp), save                   :: delta_bins
+
+  !   character(len=1), intent(in)                      :: delta_type
+  !   real(kind=dp), intent(inout), allocatable, optional :: delta_temp(:, :, :, :)
+  !   logical, intent(in)                               :: calculate_bulk
+
+  !   logical :: linear, fixed, adaptive, force_adaptive
+  !   real(kind=dp) :: half_slab_height, norm_width
+
+  !   linear = .false.
+  !   fixed = .false.
+  !   adaptive = .false.
+
+  !   select case (delta_type)
+  !   case ("l")
+  !     linear = .true.
+  !   case ("a")
+  !     adaptive = .true.
+  !   case ("f")
+  !     fixed = .true.
+  !   case default
+  !     call io_error(" ERROR : unknown jdos_type in calculate_delta ")
+  !   end select
+
+  !   width = 0.0_dp
+  !   delta_bins = jdos_max_energy/real(jdos_nbins - 1, dp)
+  !   if (photo_slab_middle .gt. 0.0_dp) then
+  !     half_slab_height = photo_slab_max - photo_slab_middle
+  !   else
+  !     half_slab_height = photo_slab_max - slab_middle_ref
+  !   end if
+
+  !   if (linear .or. adaptive) step(:) = 1.0_dp/real(kpoint_grid_dim(:), dp)/2.0_dp
+  !   if (adaptive .or. hybrid_linear) then
+  !     do i = 1, 2
+  !       sub_cell_length(i) = sqrt(recip_lattice(i, 1)**2 + recip_lattice(i, 2)**2 + recip_lattice(i, 3)**2)*step(i)
+  !     end do
+  !     if (calculate_bulk) then
+  !       sub_cell_length(3) = sqrt(recip_lattice(3, 1)**2 + recip_lattice(3, 1)**2 + (pi/box_heights(num_boxes))**2)*step(3)
+  !     else
+  !       sub_cell_length(3) = sqrt(recip_lattice(3, 1)**2 + recip_lattice(3, 1)**2 + (pi/half_slab_height)**2)*step(3)
+  !     end if
+  !     adaptive_smearing_temp = adaptive_smearing*sum(sub_cell_length)/3.0_dp
+  !   end if
+
+  !   if (fixed) width = fixed_smearing
+
+  !   if (.not. allocated(delta_temp)) then
+  !     allocate (delta_temp(nbands, nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
+  !     if (ierr /= 0) call io_error('Error: calculate_delta - allocation of delta_temp failed')
+  !   end if
+  !   delta_temp = 0.0_dp
+
+  !   do ik = 1, num_kpoints_on_node(my_node_id)
+  !     do is = 1, nspins
+  !       occ_states: do ib = 1, nbands
+  !         if (num_exclude_bands .gt. 0) then
+  !           if (any(exclude_bands == ib)) cycle
+  !         end if
+  !         if (band_energy(ib, is, ik) .ge. efermi) cycle occ_states
+  !         unocc_states: do jb = 1, nbands
+  !           if (band_energy(jb, is, ik) .lt. efermi) cycle unocc_states
+  !           if (linear .or. adaptive) grad(:) = band_gradient(jb, :, ik, is) - band_gradient(ib, :, ik, is)
+
+  !           ! If the band is very flat linear broadening can have problems describing it. In this case, fall back to
+  !           ! adaptive smearing (and take advantage of FBCS if required).
+  !           force_adaptive = .false.
+  !           if (.not. fixed) then
+  !             if (hybrid_linear .and. (hybrid_linear_grad_tol .gt. sqrt(dot_product(grad, grad)))) force_adaptive = .true.
+  !             if (linear .and. .not. force_adaptive) call doslin_sub_cell_corners(grad, step, band_energy(jb, is, ik) - &
+  !                                                                                 band_energy(ib, is, ik) + scissor_op, EV)
+  !             if (adaptive .or. force_adaptive) width = sqrt(dot_product(grad, grad))*adaptive_smearing_temp
+  !           end if
+  !           ! Hybrid Adaptive -- This way we don't lose weight at very flat parts of the
+  !           ! band. It's a kind of fudge that we wouldn't need if we had infinitely small bins.
+  !           if (finite_bin_correction .and. (width .lt. delta_bins)) width = delta_bins
+  !           norm_width = inv_sqrt_two_pi/width
+
+  !           ! The linear method has a special way to calculate the integrated dos
+  !           ! we have to take account for this here.
+  !           if (linear .and. .not. force_adaptive) then
+  !             delta_temp(ib, jb, is, ik) = doslin(EV(0), EV(1), EV(2), EV(3), EV(4), E(current_energy_index), cuml)
+  !           else
+  !             delta_temp(ib, jb, is, ik) = gaussian((band_energy(jb, is, ik) - band_energy(ib, is, ik)) + scissor_op, width, &
+  !                                                   E(current_energy_index))
+  !           end if
+
+  !         end do unocc_states
+  !       end do occ_states
+  !     end do
+  !   end do
+
+  !   if (iprint .gt. 1 .and. on_root) then
+  !     write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
+  !   end if
+
+  ! end subroutine calculate_delta
+
+  subroutine calculate_delta(delta_type, delta_temp, calculate_bulk)
     !*===============================================================================
     ! This subroutine evaluates the delta function between the initial band
     ! and the final band using the method specified in the input.
     ! The calculate_bulk paramater controls for the correct smearing step
     ! width calculation for either an explicit layer or a set of extrapolated
     ! bulk like layers.
-    ! This is the new version, where all the bands are taken into account,
-    ! which is more in line with how 1-step model is calculated and also
-    ! considers bands above the fermi energy.
+    ! This is an adapted version, where all the bands are taken into account,
+    ! which is more in line with how the 1-step model is calculated and also
+    ! considers bands above the fermi energy with reduced occupation.
     ! orig. Victor Chang, 7 February 2020
     ! edited by Felix Mildner, after March 2022
     !===============================================================================
@@ -2642,10 +2806,6 @@ contains
     delta_temp = 0.0_dp
 
     do ik = 1, num_kpoints_on_node(my_node_id)
-      if (iprint .gt. 2 .and. on_root) then
-        if (mod(real(ik, dp), 10.0_dp) == 0.0_dp) write (stdout, '(1x,a1,a38,i4,a3,i4,1x,a14,2x,a11)') '^', &
-          "Calculating k-point ", ik, " of", num_kpoints_on_node(my_node_id), 'on this node.', ".lt.-- Delta |"
-      end if
       do is = 1, nspins
         do jb = 2, nbands
           conduction_band = 0.0_dp
@@ -2687,7 +2847,7 @@ contains
       write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
     end if
 
-  end subroutine calculate_delta_new
+  end subroutine calculate_delta
 
   !===============================================================================
   subroutine make_foptical_weights
@@ -2744,7 +2904,7 @@ contains
         write (stdout, *) 'jdos_spacing = ', jdos_spacing, '1step energy steps for OMEs:', energy_step
         write (stdout, *) 'The jdos_spacing is smaller than the supplied energy_step from the .fem_bin and thus incompatible!'
         call flush(stdout)
-        call io_error('The jdos_spacing is smaller than the supplied energy_step from the .fem_bin and thus incompatible!')
+        call io_error('Error: The jdos_spacing < supplied energy_step from the .fem_bin and thus incompatible!')
       end if
     end if
     ! If energy_step is lt jdos_spacing - is the mod==0?
@@ -2752,9 +2912,9 @@ contains
       if (abs(modulo(jdos_spacing, energy_step)) .gt. tolerance) then
         if (on_root) then
           write (stdout, *) 'jdos_spacing = ', jdos_spacing, '1step energy steps for OMEs:', energy_step
-          write (stdout, *) 'The jdos_spacing and energy_step for 1step OMEs are not a multiple of each other!'
+          write (stdout, *) 'The jdos_spacing and energy_step from 1step OMEs are not integer multiple of each other!'
           call flush(stdout)
-          call io_error('The jdos_spacing and energy_step for 1step OMEs are not a multiple of each other!')
+          call io_error('Error: The jdos_spacing and energy_step from 1step OMEs are not integer multiple of each other!')
         end if
       end if
     end if
@@ -2762,10 +2922,10 @@ contains
     if (temp_photon_energy .gt. energy_max .or. temp_photon_energy .lt. energy_min) then
       if (on_root) then
         write (stdout, *) 'current E_photon = ', temp_photon_energy, 'energy bounds for 1step OMEs:' &
-          , energy_min, '-.gt.', energy_max
-        write (stdout, *) 'The current photon energy is out of the min-.gt.max range of the 1step OMEs!'
+          , energy_min, '->', energy_max
+        write (stdout, *) 'The current photon energy is out of the min->max range of the 1step OMEs!'
         call flush(stdout)
-        call io_error('The current photon energy is out of the min-.gt.max range of the 1step OMEs!')
+        call io_error('Error: The current photon energy is out of the min->max range of the 1step OMEs!')
       end if
     end if
     ! Is the fermi_energy within error?
@@ -2775,7 +2935,7 @@ contains
         write (stdout, *) 'The Fermi Energy calculated in OptaDOS and supplied from the .fem_bin are incompatible!'
         write (stdout, *) 'It can also be set in the input file using efermi.'
         call flush(stdout)
-        call io_error('The Fermi Energy calculated in OptaDOS and supplied from the .fem_bin are incompatible!')
+        call io_error('Error: The Fermi Energy calculated in OptaDOS and supplied from the .fem_bin are incompatible!')
       end if
     end if
     ! Is the energy_workfct within error?
@@ -2784,7 +2944,7 @@ contains
         write (stdout, *) 'optados workfct:', work_function_eff, '1step OME workfct:', energy_workfct
         write (stdout, *) 'The Workfct from OptaDOS input and supplied from the .fem_bin are incompatible!'
         call flush(stdout)
-        call io_error('The Workfct from OptaDOS input and supplied from the .fem_bin are incompatible!')
+        call io_error('Error: The Workfct from OptaDOS input and supplied from the .fem_bin are incompatible!')
       end if
     end if
 
@@ -3247,7 +3407,7 @@ contains
       deallocate (te_osm, stat=ierr)
       if (ierr /= 0) call io_error('Error: weighted_mean_te - failed to deallocate te_osm')
 
-    else if (index(photo_model, 'ds_like_pe') .gt. 0) then
+    else if (index(photo_model, 'dosds') .gt. 0) then
 
       qe_term1 = sum(qe_tsm(:, :, :, :, 2))
       call comms_reduce(qe_term1, 1, 'SUM')
@@ -3286,9 +3446,14 @@ contains
     write (stdout, '(1x,a78)') '+------------------------------ Photoemission -------------------------------+'
     write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
     write (stdout, 223) '| Work Function     ', photo_work_function, &
-      'eV         Photon Energy', temp_photon_energy, 'eV   |'
-    write (stdout, 224) '| Effective Work Function', work_function_eff, &
-      'eV         Electric Field', photo_elec_field, 'V/A  |'
+      'eV      Photon Energy   ', temp_photon_energy, 'eV   |'
+    if (((photo_elec_field .lt. 1.0e3_dp) .and. (photo_elec_field .gt. 1.0e-3_dp)) .or. (photo_elec_field .eq. 0.0_dp)) then
+      write (stdout, 224) '| Effective Work Function', work_function_eff, &
+        'eV      Electric Field   ', photo_elec_field, 'V/m  |'
+    else
+      write (stdout, 235) '| Effective Work Function', work_function_eff, &
+        'eV      Electric Field   ', photo_elec_field, 'V/m  |'
+    end if
 
     if (index(photo_model, '3step') .gt. 0) then
       write (stdout, '(1x,a78)') '| Final State : Bloch State                                                  |'
@@ -3296,13 +3461,17 @@ contains
       write (stdout, '(1x,a78)') '| Final State : Free Electron State                                          |'
     end if
     write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
-    write (stdout, '(1x,a78)') '| Atom |  Atom Order  |   Layer   |             Quantum Efficiency           |'
-    if (index(photo_model, 'ds_like_pe') .gt. 0) then
-      write (stdout, '(1x,a78)') '|       ********** Calculated a simplified DS like PE model **********       |'
-      write (stdout, 227) '| Total Quantum Efficiency (electrons/photon):', total_qe, '   |'
+    if (index(photo_model, 'dosds') .gt. 0) then
+      write (stdout, '(1x,a78)') '|       **********  Results from DOS/Band dep. DS PE model  **********       |'
+      write (stdout, '(1x,a78)') '|       **********       Band based estimate values         **********       |'
+      write (stdout, 236) '|       QE from single band contributions   :', total_qe, '   |'
 
-      write (stdout, 228) '| Weighted Mean Transverse Energy (eV):', mean_te, '      |'
+      write (stdout, 236) '|       MTE from single band contrib.  (eV) :', mean_te, '      |'
+      write (stdout, '(1x,a78)') '|       **********        DOS based MTE estimate            **********       |'
+      write (stdout, 236) '|       MTE estimate from DOS          (eV) :', &
+        0.5_dp*qe_tsm(1, 1, 1, 1, 4)/qe_tsm(1, 1, 1, 1, 5), '   |'
     else
+      write (stdout, '(1x,a78)') '| Atom |  Atom Order  |   Layer   |             Quantum Efficiency           |'
       ! Larger number of digits for debugging purposes
       if (iprint .gt. 2) then
         do atom = 1, max_atoms
@@ -3342,9 +3511,11 @@ contains
     call flush(stdout)
 223 format(1x, a20, f15.4, 1x, a24, f11.4, a7)
 224 format(1x, a25, f10.4, 1x, a25, f10.4, a7)
+235 format(1x, a25, f10.4, 1x, a25, E10.4, a7)
 225 format(1x, a1, a4, 8x, I3, 10x, I3, 16x, E17.4E3, 9x, a7)
 226 format(1x, a6, 38x, E18.4E3, 9x, a7)
 227 format(1x, a46, E20.4E3, 5x, a7)
+236 format(1x, a45, E20.4E3, 6x, a7)
 228 format(1x, a39, 7x, E20.4E3, 5x, a7)
 231 format(1x, a1, a4, 8x, I3, 10x, I3, 16x, E24.16E3, 2x, a7)
 232 format(1x, a6, 38x, E25.16E3, 2x, a7)
@@ -3766,18 +3937,16 @@ contains
     use od_constants, only: inv_sqrt_two_pi, kB, rad_to_deg, twopi, e_mass, hbar, ev_to_j
     implicit none
 
-    integer :: i, N_k, N_spin, n_eigen_init, n_eigen, n_eigen_final, atom, kdx, edx, ierr
-    integer :: window_width, matrix_unit
-    integer :: k_window, e_window, center_bin_e, center_bin_k, kdx_min, kdx_max, edx_min, edx_max
-    real(kind=dp) :: qe_factor, gk
-    real(kind=dp) :: step(1:2), sub_cell_length(1:2), k_broadening, temp_k, min_e, gauss_e, e_temp
-    real(kind=dp) :: qe_contrib, total_weighted, qe_norm
-    real(kind=dp) :: time0, time1
-
     real(kind=dp), allocatable, dimension(:, :, :) :: fermi_dirac
     real(kind=dp), allocatable, dimension(:, :, :, :) :: emission_gauss
     real(kind=dp), allocatable, dimension(:, :, :, :) :: arpes_mask
     real(kind=dp), allocatable, dimension(:)          :: gauss_k
+
+    integer :: i, N_k, N_spin, n_eigen_init, n_eigen, n_eigen_final, atom, kdx, edx, ierr, window_width, &
+               matrix_unit, k_window, e_window, center_bin_e, center_bin_k, kdx_min, kdx_max, edx_min, edx_max
+    real(kind=dp) :: step(1:2), sub_cell_length(1:2)
+    real(kind=dp) :: k_broadening, temp_k, min_e, gauss_e, e_temp, qe_contrib, &
+                     total_weighted, qe_norm, qe_factor, gk, time0, time1
 
     character(len=100)                          :: out_string
     character(len=99)                           :: filename
@@ -4353,7 +4522,7 @@ contains
     use od_constants, only: inv_sqrt_two_pi, kB, rad_to_deg, twopi, e_mass, ev_to_j, hbar
     implicit none
 
-    integer    ::  i, N_k, N_spin, n_eigen_init, n_eigen, n_eigen_final, atom, gdx, ierr
+    integer    ::  i, N_k, N_spin, n_eigen_init, n_eigen, atom, ierr
     integer    ::  matrix_unit, total_ks, nsymm_op, x_center, y_center, z_center, xdx, ydx, zdx
     integer    ::  xdx_offset, ydx_offset, zdx_offset, xdx_window, ydx_window, zdx_window
     integer    ::  xdx_min, xdx_max, ydx_min, ydx_max, zdx_min, zdx_max, window_width
@@ -4366,7 +4535,7 @@ contains
     real(kind=dp) :: step(1:2), sub_cell_length(1:2), temp_mat(2, 2), current_k(2)
     real(kind=dp) :: qe_contrib, gauss_z, total_weighted, qe_norm
     real(kind=dp) :: kx_broadening, ky_broadening, kz_broadening, k_prefactor
-    real(kind=dp) :: z_max, xy_max, wave_prefactor
+    real(kind=dp) :: z_max, z_min, xy_max, wave_prefactor, etemp, min_e
     character(len=100)                          :: out_string
     character(len=99)                           :: filename
     character(len=10)                           :: char_e
@@ -4414,12 +4583,14 @@ contains
     zdx_window = ceiling(window_width*kz_broadening/photo_pmat_bin_width)
 
     call cell_calc_kpoint_r_cart
-    max_e_kinetic = temp_photon_energy - work_function_eff
     z_max = sqrt((2*e_mass*((max_e_kinetic + 0.5)*ev_to_j))/(hbar*hbar))*1E-10
+    min_e = max(minval(E_kinetic) - 0.25_dp, 0.0_dp)
+    z_min = sqrt((2*e_mass*((min_e)*ev_to_j))/(hbar*hbar))*1E-10
     xy_max = min((abs(maxval(kpoint_r_cart(1:2, :))) + 0.5), z_max)
+
     xdx_offset = ceiling(xy_max/photo_pmat_bin_width)
     ydx_offset = ceiling(xy_max/photo_pmat_bin_width)
-    zdx_offset = ceiling(z_max/photo_pmat_bin_width) + zdx_window
+    zdx_offset = ceiling((z_max - z_min)/photo_pmat_bin_width) + zdx_window
 
     call comms_reduce(xdx_offset, 1, "MAX")
     call comms_reduce(ydx_offset, 1, "MAX")
@@ -4450,13 +4621,16 @@ contains
     gauss_y = 0.0_dp
 
     call prepare_emission_arrays(fermi_dirac, arpes_mask, emission_gauss)
-    ! conditional array assignment for turning E_kin into electron momentum p
-    ! along surface normal
+    ! array assignment for turning E_kin into electron momentum p
+    ! along surface normal, offset by the minimal z_value, included
+    ! in the printout
     do N_k = 1, num_kpoints_on_node(my_node_id)
       do N_spin = 1, nspins
         do n_eigen = 1, nbands
-          p_z(n_eigen, N_spin, N_k) = sqrt(wave_prefactor*((E_kinetic(1, n_eigen, N_spin, N_k) - &
-                                                            E_transverse(1, n_eigen, N_spin, N_k))*ev_to_j))*1E-10_dp
+          etemp = E_kinetic(1, n_eigen, N_spin, N_k) - E_transverse(1, n_eigen, N_spin, N_k)
+          if (etemp .gt. 0.0_dp) then
+            p_z(n_eigen, N_spin, N_k) = sqrt(wave_prefactor*etemp*ev_to_j)*1E-10_dp - z_min
+          end if
         end do
       end do
     end do
@@ -4491,22 +4665,20 @@ contains
               end do
             end do
             do N_spin = 1, nspins
-              do n_eigen_final = min_index_unocc(N_spin, N_k), nbands
-                do n_eigen_init = 1, n_eigen_final - 1
-                  qe_contrib = qe_tsm(n_eigen_init, n_eigen_final, N_spin, N_k, atom)* &
-                               arpes_mask(1, n_eigen_init, N_spin, N_k)*k_prefactor
-                  total_be_kmat_contribs = total_be_kmat_contribs + qe_contrib
-                  z_center = nint(p_z(n_eigen_init, N_spin, N_k)/photo_pmat_bin_width) + 1
-                  zdx_min = max(z_center - zdx_window, 1)
-                  zdx_max = min(z_center + zdx_window, max_bin_p(3))
-                  do zdx = zdx_min, zdx_max
-                    gauss_z = gaussian(p_z(n_eigen_init, N_spin, N_k), kz_broadening, zdx*photo_pmat_bin_width)
-                    p_tensor(xdx_min:xdx_max, ydx_min:ydx_max, zdx) = &
-                      p_tensor(xdx_min:xdx_max, ydx_min:ydx_max, zdx) &
-                      + gauss_xy(xdx_min:xdx_max, ydx_min:ydx_max)*gauss_z*qe_contrib
-                  end do ! pz
-                end do ! bands_initial
-              end do ! bands_final
+              do n_eigen_init = 1, nbands
+                qe_contrib = sum(qe_tsm(n_eigen_init, 1:nbands, N_spin, N_k, atom))* &
+                             arpes_mask(1, n_eigen_init, N_spin, N_k)*k_prefactor
+                total_be_kmat_contribs = total_be_kmat_contribs + qe_contrib
+                z_center = nint((p_z(n_eigen_init, N_spin, N_k))/photo_pmat_bin_width) + 1
+                zdx_min = max(z_center - zdx_window, 1)
+                zdx_max = min(z_center + zdx_window, max_bin_p(3))
+                do zdx = zdx_min, zdx_max
+                  gauss_z = gaussian(p_z(n_eigen_init, N_spin, N_k), kz_broadening, zdx*photo_pmat_bin_width)
+                  p_tensor(xdx_min:xdx_max, ydx_min:ydx_max, zdx) = &
+                    p_tensor(xdx_min:xdx_max, ydx_min:ydx_max, zdx) &
+                    + gauss_xy(xdx_min:xdx_max, ydx_min:ydx_max)*gauss_z*qe_contrib
+                end do ! pz
+              end do ! bands_initial
             end do ! spins
           end do ! kpts
         end do ! atoms
@@ -4540,22 +4712,20 @@ contains
             end do
           end do
           do N_spin = 1, nspins
-            do n_eigen_final = min_index_unocc(N_spin, N_k), nbands
-              do n_eigen_init = 1, n_eigen_final - 1
-                qe_contrib = qe_tsm(n_eigen_init, n_eigen_final, N_spin, N_k, atom)* &
-                             arpes_mask(gdx, n_eigen_init, N_spin, N_k)*k_prefactor
-                total_be_kmat_contribs = total_be_kmat_contribs + qe_contrib
-                z_center = nint(p_z(n_eigen_init, N_spin, N_k)/photo_pmat_bin_width) + 1
-                zdx_min = max(z_center - zdx_window, 1)
-                zdx_max = min(z_center + zdx_window, max_bin_p(3))
-                do zdx = zdx_min, zdx_max
-                  gauss_z = gaussian(p_z(n_eigen_init, N_spin, N_k), kz_broadening, zdx*photo_pmat_bin_width)
-                  p_tensor(xdx_min:xdx_max, ydx_min:ydx_max, zdx) = &
-                    p_tensor(xdx_min:xdx_max, ydx_min:ydx_max, zdx) &
-                    + gauss_xy(xdx_min:xdx_max, ydx_min:ydx_max)*gauss_z*qe_contrib
-                end do ! pz
-              end do ! bands_initial
-            end do ! bands_final
+            do n_eigen_init = 1, nbands
+              qe_contrib = sum(qe_tsm(n_eigen_init, 1:nbands, N_spin, N_k, max_atoms + 1))* &
+                           arpes_mask(1, n_eigen_init, N_spin, N_k)*k_prefactor
+              total_be_kmat_contribs = total_be_kmat_contribs + qe_contrib
+              z_center = nint(p_z(n_eigen_init, N_spin, N_k)/photo_pmat_bin_width) + 1
+              zdx_min = max(z_center - zdx_window, 1)
+              zdx_max = min(z_center + zdx_window, max_bin_p(3))
+              do zdx = zdx_min, zdx_max
+                gauss_z = gaussian(p_z(n_eigen_init, N_spin, N_k), kz_broadening, zdx*photo_pmat_bin_width)
+                p_tensor(xdx_min:xdx_max, ydx_min:ydx_max, zdx) = &
+                  p_tensor(xdx_min:xdx_max, ydx_min:ydx_max, zdx) &
+                  + gauss_xy(xdx_min:xdx_max, ydx_min:ydx_max)*gauss_z*qe_contrib
+              end do ! pz
+            end do ! bands_initial
           end do ! spins
         end do ! kpts
       end do ! symm_ops
@@ -4644,7 +4814,8 @@ contains
       write (matrix_unit, '(a54,2(1x,f7.2))') '## Emission angle phi min, max (w.r.t. x-axis) [deg]: ', &
         photo_phi_min, photo_phi_max
       write (matrix_unit, '(a14,f9.5)') '## Bin width: ', photo_pmat_bin_width
-      write (matrix_unit, '(a61)') '## Note: x and y are from -k to +k including 0, z is 0 to kz!'
+      write (matrix_unit, '(a47)') '## Note: x and y are from -k to +k including 0!'
+      write (matrix_unit, '(a29,f9.5)') '## p_z value of first z_bin: ', z_min
       write (matrix_unit, '(a19,3(i7,a3))') '## Matrix Shape: ( ', max_bin_p(1), ' , ', max_bin_p(2), ' , ', max_bin_p(3), ' )'
 
       write (out_string, '(I0,"(",a,")")') max_bin_p(1), 'E9.1E3'
@@ -4728,7 +4899,7 @@ contains
       call flush(stdout)
     end if
     if (photo_momentum == 'gkgrid') then
-      if (on_root) write (stdout, '(1x,a78)') '+----------- Tensor Calculation with Gkgrid scheme not implemented ----------+'
+      if (on_root) write (stdout, '(1x,a78)') '+----------- Tensor Calculation with Gkgrid scheme currently WIP ----------+'
       return
     end if
     ! get kinetic energy at efermi for reference
@@ -5097,7 +5268,7 @@ contains
     real(kind=dp), allocatable, dimension(:, :, :)    :: fermi_dirac
     real(kind=dp), allocatable, dimension(:)          :: gauss_y, gauss_x
     real(kind=dp), allocatable, dimension(:, :)        :: gauss_xy
-    real(kind=dp) :: step(1:2), sub_cell_length(1:2), gauss_e, temp_mat(2, 2), current_k(2), final_fd, z_max, xy_max
+    real(kind=dp) :: step(1:2), sub_cell_length(1:2), gauss_e, temp_mat(2, 2), current_k(2), z_max, xy_max
     real(kind=dp) :: k_prefactor, ref_level, kx_broadening, ky_broadening, qe_contrib, time0, time1
     real(kind=dp) :: total_weighted, qe_norm
     integer    :: i, N_k, N_spin, n_eigen_init, n_eigen, n_eigen_final, atom, ierr, window_width
@@ -5121,7 +5292,7 @@ contains
     total_ks = kpoint_grid_dim(1)*kpoint_grid_dim(2)
     ! reference binding energy level, at which we want to create the map
     ! E_photon - W_eff - E_map(user) - E_F -.gt. binding energy w.r.t. E_F
-    ref_level = temp_photon_energy - work_function_eff - photo_const_bindenergy_value - efermi
+    ref_level = photo_const_bindenergy_value - efermi
     do i = 1, 2
       step(i) = 0.5_dp/real(kpoint_grid_dim(i), dp)
       sub_cell_length(i) = sqrt(recip_lattice(i, 1)**2 + recip_lattice(i, 2)**2 + recip_lattice(i, 3)**2)*step(i)
@@ -5139,7 +5310,6 @@ contains
     ydx_window = ceiling(window_width*ky_broadening/photo_pmat_bin_width)
 
     call cell_calc_kpoint_r_cart
-    max_e_kinetic = temp_photon_energy - work_function_eff
     z_max = sqrt((2*e_mass*((max_e_kinetic + 0.5)*ev_to_j))/(hbar*hbar))*1E-10
     xy_max = min((abs(maxval(kpoint_r_cart(1:2, :))) + 0.5), z_max)
     xdx_offset = ceiling(xy_max/photo_pmat_bin_width)
@@ -5209,17 +5379,14 @@ contains
               end do
             end do
             do N_spin = 1, nspins
-              do n_eigen_final = min_index_unocc(N_spin, N_k), nbands
-                final_fd = 1 - fermi_dirac(n_eigen_final, N_spin, N_k)
-                do n_eigen_init = 1, n_eigen_final - 1
-                  gauss_e = gaussian(band_energy(n_eigen_init, N_spin, N_k), photo_bindenergy_broadening, ref_level)
-                  qe_contrib = qe_tsm(n_eigen_init, n_eigen_final, N_spin, N_k, atom)*k_prefactor &
-                               *arpes_mask(1, n_eigen_final, N_spin, N_k)
-                  total_be_contribs = total_be_contribs + qe_contrib
-                  kxky_matrix(xdx_min:xdx_max, ydx_min:ydx_max) = kxky_matrix(xdx_min:xdx_max, ydx_min:ydx_max) &
-                                                                  + gauss_xy(xdx_min:xdx_max, ydx_min:ydx_max)*gauss_e*qe_contrib
-                end do ! bands_init
-              end do ! bands_final
+              do n_eigen_init = 1, nbands
+                gauss_e = gaussian(band_energy(n_eigen_init, N_spin, N_k), photo_bindenergy_broadening, ref_level)
+                qe_contrib = sum(qe_tsm(n_eigen_init, 1:nbands, N_spin, N_k, atom))*k_prefactor &
+                             *arpes_mask(1, n_eigen_final, N_spin, N_k)
+                total_be_contribs = total_be_contribs + qe_contrib
+                kxky_matrix(xdx_min:xdx_max, ydx_min:ydx_max) = kxky_matrix(xdx_min:xdx_max, ydx_min:ydx_max) &
+                                                                + gauss_xy(xdx_min:xdx_max, ydx_min:ydx_max)*gauss_e*qe_contrib
+              end do ! bands_init
             end do ! spins
           end do ! kpts
         end do ! atoms
@@ -5254,16 +5421,14 @@ contains
             end do
           end do
           do N_spin = 1, nspins
-            do n_eigen_final = min_index_unocc(N_spin, N_k), nbands
-              do n_eigen_init = 1, n_eigen_final - 1
-                gauss_e = gaussian(band_energy(n_eigen_init, N_spin, N_k), photo_bindenergy_broadening, ref_level)
-                qe_contrib = qe_tsm(n_eigen_init, n_eigen_final, N_spin, N_k, max_atoms + 1)*k_prefactor &
-                             *arpes_mask(1, n_eigen_final, N_spin, N_k)
-                total_be_contribs = total_be_contribs + qe_contrib
-                kxky_matrix(xdx_min:xdx_max, ydx_min:ydx_max) = kxky_matrix(xdx_min:xdx_max, ydx_min:ydx_max) &
-                                                                + gauss_xy(xdx_min:xdx_max, ydx_min:ydx_max)*gauss_e*qe_contrib
-              end do ! bands_init
-            end do ! bands_final
+            do n_eigen_init = 1, n_eigen_final - 1
+              gauss_e = gaussian(band_energy(n_eigen_init, N_spin, N_k), photo_bindenergy_broadening, ref_level)
+              qe_contrib = sum(qe_tsm(n_eigen_init, 1:nbands, N_spin, N_k, max_atoms + 1))*k_prefactor &
+                           *arpes_mask(1, n_eigen_final, N_spin, N_k)
+              total_be_contribs = total_be_contribs + qe_contrib
+              kxky_matrix(xdx_min:xdx_max, ydx_min:ydx_max) = kxky_matrix(xdx_min:xdx_max, ydx_min:ydx_max) &
+                                                              + gauss_xy(xdx_min:xdx_max, ydx_min:ydx_max)*gauss_e*qe_contrib
+            end do ! bands_init
           end do ! spins
         end do ! kpts
       end do ! symm_ops
@@ -5318,6 +5483,7 @@ contains
 
     if (on_root) then
       total_weighted = sum(kxky_matrix(:, :))
+      write (*, *) total_weighted
       if (total_weighted .gt. 0.0_dp) then
         qe_norm = total_be_contribs/total_weighted
       else
@@ -5347,10 +5513,11 @@ contains
         photo_theta_min, photo_theta_max
       write (matrix_unit, '(a54,2(1x,f7.2))') '## Emission angle phi min, max (w.r.t. x-axis) [deg]: ', &
         photo_phi_min, photo_phi_max
-      write (matrix_unit, '(a43,f9.5)') '## Kinetic Energy of Electrons shown [eV]: ', ref_level
-      write (matrix_unit, '(a43,f9.5)') '## Reference Energy of Map (E-E_F) [eV]:   ', photo_const_bindenergy_value
-      write (matrix_unit, '(a23,f9.5)') '## Momentum bin width: ', photo_pmat_bin_width
-      write (matrix_unit, '(a19,i10,a3,i10,a2)') '## Matrix Shape: ( ', px_max, ' , ', py_max, ' )'
+      write (matrix_unit, '(a44,f9.5)') '## Kinetic Energy of Electrons shown [eV] : ', ref_level
+      write (matrix_unit, '(a44,f9.5)') '## Reference Energy of Map (E-E_F)   [eV] : ', photo_const_bindenergy_value
+      write (matrix_unit, '(a44,f9.5)') '## Momentum bin width               [1/A] : ', photo_pmat_bin_width
+      write (matrix_unit, '(a44,f9.5)') '## Binding energy broadening width   [eV] : ', photo_bindenergy_broadening
+      write (matrix_unit, '(a46,i10,a3,i10,a2)') '## Matrix Shape                           : ( ', px_max, ' , ', py_max, ' )'
 
       write (out_string, '(I0,"(1x,",a,")")') px_max, 'ES25.12E3'
       do ydx = 1, py_max
@@ -5673,10 +5840,11 @@ contains
         photo_theta_min, photo_theta_max
       write (matrix_unit, '(a54,2(1x,f7.2))') '## Emission angle phi min, max (w.r.t. x-axis) [deg]: ', &
         photo_phi_min, photo_phi_max
-      write (matrix_unit, '(a43,f9.5)') '## Kinetic Energy of Electrons shown [eV]: ', ref_level
-      write (matrix_unit, '(a43,f9.5)') '## Reference Energy of Map (E-E_F) [eV]:   ', photo_const_bindenergy_value
-      write (matrix_unit, '(a23,f9.5)') '## Momentum bin width: ', photo_pmat_bin_width
-      write (matrix_unit, '(a19,i10,a3,i10,a2)') '## Matrix Shape: ( ', px_max, ' , ', py_max, ' )'
+      write (matrix_unit, '(a44,f9.5)') '## Kinetic Energy of Electrons shown [eV] : ', ref_level
+      write (matrix_unit, '(a44,f9.5)') '## Reference Energy of Map (E-E_F)   [eV] : ', photo_const_bindenergy_value
+      write (matrix_unit, '(a44,f9.5)') '## Momentum bin width               [1/A] : ', photo_pmat_bin_width
+      write (matrix_unit, '(a44,f9.5)') '## Binding energy broadening width   [eV] : ', photo_bindenergy_broadening
+      write (matrix_unit, '(a19,i10,a3,i10,a2)') '## Matrix Shape                           : ( ', px_max, ' , ', py_max, ' )'
 
       write (out_string, '(I0,"(1x,",a,")")') px_max, 'ES25.12E3'
       do ydx = 1, py_max
@@ -5823,7 +5991,7 @@ contains
     time1 = io_time()
     if (on_root .and. iprint .gt. 1) then
       write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
-      write (stdout, '(1x,a37,21x,f11.3,a8)') '+ Time to write the qe tensor to file', time1 - time0, ' (sec) +'
+      write (stdout, '(1x,a37,22x,f11.3,a8)') '+ Time to write the qe tensor to file', time1 - time0, ' (sec) +'
     end if
 
   end subroutine write_qe_tensor

@@ -138,7 +138,7 @@ module od_parameters
   real(kind=dp), public, save :: photo_elec_field
   integer, public, save       :: photo_len_imfp_value
   real(kind=dp), dimension(:), allocatable, public, save :: photo_imfp_value
-  character(len=20), public, save :: photo_imfp_choice
+  character(len=20), public, save :: photo_imfp_model
   real(kind=dp), public, save :: photo_phi_min
   real(kind=dp), public, save :: photo_phi_max
   real(kind=dp), public, save :: photo_theta_min
@@ -242,6 +242,11 @@ contains
 
     if (pdis .and. (optics .or. core .or. jdos .or. pdos .or. dos .or. compare_dos .or. compare_jdos .or. photo)) &
       call io_error('Error: projected bandstructure not compatible with any other tasks')
+
+    if (.not. (dos .or. pdos .or. pdis .or. jdos .or. optics .or. core .or. compare_dos .or. compare_jdos .or. &
+               photo .or. photo_energy_sweep)) then
+      call io_error('Error: no task was found in odi file. A task must be set!')
+    end if
 
     fixed = .false.; adaptive = .false.; linear = .false.; quad = .false.
     call param_get_keyword('broadening', found, c_value=c_string)
@@ -445,58 +450,71 @@ contains
     call param_get_keyword('lai_lorentzian_offset', found, r_value=LAI_lorentzian_offset)
     if (LAI_lorentzian_offset .lt. 0.0_dp) call io_error('Error: LAI_lorentzian_offset must be positive')
 
-    ! Photoemission parameters - V.Chang Nov-2020, F.Mildner Nov-2022/Mar-2025
+    ! Photoemission parameters - V.Chang Nov-2020, F.Mildner Nov-2022/Mar-2026
     if (photo .and. index(optics_geom, 'tensor') > 0) then
       call io_error('Error: optics_geom tensor requested, but this does not currently work with photoemission')
     end if
     photo_model = '3step'
     call param_get_keyword('photo_model', found, c_value=photo_model)
-    if (index(photo_model, '3step') > 0 .and. index(photo_model, '1step') > 0 .or. &
-        index(photo_model, '3step') > 0 .and. index(photo_model, 'ds_like_pe') > 0 .or. &
-        index(photo_model, '1step') > 0 .and. index(photo_model, 'ds_like_pe') > 0) then
+    if ((index(photo_model, '3step') .eq. 0) .and. (index(photo_model, '1step') .eq. 0) .and. &
+        (index(photo_model, 'dosds') .eq. 0)) &
       call io_error('Error: value of photoemission model not recognised in param_read')
+    if (index(photo_model, '3step') > 0 .and. index(photo_model, '1step') > 0 .or. &
+        index(photo_model, '3step') > 0 .and. index(photo_model, 'dosds') > 0 .or. &
+        index(photo_model, '1step') > 0 .and. index(photo_model, 'dosds') > 0) then
+      call io_error('Error: photoemission model can only be set to one value per run')
     end if
 
     photo_momentum = 'crystal'
     call param_get_keyword('photo_momentum', found, c_value=photo_momentum)
     if (index(photo_momentum, 'kp') == 0 .and. index(photo_momentum, 'crystal') == 0 .and. index(photo_momentum, 'operator') == 0 &
         .and. index(photo_momentum, 'gkgrid') == 0) &
-      call io_error('Error: value of momentum not recognised in param_read')
+      call io_error('Error: value of photoemission momentum not recognised in param_read')
 
     call param_get_keyword('photo_photon_energy', found, r_value=photo_photon_energy)
-    if (found .and. photo_energy_sweep) call io_error('Error: cannot set photo_photon_energy for photon energy sweep &
-    & calculation, only photo_photon_min and photo_photon_max')
-    if (photo .and. .not. found .and. .not. photo_energy_sweep) &
+    if (photo .and. .not. photo_energy_sweep .and. .not. found) &
       call io_error('Error: please set photon energy for photoemission calculation')
 
-    photo_photon_min = 3.0_dp
+    photo_photon_min = -1.0_dp
     call param_get_keyword('photo_photon_min', found, r_value=photo_photon_min)
-    photo_photon_max = 2.0_dp
+    photo_photon_max = -2.0_dp
     call param_get_keyword('photo_photon_max', found, r_value=photo_photon_max)
+    if (((photo_photon_min .lt. 1.0e-12_dp) .or. (photo_photon_min .lt. 1.0e-12_dp)) .and. photo_energy_sweep) &
+      call io_error('Error: both max and min photon values < 0. Something has gone wrong.')
     if (photo_photon_min .gt. photo_photon_max .and. photo_energy_sweep) &
-      call io_error('Error: max photon value is lower than min photon value or they have not been set')
+      call io_error('Error: max photon value < min photon value or they have not been set')
 
     call param_get_keyword('photo_work_function', found, r_value=photo_work_function)
     if (photo .and. .not. found) &
-      call io_error('Error: please set workfunction for photoemission calculation')
+      call io_error('Error: work function not found, please set workfunction for photoemission calculation')
 
-    photo_slab_min = 0.0_dp
+    photo_slab_min = -2.0_dp
     call param_get_keyword('photo_slab_min', found, r_value=photo_slab_min)
-    photo_slab_max = 0.0_dp
+    photo_slab_max = -1.0_dp
     call param_get_keyword('photo_slab_max', found, r_value=photo_slab_max)
 
-    if (photo_slab_max .lt. 0.0_dp .or. photo_slab_min .lt. 0.0_dp) then
-      call io_error('Error: the supplied min or max values are negative, which causes faulty calculations!')
-    end if
+    ! Does max > min
+    ! this is false if only slab_max is set and slab_middle will be set
+    ! this is also false if slab_min and slab_max are set correctly
     if (photo_slab_max .lt. photo_slab_min) then
-      call io_error('Error: the supplied slab_max value is less than the slab_min value!')
+      call io_error('Error: the supplied slab_max value is less than the slab_min value, max > min must be true')
     end if
 
-    photo_slab_middle = -1.0_dp
+    photo_slab_middle = -0.5_dp
     call param_get_keyword('photo_slab_middle', found, r_value=photo_slab_middle)
     if (found .and. photo_slab_middle .lt. 0.0_dp) then
       call io_error('Error: photo_slab_middle must be a positive value!')
     end if
+
+    ! If slab_min and slab_middle have been set - not desired - then slab_max < slab_middle
+    ! If none of the three are set - not desired - slab_max < slab_middle
+    if ((photo_slab_max .lt. photo_slab_middle) .and. photo) &
+      call io_error('Error: photo_slab_max < photo_slab_middle - either no slab parameters have been set or they are swapped')
+
+    ! This is only true if photo_slab_min has been left out by mistake
+    ! Otherwise slab_middle > 0 and slab_max > slab_middle
+    if ((photo_slab_middle .lt. -1.0e-12_dp) .and. (photo_slab_min .lt. -1.0e-12_dp) .and. photo) &
+      call io_error('Error: both slab middle < 0 and slab min < 0, so something is wrong with the slab boundaries')
 
     i_temp = 0
     call param_get_vector_length('photo_layers_tops', found, i_temp)
@@ -511,32 +529,38 @@ contains
     call param_get_keyword_vector('photo_layers_tops', found, i_temp, r_value=photo_layers_tops)
     if (photo_slab_middle .gt. 0.0_dp) photo_slab_max = photo_layers_tops(1)
 
+    ! Electric field in V/m
     photo_elec_field = 0.00_dp
     call param_get_keyword('photo_elec_field', found, r_value=photo_elec_field)
 
     photo_remove_box_states = .False.
     call param_get_keyword('photo_remove_box_states', found, l_value=photo_remove_box_states)
 
-    photo_imfp_choice = 'const'
-    call param_get_keyword('photo_imfp_choice', found, c_value=photo_imfp_choice)
+    photo_imfp_model = 'const'
+    call param_get_keyword('photo_imfp_model', found, c_value=photo_imfp_model)
+
+    if ((index(photo_imfp_model, 'const') == 0) .and. (index(photo_imfp_model, 'layers') == 0) .and. &
+        (index(photo_imfp_model, 'cu_curve') == 0)) &
+      call io_error('Error: value of photoemission imfp model not recognised in param_read')
 
     i_temp = 0
     call param_get_vector_length('photo_imfp_value', found, i_temp)
 
-    if (index(photo_imfp_choice, 'const') > 0) then
-      if (i_temp .gt. 1) call io_error('Error: IMFP choice set to const, but supplied more than 1 value')
+    if (index(photo_imfp_model, 'const') > 0) then
+      if ((i_temp .gt. 1)) call io_error('Error: IMFP choice set to const, but supplied more than 1 value in input')
+      if ((i_temp .eq. 0) .and. photo) call io_error('Error: IMFP choice set to const, but no value was found in input')
       photo_len_imfp_value = i_temp
       allocate (photo_imfp_value(i_temp), stat=ierr)
       if (ierr /= 0) call io_error('Error: param_read - allocation failed for photo_imfp_value')
       call param_get_keyword_vector('photo_imfp_value', found, i_temp, r_value=photo_imfp_value)
 
-    else if (index(photo_imfp_choice, 'layers') > 0) then
+    else if (index(photo_imfp_model, 'layers') > 0) then
       photo_len_imfp_value = i_temp
       allocate (photo_imfp_value(i_temp), stat=ierr)
       if (ierr /= 0) call io_error('Error: param_read - allocation failed for photo_imfp_value')
       call param_get_keyword_vector('photo_imfp_value', found, i_temp, r_value=photo_imfp_value)
 
-    else if (index(photo_imfp_choice, 'cu_curve') > 0) then
+    else if (index(photo_imfp_model, 'cu_curve') > 0) then
       allocate (photo_imfp_value(1), stat=ierr)
       if (ierr /= 0) call io_error('Error: param_read - allocation failed for photo_imfp_value')
       call param_get_keyword_vector('photo_imfp_value', found, i_temp, r_value=photo_imfp_value)
@@ -546,7 +570,7 @@ contains
     photo_bulk_cutoff = 10.0_dp
     call param_get_keyword('photo_bulk_cutoff', found, r_value=photo_bulk_cutoff)
 
-    photo_temperature = 298.0_dp
+    photo_temperature = 298.15_dp
     call param_get_keyword('photo_temperature', found, r_value=photo_temperature)
 
     photo_output = 'off'
@@ -595,13 +619,13 @@ contains
         end if
       end do
       write (stderr, *)
-      call io_error('Unrecognised keyword(s) in input file')
+      call io_error('Error: Unrecognised keyword(s) in input file')
     end if
 
     call param_uppercase()
 
     deallocate (in_data, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating in_data in param_read')
+    if (ierr /= 0) call io_error('Error: error deallocating in_data in param_read')
 
     ! =============================== !
     ! Some checks and initialisations !
@@ -1001,8 +1025,8 @@ contains
         else
           write (stdout, '(1x,a78)') '|  *** NOT Including transmission probability across surface ***             |'
         end if
-      elseif (index(photo_model, 'ds_like_pe') > 0) then
-        write (stdout, '(1x,a78)') '|  Photoemission Model                       :  Simplified PE Model          |'
+      elseif (index(photo_model, 'dosds') > 0) then
+        write (stdout, '(1x,a78)') '|  Photoemission Model                       :  DOS dependent DS PE Model    |'
       end if
       if (photo_energy_sweep) then
         write (stdout, '(1x,a46,1x,1f10.4,a4,1f7.4,a10)') '|  Photon Energy Sweep                       :', photo_photon_min,&
@@ -1020,19 +1044,19 @@ contains
         write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Slab Min Z-Coord.          (Ang)          :', photo_slab_min, '|'
         write (stdout, '(1x,a78)') '|  Slab middle and layers will be inferred from boundaries, check printout!  |'
       end if
-      if (index(photo_imfp_choice, 'const') > 0) then
+      if (index(photo_imfp_model, 'const') > 0) then
         write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  IMFP Constant              (Ang)          :', photo_imfp_value(1), '|'
-      else if (index(photo_imfp_choice, 'layers') > 0) then
+      else if (index(photo_imfp_model, 'layers') > 0) then
         write (stdout, '(1x,a78)') '|  Layer by Layer IMFP Constants     (Ang)   : Layer values provided by user |'
         write (stdout, '(1x,a78)') '|                                              will be printed later         |'
-      else if (index(photo_imfp_choice, 'cu_curve') > 0) then
+      else if (index(photo_imfp_model, 'cu_curve') > 0) then
         write (stdout, '(1x,a78)') '|  Energy Dependent IMFP Curve for Cu        : Values will be printed later  |'
       end if
       write (stdout, '(1x,a46,3x,f5.1,23x,a1)') '|  Bulk cutoff dist. (int. multiple of IMFP) :', photo_bulk_cutoff, '|'
-      if ((photo_elec_field .gt. 1.0E-4_dp) .or. (photo_elec_field .lt. 1.0E-25_dp)) then
-        write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Electric Field Strength    (V/Ang)        :', photo_elec_field, '|'
+      if (((photo_elec_field .lt. 1.0e3_dp) .and. (photo_elec_field .gt. 1.0e-3_dp)) .or. (photo_elec_field .eq. 0.0_dp)) then
+        write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Electric Field Strength    (V/m)          :', photo_elec_field, '|'
       else
-        write (stdout, '(1x,a46,1x,E17.9,13x,a1)') '|  Electric Field Strength    (V/Ang)        :', photo_elec_field, '|'
+        write (stdout, '(1x,a46,1x,E14.4,16x,a1)') '|  Electric Field Strength    (V/m)          :', photo_elec_field, '|'
       end if
       write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Smearing Temperature       (K)            :', photo_temperature, '|'
       write (stdout, '(1x,a46,5x,a9,17x,a1)') '|  Transverse Momentum Scheme                :', photo_momentum, '|'
@@ -1839,7 +1863,7 @@ contains
       end if
       call comms_bcast(photo_imfp_value(1), photo_len_imfp_value)
     end if
-    call comms_bcast(photo_imfp_choice, len(photo_imfp_choice))
+    call comms_bcast(photo_imfp_model, len(photo_imfp_model))
     call comms_bcast(photo_bulk_cutoff, 1)
     call comms_bcast(photo_temperature, 1)
     call comms_bcast(photo_output, len(photo_output))
