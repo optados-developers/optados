@@ -1,0 +1,39 @@
+
+# hBN aloof-only example for phonon vib-EELS in OptaDOS.
+
+TASK             : phonon_eels
+PHONON_EELS_TASK : aloof
+
+# min/max energy, and spacing, for calculation of all vib-EELS quantities.
+# These are in meV.
+#vibeels_min_energy : 0
+#vibeels_max_energy : 300
+vibeels_spacing    : 0.5
+
+#*************************************
+#           Aloof Keywords           #
+#*************************************
+
+# Broadening for eps_lf (mode linewidth), in meV.
+vibeels_aloof_intrinsic_broadening : 0.50
+
+# Lorentzian broadening for the aloof loss spectrum, in meV.
+vibeels_aloof_loss_broadening : 5.00
+
+# Aloof surface plane.
+vibeels_aloof_surface_plane : ab
+
+# Aloof beam direction.
+vibeels_aloof_beam_direction : a
+
+# Include off-diagonal terms for alpha, or not.
+vibeels_aloof_include_offdiag : false
+
+# Electron beam energy in units of keV.
+vibeels_aloof_electron_beam_energy : 60
+
+# Electron impact parameter in units of nanometre.
+vibeels_aloof_impact_parameter : 26.5
+
+# Number of phi values for aloof loss integral.
+vibeels_aloof_phi_spacing : 0.004

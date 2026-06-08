@@ -33,7 +33,7 @@ program optados
   ! Written by Andrew Morris, Rebecca Nicholls, Chris Pickard               !
   !             and Jonathan Yates      2010                                !
   !=========================================================================!
-  use od_comms, only: comms_setup, on_root, comms_end, num_nodes
+  use od_comms, only: comms_setup, comms_bcast, on_root, comms_end, num_nodes
   use od_constants, only: dp
   use od_io, only: io_get_seedname, io_time, io_date, io_file_unit,&! Functions
        & stdout, stderr, seedname                                            ! Variables
@@ -50,13 +50,14 @@ program optados
   use od_optics, only: optics_calculate
   use od_phonon_eels, only: phonon_eels_calculate
   use od_build, only: build_info
+
   implicit none
 
-  real(kind=dp)    :: time0, time1       ! Varaibles for timing
-  logical          :: odo_found         ! Ouptut file exists?
+  real(kind=dp)    :: time0, time1       ! Variables for timing
+  logical          :: odo_found          ! Output file exists?
   character(len=9) :: stat, pos          ! Status and position of .odo file
-  character(len=9) :: ctime             ! Temp. time string
-  character(len=11):: cdate             ! Temp. date string
+  character(len=9) :: ctime              ! Temp. time string
+  character(len=11):: cdate              ! Temp. date string
 
   time0 = io_time()
 
@@ -98,24 +99,40 @@ program optados
 
     if (iprint > 1) write (stdout, '(1x,a40,f11.3,a)') 'Time to read parameters ', time1 - time0, ' (sec)'
     !-------------------------------------------------------------------------!
+
   end if
 
-  if (pdis) then
-    call elec_read_band_energy_ordered
-  else
-    call elec_read_band_energy
+  ! Phonon vib-EELS routines do not require, nor expect, a .cell or .bands file.
+  ! So if doing a phonon_eels task, do not call any routines that expect these to be present.
+  ! This will not affect any other tasks, and in those cases these routines will be called as normal.
+
+  ! The following call is to ensure that all ranks see whether we're doing a phonon_eels task, right away.
+  ! Otherwise, at this stage, only root will know (from on_root call to param_read above), and the following
+  ! if/else checks will be inconsistent across ranks.
+  call comms_bcast(phonon_eels, 1)
+
+  if (.not. phonon_eels) then
+    if (pdis) then
+      call elec_read_band_energy_ordered
+    else
+      call elec_read_band_energy
+    end if
   end if
 
-  if (on_root) then
-    call cell_calc_lattice
-    if (iprint > 0) call param_write_atomic_coord
-    if (iprint > 0) call cell_report_parameters
-    if (iprint > 0) call elec_report_parameters
+  if (.not. phonon_eels) then
+    if (on_root) then
+      call cell_calc_lattice
+      if (iprint > 0) call param_write_atomic_coord
+      if (iprint > 0) call cell_report_parameters
+      if (iprint > 0) call elec_report_parameters
+    end if
   end if
-  ! now send the data from the parameter file to each node
 
+  ! Now send the data from the parameter file to each node
   call param_dist
-  call cell_dist
+  if (.not. phonon_eels) then
+    call cell_dist
+  end if
 
   !-------------------------------------------------------------------------!
   ! C A L L   P D O S   R O U T I N E S
@@ -225,7 +242,7 @@ program optados
   ! C A L L   P H O N O N   E E L S   R O U T I N E S
   if (phonon_eels) then
     time0 = io_time()
-    call phonon_eels_calculate
+    CALL phonon_eels_calculate
     time1 = io_time()
     if (on_root) then
       write (stdout, '(1x,a78)') '|                                                                            |'
@@ -254,35 +271,34 @@ program optados
 
   call comms_end
 
-  !-------------------------------------------------------------------------!
-contains
-  subroutine help_output
-    use od_constants, only: optados_version, copyright
-    implicit none
-    write (*, *)
-    write (*, *) " OptaDOS version ", trim(build_info%build)
-    write (*, *)
-    write (*, *) " Andrew J. Morris, R. J. Nicholls, C. J. Pickard and J. R. Yates", trim(copyright)
-    write (*, *) " Usage: optados <seedname>"
-    write (*, *)
-    stop
-  end subroutine help_output
+  contains
+    subroutine help_output
+      use od_constants, only: optados_version, copyright
+      implicit none
+      write (*, *)
+      write (*, *) " OptaDOS version ", trim(build_info%build)
+      write (*, *)
+      write (*, *) " Andrew J. Morris, R. J. Nicholls, C. J. Pickard and J. R. Yates", trim(copyright)
+      write (*, *) " Usage: optados <seedname>"
+      write (*, *)
+      stop
+    end subroutine help_output
 
-  subroutine version_output
-    use od_build, only: build_info
-    use od_constants, only: optados_version, copyright
-    implicit none
-    write (*, *)
-    write (*, *) " OptaDOS version ", trim(build_info%build)
-    write (*, *)
-    write (*, *) " Andrew J. Morris, R. J. Nicholls, C. J. Pickard and J. R. Yates", trim(copyright)
-    write (*, *) " Compiled with "//trim(build_info%compiler)//" on "//trim(build_info%compile_date)&
-         & //" at "//trim(build_info%compile_time)//"."
-    write (*, *) " Compile type: "//trim(build_info%build_type)//", "//trim(build_info%comms_arch)
-    write (*, *) " From source "//trim(build_info%build)//" submitted on "//trim(build_info%source_date)&
-         &//" at "//trim(build_info%source_time)//"."
+    subroutine version_output
+      use od_build, only: build_info
+      use od_constants, only: optados_version, copyright
+      implicit none
+      write (*, *)
+      write (*, *) " OptaDOS version ", trim(build_info%build)
+      write (*, *)
+      write (*, *) " Andrew J. Morris, R. J. Nicholls, C. J. Pickard and J. R. Yates", trim(copyright)
+      write (*, *) " Compiled with "//trim(build_info%compiler)//" on "//trim(build_info%compile_date)&
+          & //" at "//trim(build_info%compile_time)//"."
+      write (*, *) " Compile type: "//trim(build_info%build_type)//", "//trim(build_info%comms_arch)
+      write (*, *) " From source "//trim(build_info%build)//" submitted on "//trim(build_info%source_date)&
+          &//" at "//trim(build_info%source_time)//"."
 
-    stop
-  end subroutine version_output
+      stop
+    end subroutine version_output
 
 end program optados

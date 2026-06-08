@@ -18,6 +18,11 @@ extract_fn = tools parsers.parse_dos_dat.parse
 exe = ../../optados.x
 extract_fn = tools parsers.parse_od2od_fmt.parse
 
+# Likewise, we can also use it to parse vib-EELS outputs
+[OPTADOS_VIBEELS_DAT_OK]
+exe = ../../optados.x
+extract_fn = tools parsers.parse_od2od_fmt.parse
+
 [OPTADOS_MIZ_OUT_OK]
 exe = ../../tools/miz_chemical_shift
 extract_fn = tools parsers.parse_miz_out.parse

@@ -45,8 +45,19 @@ module od_constants
   real(kind=dp), parameter, public :: inv_sqrt_two_pi = 0.3989422804014326779399460599_dp
   real(kind=dp), parameter, public :: twopi = 6.283185307179586476925286766559005768394_dp
   real(kind=dp), parameter, public :: sqrt_two = 1.414213562373095048801688724209698079_dp
-  complex(dp), parameter, public :: cmplx_0 = (0.0_dp, 0.0_dp)
-  complex(dp), parameter, public :: cmplx_i = (0.0_dp, 1.0_dp)
+  complex(dp), parameter, public   :: cmplx_0 = (0.0_dp, 0.0_dp)
+  complex(dp), parameter, public   :: cmplx_i = (0.0_dp, 1.0_dp)
+
+  ! Used in phonon_eels.
+  real(kind=dp), parameter, public :: amu_to_me = 1822.888486209_dp
+  real(kind=dp), parameter, public :: eV_to_hartree = 0.03674932217565499_dp
+  real(kind=dp), parameter, public :: meV_to_hartree = 3.674932217565499E-5_dp
+  real(kind=dp), parameter, public :: inv_cm_to_meV = 0.12398419843320026_dp
+  real(kind=dp), parameter, public :: ang2bohr = 1.8897259886_dp
+  real(kind=dp), parameter, public :: nanometre2bohr = 18.89726124565062_dp
+  real(kind=dp), parameter, public :: fourpi = 12.56637061435917295385057353311801_dp
+  real(kind=dp), parameter, public  :: fine_structure_constant = 0.0072973525643_dp
+  real(kind=dp), parameter, public  :: meV_per_K = 0.08617333262145_dp
 
   character(len=3), parameter, dimension(109), public :: periodic_table_name = (/ &
        & 'H ', 'He', &

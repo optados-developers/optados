@@ -1,0 +1,18 @@
+
+# hBN impact-only test for vib-EELS in OptaDOS.
+
+TASK             : phonon_eels
+PHONON_EELS_TASK : impact
+
+# min/max energy, and spacing, for calculation of all vib-EELS quantities.
+# These are in meV.
+#vibeels_min_energy : 0
+#vibeels_max_energy : 300
+vibeels_spacing    : 0.5
+
+#*************************************
+#           Impact Keywords          #
+#*************************************
+
+# Broadening for loss function, in meV.
+vibeels_impact_broadening : 2.5
