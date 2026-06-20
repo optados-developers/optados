@@ -271,34 +271,34 @@ program optados
 
   call comms_end
 
-  contains
-    subroutine help_output
-      use od_constants, only: optados_version, copyright
-      implicit none
-      write (*, *)
-      write (*, *) " OptaDOS version ", trim(build_info%build)
-      write (*, *)
-      write (*, *) " Andrew J. Morris, R. J. Nicholls, C. J. Pickard and J. R. Yates", trim(copyright)
-      write (*, *) " Usage: optados <seedname>"
-      write (*, *)
-      stop
-    end subroutine help_output
+contains
+  subroutine help_output
+    use od_constants, only: optados_version, copyright
+    implicit none
+    write (*, *)
+    write (*, *) " OptaDOS version ", trim(build_info%build)
+    write (*, *)
+    write (*, *) " Andrew J. Morris, R. J. Nicholls, C. J. Pickard and J. R. Yates", trim(copyright)
+    write (*, *) " Usage: optados <seedname>"
+    write (*, *)
+    stop
+  end subroutine help_output
 
-    subroutine version_output
-      use od_build, only: build_info
-      use od_constants, only: optados_version, copyright
-      implicit none
-      write (*, *)
-      write (*, *) " OptaDOS version ", trim(build_info%build)
-      write (*, *)
-      write (*, *) " Andrew J. Morris, R. J. Nicholls, C. J. Pickard and J. R. Yates", trim(copyright)
-      write (*, *) " Compiled with "//trim(build_info%compiler)//" on "//trim(build_info%compile_date)&
-          & //" at "//trim(build_info%compile_time)//"."
-      write (*, *) " Compile type: "//trim(build_info%build_type)//", "//trim(build_info%comms_arch)
-      write (*, *) " From source "//trim(build_info%build)//" submitted on "//trim(build_info%source_date)&
-          &//" at "//trim(build_info%source_time)//"."
+  subroutine version_output
+    use od_build, only: build_info
+    use od_constants, only: optados_version, copyright
+    implicit none
+    write (*, *)
+    write (*, *) " OptaDOS version ", trim(build_info%build)
+    write (*, *)
+    write (*, *) " Andrew J. Morris, R. J. Nicholls, C. J. Pickard and J. R. Yates", trim(copyright)
+    write (*, *) " Compiled with "//trim(build_info%compiler)//" on "//trim(build_info%compile_date)&
+        & //" at "//trim(build_info%compile_time)//"."
+    write (*, *) " Compile type: "//trim(build_info%build_type)//", "//trim(build_info%comms_arch)
+    write (*, *) " From source "//trim(build_info%build)//" submitted on "//trim(build_info%source_date)&
+        &//" at "//trim(build_info%source_time)//"."
 
-      stop
-    end subroutine version_output
+    stop
+  end subroutine version_output
 
 end program optados
