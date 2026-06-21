@@ -15,10 +15,10 @@ vibeels_spacing    : 0.5
 #*************************************
 
 # Broadening for eps_lf (mode linewidth), in meV.
-vibeels_aloof_intrinsic_broadening : 0.50
+vibeels_aloof_intrinsic_broadening : 0.15
 
 # Lorentzian broadening for the aloof loss spectrum, in meV.
-vibeels_aloof_loss_broadening : 5.00
+vibeels_aloof_loss_broadening : 0.25
 
 # Aloof surface plane.
 vibeels_aloof_surface_plane : ab

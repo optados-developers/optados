@@ -434,8 +434,8 @@ def plot_alpha(seedname):
 	for ax in axes_re[:-1] + axes_im[:-1]:
 		ax.tick_params(labelbottom=False)
 
-	axes_re[-1].set_xlabel("Energy")
-	axes_im[-1].set_xlabel("Energy")
+	axes_re[-1].set_xlabel("Energy (meV)")
+	axes_im[-1].set_xlabel("Energy (meV)")
 
 	for ax in axes_re:
 		ax.set_ylim(np.nanmin(all_alphas_real), np.nanmax(all_alphas_real))
@@ -1015,7 +1015,7 @@ def plot_dispersion(seedname, hsp_labels=None, elim=None):
 
 parser = argparse.ArgumentParser()
 parser.add_argument("plot_todo", type=str, help="Type of plot to produce. Should be one of: eps_lf, alpha, aff, dwf, "
-"eels, dispersion, aloof_loss, osc_strength, aloof_ost, or impact_heatmap")
+"impact_intensity, dispersion, aloof_loss, osc_strength, aloof_ost, or impact_heatmap")
 
 # HSPs.
 parser.add_argument("-hsp_labels", type=str, nargs="+", help="High-symmetry labels, as a space separated list (optional)")
@@ -1080,5 +1080,5 @@ elif (plot_todo == "impact_heatmap"):
 else:
 	print("ERROR: Plot type not recognised")
 	print("Should be one of: eps_lf, alpha, aff, dwf, impact_intensity, dispersion, aloof_loss, "
-	"ost, aloof_ost, impact_heatmap")
+	"ost, aloof_ost, or impact_heatmap")
 	exit()
