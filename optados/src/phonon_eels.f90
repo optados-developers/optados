@@ -618,10 +618,10 @@ contains
     open (newunit=dwf_out_file_unit, file=TRIM(seedname)//"_dwf.dat", status="replace", action="write", form="formatted")
     write (dwf_out_file_unit, '(A)') ""
     write (dwf_out_file_unit, '(A)') " Debye-Waller Factors (DWFs)"
-    write (aff_out_file_unit, '(A)') ""
+    write (dwf_out_file_unit, '(A)') ""
     CALL phonon_eels_write_hsps_header(dwf_out_file_unit)
     write (dwf_out_file_unit, '(A)') ""
-    write (aff_out_file_unit, '(A)') ""
+    write (dwf_out_file_unit, '(A)') ""
     write (dwf_out_file_unit, *) "atom     q_idx      qa           qb           qc              dwf(q)"
     write (dwf_out_file_unit, '(A)') ""
     do ai = 1, n_ions
