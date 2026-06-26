@@ -38,14 +38,18 @@ module od_phonon_eels
   use od_io, only: seedname, stdout, io_error, maxlen, io_file_unit
 
   ! OptaDOS constants.
-  use od_constants, only: dp, pi, twopi, fourpi, cmplx_i, cmplx_0, amu_to_me, ang2bohr, nanometre2bohr, &
-    fine_structure_constant, inv_cm_to_meV, eV_to_hartree, meV_to_hartree, meV_per_K
+  use od_constants, only: dp, pi, twopi, fourpi, cmplx_i, cmplx_0, hbar_j_s, electron_mass_kg, elec_charge_SI, &
+    speed_of_light_SI, epsilon_0_SI, eV_to_joule, amu_to_me, ang2bohr, nanometre2bohr, fine_structure_constant, &
+    inv_cm_to_meV, eV_to_hartree, meV_to_hartree, meV_per_K
+
+  ! OptaDOS algorithms.
+  use od_algorithms, only: hermitian_jacobi_diag
 
   ! OptaDOS parameters.
   use od_parameters, only: phonon_eels_task, vibeels_min_energy, vibeels_max_energy, vibeels_spacing, &
     vibeels_impact_broadening, vibeels_use_electronic_affs, vibeels_aloof_intrinsic_broadening, vibeels_aloof_loss_broadening, &
     vibeels_aloof_surface_plane, vibeels_aloof_beam_direction, vibeels_aloof_include_offdiag, vibeels_aloof_electron_beam_energy, &
-    vibeels_aloof_impact_parameter, vibeels_aloof_phi_spacing, vibeels_reorder_phonon_bands, iprint
+    vibeels_aloof_impact_parameter, vibeels_aloof_phi_spacing, vibeels_aloof_normalize_loss, vibeels_reorder_phonon_bands, iprint
 
   ! Lookup tables for atomic quantities.
   use od_phonon_eels_tables, only: get_atomic_number, get_cromer_mann_coeff, get_peng_electron_coeff
@@ -65,50 +69,54 @@ module od_phonon_eels
 
   ! These arrays will store the calculated vib-EELS quantities.
   ! They are allocated and populated by calling the various subroutines in this module.
-  complex(kind=dp), allocatable, save  :: mode_resolved_born_eff_ch_tensor(:, :)          ! (mode_idx,i)
+  complex(kind=dp), allocatable, save  :: mode_resolved_born_eff_ch_tensor(:, :)           ! (mode_idx,i)
   complex(kind=dp), allocatable, save  :: osc_strength_tensor(:, :, :)                     ! (mode,i,j)
   complex(kind=dp), allocatable, save  :: lf_dielectric_tensor(:, :, :)                    ! (i,j,omega)
-  complex(kind=dp), allocatable, save  :: polarizability(:, :)                            ! (omega,phi)
-  complex(kind=dp), allocatable, save  :: aloof_loss_probability(:)                      ! (omega)
-  real(kind=dp), allocatable, save     :: phonon_occupations(:, :)                        ! (mode_idx,qpt_idx)
-  real(kind=dp), allocatable, save     :: eels_intensity(:, :)                            ! (mode_idx,qpt_idx)
-  real(kind=dp), allocatable          :: impact_heatmap(:, :)                            ! (qpt_idx,omega)
+  complex(kind=dp), allocatable, save  :: polarizability(:, :)                             ! (omega,phi)
+  complex(kind=dp), allocatable, save  :: aloof_loss_probability(:)                        ! (omega)
+  real(kind=dp), allocatable, save     :: phonon_occupations(:, :)                         ! (mode_idx,qpt_idx)
+  real(kind=dp), allocatable, save     :: eels_intensity(:, :)                             ! (mode_idx,qpt_idx)
+  real(kind=dp), allocatable           :: impact_heatmap(:, :)                             ! (qpt_idx,omega)
 
   ! *******************************************  DATA TO BE PARSED IN  ******************************************** !
 
   ! Basic data that is currently parsed in from the .phonon file.
   ! These could also be parsed in from a .cell file.
-  integer, save, public                       :: n_ions
-  real(kind=dp), save, public                 :: real_lattice(3, 3)                       ! (v,i)
-  real(kind=dp), allocatable, save, public     :: atomic_positions(:, :)                   ! (i,atom_idx)
+  integer, save, public                        :: n_ions
+  real(kind=dp), save, public                  :: real_lattice(3, 3)                      ! (v,i)
+  real(kind=dp), allocatable, save, public     :: atomic_positions(:, :)                  ! (i,atom_idx)
   character(len=2), allocatable, save, public  :: atomic_species(:)                       ! (atom_idx)
 
   ! These are parsed in uniquely from the .phonon file.
-  integer, save, public                       :: n_branches
-  integer, save, public                       :: n_qpts
+  integer, save, public                        :: n_branches
+  integer, save, public                        :: n_qpts
   real(kind=dp), allocatable, save, public     :: atomic_masses(:)                        ! (atom_idx)
-  real(kind=dp), allocatable, save, public     :: qpoint_positions(:, :)                   ! (i,qpt_idx)
-  real(kind=dp), allocatable, public          :: qpoint_weights(:)                       ! (qpt_idx)
-  complex(kind=dp), allocatable, save, public  :: phonon_eigenvectors(:, :, :, :)            ! (mode_idx,atom_idx,dir,qpt_idx)
-  real(kind=dp), allocatable, save, public     :: phonon_eigenvalues(:, :)                 ! (mode_idx,qpt_idx)
-  complex(kind=dp), allocatable, save, public  :: gamma_eigenvectors(:, :, :)               ! (mode_idx,atom_idx,dir)
+  real(kind=dp), allocatable, save, public     :: qpoint_positions(:, :)                  ! (i,qpt_idx)
+  real(kind=dp), allocatable, public           :: qpoint_weights(:)                       ! (qpt_idx)
+  complex(kind=dp), allocatable, save, public  :: phonon_eigenvectors(:, :, :, :)         ! (mode_idx,atom_idx,dir,qpt_idx)
+  real(kind=dp), allocatable, save, public     :: phonon_eigenvalues(:, :)                ! (mode_idx,qpt_idx)
+  complex(kind=dp), allocatable, save, public  :: gamma_eigenvectors(:, :, :)             ! (mode_idx,atom_idx,dir)
   real(kind=dp), allocatable, save, public     :: gamma_eigenvalues(:)                    ! (mode_idx)
+  real(kind=dp), save, public                  :: gamma_loto_direction(3)                 ! (i)
 
   ! **********************************************  OTHER DATA  **************************************************** !
 
   ! These are set after all the data has been parsed in.
   integer, save, public                       :: N_energies
   integer, save, public                       :: N_phi_values
-  real(kind=dp), allocatable, save, public     :: energies(:)                             ! Energies (in meV) to evaluate EELS quantities
-  real(kind=dp), allocatable, save, public     :: omegas_hartree(:)                       ! Omegas (in Hartree) to evaluate EELS quantities
-  real(kind=dp), allocatable, save, public     :: phis(:)                                 ! Electron EELS phi values (radian)
-  real(kind=dp), save, public                 :: recip_lattice(3, 3)                      ! (v,i)
+  real(kind=dp), allocatable, save, public    :: energies(:)                             ! Energies (in meV) to evaluate EELS quantities
+  real(kind=dp), allocatable, save, public    :: omegas_hartree(:)                       ! Omegas (in Hartree) to evaluate EELS quantities
+  real(kind=dp), allocatable, save, public    :: phis(:)                                 ! Electron EELS phi values (radian)
+  real(kind=dp), save, public                 :: recip_lattice(3, 3)                     ! (v,i)
   real(kind=dp), save, public                 :: cell_volume                             ! Volume of the real-space unit cell (Ang^3)
   integer, save, public                       :: N_hsps                                  ! Number of high-symmetry points along path
-  integer, allocatable, save, public           :: hsp_idxs(:)                             ! Indexes of the high-symmetry points along path
-  real(kind=dp), allocatable, save, public     :: path_spacing_norms(:)                   ! q-point spacing along path (inverse Angstrom)
+  integer, allocatable, save, public          :: hsp_idxs(:)                             ! Indexes of the high-symmetry points along path
+  real(kind=dp), allocatable, save, public    :: path_spacing_norms(:)                   ! q-point spacing along path (inverse Angstrom)
 
   ! *************************************************  FLAGS  ****************************************************** !
+
+  ! Flag to check whether supplied phonon data has LO/TO splitting enabled, or not.
+  logical, save, public                       :: loto_splitting_detected = .false.
 
   ! Flag to check whether phonon data has been successfully parsed.
   logical, save, public                       :: parsed_phonon_file = .false.
@@ -123,14 +131,14 @@ module od_phonon_eels
   logical, save, public                       :: phonon_eels_prep_done = .false.
 
   ! Flags to check whether various quantities have been calculated, or not.
-  logical, save                              :: calculated_mode_resolved_bec_tensor = .false.
-  logical, save                              :: calculated_osc_strength_tensor = .false.
-  logical, save                              :: calculated_lf_eps = .false.
-  logical, save                              :: calculated_polarizability = .false.
-  logical, save                              :: calculated_aloof_loss_probability = .false.
-  logical, save                              :: calculated_thermal_occupations = .false.
-  logical, save                              :: calculated_eels_intensity = .false.
-  logical, save                              :: calculated_impact_heatmap = .false.
+  logical, save                               :: calculated_mode_resolved_bec_tensor = .false.
+  logical, save                               :: calculated_osc_strength_tensor = .false.
+  logical, save                               :: calculated_lf_eps = .false.
+  logical, save                               :: calculated_polarizability = .false.
+  logical, save                               :: calculated_aloof_loss_probability = .false.
+  logical, save                               :: calculated_thermal_occupations = .false.
+  logical, save                               :: calculated_eels_intensity = .false.
+  logical, save                               :: calculated_impact_heatmap = .false.
 
   ! ************************************************  CONTROL  ****************************************************** !
 
@@ -334,6 +342,8 @@ contains
       write (eels_intensity_out_file_unit, *) ""
       write (eels_intensity_out_file_unit, *) " All energies in meV"
       write (eels_intensity_out_file_unit, *) ""
+      write (eels_intensity_out_file_unit, '(A)') "  I_eels has been normalized to the range [0,1]"
+      write (eels_intensity_out_file_unit, *) ""
       CALL phonon_eels_write_hsps_header(eels_intensity_out_file_unit)
       write (eels_intensity_out_file_unit, *) ""
       write (eels_intensity_out_file_unit, *) ""
@@ -410,6 +420,8 @@ contains
       write (heatmap_out_file_unit, '(A,F6.3)') " Broadening (meV): ", REAL(vibeels_impact_broadening, kind=dp)
       write (heatmap_out_file_unit, '(A)') ""
       write (heatmap_out_file_unit, '(A)') " All energies in meV"
+      write (heatmap_out_file_unit, '(A)') ""
+      write (heatmap_out_file_unit, '(A)') " Total Loss has been normalized to the range [0,1]"
       write (heatmap_out_file_unit, '(A)') ""
       write (heatmap_out_file_unit, '(A,I5)') " Number of q-points                 : ", n_qpts
       write (heatmap_out_file_unit, '(A,I5)') " Number of energies at each q-point : ", N_energies
@@ -665,7 +677,8 @@ contains
 
     ! Dummy variables.
     integer                      :: w, wc, p, aloof_loss_probability_out_file_unit
-    real(kind=dp)                :: beam_energy_au, rel_beta, rel_gamma, electron_velocity_au, impact_parameter_au
+    real(kind=dp)                :: beam_energy_au, rel_beta, rel_gamma, electron_velocity_au
+    real(kind=dp)                :: electron_velocity_SI, impact_parameter_au
     real(kind=dp)                :: kx, ky, K, dphi, prefactor, f, lor_broadening_au, f_lor, dE
 
     ! Temporary array, used to broaden the loss.
@@ -694,9 +707,11 @@ contains
     ! Convert impact parameter from nanometre to Bohr radii.
     impact_parameter_au = vibeels_aloof_impact_parameter*nanometre2bohr
 
-    ! Prefactor for aloof loss expression.
-    ! We normalize to 1 later, so this doesn't do anything useful at the moment.
-    prefactor = 1.00/electron_velocity_au**2
+    ! Prefactor for aloof loss expression, in SI units.
+    ! Note that the integral in Eqn. 3 of Radtke et. al. is dimensionless;
+    ! this prefactor gives it units of Probability per Omega per Path_Length, i.e. d^2P / (dOmega dX)
+    electron_velocity_SI = electron_velocity_au*fine_structure_constant*speed_of_light_SI
+    prefactor = elec_charge_SI**2/(twopi**2*(electron_velocity_SI)**2*epsilon_0_SI*hbar_j_s)
 
     do w = 1, N_energies
       f = 0.0_dp
@@ -719,7 +734,7 @@ contains
     do w = 1, N_energies
       aloof_loss_broadened(w) = 0.0_dp
       do wc = 1, N_energies
-        f_lor = (lor_broadening_au/2)/(pi*(omegas_hartree(w) - omegas_hartree(wc))**2 + (lor_broadening_au/2)**2)
+        f_lor = (lor_broadening_au/2)/(pi*((omegas_hartree(w) - omegas_hartree(wc))**2 + (lor_broadening_au/2)**2))
         aloof_loss_broadened(w) = aloof_loss_broadened(w) + aloof_loss_probability(wc)*f_lor*dE
       end do
     end do
@@ -730,8 +745,10 @@ contains
     ! We can deallocate aloof_loss_broadened now.
     deallocate (aloof_loss_broadened)
 
-    ! Normalize the loss to 1.
-    aloof_loss_probability = aloof_loss_probability/MAXVAL(ABS(aloof_loss_probability))
+    ! Normalize the loss to 1, if requested.
+    if (vibeels_aloof_normalize_loss) then
+      aloof_loss_probability = aloof_loss_probability/MAXVAL(ABS(aloof_loss_probability))
+    end if
 
     ! Write to file.
     if (write_aloof_loss_probability_to_file) then
@@ -741,6 +758,13 @@ contains
       write (aloof_loss_probability_out_file_unit, '(A)') ""
       write (aloof_loss_probability_out_file_unit, '(A)') " Aloof-EELS Loss Probability"
       write (aloof_loss_probability_out_file_unit, '(A)') ""
+      if (loto_splitting_detected) then
+        write (aloof_loss_probability_out_file_unit, '(A)') " NOTE: LO/TO Splitting was detected in the .phonon file. &
+          For the aloof quantities only,"
+        write (aloof_loss_probability_out_file_unit, '(A)') "       the NAC has been removed, using the supplied effective &
+          charges and epsilon_inf tensor."
+        write (aloof_loss_probability_out_file_unit, '(A)') ""
+      end if
       write (aloof_loss_probability_out_file_unit, '(A,A,A)') " Crystal Surface : ", vibeels_aloof_surface_plane, "-plane"
       write (aloof_loss_probability_out_file_unit, '(A)') ""
       write (aloof_loss_probability_out_file_unit, '(A,A,A)') " Beam Direction  : ", vibeels_aloof_beam_direction, "-axis"
@@ -758,9 +782,17 @@ contains
         vibeels_aloof_loss_broadening
       write (aloof_loss_probability_out_file_unit, '(A)') ""
       write (aloof_loss_probability_out_file_unit, '(A)') " All energies in meV"
+      if (vibeels_aloof_normalize_loss) then
+        write (aloof_loss_probability_out_file_unit, '(A)') ""
+        write (aloof_loss_probability_out_file_unit, '(A)') " P_loss has been normalized to the range [0,1]"
+      end if
       write (aloof_loss_probability_out_file_unit, '(A)') ""
       write (aloof_loss_probability_out_file_unit, '(A)') ""
-      write (aloof_loss_probability_out_file_unit, '(A)') "    Energy                 P_loss"
+      if (vibeels_aloof_normalize_loss) then
+        write (aloof_loss_probability_out_file_unit, '(A)') "    Energy           P_loss (normalized)"
+      else
+        write (aloof_loss_probability_out_file_unit, '(A)') "    Energy           d^2P / (dOmega dX)"
+      end if
       write (aloof_loss_probability_out_file_unit, '(A)') ""
       do w = 1, N_energies
         write (aloof_loss_probability_out_file_unit, '(F12.6,A,E18.12)') energies(w), "         ", &
@@ -808,13 +840,13 @@ contains
         kx = COS(phis(p))
         ky = SIN(phis(p))
         ! Now, compute alpha.
-        !**********************************************************************************************************************
-        ! Diagonal case (original, from Radtke).
+        ! If off-diagonal terms have not been requested, this will compute the original expression (from Radtke).
+        ! Otherwise, it will compute the fully general case, including all off-diagonal terms.
+        !********************************************************************************************************
         if (.not. vibeels_aloof_include_offdiag) then
           f = lf_dielectric_tensor(3, 3, w)* &
               (kx**2*lf_dielectric_tensor(1, 1, w) &
                + ky**2*lf_dielectric_tensor(2, 2, w))
-          ! Fully general case, that allows for non-diagonal eps_lf.
         else
           f = lf_dielectric_tensor(3, 3, w)* &
               (kx**2*lf_dielectric_tensor(1, 1, w) &
@@ -823,7 +855,7 @@ contains
               - (kx*lf_dielectric_tensor(1, 3, w) &
                  + ky*lf_dielectric_tensor(2, 3, w))**2
         end if
-        !**********************************************************************************************************************
+        !********************************************************************************************************
         n_eff = SQRT(f)
         ! Optional branch cut check; fixes discontinuities in alpha.
         if (alpha_enforce_analytic_continuity) then
@@ -1034,7 +1066,7 @@ contains
     integer                      :: eps_lf_out_file_unit, first_cpt, second_cpt
     character(len=1)             :: cpts_string(3)
     real(kind=dp)                :: broadening_au, cell_volume_au
-    real(kind=dp), allocatable    :: gamma_eigvals_hartree(:)
+    real(kind=dp), allocatable   :: gamma_eigvals_hartree(:)
     complex(kind=dp)             :: eps_lf, numerator, denominator
 
     ! This is a prerequisite for calculating eps_lf.
@@ -1084,6 +1116,13 @@ contains
       open (newunit=eps_lf_out_file_unit, file=TRIM(seedname)//"_eps-lf.dat", status="replace", action="write", form="formatted")
       write (eps_lf_out_file_unit, '(A)') ""
       write (eps_lf_out_file_unit, '(A)') " Low-frequency dielectric function"
+      if (loto_splitting_detected) then
+        write (eps_lf_out_file_unit, '(A)') ""
+        write (eps_lf_out_file_unit, '(A)') " NOTE: LO/TO Splitting was detected in the .phonon file. &
+          For the aloof quantities only,"
+        write (eps_lf_out_file_unit, '(A)') "       the NAC has been removed, using the supplied effective &
+          charges and epsilon_inf tensor."
+      end if
       if (aloof_rotation_applied) then
         write (eps_lf_out_file_unit, '(A)') ""
         write (eps_lf_out_file_unit, '(A)') " NOTE: For this aloof calculation, a rotation was applied to the unit cell"
@@ -1205,6 +1244,13 @@ contains
       phis(p) = (REAL(p, kind=dp)/(N_phi_values + 1) - 0.5_dp)*pi
     end do
 
+    ! Remove the Gamma-point non-analytical correction (from LO/TO) splitting, if it is present.
+    ! This is essential for aloof calculations, which require the analytical part of the dynamical matrix only.
+    ! If no LO/TO splitting is detected in the .phonon file, then this check is skipped.
+    if (loto_splitting_detected) then
+      CALL phonon_eels_remove_nac_at_gamma
+    end if
+
     ! If we're doing any aloof calculations, then we may need to rotate the aloof vector and tensor quantities
     ! appropriately, so that the crystal surface normal is aligned along the z-direction (for the aloof theory
     ! of Radtke et. al., this must be the normal direction).
@@ -1296,12 +1342,13 @@ contains
     implicit none
 
     ! Dummy variables.
-    integer :: phonon_data_unit, ios
+    integer            :: phonon_data_unit, ios, ios_extra
     character(len=256) :: line
-    integer :: pos, iq, iq_file, im, imode, iv, ia, iatom
-    real(kind=dp) :: freq, ir, ref_wgt
-    real(kind=dp) :: qa, qb, qc, q_wgt, xr, xi, yr, yi, zr, zi
-    logical :: is_gamma, found_gamma
+    integer            :: pos, iq, iq_file, im, imode, iv, ia, iatom
+    real(kind=dp)      :: freq, ir, ref_wgt
+    real(kind=dp)      :: qa, qb, qc, q_wgt, xr, xi, yr, yi, zr, zi
+    real(kind=dp)      :: tmp_loto_direction(3)
+    logical            :: is_gamma, found_gamma
 
     ! Dummy variables; for testing norm of eigenvectors.
     integer       :: smallest_nrm_dev_iq, smallest_nrm_dev_m, greatest_nrm_dev_iq, greatest_nrm_dev_m
@@ -1381,12 +1428,21 @@ contains
       read (phonon_data_unit, '(A)', iostat=ios) line
       if (ios /= 0) CALL io_error("Error reading q-point line")
 
-      ! Read q-points.
+      ! Read q-points, accounting for lines that have LO/TO splitting data.
       if (index(line, "q-pt=") == 0) then
         stop "Expected q-pt line"
       end if
       pos = scan(line, "0123456789")
-      read (line(pos:), *) iq_file, qa, qb, qc, q_wgt
+      tmp_loto_direction = 0.0_dp
+      read (line(pos:), *, iostat=ios_extra) iq_file, qa, qb, qc, q_wgt, &
+        tmp_loto_direction(1), tmp_loto_direction(2), tmp_loto_direction(3)
+      if (ios_extra /= 0) then
+        read (line(pos:), *, iostat=ios) iq_file, qa, qb, qc, q_wgt
+        if (ios /= 0) call io_error("Error reading q-point data")
+      else
+        loto_splitting_detected = .true.
+        gamma_loto_direction = tmp_loto_direction
+      end if
       qpoint_positions(1, iq) = qa
       qpoint_positions(2, iq) = qb
       qpoint_positions(3, iq) = qc
@@ -1936,5 +1992,159 @@ contains
     R = R + K + matmul(K, K)*(1.0_dp - c)/(s*s)
 
   end subroutine phonon_eels_get_normal_rotation_matrix
+
+  !===========================================================================!
+  subroutine phonon_eels_remove_nac_at_gamma
+    !===========================================================================!
+    ! J. A. J. Whaley-Baldwin, June 2026                                        !
+    !                                                                           !
+    ! This subroutine will reconstruct the dynamical matrix at Gamma, and then  !
+    ! remove the non-analytical part (from LO/TO splitting), before             !
+    ! re-diagonalizing the (analytical) dynamical matrix.                       !
+    !                                                                           !
+    ! For aloof calculations, this is essential, as the low-frequency           !
+    ! dielectric function (and hence the aloof loss spectrum) are constructed   !
+    ! from the analytical part of the dynamical matrix only.                    !
+    !                                                                           !
+    ! This subroutine should only be called if the .phonon file was calculated  !
+    ! with LO/TO splitting turned on.                                           !
+    !                                                                           !
+    ! Calling this will overwrite the 'gamma_eigenvectors' and                  !
+    ! 'gamma_eigenvalues' arrays in-place.                                      !
+    !===========================================================================!
+
+    implicit none
+
+    integer :: mode_idx
+    integer :: ion_i, ion_j, alpha, beta
+    integer :: ia, jb
+    integer :: info
+
+    real(kind=dp) :: prefactor, mass_factor
+    real(kind=dp) :: qnorm, qdir(3)
+    real(kind=dp) :: q_eps_q, zi_alpha, zj_beta
+    real(kind=dp) :: lambda
+    real(kind=dp) :: ev_ang2_emass_to_mev2
+
+    real(kind=dp), parameter :: e2_ev_ang = 14.3996454784255_dp       ! e^2 / (4pi * epsilon_0) (Coulomb const) in eV * Ang
+    real(kind=dp), parameter :: ang_m = 1.0e-10_dp                    ! Angstrom in m
+    real(kind=dp), parameter :: mev_to_joule = eV_to_joule*1.0E-3_dp  ! mev in Joule
+
+    complex(kind=dp) :: eig_i, eig_j
+
+    complex(kind=dp), allocatable :: dmat(:, :)
+    real(kind=dp), allocatable    :: eigvals(:)
+
+    ! Check that relevant data has been parsed from .odd file.
+    if (.not. parsed_eels_data_from_odd) then
+      CALL odd_read_vib_eels_data
+    end if
+
+    ! Check that .phonon file has been parsed.
+    if (.not. parsed_phonon_file) then
+      CALL phonon_eels_read_phonon_file
+    end if
+
+    qnorm = sqrt(dot_product(gamma_loto_direction, gamma_loto_direction))
+    if (qnorm < 1.0E-12_dp) stop "ERROR: zero gamma_loto_direction in remove_gamma_nac_for_aloof"
+
+    qdir = gamma_loto_direction/qnorm
+
+    ! Compute the prefactor for the dynamical matrix.
+    ev_ang2_emass_to_mev2 = (hbar_j_s/meV_to_joule)**2*eV_to_joule/(ang_m**2*electron_mass_kg)
+    prefactor = 4.0_dp*pi*e2_ev_ang*ev_ang2_emass_to_mev2/cell_volume
+
+    allocate (dmat(n_branches, n_branches))
+    allocate (eigvals(n_branches))
+
+    dmat = cmplx(0.0_dp, 0.0_dp, kind=dp)
+
+    do mode_idx = 1, n_branches
+      do ion_i = 1, n_ions
+        do alpha = 1, 3
+          ia = 3*(ion_i - 1) + alpha
+          eig_i = sqrt(atomic_masses(ion_i))*gamma_eigenvectors(mode_idx, ion_i, alpha)
+          do ion_j = 1, n_ions
+            do beta = 1, 3
+              jb = 3*(ion_j - 1) + beta
+              eig_j = sqrt(atomic_masses(ion_j))*gamma_eigenvectors(mode_idx, ion_j, beta)
+              dmat(ia, jb) = dmat(ia, jb) + gamma_eigenvalues(mode_idx)**2*eig_i*conjg(eig_j)
+            end do
+          end do
+        end do
+      end do
+    end do
+
+    q_eps_q = qdir(1)*(inf_dielectric_tensor(1, 1)*qdir(1) + &
+                       inf_dielectric_tensor(1, 2)*qdir(2) + &
+                       inf_dielectric_tensor(1, 3)*qdir(3)) + &
+              qdir(2)*(inf_dielectric_tensor(2, 1)*qdir(1) + &
+                       inf_dielectric_tensor(2, 2)*qdir(2) + &
+                       inf_dielectric_tensor(2, 3)*qdir(3)) + &
+              qdir(3)*(inf_dielectric_tensor(3, 1)*qdir(1) + &
+                       inf_dielectric_tensor(3, 2)*qdir(2) + &
+                       inf_dielectric_tensor(3, 3)*qdir(3))
+
+    if (abs(q_eps_q) < 1.0E-12_dp) then
+      stop "ERROR: q.eps_inf.q too small in remove_gamma_nac_for_aloof"
+    end if
+
+    do ion_i = 1, n_ions
+      do alpha = 1, 3
+        ia = 3*(ion_i - 1) + alpha
+        zi_alpha = qdir(1)*born_eff_ch_tensor(ion_i, 1, alpha) + &
+                   qdir(2)*born_eff_ch_tensor(ion_i, 2, alpha) + &
+                   qdir(3)*born_eff_ch_tensor(ion_i, 3, alpha)
+        do ion_j = 1, n_ions
+          do beta = 1, 3
+            jb = 3*(ion_j - 1) + beta
+            zj_beta = qdir(1)*born_eff_ch_tensor(ion_j, 1, beta) + &
+                      qdir(2)*born_eff_ch_tensor(ion_j, 2, beta) + &
+                      qdir(3)*born_eff_ch_tensor(ion_j, 3, beta)
+            mass_factor = sqrt(atomic_masses(ion_i)*atomic_masses(ion_j))
+            dmat(ia, jb) = dmat(ia, jb) - cmplx( &
+                           prefactor*zi_alpha*zj_beta/(mass_factor*q_eps_q), &
+                           0.0_dp, kind=dp)
+          end do
+        end do
+      end do
+    end do
+
+    do ia = 1, n_branches
+      do jb = ia + 1, n_branches
+        dmat(ia, jb) = 0.5_dp*(dmat(ia, jb) + conjg(dmat(jb, ia)))
+        dmat(jb, ia) = conjg(dmat(ia, jb))
+      end do
+      dmat(ia, ia) = cmplx(real(dmat(ia, ia), kind=dp), 0.0_dp, kind=dp)
+    end do
+
+    ! Diagonalize Gamma-point dynamical matrix.
+    CALL hermitian_jacobi_diag(n_branches, dmat, eigvals, info)
+    if (info /= 0) stop "ERROR: Hermitian Jacobi diagonalisation failed in remove_gamma_nac_for_aloof"
+
+    ! Overwrite the existing eigenvectors & eigenvalues at Gamma.
+    do mode_idx = 1, n_branches
+      lambda = eigvals(mode_idx)
+      if (lambda >= 0.0_dp) then
+        gamma_eigenvalues(mode_idx) = sqrt(lambda)
+      else
+        gamma_eigenvalues(mode_idx) = -sqrt(abs(lambda))
+      end if
+    end do
+
+    do mode_idx = 1, n_branches
+      do ion_i = 1, n_ions
+        do alpha = 1, 3
+          ia = 3*(ion_i - 1) + alpha
+          gamma_eigenvectors(mode_idx, ion_i, alpha) = dmat(ia, mode_idx)/sqrt(atomic_masses(ion_i))
+        end do
+      end do
+    end do
+
+    ! Deallocate temporary arrays.
+    deallocate (dmat)
+    deallocate (eigvals)
+
+  end subroutine phonon_eels_remove_nac_at_gamma
 
 end module od_phonon_eels

@@ -1076,6 +1076,12 @@ The broadening applied to the impact loss function, in meV. This is achieved by 
 
 The default value is $2.0$ meV.
 
+\subsection[vibeels\_aloof\_normalize\_loss]{\tt logical :: vibeels\_aloof\_normalize\_loss}
+
+If \verb@.true.@, then the aloof loss probability is normalized over the range $[0,1]$. If \verb@.false.@, then the units are Probability per angular frequency, per unit path length.
+
+The default value is \verb@.false.@
+
 \subsection[vibeels\_use\_electronic\_affs]{\tt logical :: vibeels\_use\_electronic\_affs}
 
 Specifies the type of atomic form factor (AFF) to use. If \verb@.true.@ then electronic structure factors are used (converted to AFFs via the Mott-Bethe relation). If \verb@.false.@ then X-ray AFFs are used.
@@ -1574,22 +1580,15 @@ Now when we run \optados\ again, the energy scale on the x-axis will be shifted 
 
 \fbox{
 \parbox{0.95\textwidth}{
-\textbf{NOTE 1:}
-Since phonon calculations are generally computationally expensive, all vib-EELS examples provide pre-computed \castep \texttt{.phonon} files in their corresponding example directories.
-}
-}
-
-\fbox{
-\parbox{0.95\textwidth}{
-\textbf{NOTE 2:}
-For aloof calculations, since the low-frequency dielectric tensor is constructed using the \textit{analytical} part of the dynamical matrix only, LO/TO splitting should be turned \textit{off} (and this is the case in the supplied example \texttt{.phonon} files).
+\textbf{NOTE:}
+Since phonon calculations are generally computationally expensive, all vib-EELS examples provide pre-computed \castep \texttt{.phonon} files in their corresponding example directories. Some comments on their generation is found in the respective \texttt{.odi} files.
 }
 }
 
 \subsection{Aloof: hBN}
 
 \begin{itemize}
-\item \emph{Outline} : This is a simple example of using \optados\ to calculate the aloof vib-EELS spectrum for hexagonal boron nitride.
+\item \emph{Outline} : This is a simple example of using \optados\ to calculate the aloof vib-EELS spectrum for bulk hexagonal boron nitride.
 \item \emph{Input Files}:
 \begin{itemize}
 \item \verb#examples/hBN_vibEELS_aloof/hBN.phonon# - The \castep\ \verb@.phonon@ file containing phonon data, evaluated along a high-symmetry path.
@@ -1618,9 +1617,11 @@ This should take only a couple of seconds to run, and will produce various .dat 
 \label{fig:hBN_aloof_ost}
 \end{center}
 \end{figure}
-\vspace{-0.4cm}
+\vspace{-2.0cm}
 
-(here, it is assumed that the \verb@odplot.py@ script is executable, and available on \verb@PATH@). Note that despite having 4 atoms in the unit cell (and hence 12 phonon bands in total), only two modes (those with a non-zero OST) contribute to the aloof spectrum in hBN. Furthermore, note that the peaks in the aloof spectrum are not necessarily centered precisely at a phonon frequency, this is expected behaviour, as the aloof loss spectrum is a non-linear functional of the OST.
+(here, it is assumed that the \verb@odplot.py@ script is executable, and available on \verb@PATH@). Note that despite having 4 atoms in the unit cell (and hence 12 phonon bands in total), only two modes (those with a non-zero OST) contribute to the aloof spectrum in hBN. Furthermore, note that the peaks in the aloof spectrum are not necessarily centered precisely at a phonon frequency; this is expected behaviour, as the aloof loss spectrum is a non-linear functional of the OST.
+
+For this example, inside the \verb@hBN_aloof-loss.dat@ file (which is used to produce the plot in Fig. \ref{fig:hBN_aloof_ost}), it can be seen that a small note has been added to the file header, stating that LO/TO splitting was detected in the \verb@.phonon@ file, and the resulting non-analytical correction (NAC) to the dynamical matrix has automatically been removed by \optados. For aloof calculations, since the low-frequency dielectric tensor is constructed using the \textit{analytical} part of the dynamical matrix only, it is essential that the NAC is removed prior to computing any aloof quantities. If a supplied \verb@.phonon@ file does not feature LO/TO splitting, then this message will be absent. Note that for \textit{impact} calculations (to be discussed shortly), the presence (or absence) of the NAC requires no special consideration.
 
 %%%%  Step 3 %%%%%
 \item \verb@odplot.py@ can further plot various auxiliary quantities, such as the polarizability ($\alpha$):
@@ -1645,7 +1646,7 @@ Note that in the case of hBN, since the $\epsilon_{\infty}$ and Born effective c
 \subsection{Impact: cBN}
 
 \begin{itemize}
-\item \emph{Outline} : This is a simple example of using \optados\ to calculate the impact vib-EELS spectrum for cubic boron nitride.
+\item \emph{Outline} : This is a simple example of using \optados\ to calculate the impact vib-EELS spectrum for bulk cubic boron nitride.
 \item \emph{Input Files}:
 \begin{itemize}
 \item \verb#examples/cBN_vibEELS_impact/cBN.phonon# - The \castep\ \verb@.phonon@ file containing phonon data, evaluated along a high-symmetry path.
@@ -1676,6 +1677,9 @@ The optional \verb@hsp_labels@ argument will label the high-symmetry points alon
 \label{fig:cBN_impact_dispersion}
 \end{center}
 \end{figure}
+\vspace{-1.0cm}
+
+In Fig. \ref{fig:cBN_impact_dispersion}, the effect of LO/TO splitting can clearly be observed, with the LO branch rising to $\sim 160 \ \mathrm{meV}$ at the $\Gamma$-point, and the TO branch remaining at $\sim 130 \ \mathrm{meV}$. Note that unlike the aloof theory, where \optados \ will automatically remove the NAC prior to calculation, the code does not have to make any special adjustments for the impact case, where the presence (or absence) of LO/TO splitting does not present any issues for the theory.
 
 %%%%  Step 3 %%%%%
 \item Having visualized the impact vib-EELS intensity for each phonon mode, we can go a step further, and produce an impact `heatmap' with:
@@ -1689,7 +1693,7 @@ The optional \verb@qslices@ argument will create energy-dependent loss functions
 
 \begin{figure}[H]
 \begin{center}
-\scalebox{0.65}{\includegraphics*{./images/cBN_impact_heatmap.eps}}
+\scalebox{0.60}{\includegraphics*{./images/cBN_impact_heatmap.eps}}
 \caption{cBN impact vib-EELS intensity `heatmap', constructed by placing a Gaussian (with width set by \texttt{phonon\_eels\_impact\_broadening}) at each $(\mathbf{q},j)$. One-dimensional slices at certain selected \textbf{q}-values (i.e. fixed momentum transfer) are marked with coloured vertical lines, and the corresponding spectra are shown on the right.}
 \label{fig:cBN_impact_heatmap}
 \end{center}
@@ -1704,7 +1708,7 @@ Note that in the heatmap plot (Fig. \ref{fig:cBN_impact_heatmap}), vib-EELS inac
 \subsection{All: NaCl}
 
 \begin{itemize}
-\item \emph{Outline} : Having now demonstrated the individual functionality of the aloof and impact modes of operation, we now show an example where both calculations are done at once, using \verb@phonon_eels_task : all@
+\item \emph{Outline} : Having now demonstrated the individual functionality of the aloof and impact modes of operation, we now show an example where both calculations are done at once, using \verb@phonon_eels_task : all@, for sodium chloride (NaCl).
 \item \emph{Input Files}:
 \begin{itemize}
 \item \verb#examples/NaCl_vibEELS_all/NaCl.phonon# - The \castep\ \verb@.phonon@ file containing phonon data, evaluated along a high-symmetry path.
@@ -1728,11 +1732,13 @@ This should take only a couple of seconds to run, and will produce various .dat 
 
 \begin{figure}[H]
 \begin{center}
-\scalebox{0.62}{\includegraphics*{./images/NaCl_impact_dispersion.eps}}
+\scalebox{0.61}{\includegraphics*{./images/NaCl_impact_dispersion.eps}}
 \caption{Phonon dispersion of NaCl, with the impact vib-EELS intensity superimposed on top, as calculated with \optados, and plotted with the \texttt{odplot.py} script. The intensity scale is normalized to $1$. Inactive vib-EELS bands appear as faint grey lines.}
 \label{fig:NaCl_impact_dispersion}
 \end{center}
 \end{figure}
+
+Much like with cBN, the effect of LO/TO splitting in NaCl is clearly visible in Fig. \ref{fig:NaCl_impact_dispersion}. Once again, the presence of the NAC has been automatically handled by \optados.
 
 %%%%  Step 3 %%%%%
 \item Once again, we can produce an impact `heatmap' with:

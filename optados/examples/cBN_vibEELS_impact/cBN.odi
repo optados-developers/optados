@@ -1,6 +1,10 @@
 
 # cBN impact-only example for phonon vib-EELS in OptaDOS.
 
+# The data in the .phonon file was obtained from a CASTEP phonon task for
+# bulk cBN on a 8x8x8 q-point grid, using the PBEsol functional. LO/TO splitting
+# was enabled for this phonon calculation.
+
 TASK             : phonon_eels
 PHONON_EELS_TASK : impact
 

@@ -1,12 +1,3 @@
-
-# This is for NaCl in the (8-atom) conventional Fm-3m cell.
-# This data was generated with CASTEP using the PBEsol XC-functional.
-
-# --> Partial Charge data (Mulliken) comes from       : any task
-# --> Born Effective Charge data comes from a         : PHONON task
-# --> Debye-Waller factors come from a                : THERMODYNAMICS task
-# --> EPSILON_INF calculated w/ OptaDOS, following a  : SPECTRAL task
-
 ####################################################################
 #                 The partial charges on the atoms.                #
 #        (this could be Mulliken/Hirshfeld/Bader, or whatever)     #
@@ -26,9 +17,9 @@ END PARTIAL_CHARGES
 #              The zero-frequency dielectric tensor.               #
 ####################################################################
 BEGIN EPSILON_INF
-2.37000   0.00000   0.00000
-0.00000   2.37000   0.00000
-0.00000   0.00000   2.37000
+2.57000   0.00000   0.00000
+0.00000   2.57000   0.00000
+0.00000   0.00000   2.57000
 END EPSILON_INF
 
 ####################################################################

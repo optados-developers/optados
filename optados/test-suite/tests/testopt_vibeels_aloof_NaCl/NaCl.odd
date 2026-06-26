@@ -1,34 +1,10 @@
-
-# This is for NaCl in the (8-atom) conventional Fm-3m cell.
-# This data was generated with CASTEP using the PBEsol XC-functional.
-
-# --> Partial Charge data (Mulliken) comes from       : any task
-# --> Born Effective Charge data comes from a         : PHONON task
-# --> Debye-Waller factors come from a                : THERMODYNAMICS task
-# --> EPSILON_INF calculated w/ OptaDOS, following a  : SPECTRAL task
-
-####################################################################
-#                 The partial charges on the atoms.                #
-#        (this could be Mulliken/Hirshfeld/Bader, or whatever)     #
-####################################################################
-BEGIN PARTIAL_CHARGES
-1   0.496
-2   0.496
-3   0.496
-4   0.496
-5  -0.496
-6  -0.496
-7  -0.496
-8  -0.496
-END PARTIAL_CHARGES
-
 ####################################################################
 #              The zero-frequency dielectric tensor.               #
 ####################################################################
 BEGIN EPSILON_INF
-2.37000   0.00000   0.00000
-0.00000   2.37000   0.00000
-0.00000   0.00000   2.37000
+2.57000   0.00000   0.00000
+0.00000   2.57000   0.00000
+0.00000   0.00000   2.57000
 END EPSILON_INF
 
 ####################################################################
@@ -75,20 +51,3 @@ BEGIN BORN_EFF_CHARGE_TENSOR
 0.00000    -1.09364     0.00000
 0.00000     0.00000    -1.09364
 END BORN_EFF_CHARGE_TENSOR
-
-####################################################################
-#                The Atomic Displacement Parameters.               #
-#                                                                  #
-#              atom_idx  U11  U22  U33  U23  U31  U12              #
-####################################################################
-BEGIN ATOMIC_DISPLACEMENT_PARAMETERS
-300
-1     0.018147  0.018147  0.018147  0.000000  0.000000  0.000000
-2     0.018147  0.018147  0.018147  0.000000  0.000000  0.000000
-3     0.018147  0.018147  0.018147  0.000000  0.000000  0.000000
-4     0.018147  0.018147  0.018147  0.000000  0.000000  0.000000
-5     0.016096  0.016096  0.016096  0.000000  0.000000  0.000000
-6     0.016096  0.016096  0.016096  0.000000  0.000000  0.000000
-7     0.016096  0.016096  0.016096  0.000000  0.000000  0.000000
-8     0.016096  0.016096  0.016096  0.000000  0.000000  0.000000
-END ATOMIC_DISPLACEMENT_PARAMETERS

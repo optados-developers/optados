@@ -134,6 +134,7 @@ module od_parameters
   real(kind=dp), save, public           :: vibeels_aloof_electron_beam_energy    ! Electron beam energy, in units of keV
   real(kind=dp), save, public           :: vibeels_aloof_impact_parameter        ! Electron impact parameter, for aloof EELS
   real(kind=dp), save, public           :: vibeels_aloof_phi_spacing             ! Spacing of phi values for aloof loss integral
+  logical, save, public                 :: vibeels_aloof_normalize_loss          ! Optionally normalize the aloof loss spectrum over [0,1]
   logical, save, public                 :: vibeels_reorder_phonon_bands          ! Whether to reorder phonon bands, or not.
 
   real(kind=dp), public, save :: lenconfac
@@ -380,6 +381,9 @@ contains
 
     vibeels_aloof_phi_spacing = 5.0E-3_dp
     if (phonon_eels) call param_get_keyword('vibeels_aloof_phi_spacing', found, r_value=vibeels_aloof_phi_spacing)
+
+    vibeels_aloof_normalize_loss = .false.
+    if (phonon_eels) call param_get_keyword('vibeels_aloof_normalize_loss', found, l_value=vibeels_aloof_normalize_loss)
 
     vibeels_reorder_phonon_bands = .true.
     if (phonon_eels) call param_get_keyword('vibeels_reorder_phonon_bands', found, l_value=vibeels_reorder_phonon_bands)

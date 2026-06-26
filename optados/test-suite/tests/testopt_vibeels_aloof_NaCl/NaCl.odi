@@ -15,7 +15,7 @@ vibeels_spacing    : 0.05
 #*************************************
 
 # Broadening for eps_lf (mode linewidth), in meV.
-vibeels_aloof_intrinsic_broadening : 0.50
+vibeels_aloof_intrinsic_broadening : 1.00
 
 # Lorentzian broadening for the aloof loss spectrum, in meV.
 vibeels_aloof_loss_broadening : 5.00
@@ -37,3 +37,6 @@ vibeels_aloof_impact_parameter : 26.5
 
 # Number of phi values for aloof loss integral.
 vibeels_aloof_phi_spacing : 0.004
+
+# Normalize aloof loss spectrum between 0 and 1.
+vibeels_aloof_normalize_loss = true

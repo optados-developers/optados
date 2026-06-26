@@ -50,14 +50,20 @@ module od_constants
 
   ! Used in phonon_eels.
   real(kind=dp), parameter, public :: amu_to_me = 1822.888486209_dp
+  real(kind=dp), parameter, public :: speed_of_light_SI = 8.8541878188E-12
+  real(kind=dp), parameter, public :: epsilon_0_SI = 8.8541878188E-12
+  real(kind=dp), parameter, public :: elec_charge_SI = 1.602176634E-19_dp
+  real(kind=dp), parameter, public :: hbar_j_s = 1.054571817e-34_dp
+  real(kind=dp), parameter, public :: electron_mass_kg = 9.1093837015e-31_dp
+  real(kind=dp), parameter, public :: eV_to_joule = 1.602176634e-19_dp
   real(kind=dp), parameter, public :: eV_to_hartree = 0.03674932217565499_dp
   real(kind=dp), parameter, public :: meV_to_hartree = 3.674932217565499E-5_dp
   real(kind=dp), parameter, public :: inv_cm_to_meV = 0.12398419843320026_dp
   real(kind=dp), parameter, public :: ang2bohr = 1.8897259886_dp
   real(kind=dp), parameter, public :: nanometre2bohr = 18.89726124565062_dp
   real(kind=dp), parameter, public :: fourpi = 12.56637061435917295385057353311801_dp
-  real(kind=dp), parameter, public  :: fine_structure_constant = 0.0072973525643_dp
-  real(kind=dp), parameter, public  :: meV_per_K = 0.08617333262145_dp
+  real(kind=dp), parameter, public :: fine_structure_constant = 0.0072973525643_dp
+  real(kind=dp), parameter, public :: meV_per_K = 0.08617333262145_dp
 
   character(len=3), parameter, dimension(109), public :: periodic_table_name = (/ &
        & 'H ', 'He', &

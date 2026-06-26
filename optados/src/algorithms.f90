@@ -31,6 +31,7 @@
 ! Necessary conditions:                                                   !
 !-------------------------------------------------------------------------!
 ! Written by Andrew Morris and Chris Picakrd (so far)          11/10/2010 !
+! Hermitian-Jacobi diagonalizer added by Jack Whaley-Baldwin   27/06/2026 !
 !=========================================================================!
 module od_algorithms
   use od_constants, only: dp, inv_sqrt_two_pi
@@ -46,6 +47,7 @@ module od_algorithms
   public :: channel_to_am
   public :: algorithms_erf
   public :: algor_dist_array
+  public :: hermitian_jacobi_diag
 
 contains
 
@@ -338,5 +340,154 @@ contains
     end if
 
   end subroutine algor_dist_array
+
+  !===========================================================================!
+  subroutine hermitian_jacobi_diag(n, a, eigvals, info)
+    !===========================================================================!
+    ! J. A. J. Whaley-Baldwin, June 2026                                        !
+    !                                                                           !
+    ! This subroutine is a complex Hermitian eigensolver, designed to replicate !
+    ! the functionality of LAPACK's ZHEEV, without relying on any external      !
+    ! dependencies.                                                             !
+    !                                                                           !
+    ! The (Hermitian) matrix 'a' is diagonalized in-place, and the resulting    !
+    ! eigenvectors are stored in the 'eigvals' array. The dimension of the      !
+    ! matrix is specified with 'n'.                                             !
+    !===========================================================================!
+
+    implicit none
+
+    integer, intent(in)             :: n
+    complex(kind=dp), intent(inout) :: a(n, n)
+    real(kind=dp), intent(out)      :: eigvals(n)
+    integer, intent(out)            :: info
+
+    integer                       :: i, p, q, iter, max_iter
+    integer                       :: sweep
+    real(kind=dp)                 :: app, aqq, apq_abs
+    real(kind=dp)                 :: tau, t, c, s
+    real(kind=dp)                 :: max_offdiag, tol, scale
+    complex(kind=dp)              :: phase
+    complex(kind=dp), allocatable :: v(:, :), u(:, :), tmp(:, :)
+    real(kind=dp)                 :: eval_tmp
+    complex(kind=dp), allocatable :: evec_tmp(:)
+
+    info = 0
+
+    if (n == 1) then
+      eigvals(1) = real(a(1, 1), kind=dp)
+      a(1, 1) = cmplx(1.0_dp, 0.0_dp, kind=dp)
+      return
+    end if
+
+    allocate (v(n, n), u(n, n), tmp(n, n), evec_tmp(n))
+
+    v = cmplx(0.0_dp, 0.0_dp, kind=dp)
+    do i = 1, n
+      v(i, i) = cmplx(1.0_dp, 0.0_dp, kind=dp)
+    end do
+
+    scale = 0.0_dp
+    do i = 1, n
+      scale = max(scale, abs(real(a(i, i), kind=dp)))
+    end do
+    scale = max(scale, 1.0_dp)
+
+    tol = 1.0e-12_dp*scale
+    max_iter = 100*n*n
+    iter = 0
+
+    do sweep = 1, max_iter
+
+      max_offdiag = 0.0_dp
+      do p = 1, n - 1
+        do q = p + 1, n
+          max_offdiag = max(max_offdiag, abs(a(p, q)))
+        end do
+      end do
+
+      if (max_offdiag < tol) exit
+
+      do p = 1, n - 1
+        do q = p + 1, n
+
+          apq_abs = abs(a(p, q))
+          if (apq_abs < tol) cycle
+
+          app = real(a(p, p), kind=dp)
+          aqq = real(a(q, q), kind=dp)
+
+          phase = conjg(a(p, q))/apq_abs
+
+          tau = (aqq - app)/(2.0_dp*apq_abs)
+
+          if (tau >= 0.0_dp) then
+            t = 1.0_dp/(tau + sqrt(1.0_dp + tau*tau))
+          else
+            t = -1.0_dp/(-tau + sqrt(1.0_dp + tau*tau))
+          end if
+
+          c = 1.0_dp/sqrt(1.0_dp + t*t)
+          s = t*c
+
+          u = cmplx(0.0_dp, 0.0_dp, kind=dp)
+          do i = 1, n
+            u(i, i) = cmplx(1.0_dp, 0.0_dp, kind=dp)
+          end do
+
+          u(p, p) = cmplx(c, 0.0_dp, kind=dp)
+          u(p, q) = cmplx(s, 0.0_dp, kind=dp)
+          u(q, p) = -phase*s
+          u(q, q) = phase*c
+
+          tmp = matmul(a, u)
+          a = matmul(conjg(transpose(u)), tmp)
+
+          tmp = matmul(v, u)
+          v = tmp
+
+          do i = 1, n
+            a(i, i) = cmplx(real(a(i, i), kind=dp), 0.0_dp, kind=dp)
+          end do
+
+          iter = iter + 1
+
+        end do
+      end do
+
+    end do
+
+    if (sweep > max_iter) then
+      info = 1
+      return
+    end if
+
+    do i = 1, n
+      eigvals(i) = real(a(i, i), kind=dp)
+    end do
+
+    a = v
+
+    ! Sort eigenvalues/eigenvectors ascending, as ZHEEV does.
+    do p = 1, n - 1
+      q = p
+      do i = p + 1, n
+        if (eigvals(i) < eigvals(q)) q = i
+      end do
+
+      if (q /= p) then
+        eval_tmp = eigvals(p)
+        eigvals(p) = eigvals(q)
+        eigvals(q) = eval_tmp
+
+        evec_tmp(:) = a(:, p)
+        a(:, p) = a(:, q)
+        a(:, q) = evec_tmp(:)
+      end if
+    end do
+
+    deallocate (v, u, tmp, evec_tmp)
+
+  end subroutine hermitian_jacobi_diag
 
 end module od_algorithms

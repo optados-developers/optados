@@ -64,6 +64,8 @@ def plot_impact_heatmap(seedname, hsp_labels=None, qslice_fracs=None, elim=None)
 			hsp_locs = [ int(x) - 1 for x in line ]
 			read_hsp_locs = False
 			continue
+		if ("range" in line):
+			continue
 		# Now, allocate space for heatmap data, and parse.
 		if ( ("Total" in line) and ("Loss" in line) ):
 			heatmap_data = np.zeros( (N_energies,N_qpts) )
