@@ -1,0 +1,19 @@
+####################################################################
+#                 The partial charges on the atoms.                #
+#        (this could be Mulliken/Hirshfeld/Bader, or whatever)     #
+####################################################################
+BEGIN PARTIAL_CHARGES
+1   0.612
+2  -0.612
+END PARTIAL_CHARGES
+
+####################################################################
+#                The Atomic Displacement Parameters.               #
+#                                                                  #
+#              atom_idx  U11  U22  U33  U23  U31  U12              #
+####################################################################
+BEGIN ATOMIC_DISPLACEMENT_PARAMETERS
+300
+1      0.002307  0.002307  0.002307  0.000000  0.000000  0.000000
+2      0.001956  0.001956  0.001956  0.000000  0.000000  0.000000
+END ATOMIC_DISPLACEMENT_PARAMETERS

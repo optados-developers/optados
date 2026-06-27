@@ -59,6 +59,7 @@ module od_parameters
   logical, public, save :: compare_jdos
   logical, public, save :: optics
   logical, public, save :: core
+  logical, public, save :: phonon_eels
 
   !Broadening parameters
   logical, public, save :: fixed
@@ -118,6 +119,24 @@ module od_parameters
   logical, public, save :: LAI_lorentzian
   real(kind=dp), public, save :: core_chemical_shift ! used in conjunction with miz_chemical_shift script in tools
 
+  ! Phonon vib-EELS parameters
+  character(len=20), public, save       :: phonon_eels_task                      ! impact, aloof, or all
+  real(kind=dp), save, public           :: vibeels_min_energy                    ! Minimum frequency for EELS quantities
+  real(kind=dp), save, public           :: vibeels_max_energy                    ! Maximum frequency for EELS quantities
+  real(kind=dp), save, public           :: vibeels_spacing                       ! Energy spacing for EELS quantities
+  real(kind=dp), save, public           :: vibeels_impact_broadening             ! Broadening for impact EELS quantities
+  logical, save, public                 :: vibeels_use_electronic_affs           ! Use electronic AFFs (true), or X-ray AFFs (false)
+  real(kind=dp), save, public           :: vibeels_aloof_intrinsic_broadening    ! Intrinsic broadening (linewidth) for aloof quantities
+  real(kind=dp), save, public           :: vibeels_aloof_loss_broadening         ! Lorentzian broadening, applied to the aloof loss
+  logical, save, public                 :: vibeels_aloof_include_offdiag         ! Include off-diagonal terms in calculation of alpha
+  character(len=2), public, save        :: vibeels_aloof_surface_plane           ! Surface plane of crystal for aloof (e.g. 'ab')
+  character(len=1), public, save        :: vibeels_aloof_beam_direction          ! Axis parallel to aloof beam direction (e.g. 'a')
+  real(kind=dp), save, public           :: vibeels_aloof_electron_beam_energy    ! Electron beam energy, in units of keV
+  real(kind=dp), save, public           :: vibeels_aloof_impact_parameter        ! Electron impact parameter, for aloof EELS
+  real(kind=dp), save, public           :: vibeels_aloof_phi_spacing             ! Spacing of phi values for aloof loss integral
+  logical, save, public                 :: vibeels_aloof_normalize_loss          ! Optionally normalize the aloof loss spectrum over [0,1]
+  logical, save, public                 :: vibeels_reorder_phonon_bands          ! Whether to reorder phonon bands, or not.
+
   real(kind=dp), public, save :: lenconfac
 
   private
@@ -168,7 +187,7 @@ contains
       call io_error('Error: value of energy_unit not recognised in param_read')
 
     dos = .false.; pdos = .false.; pdis = .false.; jdos = .false.; optics = .false.
-    core = .false.; compare_dos = .false.; compare_jdos = .false.
+    core = .false.; compare_dos = .false.; compare_jdos = .false.; phonon_eels = .false.
     call param_get_vector_length('task', found, i_temp)
     if (found .and. i_temp > 0) then
       allocate (task_string(i_temp), stat=ierr)
@@ -191,6 +210,8 @@ contains
           dos = .true.; compare_dos = .true.
         elseif (index(task_string(loop), 'dos') > 0) then
           dos = .true.
+        elseif (index(task_string(loop), 'phonon_eels') > 0) then
+          phonon_eels = .true.
         elseif (index(task_string(loop), 'none') > 0) then
           dos = .false.; pdos = .false.; jdos = .false.; optics = .false.; core = .false.
         elseif (index(task_string(loop), 'all') > 0) then
@@ -314,6 +335,60 @@ contains
     if (pdis) call param_get_keyword('pdispersion', found, c_value=projectors_string)
     if (pdis .and. (len_trim(projectors_string) == 0)) &
          & call io_error('pdispersion requested but pdispersion keyword is not specified')
+
+    !*******************************************************************************************************************
+    ! Phonon EELS
+    phonon_eels_task = ''
+    if (phonon_eels) call param_get_keyword('phonon_eels_task', found, c_value=phonon_eels_task)
+
+    vibeels_min_energy = 0.0_dp
+    if (phonon_eels) call param_get_keyword('vibeels_min_energy', found, r_value=vibeels_min_energy)
+
+    ! Default vibeels_max_energy is negative; if left unset, this will trigger a check in
+    ! phonon_eels.f90 to automatically scale vibeels_max_energy based on the highest phonon energy.
+    vibeels_max_energy = -1.0_dp
+    if (phonon_eels) call param_get_keyword('vibeels_max_energy', found, r_value=vibeels_max_energy)
+
+    vibeels_spacing = 0.1_dp
+    if (phonon_eels) call param_get_keyword('vibeels_spacing', found, r_value=vibeels_spacing)
+
+    vibeels_impact_broadening = 2.00_dp
+    if (phonon_eels) call param_get_keyword('vibeels_impact_broadening', found, r_value=vibeels_impact_broadening)
+
+    vibeels_use_electronic_affs = .false.
+    if (phonon_eels) call param_get_keyword('vibeels_use_electronic_affs', found, l_value=vibeels_use_electronic_affs)
+
+    vibeels_aloof_intrinsic_broadening = 0.50_dp
+    if (phonon_eels) call param_get_keyword('vibeels_aloof_intrinsic_broadening', found, r_value=vibeels_aloof_intrinsic_broadening)
+
+    vibeels_aloof_loss_broadening = 5.00_dp
+    if (phonon_eels) call param_get_keyword('vibeels_aloof_loss_broadening', found, r_value=vibeels_aloof_loss_broadening)
+
+    vibeels_aloof_surface_plane = 'ab'
+    if (phonon_eels) call param_get_keyword('vibeels_aloof_surface_plane', found, c_value=vibeels_aloof_surface_plane)
+
+    vibeels_aloof_beam_direction = 'a'
+    if (phonon_eels) call param_get_keyword('vibeels_aloof_beam_direction', found, c_value=vibeels_aloof_beam_direction)
+
+    vibeels_aloof_include_offdiag = .false.
+    if (phonon_eels) call param_get_keyword('vibeels_aloof_include_offdiag', found, l_value=vibeels_aloof_include_offdiag)
+
+    vibeels_aloof_electron_beam_energy = 50.0_dp
+    if (phonon_eels) call param_get_keyword('vibeels_aloof_electron_beam_energy', found, r_value=vibeels_aloof_electron_beam_energy)
+
+    vibeels_aloof_impact_parameter = 30.0_dp
+    if (phonon_eels) call param_get_keyword('vibeels_aloof_impact_parameter', found, r_value=vibeels_aloof_impact_parameter)
+
+    vibeels_aloof_phi_spacing = 5.0E-3_dp
+    if (phonon_eels) call param_get_keyword('vibeels_aloof_phi_spacing', found, r_value=vibeels_aloof_phi_spacing)
+
+    vibeels_aloof_normalize_loss = .false.
+    if (phonon_eels) call param_get_keyword('vibeels_aloof_normalize_loss', found, l_value=vibeels_aloof_normalize_loss)
+
+    vibeels_reorder_phonon_bands = .true.
+    if (phonon_eels) call param_get_keyword('vibeels_reorder_phonon_bands', found, l_value=vibeels_reorder_phonon_bands)
+
+    !*******************************************************************************************************************
 
     jdos_max_energy = -1.0_dp !! change
     call param_get_keyword('jdos_max_energy', found, r_value=jdos_max_energy)
@@ -681,6 +756,11 @@ contains
       write (stdout, '(1x,a78)') '|  Output Core-level Spectra                 :  True                         |'
     else
       write (stdout, '(1x,a78)') '|  Output Core-level Spectra                 :  False                        |'
+    end if
+    if (phonon_eels) then
+      write (stdout, '(1x,a78)') '|  Output Phonon vib-EELS Spectra            :  True                         |'
+    else
+      write (stdout, '(1x,a78)') '|  Output Phonon vib-EELS Spectra            :  False                        |'
     end if
     write (stdout, '(1x,a46,2x,i3,26x,a1)') '|  iprint level                              :', iprint, '|'
     if (legacy_file_format) then
@@ -1496,6 +1576,7 @@ contains
     call comms_bcast(pdos, 1)
     call comms_bcast(jdos, 1)
     call comms_bcast(optics, 1)
+    call comms_bcast(phonon_eels, 1)
     call comms_bcast(core, 1)
     call comms_bcast(compare_dos, 1)
     call comms_bcast(compare_jdos, 1)
@@ -1541,6 +1622,24 @@ contains
     call comms_bcast(legacy_file_format, 1)
     call comms_bcast(projectors_string, len(projectors_string))
     call comms_bcast(set_efermi_zero, 1)
+
+    ! For vib-EELS
+    call comms_bcast(phonon_eels_task, len(phonon_eels_task))
+    call comms_bcast(vibeels_min_energy, 1)
+    call comms_bcast(vibeels_max_energy, 1)
+    call comms_bcast(vibeels_spacing, 1)
+    call comms_bcast(vibeels_impact_broadening, 1)
+    call comms_bcast(vibeels_use_electronic_affs, 1)
+    call comms_bcast(vibeels_aloof_intrinsic_broadening, 1)
+    call comms_bcast(vibeels_aloof_loss_broadening, 1)
+    call comms_bcast(vibeels_aloof_surface_plane, len(vibeels_aloof_surface_plane))
+    call comms_bcast(vibeels_aloof_beam_direction, len(vibeels_aloof_beam_direction))
+    call comms_bcast(vibeels_aloof_include_offdiag, 1)
+    call comms_bcast(vibeels_aloof_electron_beam_energy, 1)
+    call comms_bcast(vibeels_aloof_impact_parameter, 1)
+    call comms_bcast(vibeels_aloof_phi_spacing, 1)
+    call comms_bcast(vibeels_reorder_phonon_bands, 1)
+
     !
     call comms_bcast(num_exclude_bands, 1)
     if (num_exclude_bands > 1) then

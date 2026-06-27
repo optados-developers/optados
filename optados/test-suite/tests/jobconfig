@@ -387,6 +387,29 @@ inputs_args = ('', '-i ome_bin -o ome_fmt -w Si2_out Si2')
 output = Si2_out.ome_fmt
 
 #--------------------------------------------------------------
+# O p t a D O S   v i b - E E L S    T e s t s
+#--------------------------------------------------------------
+# Test coverage
+#
+
+# 1 testopt_vibeels_aloof_NaCl
+# 2 testopt_vibeels_impact_hBN
+
+#1
+# Test the aloof_loss output, for NaCl
+[testopt_vibeels_aloof_NaCl]
+program = OPTADOS_VIBEELS_DAT_OK
+inputs_args = ('NaCl.odi', '')
+output = NaCl_aloof-loss.dat
+
+#2
+# Test the impact_loss output, for hBN
+[testopt_vibeels_impact_hBN]
+program = OPTADOS_VIBEELS_DAT_OK
+inputs_args = ('hBN.odi', '')
+output = hBN_impact-intensity.dat
+
+#--------------------------------------------------------------
 # C a t e g o r y   L i s t
 #--------------------------------------------------------------
 [categories]

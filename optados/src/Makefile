@@ -28,7 +28,7 @@ endif
 EXTENSION:=.x
 
 # Put object names here
-OBJS=build.o algorithms.o cell.o comms.o constants.o core.o dos.o dos_utils.o electronic.o io.o jdos.o jdos_utils.o optics.o parameters.o pdos.o pdis.o projection_utils.o xmgrace_utils.o
+OBJS=build.o algorithms.o cell.o comms.o constants.o core.o dos.o dos_utils.o electronic.o io.o jdos.o jdos_utils.o optics.o parameters.o pdis.o pdos.o phonon_eels.o phonon_eels_tables.o projection_utils.o read_odd.o xmgrace_utils.o
 
 all : optados tools
 
@@ -79,19 +79,28 @@ optics.o : optics.f90 constants.o io.o electronic.o jdos_utils.o cell.o paramete
 parameters.o : parameters.f90  cell.o constants.o io.o comms.o ../make.system
 	$(F90) -c $(FFLAGS) $<
 
+pdis.o : pdis.f90 projection_utils.o cell.o comms.o constants.o io.o dos.o electronic.o ../make.system
+	$(F90) -c $(FFLAGS) $<
+
 pdos.o : pdos.F90 projection_utils.o cell.o comms.o constants.o io.o dos.o electronic.o ../make.system
 	$(F90) -c $(FFLAGS) $<
 
-pdis.o : pdis.f90 projection_utils.o cell.o comms.o constants.o io.o dos.o electronic.o ../make.system
+phonon_eels.o : phonon_eels.f90 comms.o constants.o io.o parameters.o phonon_eels_tables.o read_odd.o ../make.system
+	$(F90) -c $(FFLAGS) $<
+
+phonon_eels_tables.o : phonon_eels_tables.f90 constants.o io.o ../make.system
 	$(F90) -c $(FFLAGS) $<
 
 projection_utils.o : projection_utils.f90 cell.o comms.o constants.o cell.o electronic.o io.o parameters.o ../make.system
 	$(F90) -c $(FFLAGS) $<
 
+read_odd.o : read_odd.f90 constants.o io.o parameters.o ../make.system
+	$(F90) -c $(FFLAGS) $<
+
 xmgrace_utils.o : xmgrace_utils.f90 io.o constants.o ../make.system
 	$(F90) -c $(FFLAGS) $<
 
-build.f90 : 
+build.f90 :
 	./make_build_info.sh
 
 build.o : build.f90 ../make.system

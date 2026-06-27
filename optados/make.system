@@ -1,6 +1,7 @@
 # one of gfortran, g95, ifort, pfg90
 SYSTEM := gfortran
 
+
 # fast / debug
 BUILD := debug 
 
@@ -38,7 +39,7 @@ ifeq ($(SYSTEM), gfortran)
    FFLAGS= -fconvert=big-endian -fPIC
    FFLAGS_PARALLEL=  -DMPI
    FFLAGS_FAST= -O3
-   FFLAGS_DEBUG= -O0  -g -fcheck=all 
+   FFLAGS_DEBUG= -O0 -g  -fcheck=all 
    EXTENSION=.gfortran
 endif
 
