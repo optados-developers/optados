@@ -18,9 +18,9 @@ jobs:
   pre-commit:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
-      - uses: pre-commit/action@v2.0.0
+    - uses: actions/checkout@v6
+    - uses: actions/setup-python@v6
+    - uses: pre-commit/action@v3.0.1
 
 
   build:
@@ -30,9 +30,9 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v6
       - name: setup python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v6
         with:
           python-version: 3.11.7
       - name: install dependencies
@@ -50,11 +50,13 @@ jobs:
             matplotlib  \
       - name: build
         run:  |
-          cd optados 
-          make 
+          cd optados
           make tools
+          make
+          sed -i '0,/.*COMMS_ARCH :=.*/s//COMMS_ARCH :=  mpi/' make.system
+          make
       - name: run tests
         run: |
           cd optados/test-suite
-          ./run_tests -v --category=default 
+          ./run_tests -v --category=default
 

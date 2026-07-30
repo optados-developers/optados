@@ -1,0 +1,3 @@
+ OptaDOS: Execution started on 24 Mar 2026 at 08:12:03 
+ Exiting.......
+ Error: both slab middle < 0 and slab min < 0, so something is wrong with the slab boundaries

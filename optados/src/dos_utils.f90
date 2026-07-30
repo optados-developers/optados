@@ -997,8 +997,8 @@ contains
     end do
 
     if (on_root .and. (iprint > 2)) then
-      write (stdout, '(1x,1a,a39,e11.5,13x,a14)') '|', 'dos_min_energy : ', dos_min_energy, "<-- DOS Grid |"
-      write (stdout, '(1x,1a,a39,e11.5,13x,a14)') '|', 'dos_max_energy : ', dos_max_energy, "<-- DOS Grid |"
+      write (stdout, '(1x,1a,a39,e12.5,12x,a14)') '|', 'dos_min_energy : ', dos_min_energy, "<-- DOS Grid |"
+      write (stdout, '(1x,1a,a39,e12.5,12x,a14)') '|', 'dos_max_energy : ', dos_max_energy, "<-- DOS Grid |"
       write (stdout, '(1x,1a,a39,f11.3,13x,a14)') '|', 'min_band_energy : ', min_band_energy, "<-- DOS Grid |"
       write (stdout, '(1x,1a,a39,f11.3,13x,a14)') '|', 'max_band_energy : ', max_band_energy, "<-- DOS Grid |"
       write (stdout, '(1x,1a,a39,i11,13x,a14)') '|', 'dos_nbins : ', dos_nbins, "<-- DOS Grid |"

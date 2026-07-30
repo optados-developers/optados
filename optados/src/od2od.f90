@@ -5,7 +5,8 @@ module od_conv
   use od_constants, only: dp
   use od_electronic, only: elec_read_optical_mat, elec_read_band_gradient, elec_read_elnes_mat,&
        & elec_pdos_read, elec_read_band_energy, omefile_header, domefile_header, pdosfile_header,&
-       & elnesfile_header
+       & elnesfile_header, elec_read_foptical_mat, femfile_header, fem_energy_info, tmprob_file_header, &
+       & elec_read_transmit_prob, photo_gkgrid, photo_gkgrid_file_header, elec_read_gk_grid
   use od_parameters, only: iprint
   use od_io, only: stdout, io_error, seedname
   implicit none
@@ -19,6 +20,7 @@ module od_conv
   !! Type of file to convert to.
   character(len=10), save :: format_precision = "es23.10"
   !! Things get messy below 10 s.f. between bin files and fmt files
+
 contains
   !=========================================================================
   subroutine print_usage()
@@ -33,6 +35,14 @@ contains
     write (stdout, '(A)') " <in_type> and <out_type> is one of: "
     write (stdout, '(A)') "       ome_fmt : a formatted optical matrix element file"
     write (stdout, '(A)') "       ome_bin : an unformatted optical matrix element file"
+    ! Added by F. Mildner (04/2023+02/2025) for photoemission
+    write (stdout, '(A)') "       fem_fmt : a formatted free electron optical matrix element file"
+    write (stdout, '(A)') "       fem_bin : an unformatted free electron optical matrix element file"
+    write (stdout, '(A)') "    tmprob_fmt : a formatted bandwise electron transmission coefficient file"
+    write (stdout, '(A)') "    tmprob_bin : an unformatted bandwise electron transmission coefficient file"
+    write (stdout, '(A)') "    gkgrid_fmt : a formatted bandwise list of transverse momenta values and contributions"
+    write (stdout, '(A)') "    gkgrid_bin : an unformatted bandwise list of transverse momenta values and contributions"
+
     write (stdout, '(A)') "      dome_fmt : a formatted diagonal optical matrix element file"
     write (stdout, '(A)') "      dome_bin : an unformatted diagonal optical matrix element file"
     write (stdout, '(A)') "      pdos_fmt : a formatted projected density of states file"
@@ -247,6 +257,431 @@ contains
   end subroutine write_ome_bin
 
   !=========================================================================
+  ! F R E E   E L E C T R O N   O P T I C A L   M A T R I X   E L E M E N T S
+  !=========================================================================
+
+  !=========================================================================
+  subroutine read_fem_fmt()
+    !! Read a formatted Optical Matrix Elements file.
+    use od_constants, only: dp, bohr2ang, H2eV
+    use od_io, only: io_time, filename_len, seedname, stdout, io_file_unit,&
+         & io_error
+    use od_cell, only: nkpoints
+    use od_electronic, only: nspins, nbands, foptical_mat
+    use od_constants, only: bohr2ang, H2eV
+    implicit none
+
+    real(dp):: file_version = 1.0_dp          ! File version
+    character(len=100):: string
+    integer :: ik, is, ib, i, jb, energy_count, ierr, fem_unit = 6
+
+    write (stdout, *) " Read a formatted .fem file. "
+
+    open (unit=fem_unit, form='formatted', recl=1073741824, file=trim(seedname)//".fem_fmt")
+    read (fem_unit, '('//trim(format_precision)//')') file_version
+
+    read (fem_unit, '(a80)') femfile_header
+    do i = 1, 5
+      read (fem_unit, '('//trim(format_precision)//')') fem_energy_info(i)
+    end do
+
+    energy_count = int(fem_energy_info(1))
+    write (stdout, *) fem_energy_info
+    if (.not. allocated(foptical_mat)) then
+      write (stdout, *) " Allocating foptical_mat."
+      allocate (foptical_mat(nbands, 3, energy_count, nkpoints, nspins), stat=ierr)
+    end if
+    ! Total number of elements of fem
+    write (stdout, *) 'nbands', nbands, 'energy_count', energy_count
+    write (string, '(I0,"(1x,",a,")")') 2*3*nbands*energy_count, trim(format_precision)
+    write (stdout, *) string
+
+    ! write(string,'(a)') trim(format_precision)
+    write (stdout, *) nkpoints, nspins, nbands
+
+    do ik = 1, nkpoints
+      do is = 1, nspins
+        read (fem_unit, '('//trim(string)//')') (((foptical_mat(ib, i, jb, ik, is), ib=1, nbands), i=1, 3), jb=1, energy_count)
+      end do
+    end do
+
+    foptical_mat = foptical_mat*(bohr2ang*H2eV)
+
+    close (unit=fem_unit)
+
+    write (stdout, *) trim(seedname)//".fem_fmt"//"--> Formatted fem sucessfully read. "
+
+  end subroutine read_fem_fmt
+
+  !=========================================================================
+  subroutine write_fem_fmt()
+    !! Write a formatted ome file.
+    use od_constants, only: dp, bohr2ang, H2eV
+    use od_io, only: io_time, filename_len, stdout, io_file_unit,&
+         & io_error
+    use od_cell, only: nkpoints
+    use od_electronic, only: nspins, nbands, foptical_mat
+    use od_constants, only: bohr2ang, H2eV
+    implicit none
+
+    real(dp):: file_version = 1.0_dp          ! File version
+    character(len=100):: string
+    integer :: ik, is, ib, i, jb, energy_count, fem_unit = 6
+
+    write (stdout, *) " Write a formatted .fem file. "
+
+    foptical_mat = foptical_mat/(bohr2ang*H2eV)
+    energy_count = nint(fem_energy_info(1))
+
+    open (unit=fem_unit, form='formatted', file=trim(outseedname)//".fem_fmt")
+
+    write (string, '(I0,"(1x,",a,")")') 2*3*nbands*energy_count, trim(format_precision)
+
+    write (stdout, '(a80)') adjustl(femfile_header)
+
+    write (fem_unit, '('//trim(format_precision)//')') file_version
+    write (fem_unit, '(a80)') adjustl(femfile_header)
+    do i = 1, 5
+      write (fem_unit, '('//format_precision//')') fem_energy_info(i)
+    end do
+
+    do ik = 1, nkpoints
+      do is = 1, nspins
+        write (fem_unit, '('//trim(string)//')') (((foptical_mat(ib, i, jb, ik, is), ib=1, nbands), i=1, 3), jb=1, energy_count)
+      end do
+    end do
+
+    close (unit=fem_unit)
+
+    write (stdout, *) " Sucesfully written a formatted fem file --> "//trim(outseedname)//".fem_fmt"
+  end subroutine write_fem_fmt
+
+  !=========================================================================
+  subroutine read_fem_bin()
+    !! Read a binary ome file. Wrapper to keep the naming tidy.
+    implicit none
+    write (stdout, *) " Read a unformatted fem_bin file. "
+
+    call elec_read_foptical_mat()
+    write (stdout, *) " "//trim(seedname)//".fem_bin"//" --> Unformatted fem_bin sucessfully read. "
+  end subroutine read_fem_bin
+
+  !=========================================================================
+  subroutine write_fem_bin()
+    !! Write a binary ome file.
+    use od_constants, only: dp, bohr2ang, H2eV
+    use od_io, only: io_time, filename_len, stdout, io_file_unit,&
+         & io_error
+    use od_cell, only: nkpoints
+    use od_electronic, only: nspins, nbands, foptical_mat
+    use od_constants, only: bohr2ang, H2eV
+    implicit none
+
+    real(dp):: file_version = 1.0_dp          ! File version
+    integer :: ik, is, ib, i, jb, energy_count, fem_unit = 6
+
+    write (stdout, *) " Write a binary fem file."
+
+    foptical_mat = foptical_mat/(bohr2ang*H2eV)
+    energy_count = int(fem_energy_info(1))
+
+    open (unit=fem_unit, form='unformatted', file=trim(outseedname)//".fem_bin")
+
+    write (stdout, *) "-> Femfile_version ", file_version
+    write (fem_unit) file_version
+    write (stdout, *) "-> Femfile_header ", trim(femfile_header)
+    write (fem_unit) adjustl(femfile_header)
+    do i = 1, 5
+      write (fem_unit) fem_energy_info(i)
+    end do
+
+    do ik = 1, nkpoints
+      do is = 1, nspins
+        write (fem_unit) (((foptical_mat(ib, i, jb, ik, is), ib=1, nbands), i=1, 3), jb=1, energy_count)
+      end do
+    end do
+
+    write (stdout, *) " Succesfully written an unformatted fem file --> "//trim(outseedname)//".fem_bin"
+  end subroutine write_fem_bin
+
+  !=========================================================================
+  ! B A N D   T R A N S M I S S I O N   C O E F F I C I E N T S
+  !=========================================================================
+
+  !=========================================================================
+  !=========================================================================
+  subroutine read_tmprob_fmt()
+    !! Read a formatted Optical Matrix Elements file.
+    use od_constants, only: dp, bohr2ang, H2eV
+    use od_io, only: io_time, filename_len, seedname, stdout, io_file_unit,&
+         & io_error
+    use od_cell, only: nkpoints
+    use od_electronic, only: nspins, nbands, transmit_prob
+    use od_constants, only: bohr2ang, H2eV
+    implicit none
+
+    real(dp):: file_version = 1.0_dp          ! File version
+    character(len=100):: string
+    integer :: ik, is, ib, ierr, tmcoeff_unit = 6
+
+    write (stdout, *) " Read a formatted .tmprob file. "
+
+    open (unit=tmcoeff_unit, form='formatted', recl=1073741824, file=trim(seedname)//".tmprob_fmt")
+    read (tmcoeff_unit, '('//trim(format_precision)//')') file_version
+
+    read (tmcoeff_unit, '(a80)') tmprob_file_header
+
+    if (.not. allocated(transmit_prob)) then
+      write (stdout, *) " Allocating transmit_coeffs."
+      allocate (transmit_prob(nbands, nkpoints, nspins), stat=ierr)
+    end if
+    ! ! Total number of elements of tmprob
+    ! write(stdout,*) 'nbands', nbands
+    write (string, '(I0,"(1x,",a,")")') nbands, trim(format_precision)
+    ! write(stdout,*) string
+
+    ! write(string,'(a)') trim(format_precision)
+    ! write(stdout,*) nkpoints, nspins, nbands
+
+    do ik = 1, nkpoints
+      do is = 1, nspins
+        read (tmcoeff_unit, '('//trim(string)//')') (transmit_prob(ib, ik, is), ib=1, nbands)
+      end do
+    end do
+
+    close (unit=tmcoeff_unit)
+
+    write (stdout, *) trim(seedname)//".tmprob_fmt"//"--> Formatted tmprob sucessfully read. "
+
+  end subroutine read_tmprob_fmt
+
+  !=========================================================================
+  subroutine write_tmprob_fmt()
+    !! Write a formatted ome file.
+    use od_constants, only: dp, bohr2ang, H2eV
+    use od_io, only: io_time, filename_len, stdout, io_file_unit,&
+         & io_error
+    use od_cell, only: nkpoints
+    use od_electronic, only: nspins, nbands, transmit_prob
+    use od_constants, only: bohr2ang, H2eV
+    implicit none
+
+    real(dp):: file_version = 1.0_dp          ! File version
+    character(len=100):: string
+    integer :: ik, is, ib, tmcoeff_unit = 6
+
+    write (stdout, *) " Write a formatted .tmprob file. "
+
+    open (unit=tmcoeff_unit, form='formatted', file=trim(outseedname)//".tmprob_fmt")
+
+    write (string, '(I0,"(1x,",a,")")') nbands, trim(format_precision)
+    ! write(stdout, *) string
+
+    write (stdout, '(a80)') tmprob_file_header
+    write (stdout, '(a80)') adjustl(tmprob_file_header)
+
+    write (tmcoeff_unit, '('//trim(format_precision)//')') file_version
+    write (tmcoeff_unit, '(a80)') adjustl(tmprob_file_header)
+
+    do ik = 1, nkpoints
+      do is = 1, nspins
+        write (tmcoeff_unit, '('//trim(string)//')') (transmit_prob(ib, ik, is), ib=1, nbands)
+      end do
+    end do
+
+    close (unit=tmcoeff_unit)
+
+    write (stdout, *) " Sucesfully written a formatted tmprob file --> "//trim(outseedname)//".tmprob_fmt"
+  end subroutine write_tmprob_fmt
+
+  !=========================================================================
+  subroutine read_tmprob_bin()
+    !! Read a binary ome file. Wrapper to keep the naming tidy.
+    implicit none
+    write (stdout, *) " Read an unformatted tmprob file. "
+
+    call elec_read_transmit_prob()
+    write (stdout, *) " "//trim(seedname)//".tmprob_bin"//"--> Unformatted tmprob sucessfully read. "
+  end subroutine read_tmprob_bin
+
+  !=========================================================================
+  subroutine write_tmprob_bin()
+    !! Write a binary ome file.
+    use od_constants, only: dp, bohr2ang, H2eV
+    use od_io, only: io_time, filename_len, stdout, io_file_unit, io_error
+    use od_cell, only: nkpoints
+    use od_electronic, only: nspins, nbands, transmit_prob
+    use od_constants, only: bohr2ang, H2eV
+    implicit none
+
+    real(dp):: file_version = 1.0_dp          ! File version
+    integer :: ik, is, ib, tmcoeff_unit = 6
+
+    write (stdout, *) " Write a binary tmprob file."
+
+    open (unit=tmcoeff_unit, form='unformatted', file=trim(outseedname)//".tmprob_bin")
+
+    write (stdout, *) "-> tmprob file_version ", file_version
+    write (tmcoeff_unit) file_version
+    write (stdout, *) "-> tmprob file_header ", trim(tmprob_file_header)
+    write (tmcoeff_unit) adjustl(tmprob_file_header)
+
+    ! write(0,*) nkpoints, nspins, nbands
+    do ik = 1, nkpoints
+      do is = 1, nspins
+        write (tmcoeff_unit) (transmit_prob(ib, ik, is), ib=1, nbands)
+      end do
+    end do
+
+    write (stdout, *) " Sucesfully written an unformatted tmprob file --> "//trim(outseedname)//".tmprob_bin"
+  end subroutine write_tmprob_bin
+
+  !=========================================================================
+  ! P H O T O    S P E C T R A L    F U N C T I O N
+  !=========================================================================
+
+  !=========================================================================
+  !=========================================================================
+  subroutine read_gkgrid_fmt()
+    !! Read a formatted Optical Matrix Elements file.
+    use od_constants, only: dp, bohr2ang, H2eV
+    use od_io, only: io_time, filename_len, seedname, stdout, io_file_unit,&
+         & io_error
+    use od_cell, only: nkpoints
+    use od_electronic, only: nspins, nbands, photo_gkgrid
+    use od_constants, only: bohr2ang, H2eV
+    implicit none
+
+    real(dp):: file_version = 1.0_dp          ! File version
+    character(len=100):: string
+    integer :: ik, is, ib, i, gdx, ierr, max_gvec, gkgrid_unit = 6
+
+    write (stdout, *) " Read a formatted .gkgrid_fmt file. "
+
+    open (unit=gkgrid_unit, form='formatted', recl=1073741824, file=trim(seedname)//".gkgrid_fmt")
+    read (gkgrid_unit, '('//trim(format_precision)//')') file_version
+    read (gkgrid_unit, '(I6)') max_gvec
+
+    read (gkgrid_unit, '(a80)') photo_gkgrid_file_header
+    if (.not. allocated(photo_gkgrid)) then
+      write (stdout, *) " Allocating gk grid contributions. --> number of gkgrid elements: ", max_gvec
+      allocate (photo_gkgrid(3, max_gvec, nbands, nspins, nkpoints), stat=ierr)
+    end if
+    ! ! Total number of elements of tmprob
+    ! write(stdout,*) 'nbands', nbands
+    write (string, '(I0,"(1x,",a,")")') nbands*max_gvec*3, trim(format_precision)
+    ! write(stdout,*) string
+
+    ! write(string,'(a)') trim(format_precision)
+    ! write(stdout,*) nkpoints, nspins, nbands
+
+    do ik = 1, nkpoints
+      do is = 1, nspins
+        read (gkgrid_unit, '('//trim(string)//')') (((photo_gkgrid(i, gdx, ib, is, ik), i=1, 3), gdx=1, max_gvec), &
+                                                    ib=1, nbands)
+      end do
+    end do
+
+    photo_gkgrid(1:2, :, :, :, :) = photo_gkgrid(1:2, :, :, :, :)/bohr2ang
+
+    close (unit=gkgrid_unit)
+
+    write (stdout, *) trim(seedname)//".gkgrid_fmt"//"--> Formatted gkgrid sucessfully read. "
+
+  end subroutine read_gkgrid_fmt
+
+  !=========================================================================
+  subroutine write_gkgrid_fmt()
+    !! Write a formatted ome file.
+    use od_constants, only: dp, bohr2ang, H2eV
+    use od_io, only: io_time, filename_len, stdout, io_file_unit,&
+         & io_error
+    use od_cell, only: nkpoints
+    use od_electronic, only: nspins, nbands, photo_gkgrid, photo_gkgrid_file_header
+    use od_constants, only: bohr2ang, H2eV
+    implicit none
+
+    real(dp):: file_version = 1.0_dp          ! File version
+    character(len=100):: string
+    integer :: ik, is, ib, i, gdx, max_gvec, gkgrid_unit = 6
+
+    max_gvec = size(photo_gkgrid, 2)
+
+    write (stdout, *) " Write a formatted .gkgrid file. "
+
+    open (unit=gkgrid_unit, form='formatted', file=trim(outseedname)//".gkgrid_fmt")
+
+    write (string, '(I0,"(1x,",a,")")') nbands*max_gvec*3, trim(format_precision)
+    ! write(stdout, *) string
+
+    write (stdout, '(a80)') photo_gkgrid_file_header
+    write (stdout, '(a80)') adjustl(photo_gkgrid_file_header)
+
+    write (gkgrid_unit, '('//trim(format_precision)//')') file_version
+    write (gkgrid_unit, '(I6)') max_gvec
+    write (gkgrid_unit, '(a80)') adjustl(photo_gkgrid_file_header)
+
+    photo_gkgrid(1:2, :, :, :, :) = photo_gkgrid(1:2, :, :, :, :)*bohr2ang
+
+    do ik = 1, nkpoints
+      do is = 1, nspins
+        write (gkgrid_unit, '('//trim(string)//')') (((photo_gkgrid(i, gdx, ib, is, ik), i=1, 3), &
+                                                      gdx=1, max_gvec), ib=1, nbands)
+      end do
+    end do
+
+    close (unit=gkgrid_unit)
+
+    write (stdout, *) " Sucesfully written a formatted gkgrid file --> "//trim(outseedname)//".gkgrid_fmt"
+  end subroutine write_gkgrid_fmt
+
+  !=========================================================================
+  subroutine read_gkgrid_bin()
+    !! Read a binary ome file. Wrapper to keep the naming tidy.
+    implicit none
+    write (stdout, *) " Read an unformatted gkgrid file. "
+    call elec_read_gk_grid()
+    write (stdout, *) "-> number of gk grid elements", size(photo_gkgrid, 2)
+    write (stdout, *) " "//trim(seedname)//".gkgrid_bin"//"--> Unformatted gkgrid sucessfully read. "
+  end subroutine read_gkgrid_bin
+
+  !=========================================================================
+  subroutine write_gkgrid_bin()
+    !! Write a binary ome file.
+    use od_constants, only: dp, bohr2ang, H2eV
+    use od_io, only: io_time, filename_len, stdout, io_file_unit, io_error
+    use od_cell, only: nkpoints
+    use od_electronic, only: nspins, nbands, photo_gkgrid, photo_gkgrid_file_header
+    use od_constants, only: bohr2ang, H2eV
+    implicit none
+
+    real(dp):: file_version = 1.0_dp          ! File version
+    integer :: ik, is, ib, i, gdx, max_gvec, gkgrid_unit = 6
+
+    write (stdout, *) " Write a binary gkgrid file."
+    max_gvec = size(photo_gkgrid, 2)
+    open (unit=gkgrid_unit, form='unformatted', file=trim(outseedname)//".gkgrid_bin")
+
+    write (stdout, *) "-> gkgrid file_version ", file_version
+    write (stdout, *) "-> number of gk grid elements", max_gvec
+    write (gkgrid_unit) file_version
+    write (gkgrid_unit) max_gvec
+    write (stdout, *) "-> gkgrid file_header ", trim(photo_gkgrid_file_header)
+    write (gkgrid_unit) adjustl(photo_gkgrid_file_header)
+
+    photo_gkgrid(1:2, :, :, :, :) = photo_gkgrid(1:2, :, :, :, :)*bohr2ang
+
+    ! write(0,*) nkpoints, nspins, nbands
+    do ik = 1, nkpoints
+      do is = 1, nspins
+        write (gkgrid_unit) (((photo_gkgrid(i, gdx, ib, is, ik), i=1, 3), gdx=1, max_gvec), ib=1, nbands)
+      end do
+    end do
+
+    write (stdout, *) " Sucesfully written an unformatted gkgrid file --> "//trim(outseedname)//".gkgrid_bin"
+  end subroutine write_gkgrid_bin
+
+  !=========================================================================
   ! D I A G O N A L  O P T I C A L   M A T R I X   E L E M E N T S
   !=========================================================================
 
@@ -256,14 +691,14 @@ contains
     use od_constants, only: dp
     use od_io, only: io_time, filename_len, seedname, stdout, io_file_unit,&
          & io_error
-    use od_cell, only: num_kpoints_on_node, nkpoints
+    use od_cell, only: nkpoints
     use od_electronic, only: nspins, nbands, band_gradient
     use od_constants, only: bohr2ang, H2eV
     implicit none
 
     real(dp):: file_version = 1.0_dp          ! File version
     character(len=100):: string
-    integer :: ik, is, ib, i, jb, dome_unit = 6
+    integer :: ik, is, ib, i, dome_unit = 6
 
     write (stdout, *) " Read a formatted dome file. "
 
@@ -298,16 +733,16 @@ contains
   subroutine write_dome_fmt()
     !! Write a diagonal ome formatted file.
     use od_constants, only: dp
-    use od_io, only: io_time, filename_len, seedname, stdout, io_file_unit,&
+    use od_io, only: io_time, filename_len, stdout, io_file_unit,&
          & io_error
-    use od_cell, only: num_kpoints_on_node, nkpoints
+    use od_cell, only: nkpoints
     use od_electronic, only: nspins, nbands, band_gradient
     use od_constants, only: bohr2ang, H2eV
     implicit none
 
     real(dp):: file_version = 1.0_dp          ! File version
     character(len=100):: string
-    integer :: ik, is, ib, i, jb, dome_unit = 6
+    integer :: ik, is, ib, i, dome_unit = 6
 
     write (stdout, *) " Write a formatted ome file."
 
@@ -344,16 +779,15 @@ contains
   subroutine write_dome_bin()
     !! Write a diagonal ome file.
     use od_constants, only: dp
-    use od_io, only: io_time, filename_len, seedname, stdout, io_file_unit,&
-         & io_error
-    use od_cell, only: num_kpoints_on_node, nkpoints
+    use od_io, only: io_time, filename_len, stdout, io_file_unit, io_error
+    use od_cell, only: nkpoints
     use od_electronic, only: nspins, nbands, band_gradient
     use od_constants, only: bohr2ang, H2eV
     implicit none
 
     real(dp):: file_version = 1.0_dp          ! File version
 
-    integer :: ik, is, ib, i, jb, dome_unit = 6
+    integer :: ik, is, ib, i, dome_unit = 6
 
     write (stdout, *) " Write a binary dome file."
 
@@ -951,7 +1385,7 @@ program od2od
   implicit none
 
   logical :: file_found
-  logical :: ome_conv, dome_conv, pdos_conv, elnes_conv, dummy_conv
+  logical :: ome_conv, fem_conv, tmcoeff_conv, dome_conv, pdos_conv, elnes_conv, dummy_conv
   !! Flags to stop people trying to, say, read in a pdos and write out an
   !! elnes. That's not going to end well.
   real(kind=dp) :: time0, time1
@@ -1013,6 +1447,8 @@ program od2od
   write (stdout, *) "+----------------------------------------------------------------------------+"
 
   ome_conv = .false.
+  fem_conv = .false.
+  tmcoeff_conv = .false.
   dome_conv = .false.
   pdos_conv = .false.
   elnes_conv = .false.
@@ -1030,6 +1466,36 @@ case ("ome_bin")
   call get_band_energy()
   call write_read_file()
   call read_ome_bin()
+case ("fem_fmt")
+  fem_conv = .true.
+  call get_band_energy()
+  call write_read_file()
+  call read_fem_fmt()
+case ("fem_bin")
+  fem_conv = .true.
+  call get_band_energy()
+  call write_read_file()
+  call read_fem_bin()
+case ("tmprob_fmt")
+  tmcoeff_conv = .true.
+  call get_band_energy()
+  call write_read_file()
+  call read_tmprob_fmt()
+case ("tmprob_bin")
+  tmcoeff_conv = .true.
+  call get_band_energy()
+  call write_read_file()
+  call read_tmprob_bin()
+case ("gkgrid_fmt")
+  tmcoeff_conv = .true.
+  call get_band_energy()
+  call write_read_file()
+  call read_gkgrid_fmt()
+case ("gkgrid_bin")
+  tmcoeff_conv = .true.
+  call get_band_energy()
+  call write_read_file()
+  call read_gkgrid_bin()
 case ("dome_fmt")
   dome_conv = .true.
   call get_band_energy()
@@ -1083,6 +1549,30 @@ case ("ome_bin")
        &//trim(outfile))
   if (dome_conv) call pad_an_ome()
   call write_ome_bin()
+case ("fem_fmt")
+  if (.not. (fem_conv)) call io_error(' Input format '//trim(infile)//' not compatible with output format '&
+       &//trim(outfile))
+  call write_fem_fmt()
+case ("fem_bin")
+  if (.not. (fem_conv)) call io_error(' Input format '//trim(infile)//' not compatible with output format '&
+       &//trim(outfile))
+  call write_fem_bin()
+case ("tmprob_fmt")
+  if (.not. (tmcoeff_conv)) call io_error(' Input format '//trim(infile)//' not compatible with output format'&
+       &//trim(outfile))
+  call write_tmprob_fmt
+case ("tmprob_bin")
+  if (.not. (tmcoeff_conv)) call io_error(' Input format '//trim(infile)//' not compatible with output format'&
+       &//trim(outfile))
+  call write_tmprob_bin
+case ("gkgrid_fmt")
+  if (.not. (tmcoeff_conv)) call io_error(' Input format '//trim(infile)//' not compatible with output format'&
+       &//trim(outfile))
+  call write_gkgrid_fmt
+case ("gkgrid_bin")
+  if (.not. (tmcoeff_conv)) call io_error(' Input format '//trim(infile)//' not compatible with output format'&
+       &//trim(outfile))
+  call write_gkgrid_bin
 case ("dome_fmt")
   if (.not. (dome_conv .or. ome_conv)) call io_error(' Input format '//trim(infile)//&
        &' not compatible with output format '//trim(outfile))

@@ -1,0 +1,200 @@
+ OptaDOS: Execution started on 30 Jul 2026 at 13:15:47 
+          Parallelised over    1 thread(s)
+
+ +===========================================================================+
+ |                                                                           |
+ |                OOO   PPPP  TTTTT  AA   DDD    OOO    SSS                  |
+ |               O   O  P   P   T   A  A  D  D  O   O  S                     |
+ |               O   O  PPPP    T   AAAA  D  D  O   O   SS                   |
+ |               O   O  P       T   A  A  D  D  O   O     S                  |
+ |                OOO   P       T   A  A  DDD    OOO   SSS                   |
+ |                                                                           |
+ +---------------------------------------------------------------------------+
+ |                                                                           |
+ |                 Welcome to OptaDOS version  1.3                           | 
+ |                                                                           |
+ |         Andrew J. Morris, Rebecca Nicholls, Chris J. Pickard              |
+ |                       and Jonathan R. Yates                               |
+ |                                                                           |
+ |                       Copyright (c) 2010-2022                             |
+ |                                                                           |
+ |  Please cite:                                                             |
+ |  Andrew J. Morris, Rebecca Nicholls, Chris J. Pickard and Jonathan Yates  |
+ |              Comp. Phys. Comm. 185, 5, 1477 (2014)                        |
+ |                                                                           |
+ |  Additionally when using the linear broadening:                           |
+ | C.J. Pickard and M.C. Payne, Phys. Rev. B, 59, 7, 4685 (1999)             |
+ | C.J. Pickard and M.C. Payne, Phys. Rev. B, 62, 7, 4383 (2000)             |
+ |                                                                           |
+ |  Additionally when using the adaptive broadening:                         |
+ | J.Yates, X.Wang, D.Vanderbilt and I.Souza, Phys. Rev. B, 75, 195121 (2007)|
+ |                                                                           |
+ |      in all your publications arising from your use of OptaDOS            |
+ |                                                                           |
+ +===========================================================================+
+
+ +------------------------------ JOB CONTROL ---------------------------------+
+ |  Output Density of States                  :  False                        |
+ |  Output Partial Density of States          :  False                        |
+ |  Output Projected Bandstructure            :  False                        |
+ |  Output Joint Density of States            :  False                        |
+ |  Output Optical Response                   :  False                        |
+ |  Output Core-level Spectra                 :  False                        |
+ |  Photoemission Calculation                 :  True                         |
+ |  iprint level                              :    2                          |
+ |  Use CASTEP < 6.0 file format              :  False                        |
+ +-------------------------------- UNITS -------------------------------------+
+ |  Length Unit                               :   Ang                         |
+ +-------------------------- SPECTRAL PARAMETERS -----------------------------+
+ |  Adaptive Width Smearing                   :  True                         |
+ |  Adaptive Smearing ratio                   :    0.40000                    |
+ |  Finite Bin Correction                     :  True                         |
+ |  Shift energy scale so fermi_energy=0      :  False                        |
+ |  Fermi energy                              :   -0.98750                    |
+ |  Compute the band energy                   :  True                         |
+ |  Compute the band gap                      :  True                         |
+ |  JDOS bin spacing                          :  0.0100   eV                  |
+ |  JDOS max energy bin                       : -1.0000   eV                  |
+ +-------------------------------- OPTICS ------------------------------------+
+ |  Geometry for Optics Calculation           :  Polycrystalline              |
+ |  Include Intraband Contribution            :  False                        |
+ |  Include Loss Function Broadening          :  False                        |
+ +----------------------- PHOTOEMISSION PARAMETERS ---------------------------+
+ |  Photoemission Model                       :  1-Step Model                 |
+ |  Photoemission Final State                 :  Free Electron State          |
+ |  Photon Energy              (eV)           :     6.0000                    |
+ |  Work Function              (eV)           :     4.2049                    |
+ |  Slab Max Z-Coord.          (Ang)          :    18.2820                    |
+ |  Slab Min Z-Coord.          (Ang)          :     7.5590                    |
+ |  Slab middle and layers will be inferred from boundaries, check printout!  |
+ |  IMFP Constant              (Ang)          :     5.3000                    |
+ |  Bulk cutoff dist. (int. multiple of IMFP) :    10.0                       |
+ |  Electric Field Strength    (V/m)          :     0.0000                    |
+ |  Smearing Temperature       (K)            :   300.00                      |
+ |  Transverse Momentum Scheme                :     crystal                   |
+ |  Theta    - min -           (deg)          :     0.00                      |
+ |  Theta    - max -           (deg)          :    90.00                      |
+ |  Phi      - min -           (deg)          :     0.00                      |
+ |  Phi      - max -           (deg)          :    90.00                      |
+ +----------------------------------------------------------------------------+
+                 Time to read parameters       0.001 (sec)
+             Time to read band energies        0.000 (sec)
+  
+ +----------------------------------------------------------------------------+
+ |             Species                  Sites                  Total Atoms    |
+ +----------------------------------------------------------------------------+
+ |                Cu                   1 to   5                   5           |
+ +----------------------------------------------------------------------------+
+  
+                              Lattice Vectors (Ang)
+                    a_1     2.519427   0.000000   0.000000
+                    a_2     0.000000   2.519427   0.000000
+                    a_3     0.000000   0.000000  23.907520
+
+                        Reciprocal-Space Vectors (Ang^-1)
+                    b_1     2.493895   0.000000   0.000000
+                    b_2     0.000000   2.493895   0.000000
+                    b_3     0.000000   0.000000   0.262812
+
+                   Unit Cell Volume:     151.75328  (Ang^3)
+
+
+ +----------------------- Electronic Data ------------------------------------+
+ |  Number of Bands                           :            65                 |
+ |  Grid size                                 :        9 x  9 x  1            |
+ |  Number of K-points                        :             4                 |
+ |  Spin-Polarised Calculation                :           False               |
+ |  Number of electrons                       :            55.00              |
+ +----------------------------------------------------------------------------+
+ +============================================================================+
+ +                             Photoemission Calculation                      +
+ +============================================================================+
+ |                                                                            |
+ +--------------------------- Setting Fermi Energy  --------------------------+
+ |                     Fermi energy from user :  -0.9875 eV              <- EfU
+ +----------------------------------------------------------------------------+
+
+ mean_heights   12.844511980021460        11.063007972501264     
+ +------------------------------- Atomic Order  ------------------------------+
+ | Atom |  Atom Order  | Box/Layer |         Atom Z-Coordinate (Ang)          |
+ |  Cu          1             1                    16.4075200                 |
+ |  Cu          2             2                    14.6260160                 |
+ |  Cu          3             3                    12.8445120                 |
+ |  Cu          4                                  11.0630080                 |
+ |  Cu          5                                   9.2815040                 |
+ +----------------------------------------------------------------------------+
+ |  Max number of atoms:           3    Total number of boxes:            3   |
+ |  Volume of box for layer selection (Ang^3) :                 11.30812      |
+ +----------------------------------------------------------------------------+
+ + Time to calculate Band Energy Info                             0.000 (sec) +
+ Reading optical matrix elements from file: Cu100_5L.ome_bin
+ Generated by CASTEP23.100 on '19:25:38 (GMT-0.0) 22nd March 2026'
+ + Time to read Optical Matrix Elements                           0.001 (sec) +
+ Reading pdos weights from file: Cu100_5L.pdos_bin
+ Generated by CASTEP23.100 on '22:24:50 (GMT-0.0) 22nd March 2026'
+ +--------------------- Starting BOX/Layer  #   1 of   3 ---------------------+
+  
+  Reading band gradients from file: Cu100_5L.dome_bin
+ Generated by CASTEP23.100 on '19:27:02 (GMT-0.0) 22nd March 2026'
+ + Time to read band gradients                                    0.000 (sec) +
+ +------------------------------ Calculate JDOS ------------------------------+
+ +----------------------------------------------------------------------------+
+ + Time to calculate Joint Density of States                      0.155 (sec) +
+ +--------------------- Starting BOX/Layer  #   2 of   3 ---------------------+
+ +------------------------------ Calculate JDOS ------------------------------+
+ +----------------------------------------------------------------------------+
+ + Time to calculate Joint Density of States                      0.156 (sec) +
+ +--------------------- Starting BOX/Layer  #   3 of   3 ---------------------+
+ +------------------------------ Calculate JDOS ------------------------------+
+ +----------------------------------------------------------------------------+
+ + Time to calculate Joint Density of States                      0.192 (sec) +
+ + Time to calculate Photoemission Optical Properties             0.534 (sec) +
+ +------------------ Starting Photoemission with  6.0000 eV ------------------+
+ + Time to calculate Photoemission Angle                          0.000 (sec) +
+ + Time to calculate Photoemission Escape                         0.000 (sec) +
+ +---------------------- Bulk Approximation Slab Info ------------------------+
+ |     Number Bulk layers =    29                                             |
+ |     Vol. per layer     =    11.3081                                        |
+ |     Total Volume       =   327.9354                                        |
+ +---- P_esc values for an electron with E = E_fermi and E_transverse = 0 ----+
+ |     Layer #   1     I_light =  0.283121E+00  P_esc =  0.364803E+00         |
+ |     Layer #   2     I_light =  0.280623E+00  P_esc =  0.260662E+00         |
+ |     Layer #   3     I_light =  0.276917E+00  P_esc =  0.186250E+00         |
+ |                                   ......                                   |
+ |     Layer #  27     I_light =  0.532632E-01  P_esc =  0.584200E-04         |
+ |     Layer #  28     I_light =  0.470480E-01  P_esc =  0.417427E-04         |
+ |     Layer #  29     I_light =  0.413742E-01  P_esc =  0.298264E-04         |
+ +----------------------------------------------------------------------------+
+ + Time to calculate Bulk Photoemission                           0.000 (sec) +
+ +----------------------------------------------------------------------------+
+ Reading foptical matrix elements from file: Cu100_5L.fem_bin
+ Generated by CASTEP23.100 on '21:35:52 (GMT-0.0) 22nd March 2026'
+ + Time to read Free electron Matrix Elements                     0.002 (sec) +
+ +--------------------------- Calculating 1Step QE ---------------------------+
+ +----------------------------------------------------------------------------+
+ + Time to calculate 1step Photoemission                          0.000 (sec) +
+ +----------------------------- Calculating MTE ------------------------------+
+ + Time to calculate MTE                                          0.000 (sec) +
+ +------------------------------ Photoemission -------------------------------+
+ +----------------------------------------------------------------------------+
+ | Work Function              4.2049 eV      Photon Energy        6.0000 eV   |
+ | Effective Work Function    4.2049 eV      Electric Field       0.0000 V/m  |
+ | Final State : Free Electron State                                          |
+ +----------------------------------------------------------------------------+
+ | Atom |  Atom Order  |   Layer   |             Quantum Efficiency           |
+ |  Cu          1            1                      0.1469E-003               |
+ |  Cu          2            2                      0.3851E-004               |
+ |  Cu          3            3                      0.3828E-004               |
+ | Bulk                                             0.5747E-004               |
+ | Total Quantum Efficiency (electrons/photon):         0.2812E-003           |
+ | Weighted Mean Transverse Energy (eV):                0.7541E+000           |
+ +----------------------------------------------------------------------------+
+ + Time to calculate Photoemission (step)                         0.003 (sec) +
+ | End of Photoemission Calculation                                           |
+ |                                                                            |
+ + Time to calculate Photoemission                                0.538 (sec) +
+ +============================================================================+
+  
+  
+
+ OptaDOS: Execution complete on 30 Jul 2026 at 13:15:47 

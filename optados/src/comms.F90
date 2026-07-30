@@ -535,6 +535,8 @@ contains
       call MPI_reduce(array, array_red, size, MPI_integer, MPI_sum, 0, mpi_comm_world, error)
     case ('PRD')
       call MPI_reduce(array, array_red, size, MPI_integer, MPI_prod, 0, mpi_comm_world, error)
+    case ('MAX')
+      call MPI_reduce(array, array_red, size, MPI_integer, MPI_max, 0, mpi_comm_world, error)
     case default
       print *, 'Unknown operation in comms_reduce_int'
       call comms_error

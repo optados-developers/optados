@@ -12,7 +12,7 @@ python:
 .PHONY: clean veryclean
 
 clean:
-	rm -f f90wrap*
+	rm -f f90wrap* .f2py_f2cmap
 
 veryclean: clean
 	rm -f OptaPyDOS.py  _OptaPyDOS.so

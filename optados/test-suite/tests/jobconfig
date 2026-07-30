@@ -387,10 +387,324 @@ inputs_args = ('', '-i ome_bin -o ome_fmt -w Si2_out Si2')
 output = Si2_out.ome_fmt
 
 #--------------------------------------------------------------
+# P h o t o e m i s s i o n   T e s t s
+#--------------------------------------------------------------
+# Test coverage:
+#
+# Models:        3step, 1step, ds_like
+# Tasks:         photoemission, photo_energy_sweep
+# IMFP:          const, layers
+# Momentum:      crystal, gkgrid
+# Optics geom:   unpolar (U), polar (P), polycrys (PC)
+# Symmetry:      N0 = empty symmetry_ops block in the -out.cell, so num_symm == 0
+# Outputs:       qe_tensor, bindenergy_curve, ekin_ptrans_map,
+#                const_bindenergy_p_map
+# Modes:         serial, mpi
+# Failures:      missing keys, invalid values, bad sweep parameters,
+#                tmprob misuse, etc.
+
+#                                             MODEL        TASK      IMFP   MOMENTUM  TMPROB     OUTPUTS/OPTS       EXEC      GEOM     SYM
+# Test name                                 | 3S 1S DS | PE  SW  |  C   L |  K   G | T0  T1 | QT EDC MAP EF  ERR |  S   M | U   P  PC | N0
+# ------------------------------------------+----------+---------+--------+--------+--------+--------------------+--------+-----------+----
+# testopt_photo_1s_constbindmap_mpi         |  .  x  . |  x   .  |  x   . |  x   . | x   .  | .   .   x   .   .  |  .   x | x   .   . | .
+# testopt_photo_1s_constbindmap_serial      |  .  x  . |  x   .  |  x   . |  x   . | x   .  | .   .   x   .   .  |  x   . | x   .   . | .
+# testopt_photo_1s_ekinptrans_mpi           |  .  x  . |  x   .  |  x   . |  x   . | x   .  | .   .   x   .   .  |  .   x | x   .   . | .
+# testopt_photo_1s_ekinptrans_serial        |  .  x  . |  x   .  |  x   . |  x   . | x   .  | .   .   x   .   .  |  x   . | x   .   . | .
+# testopt_photo_1s_general                  |  .  x  . |  x   .  |  x   . |  x   . | x   .  | .   .   .   .   .  |  x   . | x   .   . | .
+# testopt_photo_1s_layers                   |  .  x  . |  x   .  |  .   x |  x   . | x   .  | .   .   .   .   .  |  x   . | x   .   . | .
+# testopt_photo_1s_layers_fewer_fail        |  .  x  . |  x   .  |  .   x |  x   . | x   .  | .   .   .   .   x  |  x   . | x   .   . | .
+# testopt_photo_1s_layers_more_fail         |  .  x  . |  x   .  |  .   x |  x   . | x   .  | .   .   .   .   x  |  x   . | x   .   . | .
+# testopt_photo_1s_polar_nosymm             |  .  x  . |  x   .  |  x   . |  x   . | x   .  | .   .   .   .   .  |  x   . | .   x   . | x
+# testopt_photo_1s_polycrys                 |  .  x  . |  x   .  |  x   . |  x   . | x   .  | .   .   .   .   .  |  x   . | .   .   x | .
+# testopt_photo_1s_polycrys_nosymm          |  .  x  . |  x   .  |  x   . |  x   . | x   .  | .   .   .   .   .  |  x   . | .   .   x | x
+# testopt_photo_3s_bindenergy               |  x  .  . |  x   .  |  x   . |  x   . | x   .  | .   x   .   .   .  |  x   . | x   .   . | .
+# testopt_photo_3s_field                    |  x  .  . |  x   .  |  x   . |  x   . | x   .  | .   .   .   x   .  |  x   . | x   .   . | .
+# testopt_photo_3s_general                  |  x  .  . |  x   .  |  x   . |  x   . | x   .  | .   .   .   .   .  |  x   . | x   .   . | .
+# testopt_photo_3s_gkgrid                   |  x  .  . |  x   .  |  x   . |  .   x | x   .  | .   .   .   .   .  |  x   . | x   .   . | .
+# testopt_photo_3s_invalid_imfp_choice_fail |  x  .  . |  x   .  |  x   . |  x   . | x   .  | .   .   .   .   x  |  x   . | x   .   . | .
+# testopt_photo_3s_invalid_model_fail       |  x  .  . |  x   .  |  x   . |  x   . | x   .  | .   .   .   .   x  |  x   . | x   .   . | .
+# testopt_photo_3s_invalid_momentum_fail    |  x  .  . |  x   .  |  x   . |  x   . | x   .  | .   .   .   .   x  |  x   . | x   .   . | .
+# testopt_photo_3s_layers                   |  x  .  . |  x   .  |  .   x |  x   . | x   .  | .   .   .   .   .  |  x   . | x   .   . | .
+# testopt_photo_3s_qemat_mpi                |  x  .  . |  x   .  |  x   . |  x   . | x   .  | x   .   .   .   .  |  .   x | x   .   . | .
+# testopt_photo_3s_qemat_serial             |  x  .  . |  x   .  |  x   . |  x   . | x   .  | x   .   .   .   .  |  x   . | x   .   . | .
+# testopt_photo_3s_rm_imfp_value_fail       |  x  .  . |  x   .  |  x   . |  x   . | x   .  | .   .   .   .   x  |  x   . | x   .   . | .
+# testopt_photo_3s_rm_photon_energy_fail    |  x  .  . |  x   .  |  x   . |  x   . | x   .  | .   .   .   .   x  |  x   . | x   .   . | .
+# testopt_photo_3s_rm_slab_max_fail         |  x  .  . |  x   .  |  x   . |  x   . | x   .  | .   .   .   .   x  |  x   . | x   .   . | .
+# testopt_photo_3s_rm_slab_min_fail         |  x  .  . |  x   .  |  x   . |  x   . | x   .  | .   .   .   .   x  |  x   . | x   .   . | .
+# testopt_photo_3s_rm_task_fail             |  x  .  . |  x   .  |  x   . |  x   . | x   .  | .   .   .   .   x  |  x   . | x   .   . | .
+# testopt_photo_3s_rm_work_function_fail    |  x  .  . |  x   .  |  x   . |  x   . | x   .  | .   .   .   .   x  |  x   . | x   .   . | .
+# testopt_photo_3s_sweep                    |  x  .  . |  .   x  |  x   . |  x   . | x   .  | .   .   .   .   .  |  x   . | x   .   . | .
+# testopt_photo_3s_sweep_missing_max_fail   |  x  .  . |  .   x  |  x   . |  x   . | x   .  | .   .   .   .   x  |  x   . | x   .   . | .
+# testopt_photo_3s_sweep_missing_min_fail   |  x  .  . |  .   x  |  x   . |  x   . | x   .  | .   .   .   .   x  |  x   . | x   .   . | .
+# testopt_photo_3s_sweep_mpi                |  x  .  . |  .   x  |  x   . |  x   . | x   .  | .   .   .   .   .  |  .   x | x   .   . | .
+# testopt_photo_3s_sweep_step_fail          |  x  .  . |  .   x  |  x   . |  x   . | x   .  | .   .   .   .   x  |  x   . | x   .   . | .
+# testopt_photo_3s_tmprob_fail              |  x  .  . |  x   .  |  x   . |  x   . | .   x  | .   .   .   .   x  |  x   . | x   .   . | .
+# testopt_photo_ds_general                  |  .  .  x |  x   .  |  x   . |  x   . | x   .  | .   .   .   .   .  |  x   . | x   .   . | .
+
+# ------------------------
+# 3-step core tests
+# ------------------------
+
+# 3-step general (single-energy, serial)
+[testopt_photo_3s_general]
+program = OPTADOS_PHOTO_ODO_OK
+max_nprocs = 0
+inputs_args = ('Cu100_5L.odi','')
+output = Cu100_5L.odo
+
+# 3-step: energy sweep vs single-energy behaviour (serial)
+[testopt_photo_3s_sweep]
+program = OPTADOS_PHOTO_ODO_OK
+max_nprocs = 0
+inputs_args = ('Cu100_5L.odi','')
+output = Cu100_5L.odo
+
+# 3-step: energy sweep, MPI behaviour
+[testopt_photo_3s_sweep_mpi]
+program = OPTADOS_MPI_PHOTO_ODO_OK
+min_nprocs = 2
+nprocs = 2
+inputs_args = ('Cu100_5L.odi','')
+output = Cu100_5L.odo
+
+# 3-step: QE tensor printing in MPI
+[testopt_photo_3s_qemat_mpi]
+program = OPTADOS_MPI_PHOTO_ADD_FILE_OK
+min_nprocs = 2
+nprocs = 2
+inputs_args = ('Cu100_5L.odi','')
+output = Cu100_5L_3step_6.000_qe_tensor.dat
+
+# 3-step: QE tensor printing in serial
+[testopt_photo_3s_qemat_serial]
+program = OPTADOS_PHOTO_ADD_FILE_OK
+max_nprocs = 0
+inputs_args = ('Cu100_5L.odi','')
+output = Cu100_5L_3step_6.000_qe_tensor.dat
+
+# 3-step: binding-energy curve (EDC-style) output, serial
+[testopt_photo_3s_bindenergy]
+program = OPTADOS_PHOTO_ADD_FILE_OK
+max_nprocs = 0
+inputs_args = ('Cu100_5L.odi','')
+output = Cu100_5L_3step_6.000_bindenergy_curve.dat
+
+# 3-step: layer-dependent IMFP (photo_imfp_choice : layers)
+[testopt_photo_3s_layers]
+program = OPTADOS_PHOTO_ODO_OK
+max_nprocs = 0
+inputs_args = ('Cu100_5L.odi','')
+output = Cu100_5L.odo
+
+# 3-step: gkgrid momentum scheme (requires Cu100_5L.gkgrid_bin)
+[testopt_photo_3s_gkgrid]
+program = OPTADOS_PHOTO_ODO_OK
+max_nprocs = 0
+inputs_args = ('Cu100_5L.odi','')
+output = Cu100_5L.odo
+
+# 3-step: tmprob usage expected failure (photo_use_tmprob = true, no tmprob_bin)
+[testopt_photo_3s_tmprob_fail]
+program = OPTADOS_PHOTO_OPTERR_FAIL
+max_nprocs = 0
+inputs_args = ('Cu100_5L.odi','')
+output = Cu100_5L.opt_err
+
+# 3-step: non-zero electric field path
+[testopt_photo_3s_field]
+program = OPTADOS_PHOTO_ODO_OK
+max_nprocs = 0
+inputs_args = ('Cu100_5L.odi','')
+output = Cu100_5L.odo
+
+# ------------------------
+# 1-step and ds-like tests
+# ------------------------
+
+# 1-step general (requires Cu100_5L_1s.fem_bin etc.)
+[testopt_photo_1s_general]
+program = OPTADOS_PHOTO_ODO_OK
+max_nprocs = 0
+inputs_args = ('Cu100_5L.odi','')
+output = Cu100_5L.odo
+
+# 1-step: ekin-ptrans map, serial
+[testopt_photo_1s_ekinptrans_serial]
+program = OPTADOS_PHOTO_ADD_FILE_OK
+max_nprocs = 0
+inputs_args = ('Cu100_5L.odi','')
+output = Cu100_5L_1step_6.000_Ekin_ptrans_map.dat
+
+# 1-step: const-binding-energy p-map, serial
+[testopt_photo_1s_constbindmap_serial]
+program = OPTADOS_PHOTO_ADD_FILE_OK
+max_nprocs = 0
+inputs_args = ('Cu100_5L.odi','')
+output = Cu100_5L_1step_6.000_ref_0.00_const_map.dat
+
+# 1-step: ekin-ptrans map, MPI
+[testopt_photo_1s_ekinptrans_mpi]
+program = OPTADOS_MPI_PHOTO_ADD_FILE_OK
+min_nprocs = 2
+nprocs = 2
+inputs_args = ('Cu100_5L.odi','')
+output = Cu100_5L_1step_6.000_Ekin_ptrans_map.dat
+
+# 1-step: const-binding-energy p-map, MPI
+[testopt_photo_1s_constbindmap_mpi]
+program = OPTADOS_MPI_PHOTO_ADD_FILE_OK
+min_nprocs = 2
+nprocs = 2
+inputs_args = ('Cu100_5L.odi','')
+output = Cu100_5L_1step_6.000_ref_0.00_const_map.dat
+
+# 1-step: layer-dependent IMFP
+[testopt_photo_1s_layers]
+program = OPTADOS_PHOTO_ODO_OK
+max_nprocs = 0
+inputs_args = ('Cu100_5L.odi','')
+output = Cu100_5L.odo
+
+# 1-step: polycrystalline optics geometry, symmetry present (num_symm > 0)
+[testopt_photo_1s_polycrys]
+program = OPTADOS_PHOTO_ODO_OK
+max_nprocs = 0
+inputs_args = ('Cu100_5L.odi','')
+output = Cu100_5L.odo
+
+# 1-step: polycrystalline optics geometry with no symmetry_ops block in the
+# -out.cell, so num_symm == 0 and the unsymmetrised branch is exercised
+[testopt_photo_1s_polycrys_nosymm]
+program = OPTADOS_PHOTO_ODO_OK
+max_nprocs = 0
+inputs_args = ('Cu100_5L.odi','')
+output = Cu100_5L.odo
+
+# 1-step: polar optics geometry with an empty symmetry_ops block, so
+# num_symm == 0. This is the only test that reaches the unsymmetrised polar
+# branch of make_foptical_weights.
+[testopt_photo_1s_polar_nosymm]
+program = OPTADOS_PHOTO_ODO_OK
+max_nprocs = 0
+inputs_args = ('Cu100_5L.odi','')
+output = Cu100_5L.odo
+
+# ds-like model, serial
+[testopt_photo_ds_general]
+program = OPTADOS_PHOTO_ODO_OK
+max_nprocs = 0
+inputs_args = ('Cu100_5L.odi','')
+output = Cu100_5L.odo
+
+# ------------------------
+# Failure-mode tests
+# ------------------------
+
+# 3-step: missing task
+[testopt_photo_3s_rm_task_fail]
+program = OPTADOS_PHOTO_OPTERR_FAIL
+max_nprocs = 0
+inputs_args = ('Cu100_5L.odi','')
+output = Cu100_5L.opt_err
+
+# 3-step: missing photo_photon_energy
+[testopt_photo_3s_rm_photon_energy_fail]
+program = OPTADOS_PHOTO_OPTERR_FAIL
+max_nprocs = 0
+inputs_args = ('Cu100_5L.odi','')
+output = Cu100_5L.opt_err
+
+# 3-step: missing photo_slab_min
+[testopt_photo_3s_rm_slab_min_fail]
+program = OPTADOS_PHOTO_OPTERR_FAIL
+max_nprocs = 0
+inputs_args = ('Cu100_5L.odi','')
+output = Cu100_5L.opt_err
+
+# 3-step: missing photo_slab_max
+[testopt_photo_3s_rm_slab_max_fail]
+program = OPTADOS_PHOTO_OPTERR_FAIL
+max_nprocs = 0
+inputs_args = ('Cu100_5L.odi','')
+output = Cu100_5L.opt_err
+
+# 3-step: missing photo_work_function
+[testopt_photo_3s_rm_work_function_fail]
+program = OPTADOS_PHOTO_OPTERR_FAIL
+max_nprocs = 0
+inputs_args = ('Cu100_5L.odi','')
+output = Cu100_5L.opt_err
+
+# 3-step: missing photo_imfp_value
+[testopt_photo_3s_rm_imfp_value_fail]
+program = OPTADOS_PHOTO_OPTERR_FAIL
+max_nprocs = 0
+inputs_args = ('Cu100_5L.odi','')
+output = Cu100_5L.opt_err
+
+# 3-step sweep: missing photo_photon_min
+[testopt_photo_3s_sweep_missing_min_fail]
+program = OPTADOS_PHOTO_OPTERR_FAIL
+max_nprocs = 0
+inputs_args = ('Cu100_5L.odi','')
+output = Cu100_5L.opt_err
+
+# 3-step sweep: missing photo_photon_max
+[testopt_photo_3s_sweep_missing_max_fail]
+program = OPTADOS_PHOTO_OPTERR_FAIL
+max_nprocs = 0
+inputs_args = ('Cu100_5L.odi','')
+output = Cu100_5L.opt_err
+
+# 3-step sweep: non-integer step (jdos_spacing mismatch)
+[testopt_photo_3s_sweep_step_fail]
+program = OPTADOS_PHOTO_OPTERR_FAIL
+max_nprocs = 0
+inputs_args = ('Cu100_5L.odi','')
+output = Cu100_5L.opt_err
+
+# 3-step: invalid photo_imfp_choice
+[testopt_photo_3s_invalid_imfp_choice_fail]
+program = OPTADOS_PHOTO_OPTERR_FAIL
+max_nprocs = 0
+inputs_args = ('Cu100_5L.odi','')
+output = Cu100_5L.opt_err
+
+# 3-step: invalid momentum scheme
+[testopt_photo_3s_invalid_momentum_fail]
+program = OPTADOS_PHOTO_OPTERR_FAIL
+max_nprocs = 0
+inputs_args = ('Cu100_5L.odi','')
+output = Cu100_5L.opt_err
+
+# 3-step: invalid photo_model
+[testopt_photo_3s_invalid_model_fail]
+program = OPTADOS_PHOTO_OPTERR_FAIL
+max_nprocs = 0
+inputs_args = ('Cu100_5L.odi','')
+output = Cu100_5L.opt_err
+
+# 1-step: too few layer dependent values
+[testopt_photo_1s_layers_fewer_fail]
+program = OPTADOS_PHOTO_OPTERR_FAIL
+max_nprocs = 0
+inputs_args = ('Cu100_5L.odi','')
+output = Cu100_5L.opt_err
+
+# 1-step: too many layer dependent values
+[testopt_photo_1s_layers_more_fail]
+program = OPTADOS_PHOTO_OPTERR_FAIL
+max_nprocs = 0
+inputs_args = ('Cu100_5L.odi','')
+output = Cu100_5L.opt_err
+#--------------------------------------------------------------
 # C a t e g o r y   L i s t
 #--------------------------------------------------------------
 [categories]
 optados_only = testopt_*
 od2od_only = testod2od_*
-all = optados_only od2od_only
+photoemission_only = testopt_photo_*
+photoemission_fail = testopt_photo_*_fail
+photo_imfp = testopt_photo_3s_layers
+all = optados_only od2od_only photoemission_only
 default =  all
