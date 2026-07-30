@@ -795,20 +795,20 @@ contains
     end if
 
     call algor_dist_array(nkpoints, num_kpoints_on_node)
-    allocate (transmit_prob(1:nbands, 1:nspins, 1:num_kpoints_on_node(my_node_id)), stat=ierr)
+    allocate (transmit_prob(1:nbands, 1:num_kpoints_on_node(my_node_id), 1:nspins), stat=ierr)
     if (ierr /= 0) call io_error('Error: Problem allocating foptical_mat in elec_read_optical_mat')
     if (on_root) then
       do inodes = 1, num_nodes - 1
         do ik = 1, num_kpoints_on_node(inodes)
           do is = 1, nspins
-            read (tmprob_unit) (transmit_prob(ib, is, ik), ib=1, nbands)
+            read (tmprob_unit) (transmit_prob(ib, ik, is), ib=1, nbands)
           end do
         end do
         call comms_send(transmit_prob(1, 1, 1), (nbands)*nspins*num_kpoints_on_node(inodes), inodes)
       end do
       do ik = 1, num_kpoints_on_node(0)
         do is = 1, nspins
-          read (tmprob_unit) (transmit_prob(ib, is, ik), ib=1, nbands)
+          read (tmprob_unit) (transmit_prob(ib, ik, is), ib=1, nbands)
         end do
       end do
     end if

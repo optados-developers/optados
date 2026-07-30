@@ -1,0 +1,47 @@
+# CELL file written 19:27:02 (GMT-0.0) 22nd March 2026 from run Cu100_5L
+
+%BLOCK lattice_cart
+   ANG
+       2.51942715245740        0.00000000000000        0.00000000000000
+       0.00000000000000        2.51942715245740        0.00000000000000
+       0.00000000000000        0.00000000000000        23.9075200000000
+%ENDBLOCK lattice_cart
+
+%BLOCK cell_constraints
+      1   2   0
+      0   0   0
+%ENDBLOCK cell_constraints
+
+%BLOCK positions_frac
+   Cu               0.999999999024619       0.000000000000000       0.686291180348275
+   Cu               0.500000001496888       0.500000001496888       0.611774709380145
+   Cu               0.000000000000000       0.999999999024619       0.537258237993736
+   Cu               0.500000001496888       0.500000001496888       0.462741767025605
+   Cu               0.999999999024619       0.000000000000000       0.388225295639196
+%ENDBLOCK positions_frac
+
+FIX_COM : true
+
+%BLOCK species_pot
+   Cu        3|2.2|2.0|1.0|10|12|13|40:41:32(qc=6)
+%ENDBLOCK species_pot
+
+SYMMETRY_TOL :     0.001000
+
+%BLOCK symmetry_ops
+%ENDBLOCK symmetry_ops
+
+kpoint_mp_grid :    9   9   1
+
+spectral_kpoint_mp_grid :    9   9   1
+
+bs_kpoint_mp_grid :    9   9   1
+
+optics_kpoint_mp_grid :    9   9   1
+
+elnes_kpoint_mp_grid :    9   9   1
+
+magres_kpoint_mp_grid :    9   9   1
+
+phonon_kpoint_mp_grid :    9   9   1
+

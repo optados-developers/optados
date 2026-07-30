@@ -397,7 +397,7 @@ contains
 
     do ik = 1, nkpoints
       do is = 1, nspins
-        write (fem_unit) (((foptical_mat(ib, jb, i, ik, is), ib=1, nbands), i=1, 3), jb=1, energy_count)
+        write (fem_unit) (((foptical_mat(ib, i, jb, ik, is), ib=1, nbands), i=1, 3), jb=1, energy_count)
       end do
     end do
 
@@ -433,7 +433,7 @@ contains
 
     if (.not. allocated(transmit_prob)) then
       write (stdout, *) " Allocating transmit_coeffs."
-      allocate (transmit_prob(nbands, nspins, nkpoints), stat=ierr)
+      allocate (transmit_prob(nbands, nkpoints, nspins), stat=ierr)
     end if
     ! ! Total number of elements of tmprob
     ! write(stdout,*) 'nbands', nbands

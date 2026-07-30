@@ -395,44 +395,51 @@ output = Si2_out.ome_fmt
 # Tasks:         photoemission, photo_energy_sweep
 # IMFP:          const, layers
 # Momentum:      crystal, gkgrid
+# Optics geom:   unpolar (U), polar (P), polycrys (PC)
+# Symmetry:      N0 = empty symmetry_ops block in the -out.cell, so num_symm == 0
 # Outputs:       qe_tensor, bindenergy_curve, ekin_ptrans_map,
 #                const_bindenergy_p_map
 # Modes:         serial, mpi
 # Failures:      missing keys, invalid values, bad sweep parameters,
 #                tmprob misuse, etc.
 
-#                                             MODEL        TASK      IMFP   MOMENTUM  TMPROB     OUTPUTS/OPTS       EXEC
-# Test name                                 | 3S 1S DS | PE  SW  |  C   L |  K   G | T0  T1 | QT EDC MAP EF  ERR |  S   M
-# ------------------------------------------+----------+---------+--------+--------+--------+--------------------+--------
-# testopt_photo_1s_constbindmap_mpi         |  .  x  . |  x   .  |  x   . |  x   . | x   .  | .   .   x   .   .  |  .   x
-# testopt_photo_1s_constbindmap_serial      |  .  x  . |  x   .  |  x   . |  x   . | x   .  | .   .   x   .   .  |  x   .
-# testopt_photo_1s_ekinptrans_mpi           |  .  x  . |  x   .  |  x   . |  x   . | x   .  | .   .   x   .   .  |  .   x
-# testopt_photo_1s_ekinptrans_serial        |  .  x  . |  x   .  |  x   . |  x   . | x   .  | .   .   x   .   .  |  x   .
-# testopt_photo_1s_general                  |  .  x  . |  x   .  |  x   . |  x   . | x   .  | .   .   .   .   .  |  x   .
-# testopt_photo_1s_layers                   |  .  x  . |  x   .  |  .   x |  x   . | x   .  | .   .   .   .   .  |  x   .
-# testopt_photo_3s_bindenergy               |  x  .  . |  x   .  |  x   . |  x   . | x   .  | .   x   .   .   .  |  x   .
-# testopt_photo_3s_field                    |  x  .  . |  x   .  |  x   . |  x   . | x   .  | .   .   .   x   .  |  x   .
-# testopt_photo_3s_general                  |  x  .  . |  x   .  |  x   . |  x   . | x   .  | .   .   .   .   .  |  x   .
-# testopt_photo_3s_gkgrid                   |  x  .  . |  x   .  |  x   . |  .   x | x   .  | .   .   .   .   .  |  x   .
-# testopt_photo_3s_invalid_imfp_choice_fail |  x  .  . |  x   .  |  x   . |  x   . | x   .  | .   .   .   .   x  |  x   .
-# testopt_photo_3s_invalid_model_fail       |  x  .  . |  x   .  |  x   . |  x   . | x   .  | .   .   .   .   x  |  x   .
-# testopt_photo_3s_invalid_momentum_fail    |  x  .  . |  x   .  |  x   . |  x   . | x   .  | .   .   .   .   x  |  x   .
-# testopt_photo_3s_layers                   |  x  .  . |  x   .  |  .   x |  x   . | x   .  | .   .   .   .   .  |  x   .
-# testopt_photo_3s_qemat_mpi                |  x  .  . |  x   .  |  x   . |  x   . | x   .  | x   .   .   .   .  |  .   x
-# testopt_photo_3s_qemat_serial             |  x  .  . |  x   .  |  x   . |  x   . | x   .  | x   .   .   .   .  |  x   .
-# testopt_photo_3s_rm_imfp_value_fail       |  x  .  . |  x   .  |  x   . |  x   . | x   .  | .   .   .   .   x  |  x   .
-# testopt_photo_3s_rm_photon_energy_fail    |  x  .  . |  x   .  |  x   . |  x   . | x   .  | .   .   .   .   x  |  x   .
-# testopt_photo_3s_rm_slab_max_fail         |  x  .  . |  x   .  |  x   . |  x   . | x   .  | .   .   .   .   x  |  x   .
-# testopt_photo_3s_rm_slab_min_fail         |  x  .  . |  x   .  |  x   . |  x   . | x   .  | .   .   .   .   x  |  x   .
-# testopt_photo_3s_rm_task_fail             |  x  .  . |  x   .  |  x   . |  x   . | x   .  | .   .   .   .   x  |  x   .
-# testopt_photo_3s_rm_work_function_fail    |  x  .  . |  x   .  |  x   . |  x   . | x   .  | .   .   .   .   x  |  x   .
-# testopt_photo_3s_sweep                    |  x  .  . |  .   x  |  x   . |  x   . | x   .  | .   .   .   .   .  |  x   .
-# testopt_photo_3s_sweep_missing_max_fail   |  x  .  . |  .   x  |  x   . |  x   . | x   .  | .   .   .   .   x  |  x   .
-# testopt_photo_3s_sweep_missing_min_fail   |  x  .  . |  .   x  |  x   . |  x   . | x   .  | .   .   .   .   x  |  x   .
-# testopt_photo_3s_sweep_mpi                |  x  .  . |  .   x  |  x   . |  x   . | x   .  | .   .   .   .   .  |  .   x
-# testopt_photo_3s_sweep_step_fail          |  x  .  . |  .   x  |  x   . |  x   . | x   .  | .   .   .   .   x  |  x   .
-# testopt_photo_3s_tmprob_fail              |  x  .  . |  x   .  |  x   . |  x   . | .   x  | .   .   .   .   x  |  x   .
-# testopt_photo_ds_general                  |  .  .  x |  x   .  |  x   . |  x   . | x   .  | .   .   .   .   .  |  x   .
+#                                             MODEL        TASK      IMFP   MOMENTUM  TMPROB     OUTPUTS/OPTS       EXEC      GEOM     SYM
+# Test name                                 | 3S 1S DS | PE  SW  |  C   L |  K   G | T0  T1 | QT EDC MAP EF  ERR |  S   M | U   P  PC | N0
+# ------------------------------------------+----------+---------+--------+--------+--------+--------------------+--------+-----------+----
+# testopt_photo_1s_constbindmap_mpi         |  .  x  . |  x   .  |  x   . |  x   . | x   .  | .   .   x   .   .  |  .   x | x   .   . | .
+# testopt_photo_1s_constbindmap_serial      |  .  x  . |  x   .  |  x   . |  x   . | x   .  | .   .   x   .   .  |  x   . | x   .   . | .
+# testopt_photo_1s_ekinptrans_mpi           |  .  x  . |  x   .  |  x   . |  x   . | x   .  | .   .   x   .   .  |  .   x | x   .   . | .
+# testopt_photo_1s_ekinptrans_serial        |  .  x  . |  x   .  |  x   . |  x   . | x   .  | .   .   x   .   .  |  x   . | x   .   . | .
+# testopt_photo_1s_general                  |  .  x  . |  x   .  |  x   . |  x   . | x   .  | .   .   .   .   .  |  x   . | x   .   . | .
+# testopt_photo_1s_layers                   |  .  x  . |  x   .  |  .   x |  x   . | x   .  | .   .   .   .   .  |  x   . | x   .   . | .
+# testopt_photo_1s_layers_fewer_fail        |  .  x  . |  x   .  |  .   x |  x   . | x   .  | .   .   .   .   x  |  x   . | x   .   . | .
+# testopt_photo_1s_layers_more_fail         |  .  x  . |  x   .  |  .   x |  x   . | x   .  | .   .   .   .   x  |  x   . | x   .   . | .
+# testopt_photo_1s_polar_nosymm             |  .  x  . |  x   .  |  x   . |  x   . | x   .  | .   .   .   .   .  |  x   . | .   x   . | x
+# testopt_photo_1s_polycrys                 |  .  x  . |  x   .  |  x   . |  x   . | x   .  | .   .   .   .   .  |  x   . | .   .   x | .
+# testopt_photo_1s_polycrys_nosymm          |  .  x  . |  x   .  |  x   . |  x   . | x   .  | .   .   .   .   .  |  x   . | .   .   x | x
+# testopt_photo_3s_bindenergy               |  x  .  . |  x   .  |  x   . |  x   . | x   .  | .   x   .   .   .  |  x   . | x   .   . | .
+# testopt_photo_3s_field                    |  x  .  . |  x   .  |  x   . |  x   . | x   .  | .   .   .   x   .  |  x   . | x   .   . | .
+# testopt_photo_3s_general                  |  x  .  . |  x   .  |  x   . |  x   . | x   .  | .   .   .   .   .  |  x   . | x   .   . | .
+# testopt_photo_3s_gkgrid                   |  x  .  . |  x   .  |  x   . |  .   x | x   .  | .   .   .   .   .  |  x   . | x   .   . | .
+# testopt_photo_3s_invalid_imfp_choice_fail |  x  .  . |  x   .  |  x   . |  x   . | x   .  | .   .   .   .   x  |  x   . | x   .   . | .
+# testopt_photo_3s_invalid_model_fail       |  x  .  . |  x   .  |  x   . |  x   . | x   .  | .   .   .   .   x  |  x   . | x   .   . | .
+# testopt_photo_3s_invalid_momentum_fail    |  x  .  . |  x   .  |  x   . |  x   . | x   .  | .   .   .   .   x  |  x   . | x   .   . | .
+# testopt_photo_3s_layers                   |  x  .  . |  x   .  |  .   x |  x   . | x   .  | .   .   .   .   .  |  x   . | x   .   . | .
+# testopt_photo_3s_qemat_mpi                |  x  .  . |  x   .  |  x   . |  x   . | x   .  | x   .   .   .   .  |  .   x | x   .   . | .
+# testopt_photo_3s_qemat_serial             |  x  .  . |  x   .  |  x   . |  x   . | x   .  | x   .   .   .   .  |  x   . | x   .   . | .
+# testopt_photo_3s_rm_imfp_value_fail       |  x  .  . |  x   .  |  x   . |  x   . | x   .  | .   .   .   .   x  |  x   . | x   .   . | .
+# testopt_photo_3s_rm_photon_energy_fail    |  x  .  . |  x   .  |  x   . |  x   . | x   .  | .   .   .   .   x  |  x   . | x   .   . | .
+# testopt_photo_3s_rm_slab_max_fail         |  x  .  . |  x   .  |  x   . |  x   . | x   .  | .   .   .   .   x  |  x   . | x   .   . | .
+# testopt_photo_3s_rm_slab_min_fail         |  x  .  . |  x   .  |  x   . |  x   . | x   .  | .   .   .   .   x  |  x   . | x   .   . | .
+# testopt_photo_3s_rm_task_fail             |  x  .  . |  x   .  |  x   . |  x   . | x   .  | .   .   .   .   x  |  x   . | x   .   . | .
+# testopt_photo_3s_rm_work_function_fail    |  x  .  . |  x   .  |  x   . |  x   . | x   .  | .   .   .   .   x  |  x   . | x   .   . | .
+# testopt_photo_3s_sweep                    |  x  .  . |  .   x  |  x   . |  x   . | x   .  | .   .   .   .   .  |  x   . | x   .   . | .
+# testopt_photo_3s_sweep_missing_max_fail   |  x  .  . |  .   x  |  x   . |  x   . | x   .  | .   .   .   .   x  |  x   . | x   .   . | .
+# testopt_photo_3s_sweep_missing_min_fail   |  x  .  . |  .   x  |  x   . |  x   . | x   .  | .   .   .   .   x  |  x   . | x   .   . | .
+# testopt_photo_3s_sweep_mpi                |  x  .  . |  .   x  |  x   . |  x   . | x   .  | .   .   .   .   .  |  .   x | x   .   . | .
+# testopt_photo_3s_sweep_step_fail          |  x  .  . |  .   x  |  x   . |  x   . | x   .  | .   .   .   .   x  |  x   . | x   .   . | .
+# testopt_photo_3s_tmprob_fail              |  x  .  . |  x   .  |  x   . |  x   . | .   x  | .   .   .   .   x  |  x   . | x   .   . | .
+# testopt_photo_ds_general                  |  .  .  x |  x   .  |  x   . |  x   . | x   .  | .   .   .   .   .  |  x   . | x   .   . | .
 
 # ------------------------
 # 3-step core tests
@@ -553,6 +560,30 @@ output = Cu100_5L_1step_6.000_ref_0.00_const_map.dat
 
 # 1-step: layer-dependent IMFP
 [testopt_photo_1s_layers]
+program = OPTADOS_PHOTO_ODO_OK
+max_nprocs = 0
+inputs_args = ('Cu100_5L.odi','')
+output = Cu100_5L.odo
+
+# 1-step: polycrystalline optics geometry, symmetry present (num_symm > 0)
+[testopt_photo_1s_polycrys]
+program = OPTADOS_PHOTO_ODO_OK
+max_nprocs = 0
+inputs_args = ('Cu100_5L.odi','')
+output = Cu100_5L.odo
+
+# 1-step: polycrystalline optics geometry with no symmetry_ops block in the
+# -out.cell, so num_symm == 0 and the unsymmetrised branch is exercised
+[testopt_photo_1s_polycrys_nosymm]
+program = OPTADOS_PHOTO_ODO_OK
+max_nprocs = 0
+inputs_args = ('Cu100_5L.odi','')
+output = Cu100_5L.odo
+
+# 1-step: polar optics geometry with an empty symmetry_ops block, so
+# num_symm == 0. This is the only test that reaches the unsymmetrised polar
+# branch of make_foptical_weights.
+[testopt_photo_1s_polar_nosymm]
 program = OPTADOS_PHOTO_ODO_OK
 max_nprocs = 0
 inputs_args = ('Cu100_5L.odi','')
